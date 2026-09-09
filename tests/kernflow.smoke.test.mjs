@@ -125,6 +125,35 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
+  // NIEUW (Reparatieplan v4.0, B-2a — bevinding E-03): op Chemex valt géén enkel
+  // giet-schema in de contacttijd-diagnostische band, dus de eerlijke samenvatting mag de
+  // gebruiker daar nooit de schuld geven van zijn eigen brouwtijd — hij moet zeggen dat het
+  // VOORGESCHREVEN schema zelf al buiten de band valt.
+  test('B-2a: op Chemex meldt het Klaar-scherm dat het schema zelf buiten de band valt, niet de gebruiker', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="method"]');
+    await assertBecomesActive(page, '#screen-method');
+    await page.click('[data-method="chemex"]');
+    await assertBecomesActive(page, '#screen-roast');
+    await page.click('#roast-grid [data-roast] >> nth=0');
+    await assertBecomesActive(page, '#screen-profile');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await assertBecomesActive(page, '#screen-prep');
+
+    await page.click('#start-btn');
+    await assertBecomesActive(page, '#screen-brew');
+    await page.clock.fastForward(FAST_FORWARD);
+    await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
+    await page.click('#brewlog-open-btn');
+    await assertBecomesActive(page, '#screen-brewlog');
+
+    const honestSummary = (await page.locator('#brewlog-honest-summary').textContent()).trim();
+    assert.match(honestSummary, /valt zelf al buiten/, 'moet melden dat het SCHEMA buiten de band valt, niet de gebruiker beoordelen');
+
+    await page.close();
+  });
+
   test('Route B — handmatig: Methode → Roast → Profiel (samengevoegd) → Recept', async () => {
     const page = await newTrackedPage();
     await page.goto(FILE_URL, { waitUntil: 'load' });

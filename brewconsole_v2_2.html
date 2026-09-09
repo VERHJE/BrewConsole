@@ -5803,13 +5803,25 @@ function renderBrewLogHonestSummary(){
   // contactTimeGuidance altijd al bedoelde te zijn ("Monitored diagnostic, never a
   // target", brewers.ts) — losstaand van de recepttarget-vergelijking hierboven, die nu
   // uit de giet-structuur zelf komt (buildPourSchedule()), niet meer uit deze band.
+  // FIX (Reparatieplan v4.0, B-2a / bevinding E-03): de band werd toegepast op de
+  // werkelijke tijd zonder te controleren of het VOORGESCHREVEN schema er zelf in valt.
+  // Op Chemex valt geen enkel schema in de band (100-175s tegen 240-300s), op V60 vallen
+  // snel_puur (100s) en robuust (220s) erbuiten. De app zette de timer en gaf de gebruiker
+  // daarna de schuld van zijn eigen advies. De band blijft precies wat de registry hem
+  // noemt — een monitored diagnostic — maar wordt alleen nog als controle gebruikt wanneer
+  // hij voor dit schema uberhaupt een zinvolle controle IS.
   let diagnosticLine = '';
   if (rec.contactTimeDiagnosticBand && actualTime != null){
     const { min, max } = rec.contactTimeDiagnosticBand;
-    const within = actualTime >= min && actualTime <= max;
-    diagnosticLine = within
-      ? `Totale contacttijd ${fmtTime(actualTime)} valt binnen de gangbare diagnostische band voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — geen doel, puur een plausibiliteitscontrole achteraf.`
-      : `Totale contacttijd ${fmtTime(actualTime)} valt buiten de gangbare diagnostische band voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — geen fout, wél de moeite van opletten waard; deze band is een controle achteraf, geen doel.`;
+    const scheduleWithinBand = rec.totalTime >= min && rec.totalTime <= max;
+    if (!scheduleWithinBand){
+      diagnosticLine = `Het schema dat deze app je hierboven gaf (${fmtTime(rec.totalTime)}) valt zelf al buiten de gangbare band voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — deze giet-structuur heeft nu eenmaal ${rec.steps.filter(s=>s.add>0).length} waterbeurten. De band is daarom géén zinvolle controle op jouw uitvoering; hij zegt hier iets over het recept, niet over jou. Geregistreerd als openstaand punt (bevinding E-03).`;
+    } else {
+      const within = actualTime >= min && actualTime <= max;
+      diagnosticLine = within
+        ? `Totale contacttijd ${fmtTime(actualTime)} valt binnen de gangbare diagnostische band voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — geen doel, puur een plausibiliteitscontrole achteraf.`
+        : `Totale contacttijd ${fmtTime(actualTime)} valt buiten de gangbare diagnostische band voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — geen fout, wél de moeite van opletten waard; deze band is een controle achteraf, geen doel.`;
+    }
   }
   el.innerHTML = `<strong>Wat we écht weten</strong>` +
     [timeLine, ratioLine, tempLine, diagnosticLine].filter(Boolean).map(l => `<div>${escapeHtml(l)}</div>`).join('');

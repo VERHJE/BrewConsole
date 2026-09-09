@@ -892,3 +892,12 @@ describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () =
     }
   });
 });
+
+describe('B-2a — de app geeft de gebruiker niet de schuld van zijn eigen schema (bevinding E-03)', () => {
+  test('op Chemex, waar geen enkel schema in de band valt, is er geen bandoordeel over de gebruiker', () => {
+    const rec = api.computeRecipe('chemex','medium','klassiek',600,null,false,null,null,false,null,null,0);
+    const { min, max } = rec.contactTimeDiagnosticBand;
+    assert.ok(rec.totalTime < min || rec.totalTime > max,
+      'randvoorwaarde van deze test: het Chemex-schema valt inderdaad buiten de band');
+  });
+});
