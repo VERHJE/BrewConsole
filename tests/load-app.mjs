@@ -99,7 +99,7 @@ export function loadApp(){
       resolvedOverlayIdFor,
       levenshtein, maxFuzzyDistance, tokenizeForFuzzy, fuzzyMatchesKeyword, textOrFuzzyIncludes,
       RECORD_SCHEMA_VERSION, GRIND_CONFIDENCE_LABELS, translateGrindConfidence,
-      canonicalProfileKey, visibleProfileKeys, displayScoreFor,
+      canonicalProfileKey, visibleProfileKeys, displayScoreFor, PROFILE_MERGE_GROUPS,
       FRESHNESS_TIERS, freshnessTierForDays, coreOnlyReason,
       computeRecipe, engineValidVolumeRange, ENGINE_TARGET_WINDOWS,
       hardnessNudge, alkalinityNudge, dilutedWaterValue, waterSCAVerdict, HCO3_TO_CACO3_FACTOR,

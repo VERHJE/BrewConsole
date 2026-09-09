@@ -19,43 +19,77 @@ import { loadApp } from './load-app.mjs';
 const { api, sandbox } = loadApp();
 
 describe('ENGINE_PROFILE_MAP — schijnkeuze-detectie (Kritiek bevinding #1)', () => {
-  test('klassiek/vol_rond/zoet zijn elkaars tweeling op v60 (bekend, geaccepteerd geval)', () => {
-    assert.deepEqual(new Set(api.findProfileTwins('klassiek', 'v60')), new Set(['vol_rond', 'zoet']));
-    assert.deepEqual(new Set(api.findProfileTwins('vol_rond', 'v60')), new Set(['klassiek', 'zoet']));
-    assert.deepEqual(new Set(api.findProfileTwins('zoet', 'v60')), new Set(['klassiek', 'vol_rond']));
+  // VERVANGEN (Reparatieplan v4.0, §8.2, na B-4 en C-1): findProfileTwins() vergelijkt
+  // sinds B-4 het werkelijk gegenereerde recept i.p.v. het gemapte overlay-id, en C-1 geeft
+  // 'zoet' een eigen, ander gietschema. De oude aanname — precies één tweelinggroep
+  // ({klassiek, vol_rond, zoet}) — klopt daardoor niet meer. Dat is de winst van beide
+  // taken, geen regressie: zie §8.2 van het reparatieplan.
+  test('B-4/C-1: de tweelinggroepen op v60 zijn precies de gemeten drie', () => {
+    const groepen = [
+      ['klassiek','vol_rond'],                  // C-1: zoet is eruit, andere fase-1-verdeling
+      ['fruitig_clean','bloemig_delicaat'],      // B-4: beide vallen terug op Core-only
+      ['sirooprig_vol','evenwichtig_flex']       // B-4: Hedrick is nooit generatable
+    ];
+    for (const groep of groepen){
+      for (const lid of groep){
+        const anderen = groep.filter(x => x !== lid);
+        assert.deepEqual(new Set(api.findProfileTwins(lid, 'v60')), new Set(anderen),
+          `${lid} hoort exact ${anderen} als tweeling te hebben`);
+      }
+    }
+    assert.equal(api.findProfileTwins('zoet','v60').length, 0,
+      'zoet heeft sinds C-1 een eigen gietschema en dus geen tweeling meer');
   });
 
-  test('klassiek/vol_rond/zoet zijn ook elkaars tweeling op chemex', () => {
-    assert.deepEqual(new Set(api.findProfileTwins('klassiek', 'chemex')), new Set(['vol_rond', 'zoet']));
+  test('B-4: op chemex vallen vijf profielen samen — Kasuya is daar niet toepasbaar', () => {
+    const groep = new Set(['klassiek','vol_rond','zoet','robuust','evenwichtig_flex']);
+    for (const lid of groep){
+      const verwacht = new Set([...groep].filter(x => x !== lid));
+      assert.deepEqual(new Set(api.findProfileTwins(lid, 'chemex')), verwacht);
+    }
+    assert.deepEqual(new Set(api.findProfileTwins('heel_fruitig','chemex')), new Set(['fruitig_clean']));
   });
 
-  test('profielen met een eigen overlay hebben GEEN tweeling (negatieve controle)', () => {
-    assert.equal(api.findProfileTwins('heel_fruitig', 'v60').length, 0);
-    assert.equal(api.findProfileTwins('fruitig_clean', 'v60').length, 0);
-    assert.equal(api.findProfileTwins('fresh_clean', 'v60').length, 0);
-    assert.equal(api.findProfileTwins('snel_puur', 'v60').length, 0);
+  test('B-4: profielen met een eigen, GENERATABLE overlay hebben geen tweeling (negatieve controle)', () => {
+    // fruitig_clean staat hier bewust NIET meer bij: Rao's pulseCount is RESEARCH_GAP, dus
+    // dat profiel valt terug op het generieke schema en is numeriek gelijk aan
+    // bloemig_delicaat. Dat is bevinding E-06, geen testfout.
+    assert.equal(api.findProfileTwins('heel_fruitig','v60').length, 0);
+    assert.equal(api.findProfileTwins('fresh_clean','v60').length, 0);
+    assert.equal(api.findProfileTwins('snel_puur','v60').length, 0);
   });
 
   test('methodOnly-profiel (bloemig_delicaat) telt niet mee op chemex, waar het niet zichtbaar is', () => {
     assert.equal(api.findProfileTwins('bloemig_delicaat', 'chemex').length, 0);
   });
 
-  test('geen ONVERWACHTE tweelingen buiten de al-bekende {klassiek, vol_rond, zoet}-groep', () => {
-    const KNOWN_TWIN_GROUP = new Set(['klassiek', 'vol_rond', 'zoet']);
-    for (const methodKey of ['v60', 'chemex']){
+  test('B-4: elke tweelinggroep is bekend EN elke samengevoegde knop is aantoonbaar een echte tweeling', () => {
+    const BEKENDE_GROEPEN = {
+      v60:    [['klassiek','vol_rond'], ['fruitig_clean','bloemig_delicaat'], ['sirooprig_vol','evenwichtig_flex']],
+      chemex: [['klassiek','vol_rond','zoet','robuust','evenwichtig_flex'], ['heel_fruitig','fruitig_clean']]
+    };
+    for (const methodKey of ['v60','chemex']){
+      const bekend = BEKENDE_GROEPEN[methodKey].map(g => new Set(g));
       for (const profileKey of Object.keys(api.PROFILE_INFO)){
         const only = api.PROFILE_INFO[profileKey].methodOnly;
         if (only && only !== methodKey) continue;
         const twins = api.findProfileTwins(profileKey, methodKey);
         if (twins.length === 0) continue;
-        assert.ok(
-          KNOWN_TWIN_GROUP.has(profileKey),
-          `Onverwachte tweeling gevonden: "${profileKey}" deelt op ${methodKey} een recept met [${twins}], ` +
-          `maar zit niet in de bekende, geaccepteerde groep.`
-        );
-        for (const twin of twins){
-          assert.ok(KNOWN_TWIN_GROUP.has(twin), `Onverwachte tweeling: "${profileKey}" ↔ "${twin}" op ${methodKey}.`);
-        }
+        const groep = new Set([profileKey, ...twins]);
+        assert.ok(bekend.some(b => b.size === groep.size && [...groep].every(x => b.has(x))),
+          `Onverwachte tweelinggroep op ${methodKey}: {${[...groep].join(', ')}}. ` +
+          `Twee zichtbare profielen leveren hetzelfde recept zonder dat dat is vastgelegd.`);
+      }
+    }
+    // BEWAKING DIE ER NOG NIET WAS: een samengevoegde knop mag alleen leden bevatten die
+    // daadwerkelijk hetzelfde recept opleveren. Zonder deze assertie kan C-1-achtig werk een
+    // merge-groep stil laten verlopen — schijnkeuze in spiegelbeeld.
+    for (const groep of api.PROFILE_MERGE_GROUPS || []){
+      for (const lid of groep.members){
+        if (lid === groep.canonical) continue;
+        assert.ok(api.findProfileTwins(groep.canonical, 'v60').includes(lid),
+          `PROFILE_MERGE_GROUPS voegt "${lid}" samen met "${groep.canonical}", maar ze leveren ` +
+          `niet meer hetzelfde recept. De merge-groep is stale.`);
       }
     }
   });
@@ -207,27 +241,32 @@ describe('grindConfidence-vertaling (Hoog bevinding, Content/Microcopy Specialis
 });
 
 describe('Schijnkeuze-samenvoeging (v2.2 kernflow — Bouwbesluit "Knoppen samenvoegen")', () => {
-  test('canonicalProfileKey() wijst vol_rond en zoet naar klassiek; klassiek blijft zichzelf', () => {
+  // BIJGEWERKT (Reparatieplan v4.0, C-1 / Bouwbesluit BB-2): 'zoet' is uit
+  // PROFILE_MERGE_GROUPS gehaald omdat het sinds C-1 een aantoonbaar ander gietschema
+  // oplevert (Kasuya's eigen smaakknop, fase 1 = 50+70 i.p.v. 60+60 bij 300 ml). Alleen
+  // klassiek/vol_rond blijven samengevoegd — 'vol_rond' gaat over body, niet over de as
+  // die C-1 verschuift, dus die twee blijven wél byte-identiek.
+  test('canonicalProfileKey() wijst vol_rond naar klassiek; klassiek en zoet blijven zichzelf', () => {
     assert.equal(api.canonicalProfileKey('klassiek'), 'klassiek');
     assert.equal(api.canonicalProfileKey('vol_rond'), 'klassiek');
-    assert.equal(api.canonicalProfileKey('zoet'), 'klassiek');
+    assert.equal(api.canonicalProfileKey('zoet'), 'zoet');
   });
 
   test('canonicalProfileKey() laat niet-schijnkeuze profielen ongemoeid', () => {
     for (const key of Object.keys(api.PROFILE_INFO)){
-      if (['klassiek', 'vol_rond', 'zoet'].includes(key)) continue;
+      if (['klassiek', 'vol_rond'].includes(key)) continue;
       assert.equal(api.canonicalProfileKey(key), key);
     }
   });
 
-  test('visibleProfileKeys() bevat klassiek maar niet vol_rond/zoet, en verliest geen enkel ander profiel', () => {
+  test('visibleProfileKeys() bevat klassiek en zoet maar niet vol_rond, en verliest geen enkel ander profiel', () => {
     const visible = api.visibleProfileKeys();
     assert.ok(visible.includes('klassiek'));
     assert.ok(!visible.includes('vol_rond'));
-    assert.ok(!visible.includes('zoet'));
+    assert.ok(visible.includes('zoet'), 'zoet heeft sinds C-1 een eigen gietschema en is dus geen samengevoegde tweeling meer');
     const allKeys = Object.keys(api.PROFILE_INFO);
     for (const key of allKeys){
-      if (['vol_rond', 'zoet'].includes(key)) continue;
+      if (key === 'vol_rond') continue;
       assert.ok(visible.includes(key), `visibleProfileKeys() mist "${key}"`);
     }
     assert.equal(new Set(visible).size, visible.length);
@@ -240,9 +279,10 @@ describe('Schijnkeuze-samenvoeging (v2.2 kernflow — Bouwbesluit "Knoppen samen
     assert.ok('zoet' in api.ENGINE_PROFILE_MAP);
   });
 
-  test('displayScoreFor() telt de scores van samengevoegde tweelingen bij elkaar op', () => {
+  test('displayScoreFor() telt de scores van samengevoegde tweelingen bij elkaar op (klassiek+vol_rond, niet meer zoet)', () => {
     const scores = { klassiek: 2, vol_rond: 5, zoet: 1, heel_fruitig: 3 };
-    assert.equal(api.displayScoreFor(scores, 'klassiek'), 8);
+    assert.equal(api.displayScoreFor(scores, 'klassiek'), 7);
+    assert.equal(api.displayScoreFor(scores, 'zoet'), 1);
     assert.equal(api.displayScoreFor(scores, 'heel_fruitig'), 3);
   });
 
@@ -941,5 +981,39 @@ describe('B-5 — brewer-ratio zichtbaar bij bypass (bevinding E-08)', () => {
     assert.ok(brewerRatio < 13, `brewer-ratio hoort rond 1:12 te liggen, kreeg 1:${brewerRatio.toFixed(1)}`);
     assert.match(rec.bypassNote, /In de brewer zet je feitelijk op 1:/);
     assert.match(rec.bypassNote, /buiten dat venster/);
+  });
+});
+
+describe('C-1 — Kasuya taste dial (bevinding E-05, Bouwbesluit BB-2)', () => {
+  test('de drie standen leveren de bedoelde fase-1-verdeling bij 300 ml', () => {
+    const verwacht = { heel_fruitig:[70,50], klassiek:[60,60], zoet:[50,70] };
+    for (const [p, [a,b]] of Object.entries(verwacht)){
+      const st = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0)
+                    .steps.filter(s=>s.add>0);
+      assert.equal(st[0].add, a, `${p}: eerste pour`);
+      assert.equal(st[1].add, b, `${p}: tweede pour`);
+    }
+  });
+  test('INVARIANT: fase 1 blijft exact 40% (afgerond op 5g, een pre-bestaande, door C-1 ongewijzigde conventie) en de som blijft exact het watervolume, voor elke stand', () => {
+    for (const p of ['heel_fruitig','klassiek','vol_rond','zoet']){
+      for (const vol of [270, 300, 340, 380]){
+        const rec = api.computeRecipe('v60','medium',p,vol,null,false,null,null,false,null,null,0);
+        if (rec.dose === 0) continue;
+        const st = rec.steps.filter(s=>s.add>0);
+        // BIJGEWERKT: phaseWater rondt al vóór C-1 af op het dichtstbijzijnde vijftal
+        // (ongewijzigd door C-1, dat alleen de verdeling BINNEN fase 1 raakt) — bij 270ml
+        // geeft dat 110g, niet het naïef afgeronde 108g. Zie ook §3b-testeis elders.
+        assert.equal(st[0].add + st[1].add, Math.round((rec.water * 0.4) / 5) * 5,
+          `${p} @ ${vol}ml: fase 1 moet ~40% blijven (afgerond op 5g)`);
+        assert.equal(st.reduce((a,s)=>a+s.add,0), rec.water,
+          `${p} @ ${vol}ml: som moet exact het watervolume zijn`);
+      }
+    }
+  });
+  test('een overlay zonder fase-mechanisme negeert de bias volledig (negatieve controle)', () => {
+    const voor = api.computeRecipe('v60','medium','fresh_clean',300,null,false,null,null,false,null,null,0);
+    assert.equal(voor.technique, 'Hoffmann Ultimate');
+    const st = voor.steps.filter(s=>s.add>0);
+    assert.equal(st[1].add, st[2].add + (st[1].add - st[2].add), 'Hoffmann-verdeling blijft de generieke');
   });
 });

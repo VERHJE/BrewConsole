@@ -2838,12 +2838,12 @@ const ENGINE_PROCESS_MAP = { washed:'WASHED', natural:'NATURAL', honey:'HONEY_PU
 const ENGINE_GRIND_BAND = { v60:'MEDIUM_FINE', chemex:'MEDIUM_COARSE' };
 
 const ENGINE_PROFILE_MAP = {
-  heel_fruitig:     { cluster:'LOWER_STRENGTH_MODERATE_EXTRACTION', overlay:'KASUYA_4_6' },
+  heel_fruitig:     { cluster:'LOWER_STRENGTH_MODERATE_EXTRACTION', overlay:'KASUYA_4_6', phase1Bias:'helder' },
   fruitig_clean:    { cluster:'LOWER_STRENGTH_MODERATE_EXTRACTION', overlay:{ v60:'RAO_V60_MINIMAL_POUR', chemex:'RAO_CHEMEX_DISCLOSED' } },
   fresh_clean:      { cluster:'LOWER_STRENGTH_MODERATE_EXTRACTION', overlay:'HOFFMANN_ULTIMATE' },
-  klassiek:         { cluster:'FULLER_BODIED',                      overlay:'KASUYA_4_6' },
-  vol_rond:         { cluster:'FULLER_BODIED',                      overlay:'KASUYA_4_6' },
-  zoet:             { cluster:'FULLER_BODIED',                      overlay:'KASUYA_4_6' },
+  klassiek:         { cluster:'FULLER_BODIED',                      overlay:'KASUYA_4_6', phase1Bias:'neutraal' },
+  vol_rond:         { cluster:'FULLER_BODIED',                      overlay:'KASUYA_4_6', phase1Bias:'neutraal' },
+  zoet:             { cluster:'FULLER_BODIED',                      overlay:'KASUYA_4_6', phase1Bias:'zoet' },
   snel_puur:        { cluster:'LOWER_STRENGTH_MODERATE_EXTRACTION', overlay:'PERGER_80_20' },
   bloemig_delicaat: { cluster:'LOWER_STRENGTH_MODERATE_EXTRACTION', overlay:'HEDRICK_1_2_1' },
   sirooprig_vol:    { cluster:'FULLER_BODIED',                      overlay:null },
@@ -2959,8 +2959,14 @@ function findProfileTwins(profileKey, methodKey){
    sleutel — alleen op vergelijk-tijd bij het renderen (data-selected) gecanonicaliseerd
    — anders zou secondaryFlavorNotes(scores, adviceState.profile) de verkeerde
    'tips'-ingang opzoeken zodra iemand vol_rond of zoet had gekozen. */
+/* BIJGEWERKT (Reparatieplan v4.0, C-1): 'zoet' is uit deze groep gehaald omdat het sinds
+   C-1 een aantoonbaar ander gietschema oplevert (fase 1 = 50+70 i.p.v. 60+60 bij 300 ml —
+   Kasuya's eigen smaakknop). Een samengevoegde knop mag alleen profielen bevatten die
+   daadwerkelijk hetzelfde recept geven; de test in §8.2 bewaakt dat voortaan automatisch
+   tegen recipeFingerprint(). klassiek/vol_rond blijven wél identiek: 'vol_rond' gaat over
+   body, en dat is niet de as die deze knop verschuift. */
 const PROFILE_MERGE_GROUPS = [
-  { canonical:'klassiek', members:['klassiek','vol_rond','zoet'] }
+  { canonical:'klassiek', members:['klassiek','vol_rond'] }
 ];
 const PROFILE_CANONICAL_MAP = (function(){
   const map = {};
@@ -3516,6 +3522,20 @@ function coreOnlyReason(profileKey, methodKey, gen){
 // nu meebewegen met het daadwerkelijke aantal giet-momenten. contactTimeGuidance zelf
 // verhuist naar het Klaar-scherm als controle-achteraf (renderBrewLogHonestSummary()),
 // waar het label het altijd al voor bedoelde: een diagnostische band, geen doel.
+/* NIEUW (Reparatieplan v4.0, C-1 / bevinding E-05): Kasuya's eigen "taste dial" — de
+   verhouding tussen de twee pours BINNEN fase 1. De overlay markeert het mechanisme als
+   RESOLVED ("a bigger first pour biases brighter/more acidic, a smaller first pour biases
+   sweeter"); alleen de exacte gramsplitsing is CONTESTED (gap G-RECIPE-01: 50+70 vs.
+   60+60). Bij 300 ml is fase 1 exact 120 g, dus:
+     zoet     (0,40) -> 50 + 70  = letterlijk de ene gepubliceerde rendering
+     neutraal (0,50) -> 60 + 60  = letterlijk de andere gepubliceerde rendering
+     helder   (0,60) -> 70 + 50  = EIGEN extrapolatie, spiegelt de zoet-verhouding
+   Alleen 'helder' voegt iets toe aan wat de bronnen zeggen, en valt daarmee onder het
+   "vertrekpunt"-presentatieniveau uit Bouwbesluit B-2: gelabeld, herkomst zichtbaar,
+   gelogd (grindStartingPoint-patroon) en achteraf toetsbaar via de leerlus (B-3).
+   Verandert NIETS aan fase 1 als geheel (blijft 40% van het water) of aan het totaal.
+   Gebruiker heeft dit vooraf goedgekeurd (Bouwbesluit BB-2). */
+var PHASE1_FIRST_POUR_FRACTION = { helder: 0.60, neutraal: 0.50, zoet: 0.40 };
 var POUR_CYCLE_SEC = 30; // generieke tijd tussen het begin van twee opeenvolgende pours (V60-referentie).
 var FINAL_DRAWDOWN_SEC = 40; // generieke marge na de laatste pour tot het bed is doorgelopen (V60-referentie).
 
@@ -3622,10 +3642,22 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
         : Math.max(0, Math.round((water * phase.fraction) / 5) * 5);
       waterAssigned += phaseWater;
       const perPulse = Math.max(5, Math.round((phaseWater / phase.count) / 5) * 5);
+      // C-1: alleen fase 1 van een tweedelige fase kent de bias; de laatste pour van de
+      // fase absorbeert altijd de afrondingsrest, zodat de som exact klopt (§3b-testeis).
+      const biasFraction = (phaseIdx === 0 && phase.count === 2 && overlayMeta.phase1Bias)
+        ? PHASE1_FIRST_POUR_FRACTION[overlayMeta.phase1Bias]
+        : null;
+      const firstPourWater = biasFraction != null
+        ? Math.max(5, Math.round((phaseWater * biasFraction) / 5) * 5)
+        : null;
       let addedInPhase = 0;
       for (let i = 0; i < phase.count; i++){
         const isLastOfPhase = i === phase.count - 1;
-        const add = isLastOfPhase ? Math.max(0, phaseWater - addedInPhase) : Math.min(perPulse, phaseWater - addedInPhase);
+        const add = isLastOfPhase
+          ? Math.max(0, phaseWater - addedInPhase)
+          : (i === 0 && firstPourWater != null
+              ? Math.min(firstPourWater, phaseWater)
+              : Math.min(perPulse, phaseWater - addedInPhase));
         addedInPhase += add;
         runningTo += add;
         const label = pulseIndex === 0 ? 'Bloom' : `Pour ${pulseIndex + 1}`;
@@ -3844,7 +3876,10 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   const overlayMeta = {
     pulseCount: overlayPulseCount,
     pulseCountIncludesBloom: overlay ? !!overlay.pulseCountIncludesBloom : false,
-    phaseSplit: overlay ? overlay.phaseSplit : null
+    phaseSplit: overlay ? overlay.phaseSplit : null,
+    // NIEUW (C-1): Kasuya's taste dial, per profiel. Alleen betekenisvol bij een overlay
+    // die zelf een fase-mechanisme vaststelt; elke andere overlay negeert dit veld.
+    phase1Bias: mapEntry.phase1Bias || null
   };
   // B-2b: cyclus-/doorloopconstanten per brewer (V60 blijft exact de referentie, 30/40s).
   const pourCycleConstants = brewerPourCycleConstants(brewerScopeKey);
@@ -3881,8 +3916,15 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     const pulseDisclaimer = pulseCountSourced
       ? ''
       : ` LET OP: deze bron publiceert zelf geen aantal giet-momenten (${overlayId === 'PERGER_80_20' ? 'Perger publiceert bewust helemaal geen schema — zijn methode is een beslisregel, geen recept' : 'de gelokaliseerde versies spreken elkaar tegen over het aantal en de structuur'}). Het aantal beurten hieronder is dus een eigen invulling van deze app, geen getal van ${att ? att.practitioner : 'de bron'} — net als de tijden en de grammen.`;
+    // NIEUW (Reparatieplan v4.0, C-1 / bevinding E-05, Bouwbesluit BB-2): legt uit welke van
+    // de drie standen van Kasuya's eigen "taste dial" actief is en waar die vandaan komt —
+    // 'zoet'/'neutraal' zijn letterlijk de twee gepubliceerde renderingen, 'helder' is een
+    // eigen, gelabelde extrapolatie (spiegelbeeld van 'zoet').
+    const biasUitleg = mapEntry.phase1Bias
+      ? ` De verdeling BINNEN fase 1 volgt hier Kasuya's eigen smaakknop: ${mapEntry.phase1Bias === 'helder' ? 'een grotere eerste pour, richting helderder/zuurder' : mapEntry.phase1Bias === 'zoet' ? 'een kleinere eerste pour, richting zoeter' : 'twee gelijke pours, de neutrale stand'}. ${mapEntry.phase1Bias === 'helder' ? 'Deze stand is een eigen vertrekpunt (spiegelbeeld van de zoet-stand), geen gepubliceerde verdeling — proef en stel bij.' : 'Deze verdeling is letterlijk een van de twee gepubliceerde renderingen van deze methode.'}`
+      : '';
     notes = (overlay.phaseSplit
-      ? `${structureNote} Giet-tijden hieronder volgen het hierboven beschreven fase-mechanisme van deze bron; de exacte grammen BINNEN elke fase zijn een eigen, gelijke verdeling (de bronnen spreken elkaar tegen over de precieze split) — geen letterlijk gepubliceerd stappenschema van ${att ? att.practitioner : 'deze bron'}.`
+      ? `${structureNote} Giet-tijden hieronder volgen het hierboven beschreven fase-mechanisme van deze bron; de exacte grammen BINNEN elke fase zijn een eigen, gelijke verdeling (de bronnen spreken elkaar tegen over de precieze split) — geen letterlijk gepubliceerd stappenschema van ${att ? att.practitioner : 'deze bron'}.${biasUitleg}`
       : `${structureNote} Giet-tijden hieronder zijn een eigen, gelijkmatige verdeling over een schema-lengte die uit het aantal giet-momenten volgt — geen letterlijk gepubliceerd stappenschema van ${att ? att.practitioner : 'deze bron'}.`) + pulseDisclaimer;
   } else {
     technique = 'Kernrecept';

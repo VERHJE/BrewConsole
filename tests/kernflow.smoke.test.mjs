@@ -74,7 +74,10 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#advisor-link');
     await assertBecomesActive(page, '#screen-advice');
     const adviceProfileCount = await page.locator('#advice-profile [data-adv-profile]').count();
-    assert.equal(adviceProfileCount, 9, 'Advisor-profielchips: verwacht 9 zichtbare keuzes (11 - 2 samengevoegde), zie visibleProfileKeys()');
+    // BIJGEWERKT (Reparatieplan v4.0, C-1 / Bouwbesluit BB-2): 'zoet' is uit
+    // PROFILE_MERGE_GROUPS gehaald (eigen gietschema sinds C-1) — nog maar 1 samengevoegd
+    // profiel (vol_rond), dus 11 - 1 = 10 zichtbaar, niet 9.
+    assert.equal(adviceProfileCount, 10, 'Advisor-profielchips: verwacht 10 zichtbare keuzes (11 - 1 samengevoegde sinds C-1), zie visibleProfileKeys()');
     await assertNoZeroSizeElements(page, '#advice-profile [data-adv-profile]', 'advice-profile chips');
 
     await page.click('#advice-roast [data-adv-roast] >> nth=0');
@@ -174,10 +177,20 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await assertBecomesActive(page, '#screen-profile');
 
     const gridProfileCount = await page.locator('#profile-grid [data-profile]').count();
-    assert.equal(gridProfileCount, 9, 'profile-grid: verwacht 9 zichtbare profielen op V60 (methodOnly-profielen blijven zichtbaar op v60)');
+    // BIJGEWERKT (Reparatieplan v4.0, C-1 / Bouwbesluit BB-2): zie de toelichting bij de
+    // adviceProfileCount hierboven — 10 zichtbaar sinds 'zoet' niet meer wordt samengevoegd.
+    assert.equal(gridProfileCount, 10, 'profile-grid: verwacht 10 zichtbare profielen op V60 (methodOnly-profielen blijven zichtbaar op v60)');
     await assertNoZeroSizeElements(page, '#profile-grid [data-profile]', 'profile-grid buttons');
+    // BIJGEWERKT (Reparatieplan v4.0, B-4 / bevinding E-09): findProfileTwins() vergelijkt
+    // sinds B-4 het WERKELIJKE recept i.p.v. het gemapte overlay-id, en detecteert daardoor
+    // nu ook twee eerder gemiste tweelinggroepen — fruitig_clean/bloemig_delicaat (Rao's
+    // pulseCount is RESEARCH_GAP, dus beide vallen terug op hetzelfde generieke schema) en
+    // sirooprig_vol/evenwichtig_flex (Hedrick is nooit generatable). Die twee groepen zijn
+    // NIET samengevoegd tot één knop (dat is alleen klassiek/vol_rond), dus elk van hun 4
+    // leden krijgt terecht een zichtbare tweelingnotitie — precies de winst van B-4: een
+    // schijnkeuze die eerder onopgemerkt bleef, is dat nu niet meer.
     const twinNoteCount = await page.locator('#profile-grid .profile-twin-note').count();
-    assert.equal(twinNoteCount, 0, 'profile-grid: de klassiek/vol_rond/zoet-tweelingnotitie hoort te verdwijnen zodra ze één knop zijn');
+    assert.equal(twinNoteCount, 4, 'profile-grid: verwacht 4 tweelingnotities (fruitig_clean/bloemig_delicaat + sirooprig_vol/evenwichtig_flex), sinds B-4 correct gedetecteerd');
 
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
