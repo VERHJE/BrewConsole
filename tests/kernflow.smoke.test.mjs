@@ -679,6 +679,147 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
+  // NIEUW (Reparatieplan v4.0, C-2 / bevinding E-11 — verplicht, N-3/N-4): een back-up van
+  // schemaVersion 1, 2 ÉN 3 (allemaal van vóór beanSnapshot bestond) moet zonder verlies
+  // laden — additief, geen migratie, geen verzonnen velden.
+  test('C-2 migratie: schemaVersion 1, 2 én 3 laden allemaal zonder verlies en zonder beanSnapshot te verzinnen', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="beans"]');
+    await assertBecomesActive(page, '#screen-beans');
+
+    const mixedBackup = {
+      app: 'brew-console', backupVersion: 2, exportedAt: new Date().toISOString(),
+      beans: [],
+      brewLog: [
+        { id: 'log_v1', schemaVersion: 1, timestamp: Date.now(),
+          beanId: null, method: 'v60', profile: 'klassiek', roast: 'medium',
+          waterMl: 300, bypass: false, grindMicron: 650, grindStand: 20, temp: 94,
+          scores: {}, note: 'schemaVersion 1' },
+        { id: 'log_v2', schemaVersion: 2, timestamp: Date.now(),
+          beanId: null, method: 'v60', profile: 'klassiek', roast: 'medium',
+          waterMl: 300, bypass: false, grindMicron: 650, grindStand: 20, temp: 94,
+          scores: {}, note: 'schemaVersion 2', doseG: 17, ratioText: '1:17,6',
+          actualGrindClicks: 18, actualTimeSec: 190, cupWeightG: 260,
+          waterProfileSnapshot: { hardnessMgL: 100, alkalinity: { value: 40, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } } },
+        { id: 'log_v3', schemaVersion: 3, timestamp: Date.now(),
+          beanId: null, method: 'v60', profile: 'klassiek', roast: 'medium',
+          waterMl: 300, bypass: false, grindMicron: 650, grindStand: 20, temp: 94,
+          scores: {}, note: 'schemaVersion 3', doseG: 17, ratioText: '1:17,6',
+          actualGrindClicks: 18, actualTimeSec: 190, cupWeightG: 260, approved: true, grindStartingPoint: 14,
+          waterProfileSnapshot: { hardnessMgL: 100, alkalinity: { value: 40, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } } }
+        // Bewust GEEN beanSnapshot op geen van de drie — dat veld bestaat pas sinds C-2
+        // (schemaVersion 4) en mag hier niet met terugwerkende kracht verzonnen worden.
+      ]
+    };
+    await page.setInputFiles('#backup-import-file', {
+      name: 'c2-migratie-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(mixedBackup))
+    });
+    await page.waitForFunction(() => document.getElementById('backup-status').hidden === false);
+    const statusText = (await page.locator('#backup-status').textContent()).trim();
+    assert.match(statusText, /3 nieuwe loggings/);
+    assert.doesNotMatch(statusText, /undefined|NaN/);
+
+    await page.click('.navbar [data-nav="brewlog-history"]');
+    await assertBecomesActive(page, '#screen-brewlog-history');
+    const historyText = (await page.locator('#brewlog-history-list').innerText()).trim();
+    assert.match(historyText, /schemaVersion 1/);
+    assert.match(historyText, /schemaVersion 2/);
+    assert.match(historyText, /schemaVersion 3/);
+    assert.doesNotMatch(historyText, /undefined|NaN/);
+
+    await page.close();
+  });
+
+  // NIEUW (Reparatieplan v4.0, C-2 — verplicht): een schemaVersion-3-record zonder
+  // beanSnapshot (van vóór C-2) moet nog steeds precies dezelfde leercorrectie opleveren
+  // als vóór deze wijziging — de live-boonopzoeking-terugval moet het gedrag op bestaande
+  // data volledig onveranderd laten.
+  test('C-2: een schemaVersion-3-record zonder beanSnapshot levert nog steeds dezelfde leercorrectie op (live terugval)', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="beans"]');
+    await assertBecomesActive(page, '#screen-beans');
+
+    const bean = { id: 'bean_c2', name: 'C-2 testboon', roastLevel: 'light', process: 'washed', intendedUse: 'filter', profileKey: 'klassiek' };
+    const makeEntry = (id, clicks) => ({
+      id, schemaVersion: 3, timestamp: Date.now(),
+      beanId: bean.id, method: 'v60', profile: 'klassiek', roast: 'light',
+      waterMl: 300, bypass: false, grindMicron: 650, grindStand: null, temp: 95,
+      scores: {}, note: '', approved: true, grindStartingPoint: 14, actualGrindClicks: clicks
+      // Bewust GEEN beanSnapshot — dit is precies het schemaVersion-3-record dat C-2 zegt
+      // via entryBeanFor()/de live boon te blijven bedienen.
+    });
+    const backup = {
+      app: 'brew-console', backupVersion: 2, exportedAt: new Date().toISOString(),
+      beans: [bean],
+      brewLog: [makeEntry('log_a', 12), makeEntry('log_b', 12), makeEntry('log_c', 12)]
+    };
+    await page.setInputFiles('#backup-import-file', {
+      name: 'c2-leercorrectie-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(backup))
+    });
+    await page.waitForFunction(() => document.getElementById('backup-status').hidden === false);
+
+    await page.click('#bean-list .bean-card >> nth=0 >> .bean-card-name');
+    await assertBecomesActive(page, '#screen-bean-detail');
+    await page.click('#bean-detail-use-btn');
+    await assertBecomesActive(page, '#screen-advice');
+    await page.click('#advice-batch [data-adv-batch="single"]');
+    await page.waitForFunction(() => getComputedStyle(document.getElementById('advice-result')).display !== 'none');
+    await page.click('#advice-cta');
+    await assertBecomesActive(page, '#screen-prep');
+
+    const prepText = (await page.locator('#screen-prep').innerText()).trim();
+    assert.match(prepText, /leercorrectie|klikken (fijner|grover)|exact/i,
+      'drie goedgekeurde schemaVersion-3-loggings (zonder beanSnapshot) horen nog steeds een leercorrectie te tonen, via de live boon-terugval');
+
+    await page.close();
+  });
+
+  // NIEUW (Reparatieplan v4.0, C-2 — verplicht, N-4): export → import → export van een
+  // schemaVersion-4-record (mét beanSnapshot) is rondgang-identiek.
+  test('C-2 back-up-rondgang: een schemaVersion-4-record met beanSnapshot komt na import ongeschonden terug', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="beans"]');
+    await assertBecomesActive(page, '#screen-beans');
+
+    const entry = {
+      id: 'log_v4', schemaVersion: 4, timestamp: Date.now(),
+      beanId: 'bean_v4', method: 'v60', profile: 'klassiek', roast: 'light',
+      waterMl: 300, bypass: false, grindMicron: 650, grindStand: 20, temp: 95,
+      scores: {}, note: 'v4 rondgang', doseG: 17, ratioText: '1:17,6',
+      actualGrindClicks: 18, actualTimeSec: 190, cupWeightG: 260, approved: true, grindStartingPoint: 14,
+      beanSnapshot: { process: 'natural', intendedUse: 'filter', roastLevel: 'light' },
+      waterProfileSnapshot: { hardnessMgL: 100, alkalinity: { value: 40, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } }
+    };
+    const backup = {
+      app: 'brew-console', backupVersion: 2, exportedAt: new Date().toISOString(),
+      beans: [{ id: 'bean_v4', name: 'V4-boon', roastLevel: 'light', process: 'natural', intendedUse: 'filter' }],
+      brewLog: [entry]
+    };
+    await page.setInputFiles('#backup-import-file', {
+      name: 'c2-rondgang-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(backup))
+    });
+    await page.waitForFunction(() => document.getElementById('backup-status').hidden === false);
+
+    // De rondgang: lees de live brewLog-state (exact wat exportBackup() ook zou serialiseren)
+    // terug uit de pagina en vergelijk met wat er is geïmporteerd.
+    const storedEntry = await page.evaluate(() => brewLog.find(e => e.id === 'log_v4'));
+    assert.deepEqual(storedEntry.beanSnapshot, entry.beanSnapshot, 'beanSnapshot moet ongeschonden terugkomen');
+    assert.equal(storedEntry.schemaVersion, 4);
+    assert.equal(storedEntry.doseG, entry.doseG);
+    assert.equal(storedEntry.cupWeightG, entry.cupWeightG);
+
+    await page.close();
+  });
+
   // NIEUW (Implementatieplan Zetadvies v3.0, §5 — Fase 6 testplan): de volledige weg van
   // proeven naar voorstel — inclusief het randvoorwaarde-vereiste dat het voorstel pas
   // verschijnt bij de VOLGENDE kop (op het Recept-scherm), nooit met terugwerkende kracht

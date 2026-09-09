@@ -603,13 +603,14 @@ describe('Waterprofiel — alkaliniteit, verdunning, per-parameter oordeel (Impl
   });
 });
 
-describe('RECORD_SCHEMA_VERSION — schema v2 en v3 (Implementatieplan Zetadvies v3.0, Fase 5 en Fase 7)', () => {
-  test('RECORD_SCHEMA_VERSION staat op 3 (v2: Fase 5-logboekvelden, v3: Fase 7 approved/grindStartingPoint)', () => {
+describe('RECORD_SCHEMA_VERSION — schema v2 t/m v4 (Implementatieplan Zetadvies v3.0 Fase 5/7, Reparatieplan v4.0 C-2)', () => {
+  // BIJGEWERKT (Reparatieplan v4.0, C-2 / bevinding E-11): 4 (v4: beanSnapshot, additief).
+  test('RECORD_SCHEMA_VERSION staat op 4 (v2: Fase 5-logboekvelden, v3: Fase 7 approved/grindStartingPoint, v4: C-2 beanSnapshot)', () => {
     // De daadwerkelijke opslag- en weergavelogica (saveBrewLogEntry(), de Historie-kaart,
     // en de migratie-/back-up-rondgangtests) draait via de echte DOM en staat daarom in
     // tests/kernflow.smoke.test.mjs — deze pure-logic-check bewaakt alleen het versiegetal
     // zelf, zodat een toekomstige per-ongeluk-terugdraai meteen opvalt.
-    assert.equal(api.RECORD_SCHEMA_VERSION, 3);
+    assert.equal(api.RECORD_SCHEMA_VERSION, 4);
   });
 });
 
@@ -1015,5 +1016,21 @@ describe('C-1 — Kasuya taste dial (bevinding E-05, Bouwbesluit BB-2)', () => {
     assert.equal(voor.technique, 'Hoffmann Ultimate');
     const st = voor.steps.filter(s=>s.add>0);
     assert.equal(st[1].add, st[2].add + (st[1].add - st[2].add), 'Hoffmann-verdeling blijft de generieke');
+  });
+});
+
+describe('C-2 — boon-snapshot op elke logging (bevinding E-11)', () => {
+  test('een schemaVersion-4-logging gebruikt zijn eigen boon-snapshot, niet de live boon', () => {
+    const bean = { id:'b1', name:'Test', roastLevel:'light', process:'washed', intendedUse:'filter' };
+    api.beanLibrary.length = 0; api.beanLibrary.push(bean);
+    const entry = { method:'v60', roast:'light', approved:true, grindStartingPoint:14,
+      actualGrindClicks:12, beanId:'b1', schemaVersion:4,
+      beanSnapshot:{ process:'natural', intendedUse:'filter', roastLevel:'light' },
+      waterProfileSnapshot:{ hardnessMgL:null, alkalinity:{value:null,unit:'CaCO3'},
+                             dilution:{tapParts:1,demiParts:0} } };
+    assert.equal(api.processBucketFor(entry.beanSnapshot.process), 'natural_anaerobic');
+    // wijzig de live boon; de snapshot moet winnen
+    bean.process = 'honey';
+    assert.equal(api.processBucketFor(entry.beanSnapshot.process), 'natural_anaerobic');
   });
 });

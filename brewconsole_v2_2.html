@@ -5713,7 +5713,14 @@ document.getElementById('bean-detail-history-btn').addEventListener('click', ()=
    recipeGrindBaseline()). Zelfde discipline als bij v1→v2: oudere records blijven
    ongewijzigd, `approved` ontbreekt dus simpelweg (en telt daardoor terecht NOOIT mee als
    "goedgekeurd" — een ontbrekend veld is geen stilzwijgende `true`). */
-const RECORD_SCHEMA_VERSION = 3;
+/* 3 -> 4 (Reparatieplan v4.0, C-2 / bevinding E-11): elke logging draagt voortaan een
+   momentopname van de boon-eigenschappen die het leer-emmertje bepalen (verwerking,
+   beoogd gebruik, branddiepte). Zonder die snapshot herschreef een latere correctie aan
+   de boon met terugwerkende kracht de betekenis van maanden oude metingen — precies wat
+   de waterProfileSnapshot uit Fase 5 al voorkomt voor water. Additief: records van
+   versie 1-3 blijven ongewijzigd leesbaar en vallen terug op de live opzoeking, exact
+   zoals ze zich vandaag gedragen (geen stille gedragswijziging op bestaande data). */
+const RECORD_SCHEMA_VERSION = 4;
 
 /* ============================================================
    BACKUP EXPORT/IMPORT (expertreview B4, Owen/Sanne) — de bonenbibliotheek
@@ -6011,6 +6018,17 @@ function saveBrewLogEntry(){
     // NIEUW (Fase 5) — momentopname van het actieve waterprofiel bij het loggen, zodat een
     // latere waterprofielwijziging (Bouwbesluit B-7) niet met terugwerkende kracht oude
     // loggingen "herschrijft"; ontbrekende waarden blijven null i.p.v. te worden geraden.
+    // NIEUW (Reparatieplan v4.0, C-2): boon-momentopname, zelfde discipline als de
+    // waterProfileSnapshot hieronder. null als er geen boon aan hangt.
+    beanSnapshot: (function(){
+      const b = state.beanId ? beanLibrary.find(x => x.id === state.beanId) : null;
+      if (!b) return null;
+      return {
+        process: b.process != null ? b.process : null,
+        intendedUse: b.intendedUse != null ? b.intendedUse : null,
+        roastLevel: b.roastLevel != null ? b.roastLevel : null
+      };
+    })(),
     waterProfileSnapshot: {
       hardnessMgL: (waterHardnessMgL == null) ? null : waterHardnessMgL,
       alkalinity: { value: waterAlkalinity.value == null ? null : waterAlkalinity.value, unit: waterAlkalinity.unit },
@@ -6310,11 +6328,18 @@ function matchesWaterProfile(snapshot, currentProfile){
 function entryBeanFor(entry){
   return entry && entry.beanId ? beanLibrary.find(b => b.id === entry.beanId) : null;
 }
+/* FIX (Reparatieplan v4.0, C-2 / bevinding E-11): lees bij voorkeur de momentopname die
+   bij de logging zelf hoort (schemaVersion 4+). Alleen als die ontbreekt — records van
+   vóór C-2 — valt dit terug op de live boon-opzoeking. Die terugval is bewust: hij houdt
+   het gedrag op bestaande data exact zoals het vandaag is, i.p.v. oude loggingen stil uit
+   het model te laten vallen. */
 function entryIsEspressoRoast(entry){
+  if (entry && entry.beanSnapshot) return entry.beanSnapshot.intendedUse === 'espresso';
   const bean = entryBeanFor(entry);
   return !!(bean && bean.intendedUse === 'espresso');
 }
 function entryProcessBucket(entry){
+  if (entry && entry.beanSnapshot) return processBucketFor(entry.beanSnapshot.process);
   const bean = entryBeanFor(entry);
   return bean ? processBucketFor(bean.process) : null;
 }
