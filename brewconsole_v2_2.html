@@ -3912,8 +3912,12 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
      note">/<p id="split-note"> renderden dus nooit iets. Dode velden, dode DOM-nodes,
      nu allebei weg in plaats van stilzwijgend leeg. */
 
+  // NIEUW (Reparatieplan v4.0, B-5 / bevinding E-08): de percolatie vindt plaats op een
+  // heel andere ratio dan de kaart toont. Dat getal hoort erbij, en het voorbehoud
+  // erachter ook: het doelvenster waaruit dosis/ratio zijn afgeleid, geldt niet meer.
+  const brewerRatio = (bypassEnabled && dose > 0) ? (pourWaterMl / dose) : null;
   const bypassNote = bypassEnabled
-    ? `Vergeet niet: na het zetten ${bypassMl} ml vers heet water toevoegen aan de kan/kop (zie stat-blok hierboven) — dat brengt ${pourWaterMl} ml geconcentreerde koffie terug op ${Math.round(water)} ml, de normale sterkte. Concentraat-methode actief op een vast ${bypassAdv.pct}% bypass (vuistregel, niet per boon afgestemd — zie renderBypassToggle()). Werkt volgens de brontechniek (Drip Roast's V60-bypassgids) doorgaans het meest overtuigend bij funky naturals, anaerobic/experimentele fermentaties en dark roasts. Maling en temperatuur hierboven zijn NIET aangepast voor de concentraat-methode — er is geen gevalideerd getal voor die aanpassing gevonden; proef bewust en stel zelf bij (doorgaans iets fijner/warmer) indien nodig.`
+    ? `In de brewer zet je feitelijk op 1:${fmt(brewerRatio, 1)} (${fmt(dose,1)} g op ${pourWaterMl} ml), niet op de ${ratioText} die hierboven staat — die geldt pas ná het bijschenken. Belangrijk voorbehoud: het sterkte-/extractievenster waaruit dosis en ratio zijn afgeleid, gaat ervan uit dat ál het water door het koffiebed gaat. Bij de concentraat-methode is dat niet zo, dus de werkelijke extractie ligt buiten dat venster en de app kan niet voorspellen hoever. Vergeet niet: na het zetten ${bypassMl} ml vers heet water toevoegen aan de kan/kop (zie stat-blok hierboven) — dat brengt ${pourWaterMl} ml geconcentreerde koffie terug op ${Math.round(water)} ml, de normale sterkte. Concentraat-methode actief op een vast ${bypassAdv.pct}% bypass (vuistregel, niet per boon afgestemd — zie renderBypassToggle()). Werkt volgens de brontechniek (Drip Roast's V60-bypassgids) doorgaans het meest overtuigend bij funky naturals, anaerobic/experimentele fermentaties en dark roasts. Maling en temperatuur hierboven zijn NIET aangepast voor de concentraat-methode — er is geen gevalideerd getal voor die aanpassing gevonden; proef bewust en stel zelf bij (doorgaans iets fijner/warmer) indien nodig.`
     : '';
 
   return {

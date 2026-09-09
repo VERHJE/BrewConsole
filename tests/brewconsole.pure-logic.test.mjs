@@ -932,3 +932,14 @@ describe('B-2b — brewer-specifieke cyclusconstanten (Bouwbesluit BB-1, akkoord
       'minder giet-momenten moet nog steeds een korter schema opleveren, ook na B-2b');
   });
 });
+
+describe('B-5 — brewer-ratio zichtbaar bij bypass (bevinding E-08)', () => {
+  test('bij bypass wordt de werkelijke brewer-ratio genoemd, niet alleen de eindratio', () => {
+    const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,true,null,null,0);
+    assert.ok(rec.pourWaterMl < rec.water, 'randvoorwaarde: bypass is actief');
+    const brewerRatio = rec.pourWaterMl / rec.dose;
+    assert.ok(brewerRatio < 13, `brewer-ratio hoort rond 1:12 te liggen, kreeg 1:${brewerRatio.toFixed(1)}`);
+    assert.match(rec.bypassNote, /In de brewer zet je feitelijk op 1:/);
+    assert.match(rec.bypassNote, /buiten dat venster/);
+  });
+});
