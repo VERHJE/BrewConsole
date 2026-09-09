@@ -368,6 +368,48 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
+  // NIEUW (Reparatieplan v4.0, A-1 — bevinding E-07a): het doelvenster (TDS/EY) en zijn
+  // herkomst (G-CONTROL-CHART-01) moeten daadwerkelijk in de UI staan, niet alleen in de
+  // disclaimer-tekst beweerd worden.
+  test('A-1: het doelvenster-blok toont de TDS/EY-getallen en de G-CONTROL-CHART-01-herkomst', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="method"]');
+    await assertBecomesActive(page, '#screen-method');
+    await page.click('[data-method="v60"]');
+    await page.click('#roast-grid [data-roast] >> nth=0');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await assertBecomesActive(page, '#screen-prep');
+
+    const windowNote = page.locator('#target-window-note');
+    await assert.ok(await windowNote.isVisible(), '#target-window-note moet zichtbaar zijn op het Prep-scherm');
+    const windowText = (await windowNote.textContent()).trim();
+    assert.match(windowText, /%TDS/, 'moet de %TDS-grenzen noemen');
+    assert.match(windowText, /G-CONTROL-CHART-01/, 'moet de herkomst (research gap) noemen');
+
+    await page.close();
+  });
+
+  // NIEUW (Reparatieplan v4.0, A-3 — bevinding E-01, tussenoplossing): altijd zichtbare
+  // uitleg dat het profiel vandaag vooral het gietschema stuurt, niet de receptgetallen.
+  test('A-3: #profile-scope-note is zichtbaar en meldt dat het profiel vooral het gietschema stuurt', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="method"]');
+    await assertBecomesActive(page, '#screen-method');
+    await page.click('[data-method="v60"]');
+    await page.click('#roast-grid [data-roast] >> nth=0');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await assertBecomesActive(page, '#screen-prep');
+
+    const scopeNote = page.locator('#profile-scope-note');
+    await assert.ok(await scopeNote.isVisible(), '#profile-scope-note moet zichtbaar zijn op het Prep-scherm');
+    const scopeText = (await scopeNote.textContent()).trim();
+    assert.match(scopeText, /gietschema/, 'moet melden dat het profiel het gietschema stuurt');
+
+    await page.close();
+  });
+
   // NIEUW (Implementatieplan Zetadvies v3.0, §5 — Fase 4 testplan): "back-up van vóór
   // deze wijziging laadt zonder verlies." Een backupVersion-1-achtige export kent alleen
   // het kale waterHardnessMgL-veld (geen waterAlkalinity/waterDilution, die pas met deze

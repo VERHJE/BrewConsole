@@ -271,8 +271,13 @@ describe('computeRecipe() — retentieterm en volumeklem (Implementatieplan Zeta
   test('ratio per cluster bij 300 ml valt in de orde van grootte die het plan noemt (§3, Fase 1a: LOWER ~1:17,5-17,6, FULLER ~1:17,3-17,4)', () => {
     const lower = api.computeRecipe('v60', 'medium', 'heel_fruitig', 300, null, false, null, null, false, null, null, 0);
     const fuller = api.computeRecipe('v60', 'medium', 'klassiek', 300, null, false, null, null, false, null, null, 0);
-    assert.ok(/^1:17\.[4-7]$/.test(lower.ratioText), `LOWER-cluster ratio buiten verwacht bereik: ${lower.ratioText}`);
-    assert.ok(/^1:17\.[2-5]$/.test(fuller.ratioText), `FULLER-cluster ratio buiten verwacht bereik: ${fuller.ratioText}`);
+    // BIJGEWERKT (Reparatieplan v4.0, A-6 / bevinding E-17): ratioText gebruikt sinds A-6
+    // altijd een Nederlandse komma (nlRatio()) i.p.v. de punt die core.ratio.value gaf. De
+    // regex hier bewaakte per ongeluk ook het scheidingsteken i.p.v. alleen de orde van
+    // grootte — bijgewerkt naar komma, de numerieke intentie (17,4-17,7 / 17,2-17,5) blijft
+    // ongewijzigd. Niet vermeld in §8.2 van het plan, maar een rechtstreeks gevolg van A-6.
+    assert.ok(/^1:17,[4-7]$/.test(lower.ratioText), `LOWER-cluster ratio buiten verwacht bereik: ${lower.ratioText}`);
+    assert.ok(/^1:17,[2-5]$/.test(fuller.ratioText), `FULLER-cluster ratio buiten verwacht bereik: ${fuller.ratioText}`);
     // De twee clusters blijven verschillend — Fase 1 lost het profielprobleem bewust niet op (§3, "Wat dit niet oplost").
     assert.notEqual(lower.ratioText, fuller.ratioText);
     assert.equal(lower.water, 300);
@@ -806,5 +811,33 @@ describe('Boontype-model — buckets, terugvalladder, vervuilingsregels (Impleme
     const result = api2.learningCorrectionFor(bean, 'v60', WATER_A);
     assert.equal(result.level, 'onvoldoende');
     assert.equal(result.n, 1, 'alleen de logging met zowel een vertrekpunt als een werkelijk klikgetal telt mee');
+  });
+});
+
+describe('Reparatieplan v4.0 — Fase A (eerlijkheidsherstel)', () => {
+  test('A-4: overlays zonder gecorroboreerd pulseCount melden dat het aantal beurten eigen invulling is', () => {
+    for (const [profile, naam] of [['fruitig_clean','Rao'], ['snel_puur','Perger']]){
+      const rec = api.computeRecipe('v60','medium',profile,300,null,false,null,null,false,null,null,0);
+      assert.equal(rec.pulseCountSourced, false, `${naam} heeft geen gecorroboreerd pulseCount`);
+      assert.match(rec.notes, /geen aantal giet-momenten|eigen invulling van deze app/,
+        `${naam}: de notitie moet melden dat het aantal beurten niet uit de bron komt`);
+    }
+    const kasuya = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
+    assert.equal(kasuya.pulseCountSourced, true, 'Kasuya heeft pulseCount 5 als RESOLVED');
+  });
+
+  test('A-5: sizeWarning is altijd leeg — het veld bestaat nog voor compatibiliteit maar vuurt nooit', () => {
+    for (let v = 265; v <= 380; v += 5){
+      const rec = api.computeRecipe('v60','medium','klassiek',v,null,false,null,null,false,null,null,0);
+      assert.equal(rec.sizeWarning, '', `sizeWarning moet leeg zijn bij ${v} ml`);
+    }
+  });
+
+  test('A-6: ratioText gebruikt altijd een Nederlandse komma, met en zonder sterktehendel', () => {
+    for (const st of [-1, 0, 1]){
+      const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,st);
+      assert.ok(!rec.ratioText.includes('.'), `ratioText mag geen punt bevatten (kreeg ${rec.ratioText})`);
+      assert.match(rec.ratioText, /^1:\d+,\d$/);
+    }
   });
 });

@@ -1445,6 +1445,7 @@
            i.p.v. los geformuleerd (regressierisicotabel §5 vervolgplan). -->
       <div id="evidence-badge-row" class="badge-row"></div>
       <p class="style-note" id="style-note"></p>
+<p class="freshness-readout" id="profile-scope-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
 
       <!-- FIX (teamreview v2 — Midden bevinding, UX Designer/Professional Brewer): tot v2
            konden process-/freshness-/opened-/altitude-/hardness-/bypass-note allemaal
@@ -1460,7 +1461,6 @@
           <span class="flavor-category-arrow">+</span>
         </summary>
         <div class="flavor-category-body">
-          <p class="process-note" id="size-warning-note" hidden></p>
           <p class="process-note" id="process-note" hidden></p>
           <p class="process-note" id="freshness-note" hidden></p>
           <p class="process-note" id="opened-note" hidden></p>
@@ -1484,6 +1484,7 @@
 
       <button class="start-btn" id="start-btn">Start brew →</button>
       <p class="disclaimer" id="disclaimer"></p>
+<p class="freshness-readout" id="target-window-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
     </section>
 
     <!-- STEP 5: BREW / TIMER -->
@@ -1548,7 +1549,7 @@
       <label for="brewlog-actual-grind" style="font-size:12px; color:var(--text-faint); display:block; margin:14px 0 4px;">Werkelijk gebruikte maalstand <span style="text-transform:none; letter-spacing:0;">(optioneel — klikken, Timemore C3S Pro; alleen invullen als je van het advies bent afgeweken)</span></label>
       <input type="number" id="brewlog-actual-grind" class="form-input" placeholder="bijv. 22" min="0" max="60" step="1" style="max-width:220px;">
 
-      <label for="brewlog-cup-weight" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Kopgewicht na afloop <span style="text-transform:none; letter-spacing:0;">(optioneel, gram — voor werkelijke retentie: (water − kopgewicht) / dosis; na 5+ loggingen vervangt dit de aangenomen 2,0 uit Fase 1)</span></label>
+      <label for="brewlog-cup-weight" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Kopgewicht na afloop <span style="text-transform:none; letter-spacing:0;">(optioneel, gram — hiermee kan later je werkelijke retentie berekend worden: (water − kopgewicht) / dosis. Wordt nu alleen bewaard; de ratio gebruikt nog steeds de vaste aanname van 2,0 g/g)</span></label>
       <input type="number" id="brewlog-cup-weight" class="form-input" placeholder="bijv. 268" min="0" max="2000" step="1" style="max-width:220px;">
 
       <!-- NIEUW (Implementatieplan Zetadvies v3.0, Fase 7, vervuilingsregel 1): bewust
@@ -2992,8 +2993,11 @@ function rawKeyForVisibleSelection(canonicalKey, scores){
    Brewing Control Chart-style TDS/extraction-yield windows, supplied here as an
    explicit override of data/sensoryTargets.ts's own G-CONTROL-CHART-01 research gap —
    that module's own doc comment explicitly invites exactly this ("a caller MAY supply
-   its own numeric window... this engine does not compute one on its own"). Disclosed
-   to the user in the recipe notes, not hidden. */
+   its own numeric window... this engine does not compute one on its own").
+   FIX (Reparatieplan v4.0, A-1): deze comment beweerde eerder "Disclosed to the user in
+   the recipe notes" terwijl de getallen nergens in de UI stonden. Dat is nu wél zo:
+   renderPrep() rendert #target-window-note met de letterlijke TDS/EY-grenzen én de
+   herkomst ("door de app aangeleverd, engine zegt RESEARCH_GAP"). */
 const ENGINE_TARGET_WINDOWS = {
   LOWER_STRENGTH_MODERATE_EXTRACTION: { strengthTDS:[1.15,1.30], extractionYieldEY:[18,20] },
   FULLER_BODIED:                      { strengthTDS:[1.30,1.45], extractionYieldEY:[20,22] }
@@ -3254,6 +3258,13 @@ const timer = { elapsed:0, running:false, intervalId:null, lastStepIndex:-1, pre
 function fmt(n, decimals){
   decimals = decimals || 0;
   return n.toLocaleString('nl-NL', { minimumFractionDigits:decimals, maximumFractionDigits:decimals });
+}
+// NIEUW (Reparatieplan v4.0, A-6 / bevinding E-17): de engine formatteert ratio's met
+// toFixed() (Amerikaanse punt), de app met fmt() (Nederlandse komma). Beide verschijnen in
+// dezelfde UI zodra de sterktehendel wordt gebruikt. Deze functie normaliseert de
+// engine-uitvoer op ÉÉN plek, i.p.v. de engine te wijzigen (die blijft onaangeraakt).
+function nlRatio(text){
+  return typeof text === 'string' ? text.replace(/(\d)\.(\d)/g, '$1,$2') : text;
 }
 function fmtTime(sec){
   sec = Math.max(0, Math.round(sec));
@@ -3580,8 +3591,8 @@ function buildFallbackRecipe(reason, waterMl){
     totalTime:0, steps:[],
     technique:'Geen geldig recept bij dit watervolume', author:'—',
     notes:`${reason} Pas de waterhoeveelheid aan (stel bijv. terug naar het midden van het bereik) of kies de andere zettermethode.`,
-    ratioText:'—', processNote:'', freshnessNote:'', altitudeNote:'', hardnessNote:'', bypassNote:'', strengthNote:'', sizeWarning:'',
-    bypassAdv:{ pct:0, factor:1 }, contactTimeDiagnosticBand:null
+    ratioText:'—', processNote:'', freshnessNote:'', altitudeNote:'', hardnessNote:'', bypassNote:'', strengthNote:'',
+    bypassAdv:{ pct:0, factor:1 }, contactTimeDiagnosticBand:null, pulseCountSourced:false
   };
 }
 
@@ -3674,7 +3685,7 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // (zelfde geest als voorheen) — verschuift alleen de dosis, water blijft gelijk.
   const strengthStep = clamp(Math.round(strengthAdjust || 0), -1, 1);
   let dose = baseDose;
-  let ratioText = core.ratio.state === 'RESOLVED' ? core.ratio.value : '—';
+  let ratioText = core.ratio.state === 'RESOLVED' ? nlRatio(core.ratio.value) : '—';
   let strengthNote = '';
   if (baseDose > 0 && strengthStep !== 0){
     dose = Math.round(baseDose * (1 + strengthStep * STRENGTH_DOSE_STEP) * 10) / 10;
@@ -3701,7 +3712,7 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   const tMax = clamp(roastAnchor.band.max, deviceTMin, deviceTMax);
   const temp = Math.round((tMin + tMax) / 2);
   const tempInstruction = roastAnchor.instruction;
-  const tempBandNote = `Ankerpunt binnen de apparaatband (${deviceTMin}–${deviceTMax}°C): ${tMin}–${tMax}°C bij deze branddiepte — ${tempInstruction}. Geen los geteste claim: het onderzoek waarop "temperatuur heeft weinig zelfstandig smaakeffect" steunt (Batali, Ristenpart & Guinard, Scientific Reports 2020) hield maling en zettijd bewust vast om TDS/extractie gelijk te houden, en testte alleen 87/90/93°C. In deze app is de maling een vertrekpunt zonder compensatiemechanisme en ligt de zettijd al vast — die voorwaarde geldt hier dus niet, en de band loopt daarom niet stilzwijgend door tot 96°C alsof dat wél getest is. Ratio en dosis blijven voor elke branddiepte identiek (Fase 1) — alleen dit ankerpunt en de maalrichting hieronder verschuiven.`;
+  const tempBandNote = `Ankerpunt binnen de apparaatband (${deviceTMin}–${deviceTMax}°C): ${tMin}–${tMax}°C bij deze branddiepte — ${tempInstruction}. Geen los geteste claim: het onderzoek waarop "temperatuur heeft weinig zelfstandig smaakeffect" steunt (Batali, Ristenpart & Guinard, Scientific Reports 2020) hield maling en zettijd bewust vast om TDS/extractie gelijk te houden, en testte alleen 87/90/93°C. In deze app is de maling een vertrekpunt zonder compensatiemechanisme en ligt de zettijd al vast — die voorwaarde geldt hier dus niet. Eerlijk erbij: het ankerpunt voor lichte branding (94–96 °C) ligt zélf boven het geteste bereik van dat onderzoek. Het steunt op gangbare praktijk voor lichte brandingen, niet op deze studie, en is dus een vertrekpunt (Bouwbesluit B-2-niveau) — geen getest getal. Ratio en dosis blijven voor elke branddiepte identiek (Fase 1) — alleen dit ankerpunt en de maalrichting hieronder verschuiven.`;
 
   // Maling — altijd de eerlijke triple; bij INSUFFICIENT (vandaag: voor elke molen in
   // het register, ook de Timemore C3S Pro) tonen we geen verzonnen µm-/klik-getal.
@@ -3746,6 +3757,7 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // Techniek/auteur/notitie — uit de overlay-attributie (indien aanwezig en
   // generatable voor deze brewer) of, eerlijk, uit het kernrecept alleen.
   let technique, author, notes;
+  let pulseCountSourced = false;
   if (overlay){
     const disp = OVERLAY_DISPLAY[overlayId] || { name: overlayId };
     technique = disp.name;
@@ -3758,9 +3770,18 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     // gelijkmatig: waar de bron zelf een fase-mechanisme vaststelt (bv. Kasuya's 40/60), volgt
     // dat mechanisme mee; ALLEEN de exacte grammen bínnen elke fase zijn een eigen, gelijke
     // verdeling (Fase 3b) — nooit een letterlijk gepubliceerd stappenschema.
-    notes = overlay.phaseSplit
+    // NIEUW (Reparatieplan v4.0, A-4 / bevinding E-06): wanneer de overlay zelf GEEN
+    // gecorroboreerd aantal giet-momenten heeft (pulseCount is RESEARCH_GAP — vandaag:
+    // Rao V60 en Perger), is niet alleen de tijdsverdeling maar ook het AANTAL beurten een
+    // eigen invulling. Dat moet er staan, want anders draagt de auteursnaam boven het
+    // schema een gezag dat de bron niet geeft (PDR §38: bron vs. interpretatie).
+    pulseCountSourced = !!(overlay.pulseCount && overlay.pulseCount.state === 'RESOLVED');
+    const pulseDisclaimer = pulseCountSourced
+      ? ''
+      : ` LET OP: deze bron publiceert zelf geen aantal giet-momenten (${overlayId === 'PERGER_80_20' ? 'Perger publiceert bewust helemaal geen schema — zijn methode is een beslisregel, geen recept' : 'de gelokaliseerde versies spreken elkaar tegen over het aantal en de structuur'}). Het aantal beurten hieronder is dus een eigen invulling van deze app, geen getal van ${att ? att.practitioner : 'de bron'} — net als de tijden en de grammen.`;
+    notes = (overlay.phaseSplit
       ? `${structureNote} Giet-tijden hieronder volgen het hierboven beschreven fase-mechanisme van deze bron; de exacte grammen BINNEN elke fase zijn een eigen, gelijke verdeling (de bronnen spreken elkaar tegen over de precieze split) — geen letterlijk gepubliceerd stappenschema van ${att ? att.practitioner : 'deze bron'}.`
-      : `${structureNote} Giet-tijden hieronder zijn een eigen, gelijkmatige verdeling over een schema-lengte die uit het aantal giet-momenten volgt — geen letterlijk gepubliceerd stappenschema van ${att ? att.practitioner : 'deze bron'}.`;
+      : `${structureNote} Giet-tijden hieronder zijn een eigen, gelijkmatige verdeling over een schema-lengte die uit het aantal giet-momenten volgt — geen letterlijk gepubliceerd stappenschema van ${att ? att.practitioner : 'deze bron'}.`) + pulseDisclaimer;
   } else {
     technique = 'Kernrecept';
     author = 'Brew Intelligence 2.0-engine (geen naam-gebonden schema)';
@@ -3800,19 +3821,23 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     totalTime, steps,
     technique, author,
     notes, ratioText, processNote, freshnessNote, altitudeNote, hardnessNote, bypassNote, strengthNote,
-    // FIX (Implementatieplan Zetadvies v3.0, §1b): generateCandidates() berekende dit
-    // altijd al (batchSize-geïmpliceerd water vs. het gevraagde targetVolumeML, >40%
-    // afwijking) maar de app las het nooit uit — een stille inconsistentie bleef zo
-    // onzichtbaar. Vertaald naar het Nederlands voor de gebruiker i.p.v. de Engelse
-    // interne enginetekst te tonen.
-    sizeWarning: gen.sizeConsistencyWarning
-      ? `Interne controle: de doorgerekende batchgrootte impliceert een ander watervolume dan gevraagd (verschil groter dan 40%). Recept hieronder is nog steeds gebaseerd op het daadwerkelijk gevraagde volume (${Math.round(water)} ml) — dit is puur een consistentiewaarschuwing, geen fout in het getoonde recept.`
-      : '',
+    // VERWIJDERD (Reparatieplan v4.0, A-5 / bevinding E-16): sizeConsistencyWarning kon per
+    // constructie nooit vuren — computeRecipe() rekent batchSize juist TERUG uit waterMl,
+    // dus de afwijking is altijd ~0. Geverifieerd over het hele geldige volumebereik. Een
+    // waarschuwing die niet kan afgaan, suggereert een veiligheid die er niet is. Het veld
+    // gen.sizeConsistencyWarning blijft ongemoeid in de engine; alleen deze dode app-laag-
+    // vertaling is weg. Zou er ooit een tweede, onafhankelijke volumebron komen, dan hoort
+    // de controle daar te leven, niet hier.
+    sizeWarning: '',
     bypassAdv,
     // NIEUW (vervolgplan v2.3, Bouwbesluit B4 — Evidence-badge): tweedelig, exact gekoppeld
     // aan dezelfde overlay-aanwezigheid die coreOnlyReason() hierboven al gebruikt, zodat de
     // badge nooit de disclaimer in `notes` kan tegenspreken (regressierisicotabel §5).
     hasNamedOverlay: !!overlay,
+    // NIEUW (Reparatieplan v4.0, A-4): of het AANTAL giet-momenten uit de bron komt of
+    // een eigen invulling is — gebruikt door de evidence-badge, zodat die de disclaimer
+    // in `notes` nooit kan tegenspreken.
+    pulseCountSourced,
     // NIEUW (Implementatieplan Zetadvies v3.0, Fase 3c/D-4): zie de toelichting bij
     // contactTimeDiagnosticBand hierboven — gebruikt door renderBrewLogHonestSummary(),
     // stuurt totalTime/steps niet (meer).
@@ -7139,19 +7164,17 @@ function renderPrep(){
   const evidenceBadgeRow = document.getElementById('evidence-badge-row');
   if (evidenceBadgeRow){
     evidenceBadgeRow.innerHTML = rec.hasNamedOverlay
-      ? `<span class="badge" data-tone="good">Kernrecept + gietschema</span>`
+      ? (rec.pulseCountSourced
+          ? `<span class="badge" data-tone="good">Kernrecept + gietschema</span>`
+          : `<span class="badge" data-tone="info">Kernrecept + eigen gietschema</span>`)
       : `<span class="badge" data-tone="info">Alleen kernrecept</span>`;
   }
 
-  const sizeWarningEl = document.getElementById('size-warning-note');
-  if (sizeWarningEl){
-    if (rec.sizeWarning){
-      sizeWarningEl.textContent = rec.sizeWarning;
-      sizeWarningEl.hidden = false;
-    } else {
-      sizeWarningEl.textContent = '';
-      sizeWarningEl.hidden = true;
-    }
+  const profileScopeEl = document.getElementById('profile-scope-note');
+  if (profileScopeEl){
+    // TIJDELIJK (Reparatieplan v4.0, A-3) — vervalt zodra Fase D-1 de vensters herdefinieert.
+    profileScopeEl.textContent = 'Wat het gekozen profiel vandaag wél en niet stuurt: het bepaalt het gietschema (aantal beurten, verdeling, timing). Het bepaalt de dosis, ratio, temperatuur en maalstand praktisch niet — de twee onderliggende sterkte-/extractievensters liggen zo dicht bij elkaar dat het verschil in dosis onder een tiende gram per 100 ml blijft. Dat is een bekende, geregistreerde beperking (bevinding E-01), geen weergavefout.';
+    profileScopeEl.hidden = false;
   }
 
   const processEl = document.getElementById('process-note');
@@ -7235,7 +7258,7 @@ function renderPrep(){
      "Verfijn dit recept"-notities daadwerkelijk iets te zeggen hebben, en toont/verbergt
      de hele sectie + badge dienovereenkomstig. Geen count meegerekend voor test-sound-
      result — dat hoort niet inhoudelijk bij het recept en staat er al buiten. */
-  const refineIds = ['size-warning-note','process-note','freshness-note','opened-note','intendeduse-note','altitude-note','hardness-note','bypass-note'];
+  const refineIds = ['process-note','freshness-note','opened-note','intendeduse-note','altitude-note','hardness-note','bypass-note'];
   const refineCount = refineIds.reduce((n, id)=>{
     const el = document.getElementById(id);
     return n + (el && !el.hidden ? 1 : 0);
@@ -7259,8 +7282,15 @@ function renderPrep(){
   `).join('');
 
   document.getElementById('method-tips').textContent = m.tips;
+  const windowEl = document.getElementById('target-window-note');
+  if (windowEl){
+    const cluster = (ENGINE_PROFILE_MAP[state.profile] || ENGINE_PROFILE_MAP.klassiek).cluster;
+    const w = ENGINE_TARGET_WINDOWS[cluster];
+    windowEl.textContent = `Doelvenster achter dit recept: ${fmt(w.strengthTDS[0],2)}–${fmt(w.strengthTDS[1],2)} %TDS bij ${w.extractionYieldEY[0]}–${w.extractionYieldEY[1]} %extractie. Deze twee getallenparen zijn door de app aangeleverd (SCA-Brewing-Control-Chart-achtig) en maken GEEN deel uit van het eigen onderzoekscorpus van dit project — de engine zelf markeert dit veld als openstaande onderzoeksvraag (G-CONTROL-CHART-01). Dosis en ratio hierboven volgen er rechtstreeks uit.`;
+    windowEl.hidden = false;
+  }
   document.getElementById('disclaimer').textContent =
-    '* Dosis/water/ratio komen algebraïsch uit een evidence-getagd sterkte-/extractievenster en het gevalideerde dosisbereik van dit toestel — nooit gekopieerd uit een naam-gebonden receptentabel. De ratio bevat een retentieaanname (LIQUID_RETAINED_RATIO = 2,0 g achtergebleven water per g droge koffie bij percolatie, tier 3-4/klasse C, gebaseerd op Rao en Coffee ad Astra) — zonder die aanname zou de ratio het achtergebleven water in het koffiebed negeren en te sterk lijken. Temperatuur is een ankerpunt + instructie binnen de apparaatband, gepositioneerd op branddiepte (Implementatieplan Zetadvies v3.0, Fase 2, Bouwbesluit B-1) — géén los geteste claim: de bevinding dat temperatuur weinig zelfstandig smaakeffect heeft (research-brewing-variables.md §2.1/§4.2; Batali, Ristenpart & Guinard, 2020) hield maling en zettijd bewust vast om TDS/extractie gelijk te houden en testte alleen 87/90/93°C, en die voorwaarde geldt hier niet. Maling is de eerlijke (instelling, vertrouwensband, korrelgrootte-doel)-drieling van de Setting Translator — vandaag voor elke molen "Insufficient" (geen gevalideerde kalibratiecurve); waar een community-startklikrange wél bestaat, positioneert branddiepte alleen wáár je daarbinnen begint (fijner/lichter, grover/donkerder) — geen nieuw maalgetal. Branddiepte stuurt in beide gevallen nooit de ratio of dosis (die blijven voor elke branddiepte identiek). Een eventueel giet-schema hierboven is óf een gecorroboreerde, aan een naam gebonden pour-structuur (zie de recept-notitie), óf — als die er niet is — een eigen, gelijkmatige verdeling; giet-snelheid (g/sec) is altijd een generieke aanname, geen letterlijk gepubliceerd getal. De totale schemalengte (en dus de brouwtimer) volgt uit het aantal giet-momenten van dit schema, niet meer uit de apparaatbrede contacttijd-diagnostiek — die diagnostische band staat los, als plausibiliteitscontrole achteraf op het Klaar-scherm (Implementatieplan Zetadvies v3.0, Fase 3).';
+    '* Dosis/water/ratio komen algebraïsch uit een sterkte-/extractievenster (zie het doelvenster-blok hierboven — door de app aangeleverd, niet uit het eigen onderzoekscorpus) en het gevalideerde dosisbereik van dit toestel — nooit gekopieerd uit een naam-gebonden receptentabel. De ratio bevat een retentieaanname (LIQUID_RETAINED_RATIO = 2,0 g achtergebleven water per g droge koffie bij percolatie, tier 3-4/klasse C, gebaseerd op Rao en Coffee ad Astra) — zonder die aanname zou de ratio het achtergebleven water in het koffiebed negeren en te sterk lijken. Temperatuur is een ankerpunt + instructie binnen de apparaatband, gepositioneerd op branddiepte (Implementatieplan Zetadvies v3.0, Fase 2, Bouwbesluit B-1) — géén los geteste claim: de bevinding dat temperatuur weinig zelfstandig smaakeffect heeft (research-brewing-variables.md §2.1/§4.2; Batali, Ristenpart & Guinard, 2020) hield maling en zettijd bewust vast om TDS/extractie gelijk te houden en testte alleen 87/90/93°C, en die voorwaarde geldt hier niet. Eerlijk erbij (Reparatieplan v4.0, A-7): het ankerpunt voor lichte branding (94–96°C) ligt zélf boven dat geteste bereik — het steunt op gangbare praktijk voor lichte brandingen, niet op deze studie, en is dus een vertrekpunt, geen getest getal. Maling is de eerlijke (instelling, vertrouwensband, korrelgrootte-doel)-drieling van de Setting Translator — vandaag voor elke molen "Insufficient" (geen gevalideerde kalibratiecurve); waar een community-startklikrange wél bestaat, positioneert branddiepte alleen wáár je daarbinnen begint (fijner/lichter, grover/donkerder) — geen nieuw maalgetal. Branddiepte stuurt in beide gevallen nooit de ratio of dosis (die blijven voor elke branddiepte identiek). Een eventueel giet-schema hierboven is óf een gecorroboreerde, aan een naam gebonden pour-structuur (zie de recept-notitie), óf — als die er niet is — een eigen, gelijkmatige verdeling; giet-snelheid (g/sec) is altijd een generieke aanname, geen letterlijk gepubliceerd getal. De totale schemalengte (en dus de brouwtimer) volgt uit het aantal giet-momenten van dit schema, niet meer uit de apparaatbrede contacttijd-diagnostiek — die diagnostische band staat los, als plausibiliteitscontrole achteraf op het Klaar-scherm (Implementatieplan Zetadvies v3.0, Fase 3).';
 }
 
 function updateServingBounds(){
