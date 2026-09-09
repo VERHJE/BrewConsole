@@ -6211,7 +6211,26 @@ const CUPPING_PRIMARY_AXES = ['aroma','zuur','zoet','body','bitter','aftersmaak'
 function cuppingSuggestionFor(scores){
   if (!scores) return null;
   const lvl = (axis) => cuppingAxisLevel(scores, axis);
-  if (lvl('zuur') === 'hoog' && lvl('zoet') === 'laag' && lvl('body') === 'laag'){
+  /* FIX (Reparatieplan v4.0, C-4 / bevinding E-13): onderextractie eiste drie assen
+     tegelijk (zuur hoog EN zoet laag EN body laag) en dekte daarmee 6,4% van de
+     scoreruimte, tegen 15,0% voor overextractie met twee assen. Een klassiek
+     onderextraheerde lichte branding scoort vaak hoog op zuur en laag op body, maar
+     MIDDEN op zoetheid — en viel dan door de mazen. 'zoet laag' wordt daarom
+     'zoet niet hoog'. Gemeten effect: 6,4% -> 8,1% dekking.
+     Tegelijk: door de verbreding kunnen onder- en overextractie nu allebei matchen op
+     dezelfde logging. Dat is een tegenstrijdig signaal, geen diagnose — de app kiest daar
+     niet tussen (PDR §30: conflicterend bewijs niet middelen of wegkiezen) maar zegt het. */
+  const onder = lvl('zuur') === 'hoog' && lvl('body') === 'laag' && lvl('zoet') !== 'hoog';
+  const over  = lvl('bitter') === 'hoog' && lvl('aftersmaak') === 'hoog';
+  if (onder && over){
+    return {
+      pattern: 'gemengd_signaal',
+      diagnose: 'De scores wijzen tegelijk op onderextractie (hoog zuur, lage body) en op overextractie (hoge bitterheid, lange aftersmaak).',
+      voorstel: 'Verander de maalstand deze keer NIET. Zet dezelfde boon nog een keer op precies hetzelfde recept en log opnieuw — een van beide signalen verdwijnt dan meestal. Draaien aan de molen op een tegenstrijdig signaal maakt het beeld alleen troebeler.',
+      wijstNaarWaterprofiel: false
+    };
+  }
+  if (onder){
     return {
       pattern: 'onderextractie',
       diagnose: 'Zuur hoog, zoetheid en body laag — kenmerkend voor onderextractie.',
@@ -6219,7 +6238,7 @@ function cuppingSuggestionFor(scores){
       wijstNaarWaterprofiel: false
     };
   }
-  if (lvl('bitter') === 'hoog' && lvl('aftersmaak') === 'hoog'){
+  if (over){
     return {
       pattern: 'overextractie',
       diagnose: 'Bitterheid hoog en een lange, droge aftersmaak — kenmerkend voor overextractie.',

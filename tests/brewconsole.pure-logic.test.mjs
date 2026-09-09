@@ -1069,3 +1069,20 @@ describe('C-2 — boon-snapshot op elke logging (bevinding E-11)', () => {
     assert.equal(api.processBucketFor(entry.beanSnapshot.process), 'natural_anaerobic');
   });
 });
+
+describe('C-4 — onderextractie verbreed + conflictbewaking (bevinding E-13)', () => {
+  test('zuur hoog + body laag + zoet MIDDEN telt nu als onderextractie', () => {
+    const s = { aroma:2, zuur:4, zoet:2, body:0, bitter:1, aftersmaak:2, balans:2 };
+    assert.equal(api.cuppingSuggestionFor(s).pattern, 'onderextractie');
+  });
+  test('tegenstrijdige signalen leveren geen maalverandering maar een herhaalverzoek', () => {
+    const s = { aroma:2, zuur:4, zoet:2, body:0, bitter:4, aftersmaak:4, balans:2 };
+    const sug = api.cuppingSuggestionFor(s);
+    assert.equal(sug.pattern, 'gemengd_signaal');
+    assert.ok(!/fijner|grover/.test(sug.voorstel), 'bij een conflict nooit een maalrichting adviseren');
+  });
+  test('zuiver overextractie blijft ongewijzigd (negatieve controle)', () => {
+    const s = { aroma:2, zuur:1, zoet:2, body:3, bitter:4, aftersmaak:4, balans:2 };
+    assert.equal(api.cuppingSuggestionFor(s).pattern, 'overextractie');
+  });
+});
