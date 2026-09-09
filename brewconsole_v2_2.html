@@ -3475,8 +3475,41 @@ function coreOnlyReason(profileKey, methodKey, gen){
 // nu meebewegen met het daadwerkelijke aantal giet-momenten. contactTimeGuidance zelf
 // verhuist naar het Klaar-scherm als controle-achteraf (renderBrewLogHonestSummary()),
 // waar het label het altijd al voor bedoelde: een diagnostische band, geen doel.
-var POUR_CYCLE_SEC = 30; // generieke tijd tussen het begin van twee opeenvolgende pours.
-var FINAL_DRAWDOWN_SEC = 40; // generieke marge na de laatste pour tot het bed is doorgelopen.
+var POUR_CYCLE_SEC = 30; // generieke tijd tussen het begin van twee opeenvolgende pours (V60-referentie).
+var FINAL_DRAWDOWN_SEC = 40; // generieke marge na de laatste pour tot het bed is doorgelopen (V60-referentie).
+
+/* NIEUW (Reparatieplan v4.0, B-2b / Bouwbesluit BB-1, akkoord gebruiker): B-2a maakte
+   eerlijk dat op Chemex GEEN enkel schema in zijn eigen contacttijd-diagnostische band valt
+   (100-175s tegen 240-300s) — dit lost het daadwerkelijk op, zonder D-4 (schemalengte volgt
+   uit het aantal giet-momenten, niet uit contacttijd-als-doel) los te laten.
+
+   Methode: POUR_CYCLE_SEC/FINAL_DRAWDOWN_SEC hierboven zijn de V60-referentie (V60's eigen
+   Kernrecept-schema, 160s, valt al ruim binnen zijn band van 120-210s — voor V60 verandert
+   er dus NIETS). Voor elke andere brewer schalen beide constanten mee met de verhouding
+   tussen de middens van de al bestaande, klasse-B contactTimeGuidance-banden
+   (BREWER_REGISTRY, ongewijzigd in de engine) — arithmetiek op een bestaand evidence-
+   getagd getal, geen nieuw brouwgetal. De schemalengte blijft daarna nog steeds volledig
+   een functie van het aantal giet-momenten (D-4 blijft dus intact); alleen de tijd PER
+   giet-moment is voortaan per toestel geijkt in plaats van universeel V60-afgeleid.
+
+   Dit is zelf een vertrekpunt (Bouwbesluit-niveau), geen letterlijke publicatie: de keuze
+   om te schalen op het bandmidden i.p.v. bijvoorbeeld de bandbreedte is een eigen,
+   verdedigbare interpretatie. Toetsbaar: elk Chemex-schema moet voortaan binnen zijn eigen
+   band vallen (zie tests/brewconsole.pure-logic.test.mjs, "B-2b"). */
+var V60_REFERENCE_CONTACT_MID = (120 + 210) / 2; // BREWER_REGISTRY.V60_02.contactTimeGuidance
+function brewerPourCycleConstants(brewerScopeKey){
+  const B = window.BrewEngineBundle;
+  const brewer = B.BREWER_REGISTRY[brewerScopeKey];
+  const guidance = (brewer && brewer.contactTimeGuidance && brewer.contactTimeGuidance.state === 'RESOLVED')
+    ? brewer.contactTimeGuidance.value : null;
+  if (!guidance) return { cycleSec: POUR_CYCLE_SEC, drawdownSec: FINAL_DRAWDOWN_SEC };
+  const mid = (guidance.typicalMin + guidance.typicalMax) / 2;
+  const factor = mid / V60_REFERENCE_CONTACT_MID;
+  return {
+    cycleSec: Math.max(10, Math.round(POUR_CYCLE_SEC * factor)),
+    drawdownSec: Math.max(10, Math.round(FINAL_DRAWDOWN_SEC * factor))
+  };
+}
 
 /* Genereert een uitvoerbaar giet-schema (tijd/gewicht per stap) uit de eerlijke
    dosis/water-cijfers van de engine. Waar een overlay een gecorroboreerd aantal
@@ -3488,8 +3521,12 @@ var FINAL_DRAWDOWN_SEC = 40; // generieke marge na de laatste pour tot het bed i
    gebonden getal, BEHALVE wanneer de overlay zelf een fase-mechanisme vaststelt
    (overlayMeta.phaseSplit, bv. Kasuya's 40/60) — dan bepaalt dát mechanisme de
    fase 1-hoeveelheid (incl. bloom), zie Fase 3a/3b. */
-function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec){
+function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, cycleSecArg, drawdownSecArg){
   overlayMeta = overlayMeta || {};
+  // B-2b: per-brewer cyclusconstanten (zie brewerPourCycleConstants()); default op de
+  // V60-referentie zodat bestaande directe aanroepen (o.a. tests) ongewijzigd blijven.
+  const cycleSec = cycleSecArg != null ? cycleSecArg : POUR_CYCLE_SEC;
+  const drawdownSec = drawdownSecArg != null ? drawdownSecArg : FINAL_DRAWDOWN_SEC;
   const overlayResolvedPulseCount = overlayMeta.pulseCount != null ? overlayMeta.pulseCount : null;
   let skipBloom = false;
   let pulseCount = 3;
@@ -3511,7 +3548,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec){
 
   const postBloomPulseCount = pulseCountIncludesBloom ? (pulseCount - 1) : pulseCount;
   const hasBloomStep = pulseCountIncludesBloom || !skipBloom;
-  const totalTime = Math.round((hasBloomStep ? bloomTime : 0) + postBloomPulseCount * POUR_CYCLE_SEC + FINAL_DRAWDOWN_SEC);
+  const totalTime = Math.round((hasBloomStep ? bloomTime : 0) + postBloomPulseCount * cycleSec + drawdownSec);
 
   const steps = [];
   let runningTo = 0;
@@ -3534,7 +3571,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec){
     // FINAL_DRAWDOWN_SEC, waardoor de doorloopmarge dubbel werd geteld — één keer in
     // totalTime en nog eens uitgesmeerd over de pour-afstanden. Resultaat: 40 s tussen
     // pours terwijl POUR_CYCLE_SEC 30 zegt, en een bed dat ertussen droogvalt.
-    const postBloomWindow = Math.max(10, totalTime - bloomTime - FINAL_DRAWDOWN_SEC);
+    const postBloomWindow = Math.max(10, totalTime - bloomTime - drawdownSec);
     for (let phaseIdx = 0; phaseIdx < phases.length; phaseIdx++){
       const phase = phases[phaseIdx];
       // Elke fase krijgt precies zijn deel; de LAATSTE fase absorbeert de afrondingsrest
@@ -3569,7 +3606,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec){
     // FIX (Reparatieplan v4.0, B-3 / bevinding E-04): zie de toelichting in het
     // fase-bewuste pad hierboven — ook hier werd FINAL_DRAWDOWN_SEC dubbel geteld
     // (43 s tussen pours bij een Kernrecept, 50 s bij Hoffmann).
-    const remainingTime = Math.max(10, totalTime - startTime - FINAL_DRAWDOWN_SEC);
+    const remainingTime = Math.max(10, totalTime - startTime - drawdownSec);
     const perPulse = Math.max(5, Math.round((remainingWater / pulseCount) / 5) * 5);
     let addedSoFar = 0;
     for (let i = 0; i < pulseCount; i++){
@@ -3768,7 +3805,9 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     pulseCountIncludesBloom: overlay ? !!overlay.pulseCountIncludesBloom : false,
     phaseSplit: overlay ? overlay.phaseSplit : null
   };
-  const { steps, totalTime } = buildPourSchedule(dose, pourWaterMl, overlayId, overlayMeta, freshTier ? freshTier.bloomExtraSec : 0);
+  // B-2b: cyclus-/doorloopconstanten per brewer (V60 blijft exact de referentie, 30/40s).
+  const pourCycleConstants = brewerPourCycleConstants(brewerScopeKey);
+  const { steps, totalTime } = buildPourSchedule(dose, pourWaterMl, overlayId, overlayMeta, freshTier ? freshTier.bloomExtraSec : 0, pourCycleConstants.cycleSec, pourCycleConstants.drawdownSec);
   // FIX (Implementatieplan Zetadvies v3.0, Fase 3c/D-4): contactTimeGuidance stuurt de
   // schemalengte niet langer (die volgt nu uit de giet-structuur, zie buildPourSchedule()
   // hierboven) — het blijft precies wat de registry het al noemde: een gemonitorde

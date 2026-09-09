@@ -125,10 +125,13 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
-  // NIEUW (Reparatieplan v4.0, B-2a — bevinding E-03): op Chemex valt géén enkel
-  // giet-schema in de contacttijd-diagnostische band, dus de eerlijke samenvatting mag de
-  // gebruiker daar nooit de schuld geven van zijn eigen brouwtijd — hij moet zeggen dat het
-  // VOORGESCHREVEN schema zelf al buiten de band valt.
+  // NIEUW (Reparatieplan v4.0, B-2a — bevinding E-03), BIJGEWERKT na B-2b (Bouwbesluit
+  // BB-1): vóór B-2b viel ELK Chemex-schema buiten de band, dus 'klassiek' (het 3-pulse
+  // Kernrecept) volstond. Na B-2b landt precies dát 3-pulse-schema weer BINNEN de band —
+  // de winst van B-2b. 'fresh_clean' (Hoffmann, 2 pulses) heeft een ander aantal
+  // giet-momenten en blijft daarom terecht buiten de band (D-4 blijft intact), dus de
+  // eerlijke samenvatting mag de gebruiker ook daar nooit de schuld geven van zijn eigen
+  // brouwtijd — hij moet zeggen dat het VOORGESCHREVEN schema zelf al buiten de band valt.
   test('B-2a: op Chemex meldt het Klaar-scherm dat het schema zelf buiten de band valt, niet de gebruiker', async () => {
     const page = await newTrackedPage();
     await page.goto(FILE_URL, { waitUntil: 'load' });
@@ -138,7 +141,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await assertBecomesActive(page, '#screen-roast');
     await page.click('#roast-grid [data-roast] >> nth=0');
     await assertBecomesActive(page, '#screen-profile');
-    await page.click('#profile-grid [data-profile="klassiek"]');
+    await page.click('#profile-grid [data-profile="fresh_clean"]');
     await assertBecomesActive(page, '#screen-prep');
 
     await page.click('#start-btn');

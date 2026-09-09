@@ -894,10 +894,41 @@ describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () =
 });
 
 describe('B-2a — de app geeft de gebruiker niet de schuld van zijn eigen schema (bevinding E-03)', () => {
-  test('op Chemex, waar geen enkel schema in de band valt, is er geen bandoordeel over de gebruiker', () => {
-    const rec = api.computeRecipe('chemex','medium','klassiek',600,null,false,null,null,false,null,null,0);
+  // BIJGEWERKT (Reparatieplan v4.0, B-2b / Bouwbesluit BB-1): vóór B-2b viel ELK
+  // Chemex-schema buiten de band, dus 'klassiek' (het 3-pulse Kernrecept) volstond als
+  // voorbeeld. Na B-2b is precies dát 3-pulse-schema (waarop de nieuwe cyclusconstanten
+  // zijn geijkt) weer BINNEN de band — de winst van B-2b. 'fresh_clean' (Hoffmann, 2
+  // pulses) heeft een andere pulseCount en blijft daarom terecht buiten de band: D-4
+  // (schemalengte volgt het aantal giet-momenten) is met B-2b niet losgelaten.
+  test('op Chemex valt een schema met een afwijkend aantal giet-momenten nog steeds buiten de band, zonder de gebruiker de schuld te geven', () => {
+    const rec = api.computeRecipe('chemex','medium','fresh_clean',600,null,false,null,null,false,null,null,0);
     const { min, max } = rec.contactTimeDiagnosticBand;
     assert.ok(rec.totalTime < min || rec.totalTime > max,
-      'randvoorwaarde van deze test: het Chemex-schema valt inderdaad buiten de band');
+      'randvoorwaarde van deze test: dit Chemex-schema valt inderdaad buiten de band');
+  });
+});
+
+describe('B-2b — brewer-specifieke cyclusconstanten (Bouwbesluit BB-1, akkoord gebruiker)', () => {
+  test('het 3-pulse Kernrecept-schema (klassiek/heel_fruitig) valt nu binnen de Chemex-diagnostische band', () => {
+    for (const p of ['klassiek','heel_fruitig']){
+      const rec = api.computeRecipe('chemex','medium',p,600,null,false,null,null,false,null,null,0);
+      const { min, max } = rec.contactTimeDiagnosticBand;
+      assert.ok(rec.totalTime >= min && rec.totalTime <= max,
+        `${p}: het 3-pulse Chemex-schema (${rec.totalTime}s) hoort na B-2b binnen ${min}-${max}s te vallen`);
+    }
+  });
+  test('V60 s totalTime per profiel is volledig ongewijzigd door B-2b (V60 is de referentie, factor 1)', () => {
+    const verwacht = { klassiek:190, fresh_clean:130, robuust:220, snel_puur:100, sirooprig_vol:160 };
+    for (const [p, t] of Object.entries(verwacht)){
+      const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
+      assert.equal(rec.totalTime, t, `${p}: V60-totalTime mag door B-2b niet veranderen`);
+    }
+  });
+  test('een schema met een ander aantal giet-momenten blijft op Chemex evenredig langer/korter (D-4 blijft intact)', () => {
+    const drie = api.computeRecipe('chemex','medium','klassiek',600,null,false,null,null,false,null,null,0);
+    const twee = api.computeRecipe('chemex','medium','fresh_clean',600,null,false,null,null,false,null,null,0);
+    const een = api.computeRecipe('chemex','medium','snel_puur',600,null,false,null,null,false,null,null,0);
+    assert.ok(een.totalTime < twee.totalTime && twee.totalTime < drie.totalTime,
+      'minder giet-momenten moet nog steeds een korter schema opleveren, ook na B-2b');
   });
 });
