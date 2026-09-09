@@ -841,3 +841,54 @@ describe('Reparatieplan v4.0 — Fase A (eerlijkheidsherstel)', () => {
     }
   });
 });
+
+describe('B-1 — sterktehendel respecteert het harde dosisplafond (bevinding E-02)', () => {
+  test('dosis blijft over het HELE geldige volumebereik en alle sterktestappen binnen 15–22 g (V60)', () => {
+    for (let v = 265; v <= 380; v += 5){
+      for (const st of [-1, 0, 1]){
+        const rec = api.computeRecipe('v60','medium','klassiek',v,null,false,null,null,false,null,null,st);
+        if (rec.dose === 0) continue;
+        assert.ok(rec.dose >= 14.999 && rec.dose <= 22.001,
+          `V60_DOSE_CEILING geschonden bij ${v} ml / sterkte ${st}: dosis ${rec.dose} g`);
+      }
+    }
+  });
+  test('geklemd betekent gemeld, nooit stil (de D-2-les)', () => {
+    const rec = api.computeRecipe('v60','medium','klassiek',380,null,false,null,null,false,null,null,1);
+    assert.equal(rec.dose, 22);
+    assert.match(rec.strengthNote, /Begrensd/, 'een klem moet expliciet gemeld worden');
+  });
+  test('zonder klem blijft de melding ongewijzigd (negatieve controle)', () => {
+    const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,1);
+    assert.equal(rec.dose, 18.7);
+    assert.ok(!rec.strengthNote.includes('Begrensd'));
+  });
+});
+
+describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () => {
+  test('elk interval tussen twee waterbeurten is exact POUR_CYCLE_SEC, voor elk profiel', () => {
+    for (const p of ['klassiek','heel_fruitig','fresh_clean','robuust','snel_puur','sirooprig_vol']){
+      const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
+      if (rec.dose === 0) continue;
+      const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
+      for (let i = 1; i < ts.length; i++){
+        assert.equal(ts[i] - ts[i-1], 30,
+          `${p}: interval ${i} is ${ts[i]-ts[i-1]}s, verwacht 30s (POUR_CYCLE_SEC)`);
+      }
+    }
+  });
+  test('de staart na de laatste pour is POUR_CYCLE_SEC + FINAL_DRAWDOWN_SEC = 70s', () => {
+    for (const p of ['klassiek','fresh_clean','robuust','snel_puur']){
+      const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
+      const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
+      assert.equal(rec.totalTime - ts[ts.length-1], 70, `${p}: staart moet 70s zijn`);
+    }
+  });
+  test('N-6: totalTime is ONVERANDERD t.o.v. vóór deze fix (brouwtimer-regressie)', () => {
+    const verwacht = { klassiek:190, fresh_clean:130, robuust:220, snel_puur:100, sirooprig_vol:160 };
+    for (const [p, t] of Object.entries(verwacht)){
+      const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
+      assert.equal(rec.totalTime, t, `${p}: totalTime mag door B-3 niet veranderen`);
+    }
+  });
+});

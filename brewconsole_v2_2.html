@@ -3530,7 +3530,11 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec){
 
     let pulseIndex = 0;
     let waterAssigned = 0;
-    const remainingTimeAfterBloom = Math.max(10, totalTime - bloomTime);
+    // FIX (Reparatieplan v4.0, B-3 / bevinding E-04): dit venster bevatte ook
+    // FINAL_DRAWDOWN_SEC, waardoor de doorloopmarge dubbel werd geteld — één keer in
+    // totalTime en nog eens uitgesmeerd over de pour-afstanden. Resultaat: 40 s tussen
+    // pours terwijl POUR_CYCLE_SEC 30 zegt, en een bed dat ertussen droogvalt.
+    const postBloomWindow = Math.max(10, totalTime - bloomTime - FINAL_DRAWDOWN_SEC);
     for (let phaseIdx = 0; phaseIdx < phases.length; phaseIdx++){
       const phase = phases[phaseIdx];
       // Elke fase krijgt precies zijn deel; de LAATSTE fase absorbeert de afrondingsrest
@@ -3547,7 +3551,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec){
         addedInPhase += add;
         runningTo += add;
         const label = pulseIndex === 0 ? 'Bloom' : `Pour ${pulseIndex + 1}`;
-        const t = pulseIndex === 0 ? 0 : Math.round(bloomTime + (remainingTimeAfterBloom * (pulseIndex - 1)) / Math.max(1, pulseCount - 1));
+        const t = pulseIndex === 0 ? 0 : Math.round(bloomTime + (postBloomWindow * (pulseIndex - 1)) / Math.max(1, postBloomPulseCount));
         steps.push({ label, t, add, to: runningTo, note:'', flow:'' });
         pulseIndex++;
       }
@@ -3562,7 +3566,10 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec){
     }
     const startTime = steps.length ? Math.min(bloomTime, Math.max(0, totalTime - 10)) : 0;
     const remainingWater = Math.max(0, Math.round(water) - runningTo);
-    const remainingTime = Math.max(10, totalTime - startTime);
+    // FIX (Reparatieplan v4.0, B-3 / bevinding E-04): zie de toelichting in het
+    // fase-bewuste pad hierboven — ook hier werd FINAL_DRAWDOWN_SEC dubbel geteld
+    // (43 s tussen pours bij een Kernrecept, 50 s bij Hoffmann).
+    const remainingTime = Math.max(10, totalTime - startTime - FINAL_DRAWDOWN_SEC);
     const perPulse = Math.max(5, Math.round((remainingWater / pulseCount) / 5) * 5);
     let addedSoFar = 0;
     for (let i = 0; i < pulseCount; i++){
@@ -3687,11 +3694,26 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   let dose = baseDose;
   let ratioText = core.ratio.state === 'RESOLVED' ? nlRatio(core.ratio.value) : '—';
   let strengthNote = '';
+  // FIX (Reparatieplan v4.0, B-1 / bevinding E-02): de sterktehendel vermenigvuldigde de
+  // dosis ná generateCandidates()'s constraint-check, waardoor V60_DOSE_CEILING (een
+  // INHERITED_HARD_CONSTRAINT, tier HARD) door een UI-knop overschreden kon worden —
+  // 23,7 g bij 380 ml/+1, 14,1 g bij 265 ml/-1. Dezelfde klasse defect als D-2. De klem
+  // hieronder is het vangnet; renderStrengthChips() schakelt de chip bovendien uit zodra
+  // hij toch niets zou opleveren, zodat dit zelden hoeft te vuren. GEEN stille
+  // substitutie: als er geklemd wordt, staat dat in strengthNote.
+  let strengthClamped = false;
   if (baseDose > 0 && strengthStep !== 0){
-    dose = Math.round(baseDose * (1 + strengthStep * STRENGTH_DOSE_STEP) * 10) / 10;
+    const rawDose = Math.round(baseDose * (1 + strengthStep * STRENGTH_DOSE_STEP) * 10) / 10;
+    dose = rawDose;
+    const ceiling = (brewer && brewer.doseCeiling && brewer.doseCeiling.state === 'RESOLVED')
+      ? brewer.doseCeiling.value : null;
+    if (ceiling){
+      const clamped = Math.round(clamp(rawDose, ceiling.min, ceiling.max) * 10) / 10;
+      if (Math.abs(clamped - rawDose) > 0.05){ dose = clamped; strengthClamped = true; }
+    }
     const liveRatio = dose > 0 ? water / dose : 0;
-    ratioText = `1:${fmt(liveRatio, 1)}`;
-    strengthNote = `Sterkte handmatig ${strengthStep > 0 ? 'verhoogd' : 'verlaagd'} (dosis ${strengthStep > 0 ? '+' : ''}${Math.round(strengthStep * STRENGTH_DOSE_STEP * 100)}%, ratio nu ${ratioText}) — watervolume blijft gelijk. Dit is een eigen handmatige voorkeur, geen evidence-claim. Los te combineren met de concentraat/bypass-methode hieronder.`;
+    ratioText = nlRatio(`1:${fmt(liveRatio, 1)}`);
+    strengthNote = (strengthClamped ? `Begrensd: de gevraagde sterktestap zou de dosis buiten het gevalideerde bereik van dit toestel duwen (${brewer.doseCeiling.value.min}–${brewer.doseCeiling.value.max} g). De dosis staat daarom op ${fmt(dose,1)} g — de rand van wat hier onderbouwd is, niet de volle stap. Wil je verder, kies dan een ander watervolume. ` : '') + `Sterkte handmatig ${strengthStep > 0 ? 'verhoogd' : 'verlaagd'} (dosis ${strengthStep > 0 ? '+' : ''}${Math.round(strengthStep * STRENGTH_DOSE_STEP * 100)}%, ratio nu ${ratioText}) — watervolume blijft gelijk. Dit is een eigen handmatige voorkeur, geen evidence-claim. Los te combineren met de concentraat/bypass-methode hieronder.`;
   }
 
   // Concentraat/bypass — vast percentage (zie bypassAdvice()), niet langer proces-
@@ -6713,7 +6735,20 @@ function renderStrengthToggle(){
   if (!el) return;
   const options = [ { v:-1, label:'Zwakker' }, { v:0, label:'Standaard' }, { v:1, label:'Sterker' } ];
   el.innerHTML = options.map(o =>
-    `<button type="button" class="chip" data-strength="${o.v}" data-selected="${(state.strengthAdjust||0)===o.v}">${o.label}</button>`
+    (function(){
+      // NIEUW (Reparatieplan v4.0, B-1b): een sterktestap die door de dosisklem toch
+      // niets zou opleveren, wordt uitgeschakeld getoond i.p.v. een belofte te doen die
+      // de engine daarna terugdraait. Puur presentatie — de klem in computeRecipe()
+      // blijft de garantie.
+      const probe = computeRecipe(state.method, state.roast, state.profile, state.waterMl,
+        state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude,
+        state.bypass, state.fermentEvidence, waterHardnessMgL, o.v);
+      const neutraal = computeRecipe(state.method, state.roast, state.profile, state.waterMl,
+        state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude,
+        state.bypass, state.fermentEvidence, waterHardnessMgL, 0);
+      const zinloos = o.v !== 0 && probe.dose > 0 && Math.abs(probe.dose - neutraal.dose) < 0.15;
+      return `<button type="button" class="chip" data-strength="${o.v}" data-selected="${(state.strengthAdjust||0)===o.v}"${zinloos ? ' disabled title="Bij dit watervolume zit de dosis al aan de rand van het gevalideerde bereik — deze stap zou niets veranderen."' : ''}>${o.label}</button>`;
+    })()
   ).join('');
   el.querySelectorAll('[data-strength]').forEach(btn=>btn.addEventListener('click', ()=>{
     state.strengthAdjust = Number(btn.getAttribute('data-strength'));
