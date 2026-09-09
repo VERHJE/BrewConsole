@@ -1,0 +1,810 @@
+// FIX (teamreview v2 — Kritiek bevinding, QA Engineer/Test Automation Engineer).
+// Zie load-app.mjs voor uitleg over hoe/waarom dit tegen de ECHTE broncode uit
+// brewconsole_v2.html draait. Drie testgroepen, precies de drie risico's die het
+// teamreview-rapport benoemde:
+//   1. ENGINE_PROFILE_MAP-duplicaten (schijnkeuze-bevinding #1) worden gedetecteerd
+//      én blijven beperkt tot de bekende, bewust geaccepteerde groep.
+//   2. computeMethodAdvice()/buildReasoningLines() blijven consistent — de merge uit
+//      deze v2 kan per constructie niet meer uit elkaar lopen, maar deze tests
+//      bewaken dat een toekomstige wijziging die aanname niet stilzwijgend doorbreekt.
+//   3. De Levenshtein-fuzzy-matcher voor OCR-tikfouten gedraagt zich zoals de eigen
+//      brontekst-comments beweren (drempels, geen fuzzy op meerdere-woorden-termen).
+//
+// Uitvoeren: node --test tests/*.test.mjs   (vanuit de map met brewconsole_v2_2.html)
+
+import { test, describe } from 'node:test';
+import assert from 'node:assert/strict';
+import { loadApp } from './load-app.mjs';
+
+const { api, sandbox } = loadApp();
+
+describe('ENGINE_PROFILE_MAP — schijnkeuze-detectie (Kritiek bevinding #1)', () => {
+  test('klassiek/vol_rond/zoet zijn elkaars tweeling op v60 (bekend, geaccepteerd geval)', () => {
+    assert.deepEqual(new Set(api.findProfileTwins('klassiek', 'v60')), new Set(['vol_rond', 'zoet']));
+    assert.deepEqual(new Set(api.findProfileTwins('vol_rond', 'v60')), new Set(['klassiek', 'zoet']));
+    assert.deepEqual(new Set(api.findProfileTwins('zoet', 'v60')), new Set(['klassiek', 'vol_rond']));
+  });
+
+  test('klassiek/vol_rond/zoet zijn ook elkaars tweeling op chemex', () => {
+    assert.deepEqual(new Set(api.findProfileTwins('klassiek', 'chemex')), new Set(['vol_rond', 'zoet']));
+  });
+
+  test('profielen met een eigen overlay hebben GEEN tweeling (negatieve controle)', () => {
+    assert.equal(api.findProfileTwins('heel_fruitig', 'v60').length, 0);
+    assert.equal(api.findProfileTwins('fruitig_clean', 'v60').length, 0);
+    assert.equal(api.findProfileTwins('fresh_clean', 'v60').length, 0);
+    assert.equal(api.findProfileTwins('snel_puur', 'v60').length, 0);
+  });
+
+  test('methodOnly-profiel (bloemig_delicaat) telt niet mee op chemex, waar het niet zichtbaar is', () => {
+    assert.equal(api.findProfileTwins('bloemig_delicaat', 'chemex').length, 0);
+  });
+
+  test('geen ONVERWACHTE tweelingen buiten de al-bekende {klassiek, vol_rond, zoet}-groep', () => {
+    const KNOWN_TWIN_GROUP = new Set(['klassiek', 'vol_rond', 'zoet']);
+    for (const methodKey of ['v60', 'chemex']){
+      for (const profileKey of Object.keys(api.PROFILE_INFO)){
+        const only = api.PROFILE_INFO[profileKey].methodOnly;
+        if (only && only !== methodKey) continue;
+        const twins = api.findProfileTwins(profileKey, methodKey);
+        if (twins.length === 0) continue;
+        assert.ok(
+          KNOWN_TWIN_GROUP.has(profileKey),
+          `Onverwachte tweeling gevonden: "${profileKey}" deelt op ${methodKey} een recept met [${twins}], ` +
+          `maar zit niet in de bekende, geaccepteerde groep.`
+        );
+        for (const twin of twins){
+          assert.ok(KNOWN_TWIN_GROUP.has(twin), `Onverwachte tweeling: "${profileKey}" ↔ "${twin}" op ${methodKey}.`);
+        }
+      }
+    }
+  });
+});
+
+describe('computeMethodAdvice() / buildReasoningLines() — consistentie (Hoog bevinding)', () => {
+  const EXPECTED_BUCKET = {
+    heel_fruitig: 'bright', fruitig_clean: 'bright', fresh_clean: 'bright',
+    vol_rond: 'body', zoet: 'body',
+    snel_puur: 'perger',
+    bloemig_delicaat: 'methodOnly',
+    klassiek: 'neutral', robuust: 'neutral', evenwichtig_flex: 'neutral',
+    sirooprig_vol: 'methodOnly'
+  };
+
+  test('elk profiel valt in de verwachte bucket (score-classificatie ongewijzigd t.o.v. v1)', () => {
+    for (const [profileKey, expectedBucket] of Object.entries(EXPECTED_BUCKET)){
+      const result = api.computeMethodAdvice('medium', profileKey, 'single', null, false);
+      assert.equal(result.profileBucket, expectedBucket, `profiel "${profileKey}" verwacht bucket "${expectedBucket}", kreeg "${result.profileBucket}"`);
+    }
+  });
+
+  test('buildReasoningLines() gebruikt UITSLUITEND de bucket die computeMethodAdvice() al berekende — geen eigen classificatie meer', () => {
+    const BUCKET_MARKER = {
+      bright: 'maximale helderheid',
+      body: 'body en een zachte afdronk',
+      perger: 'is ontworpen voor de V60',
+      neutral: 'bewust neutraal',
+      methodOnly: 'werkt alléén op de'
+    };
+    for (const [profileKey, expectedBucket] of Object.entries(EXPECTED_BUCKET)){
+      const lines = api.buildReasoningLines('medium', profileKey, 'single', null, false);
+      assert.equal(lines.length >= 3, true, `buildReasoningLines("${profileKey}") gaf te weinig regels`);
+      const profileLine = lines[1];
+      assert.ok(
+        profileLine.includes(BUCKET_MARKER[expectedBucket]),
+        `profiel "${profileKey}" (bucket "${expectedBucket}"): verwachtte "${BUCKET_MARKER[expectedBucket]}" in "${profileLine}"`
+      );
+      for (const [bucket, marker] of Object.entries(BUCKET_MARKER)){
+        if (bucket === expectedBucket) continue;
+        assert.ok(!profileLine.includes(marker), `profiel "${profileKey}": onverwachte marker van bucket "${bucket}" in "${profileLine}"`);
+      }
+    }
+  });
+
+  test('methodOnly-profiel forceert altijd zijn eigen methode, ongeacht roast/batch/proces', () => {
+    for (const roastKey of ['light','light_medium','medium','medium_dark','dark']){
+      for (const batchKey of ['single','multi']){
+        for (const profileKey of ['bloemig_delicaat', 'sirooprig_vol']){
+          const result = api.computeMethodAdvice(roastKey, profileKey, batchKey, 'natural', true);
+          assert.equal(result.method, 'v60');
+          assert.equal(result.forced, true);
+        }
+      }
+    }
+  });
+
+  test('natural/anaerobic proces telt mee als isFerment, en de bijbehorende regel verschijnt alleen dan', () => {
+    const withFerment = api.buildReasoningLines('medium', 'klassiek', 'single', 'natural', false);
+    const withoutFerment = api.buildReasoningLines('medium', 'klassiek', 'single', 'washed', false);
+    assert.ok(withFerment.some(l => l.includes('Natural/anaerobic')));
+    assert.ok(!withoutFerment.some(l => l.includes('Natural/anaerobic')));
+  });
+
+  test('experimentele fermentatie voegt zijn eigen regel toe, los van isFerment', () => {
+    const lines = api.buildReasoningLines('medium', 'klassiek', 'single', 'natural', true);
+    assert.ok(lines.some(l => l.includes('Experimenteel/dubbele fermentatie')));
+  });
+
+  test('geen enkele (roast × profiel × batch × proces × experimenteel)-combinatie laat buildReasoningLines() crashen', () => {
+    const roasts = Object.keys(api.ROAST_INFO);
+    const profiles = Object.keys(api.PROFILE_INFO);
+    const batches = ['single', 'multi'];
+    const processes = [null, 'washed', 'natural', 'honey', 'anaerobic'];
+    for (const roastKey of roasts){
+      for (const profileKey of profiles){
+        for (const batchKey of batches){
+          for (const processKey of processes){
+            for (const experimentalFlag of [false, true]){
+              assert.doesNotThrow(() => {
+                const lines = api.buildReasoningLines(roastKey, profileKey, batchKey, processKey, experimentalFlag);
+                assert.ok(Array.isArray(lines) && lines.length >= 3);
+              }, `combinatie ${JSON.stringify({ roastKey, profileKey, batchKey, processKey, experimentalFlag })}`);
+            }
+          }
+        }
+      }
+    }
+  });
+});
+
+describe('Levenshtein / fuzzy OCR-matching (QA-aanbeveling, Test Automation Engineer)', () => {
+  test('levenshtein() — bekende referentiewaarden', () => {
+    assert.equal(api.levenshtein('kitten', 'sitting'), 3);
+    assert.equal(api.levenshtein('a', 'a'), 0);
+    assert.equal(api.levenshtein('', 'abc'), 3);
+    assert.equal(api.levenshtein('abc', ''), 3);
+  });
+
+  test('maxFuzzyDistance() — drempels exact zoals de brontekst-comment beweert (≤3:0, 4-6:1, 7+:2)', () => {
+    assert.equal(api.maxFuzzyDistance(1), 0);
+    assert.equal(api.maxFuzzyDistance(3), 0);
+    assert.equal(api.maxFuzzyDistance(4), 1);
+    assert.equal(api.maxFuzzyDistance(6), 1);
+    assert.equal(api.maxFuzzyDistance(7), 2);
+    assert.equal(api.maxFuzzyDistance(20), 2);
+  });
+
+  test('fuzzyMatchesKeyword() — de eigen voorbeelden uit de brontekst-comment ("Karamei"/"carame1" i.p.v. "karamel"/"caramel")', () => {
+    assert.equal(api.fuzzyMatchesKeyword(['carame1'], 'caramel'), true);
+    assert.equal(api.fuzzyMatchesKeyword(['caramei'], 'caramel'), true);
+    assert.equal(api.fuzzyMatchesKeyword(['chocolate'], 'chocolate'), true);
+  });
+
+  test('fuzzyMatchesKeyword() — te veel afwijking (buiten de drempel) matcht terecht niet', () => {
+    assert.equal(api.fuzzyMatchesKeyword(['ch0c0latee'], 'chocolate'), false);
+    assert.equal(api.fuzzyMatchesKeyword(['banaan'], 'caramel'), false);
+  });
+
+  test('fuzzyMatchesKeyword() — korte trefwoorden (≤3 letters) worden nooit fuzzy gematcht (te veel toevalstreffers)', () => {
+    assert.equal(api.fuzzyMatchesKeyword(['tea'], 'tea'), false);
+  });
+
+  test('fuzzyMatchesKeyword() — meerdere-woorden-termen worden nooit fuzzy gematcht, ook niet met een prima kandidaat', () => {
+    assert.equal(api.fuzzyMatchesKeyword(['dried', 'fruit'], 'dried fruit'), false);
+  });
+
+  test('textOrFuzzyIncludes() — exacte substring-match wint, fuzzy is puur een vangnet', () => {
+    assert.equal(api.textOrFuzzyIncludes('proeft naar chocolate vandaag', ['chocolate'], 'chocolate'), true);
+    assert.equal(api.textOrFuzzyIncludes('proeft naar carame1 vandaag', ['proeft','naar','carame1','vandaag'], 'caramel'), true);
+    assert.equal(api.textOrFuzzyIncludes('proeft naar appel vandaag', ['proeft','naar','appel','vandaag'], 'caramel'), false);
+  });
+});
+
+describe('grindConfidence-vertaling (Hoog bevinding, Content/Microcopy Specialist)', () => {
+  test('elke bekende engine-waarde vertaalt naar Nederlands, geen kale enum meer op het scherm', () => {
+    assert.equal(api.translateGrindConfidence('INSUFFICIENT'), 'onvoldoende');
+    assert.equal(api.translateGrindConfidence('LOW'), 'laag');
+    assert.equal(api.translateGrindConfidence('MEDIUM'), 'gemiddeld');
+    assert.equal(api.translateGrindConfidence('HIGH'), 'hoog');
+  });
+  test('ontbrekende waarde valt terug op "onvoldoende", niet op een lege/undefined regel', () => {
+    assert.equal(api.translateGrindConfidence(null), 'onvoldoende');
+    assert.equal(api.translateGrindConfidence(undefined), 'onvoldoende');
+  });
+  test('een onbekende TOEKOMSTIGE engine-waarde lekt leesbaar door i.p.v. een lege regel te tonen', () => {
+    assert.equal(api.translateGrindConfidence('CONTESTED'), 'CONTESTED');
+  });
+});
+
+describe('Schijnkeuze-samenvoeging (v2.2 kernflow — Bouwbesluit "Knoppen samenvoegen")', () => {
+  test('canonicalProfileKey() wijst vol_rond en zoet naar klassiek; klassiek blijft zichzelf', () => {
+    assert.equal(api.canonicalProfileKey('klassiek'), 'klassiek');
+    assert.equal(api.canonicalProfileKey('vol_rond'), 'klassiek');
+    assert.equal(api.canonicalProfileKey('zoet'), 'klassiek');
+  });
+
+  test('canonicalProfileKey() laat niet-schijnkeuze profielen ongemoeid', () => {
+    for (const key of Object.keys(api.PROFILE_INFO)){
+      if (['klassiek', 'vol_rond', 'zoet'].includes(key)) continue;
+      assert.equal(api.canonicalProfileKey(key), key);
+    }
+  });
+
+  test('visibleProfileKeys() bevat klassiek maar niet vol_rond/zoet, en verliest geen enkel ander profiel', () => {
+    const visible = api.visibleProfileKeys();
+    assert.ok(visible.includes('klassiek'));
+    assert.ok(!visible.includes('vol_rond'));
+    assert.ok(!visible.includes('zoet'));
+    const allKeys = Object.keys(api.PROFILE_INFO);
+    for (const key of allKeys){
+      if (['vol_rond', 'zoet'].includes(key)) continue;
+      assert.ok(visible.includes(key), `visibleProfileKeys() mist "${key}"`);
+    }
+    assert.equal(new Set(visible).size, visible.length);
+  });
+
+  test('PROFILE_INFO / ENGINE_PROFILE_MAP blijven volledig intact — de merge verwijdert geen data', () => {
+    assert.ok('vol_rond' in api.PROFILE_INFO);
+    assert.ok('zoet' in api.PROFILE_INFO);
+    assert.ok('vol_rond' in api.ENGINE_PROFILE_MAP);
+    assert.ok('zoet' in api.ENGINE_PROFILE_MAP);
+  });
+
+  test('displayScoreFor() telt de scores van samengevoegde tweelingen bij elkaar op', () => {
+    const scores = { klassiek: 2, vol_rond: 5, zoet: 1, heel_fruitig: 3 };
+    assert.equal(api.displayScoreFor(scores, 'klassiek'), 8);
+    assert.equal(api.displayScoreFor(scores, 'heel_fruitig'), 3);
+  });
+
+  test('displayScoreFor() geeft 0 terug voor een profiel zonder score, niet undefined/NaN', () => {
+    assert.equal(api.displayScoreFor({}, 'klassiek'), 0);
+  });
+});
+
+// NIEUW (Implementatieplan Zetadvies v3.0, §5 — Fase 1 testplan): D-1 (retentieterm
+// ontbrak in de ratio) en D-2 (watervolume onder de referentie werd stil naar batchSize 1
+// geklemd) tegen de ECHTE engine/app-code, niet tegen een herschreven kopie van de formule.
+describe('computeRecipe() — retentieterm en volumeklem (Implementatieplan Zetadvies v3.0, Fase 1 / D-1 & D-2)', () => {
+  const B = sandbox.BrewEngineBundle;
+
+  test('LIQUID_RETAINED_RATIO is de gedocumenteerde 2,0 g/g-aanname en wordt daadwerkelijk toegepast in ratioFromWindow() (D-1)', () => {
+    assert.equal(B.LIQUID_RETAINED_RATIO, 2.0);
+    const targetWindow = { strengthTDS: [1.20, 1.20], extractionYieldEY: [20, 20] };
+    const withRetention = B.ratioFromWindow(targetWindow);
+    // Zonder de retentieterm zou dit exact 20/1.20 zijn — mét de term moet het daar
+    // precies LIQUID_RETAINED_RATIO (2.0) boven liggen, aan beide kanten van de band.
+    const withoutRetention = 20 / 1.20;
+    assert.ok(Math.abs(withRetention.min - (withoutRetention + B.LIQUID_RETAINED_RATIO)) < 1e-9);
+    assert.ok(Math.abs(withRetention.max - (withoutRetention + B.LIQUID_RETAINED_RATIO)) < 1e-9);
+  });
+
+  test('ratio per cluster bij 300 ml valt in de orde van grootte die het plan noemt (§3, Fase 1a: LOWER ~1:17,5-17,6, FULLER ~1:17,3-17,4)', () => {
+    const lower = api.computeRecipe('v60', 'medium', 'heel_fruitig', 300, null, false, null, null, false, null, null, 0);
+    const fuller = api.computeRecipe('v60', 'medium', 'klassiek', 300, null, false, null, null, false, null, null, 0);
+    assert.ok(/^1:17\.[4-7]$/.test(lower.ratioText), `LOWER-cluster ratio buiten verwacht bereik: ${lower.ratioText}`);
+    assert.ok(/^1:17\.[2-5]$/.test(fuller.ratioText), `FULLER-cluster ratio buiten verwacht bereik: ${fuller.ratioText}`);
+    // De twee clusters blijven verschillend — Fase 1 lost het profielprobleem bewust niet op (§3, "Wat dit niet oplost").
+    assert.notEqual(lower.ratioText, fuller.ratioText);
+    assert.equal(lower.water, 300);
+    assert.equal(fuller.water, 300);
+  });
+
+  test('grenswaarden rond het door D-1 verschoven geldige V60-volumebereik (260/265/300/385/390 ml, LOWER-cluster)', () => {
+    const cases = [
+      { ml: 260, expectValid: false },
+      { ml: 265, expectValid: true },
+      { ml: 300, expectValid: true },
+      { ml: 385, expectValid: true },
+      { ml: 390, expectValid: false }
+    ];
+    for (const { ml, expectValid } of cases){
+      const rec = api.computeRecipe('v60', 'medium', 'heel_fruitig', ml, null, false, null, null, false, null, null, 0);
+      if (expectValid){
+        assert.ok(rec.dose > 0, `${ml} ml zou een geldig recept moeten geven, kreeg dose=0`);
+        assert.equal(rec.water, ml, `${ml} ml: het recept moet exact het gevraagde volume tonen (geen stille substitutie naar een ander volume)`);
+      } else {
+        assert.equal(rec.dose, 0, `${ml} ml zou GEEN geldig recept moeten geven (buiten het dosisplafond), kreeg dose=${rec.dose}`);
+        assert.equal(rec.technique, 'Geen geldig recept bij dit watervolume');
+        assert.ok(rec.notes && rec.notes.length > 20, `${ml} ml: verwacht een leesbare, inhoudelijke uitleg in notes`);
+      }
+    }
+  });
+
+  test('250 ml geeft een leesbare melding en géén stille substitutie naar een ander volume (D-2, kernscenario uit het plan)', () => {
+    const rec = api.computeRecipe('v60', 'medium', 'klassiek', 250, null, false, null, null, false, null, null, 0);
+    assert.equal(rec.dose, 0, 'Bij 250 ml op v60/klassiek moet de dosisgrens dit eerlijk blokkeren, niet stil een ander volume verzinnen');
+    assert.equal(rec.water, 250, 'Het waterveld moet het gevraagde volume (250) blijven tonen, niet stilzwijgend bv. 289 of 300');
+    assert.ok(rec.notes.length > 20, 'Verwacht een leesbare, inhoudelijke uitleg, geen lege/korte placeholder');
+    assert.match(rec.notes, /dosis|15|22/i, 'De uitleg moet iets zeggen over de dosisgrens die dit blokkeert');
+  });
+
+  test('een geldig, exact haalbaar volume geeft geen sizeConsistencyWarning (batchSize wordt teruggerekend uit het gevraagde volume)', () => {
+    const rec = api.computeRecipe('v60', 'medium', 'klassiek', 300, null, false, null, null, false, null, null, 0);
+    assert.equal(rec.sizeWarning, '', 'Bij een normaal, intern consistent gevraagd volume hoort geen size-consistentiewaarschuwing');
+  });
+
+  test('§5-testplaneis letterlijk: 250, 300 en 350 ml geven elk óf een recept met dat volume óf een leesbare uitleg, nooit iets anders', () => {
+    const cases = [
+      { ml: 250, expectValid: false }, // onder het dosisplafond (15g) voor v60/klassiek — leesbare uitleg
+      { ml: 300, expectValid: true },
+      { ml: 350, expectValid: true }
+    ];
+    for (const { ml, expectValid } of cases){
+      const rec = api.computeRecipe('v60', 'medium', 'klassiek', ml, null, false, null, null, false, null, null, 0);
+      if (expectValid){
+        assert.equal(rec.water, ml, `${ml} ml moet een recept MET dat exacte volume geven`);
+        assert.ok(rec.dose > 0, `${ml} ml moet een geldige, positieve dosis geven`);
+        assert.notEqual(rec.technique, 'Geen geldig recept bij dit watervolume');
+      } else {
+        assert.equal(rec.dose, 0);
+        assert.equal(rec.technique, 'Geen geldig recept bij dit watervolume');
+        assert.ok(rec.notes && rec.notes.length > 20, `${ml} ml moet een leesbare uitleg geven, geen lege/stille fallback`);
+      }
+    }
+  });
+
+  test('engineValidVolumeRange() (schuifregelaar-klem) komt overeen met wat computeRecipe() daadwerkelijk accepteert, aan beide grenzen', () => {
+    for (const profileKey of ['heel_fruitig', 'klassiek']){
+      const range = api.engineValidVolumeRange('v60', profileKey);
+      const atMin = api.computeRecipe('v60', 'medium', profileKey, range.min, null, false, null, null, false, null, null, 0);
+      const atMax = api.computeRecipe('v60', 'medium', profileKey, range.max, null, false, null, null, false, null, null, 0);
+      assert.ok(atMin.dose > 0, `engineValidVolumeRange().min (${range.min} ml) voor "${profileKey}" zou een geldig recept moeten geven`);
+      assert.ok(atMax.dose > 0, `engineValidVolumeRange().max (${range.max} ml) voor "${profileKey}" zou een geldig recept moeten geven`);
+    }
+  });
+});
+
+// NIEUW (Implementatieplan Zetadvies v3.0, §5 — Fase 2 testplan): "vijf branddiepten
+// geven vijf gedocumenteerde temperatuurbanden en de juiste maalpositie; het venster
+// blijft altijd binnen de apparaat-envelop." Plus B-1's harde grens: ratio/dosis mogen
+// NOOIT met branddiepte meebewegen, alleen temperatuur-ankerpunt en maalrichting.
+describe('computeRecipe() — temperatuurankerpunt en maalrichting per branddiepte (Implementatieplan Zetadvies v3.0, Fase 2 / B-1)', () => {
+  const EXPECTED_TEMP_BAND = {
+    light:        { min: 94, max: 96, instruction: 'koken en direct gieten' },
+    light_medium: { min: 94, max: 96, instruction: 'koken en direct gieten' },
+    medium:       { min: 92, max: 95, instruction: 'koken, ongeveer 30 seconden wachten' },
+    medium_dark:  { min: 88, max: 92, instruction: 'koken, ongeveer 1 minuut wachten' },
+    dark:         { min: 88, max: 92, instruction: 'koken, ongeveer 1 minuut wachten' }
+  };
+
+  test('elke branddiepte geeft precies de in het plan gedocumenteerde temperatuurband + instructie (§3, Fase 2a)', () => {
+    for (const [roastKey, expected] of Object.entries(EXPECTED_TEMP_BAND)){
+      const rec = api.computeRecipe('v60', roastKey, 'klassiek', 300, null, false, null, null, false, null, null, 0);
+      assert.equal(rec.tempBand.min, expected.min, `${roastKey}: tempBand.min`);
+      assert.equal(rec.tempBand.max, expected.max, `${roastKey}: tempBand.max`);
+      assert.equal(rec.tempInstruction, expected.instruction, `${roastKey}: tempInstruction`);
+    }
+  });
+
+  test('de temperatuurband blijft voor elke branddiepte binnen de apparaat-envelop van het toestel', () => {
+    for (const roastKey of Object.keys(EXPECTED_TEMP_BAND)){
+      for (const methodKey of ['v60', 'chemex']){
+        const rec = api.computeRecipe(methodKey, roastKey, 'klassiek', methodKey === 'v60' ? 300 : 450, null, false, null, null, false, null, null, 0);
+        assert.ok(rec.tempBand.min >= rec.deviceTempBand.min, `${methodKey}/${roastKey}: tempBand.min (${rec.tempBand.min}) onder de apparaatband (${rec.deviceTempBand.min})`);
+        assert.ok(rec.tempBand.max <= rec.deviceTempBand.max, `${methodKey}/${roastKey}: tempBand.max (${rec.tempBand.max}) boven de apparaatband (${rec.deviceTempBand.max})`);
+      }
+    }
+  });
+
+  test('maalrichting: lichter brandt naar de fijne kant (lager klikgetal), donkerder naar de grove kant (hoger klikgetal) — nooit buiten de gepubliceerde range', () => {
+    const points = {};
+    for (const roastKey of Object.keys(EXPECTED_TEMP_BAND)){
+      const rec = api.computeRecipe('v60', roastKey, 'klassiek', 300, null, false, null, null, false, null, null, 0);
+      assert.ok(rec.grindStartingPoint >= rec.grindStartingRange.clicksMin && rec.grindStartingPoint <= rec.grindStartingRange.clicksMax,
+        `${roastKey}: grindStartingPoint (${rec.grindStartingPoint}) moet binnen de gepubliceerde range [${rec.grindStartingRange.clicksMin}, ${rec.grindStartingRange.clicksMax}] vallen`);
+      points[roastKey] = rec.grindStartingPoint;
+    }
+    assert.ok(points.light <= points.light_medium, 'light zou niet grover mogen zijn dan light_medium');
+    assert.ok(points.light_medium <= points.medium, 'light_medium zou niet grover mogen zijn dan medium');
+    assert.ok(points.medium <= points.medium_dark, 'medium zou niet grover mogen zijn dan medium_dark');
+    assert.ok(points.medium_dark <= points.dark, 'medium_dark zou niet grover mogen zijn dan dark');
+    assert.ok(points.light < points.dark, 'light en dark moeten daadwerkelijk verschillen (anders is er geen maalrichting)');
+    // De uiterste branddiepten moeten de uiterste klikken van de gepubliceerde range raken.
+    const anyRec = api.computeRecipe('v60', 'light', 'klassiek', 300, null, false, null, null, false, null, null, 0);
+    assert.equal(points.light, anyRec.grindStartingRange.clicksMin, 'light hoort op de fijne ondergrens van de gepubliceerde range te beginnen');
+    assert.equal(points.dark, anyRec.grindStartingRange.clicksMax, 'dark hoort op de grove bovengrens van de gepubliceerde range te beginnen');
+  });
+
+  test('B-1: branddiepte verandert NOOIT de ratio/dosis, ook niet nu temperatuur en maalrichting wél meebewegen', () => {
+    const results = Object.keys(EXPECTED_TEMP_BAND).map(roastKey =>
+      api.computeRecipe('v60', roastKey, 'klassiek', 300, null, false, null, null, false, null, null, 0));
+    const firstRatio = results[0].ratioText, firstDose = results[0].dose, firstWater = results[0].water;
+    for (const rec of results){
+      assert.equal(rec.ratioText, firstRatio, 'ratioText mag niet verschillen tussen branddiepten');
+      assert.equal(rec.dose, firstDose, 'dose mag niet verschillen tussen branddiepten');
+      assert.equal(rec.water, firstWater, 'water mag niet verschillen tussen branddiepten');
+    }
+  });
+
+  test('grindStartingPoint is null wanneer de molen/methode geen gepubliceerde range heeft (bv. Chemex) — geen verzonnen positie', () => {
+    const rec = api.computeRecipe('chemex', 'medium', 'klassiek', 450, null, false, null, null, false, null, null, 0);
+    assert.equal(rec.grindStartingRange, null);
+    assert.equal(rec.grindStartingPoint, null);
+  });
+});
+
+// NIEUW (Implementatieplan Zetadvies v3.0, §5 — Fase 3 testplan): "aantal waterbeurten
+// per overlay; som van alle stappen is exact het gevraagde watervolume; eerste fase is
+// 40 procent bij Kasuya; timer telt tot de nieuwe totaaltijd." Plus de expliciet vereiste
+// regressietest op de brouwtimer (non-negotiable "brew timer blijft betrouwbaar").
+describe('buildPourSchedule() via computeRecipe() — gietschema-fixes (Implementatieplan Zetadvies v3.0, Fase 3 / D-3 & D-4)', () => {
+  function pourSteps(rec){
+    // Alle stappen behalve de afsluitende "Klaar"-stap (add:0) — de daadwerkelijke waterbeurten.
+    return rec.steps.filter(s => s.add > 0);
+  }
+
+  test('Kasuya 4:6 (klassiek/heel_fruitig/vol_rond/zoet): precies 5 waterbeurten, niet 6 (D-3 — bloom telt niet dubbel)', () => {
+    for (const profileKey of ['klassiek', 'heel_fruitig']){
+      const rec = api.computeRecipe('v60', 'medium', profileKey, 300, null, false, null, null, false, null, null, 0);
+      assert.equal(rec.technique, 'Kasuya 4:6', `${profileKey} zou de Kasuya-overlay moeten krijgen`);
+      const steps = pourSteps(rec);
+      assert.equal(steps.length, 5, `Kasuya (${profileKey}) hoort precies 5 waterbeurten te hebben (bloom is pour 1), kreeg ${steps.length}`);
+      assert.equal(steps[0].label, 'Bloom', 'De eerste waterbeurt moet de bloom zijn, geen aparte extra stap ervoor');
+    }
+  });
+
+  test('Kasuya 4:6: de eerste fase (bloom + pour 2) is exact 40% van het totale watervolume (§3b)', () => {
+    const rec = api.computeRecipe('v60', 'medium', 'klassiek', 300, null, false, null, null, false, null, null, 0);
+    const steps = pourSteps(rec);
+    const phase1Water = steps[0].add + steps[1].add;
+    assert.equal(phase1Water, Math.round(300 * 0.4), `Fase 1 (bloom+pour2) moet 40% van 300ml zijn, kreeg ${phase1Water}`);
+    const phase2Water = steps[2].add + steps[3].add + steps[4].add;
+    assert.equal(phase1Water + phase2Water, rec.water, 'Fase 1 + fase 2 samen moeten exact het totale watervolume zijn');
+  });
+
+  test('som van alle waterbeurten is exact het gevraagde/berekende watervolume, voor elk beschikbaar profiel/overlay', () => {
+    const profiles = ['klassiek', 'heel_fruitig', 'fresh_clean', 'robuust', 'snel_puur', 'sirooprig_vol'];
+    for (const profileKey of profiles){
+      const rec = api.computeRecipe('v60', 'medium', profileKey, 300, null, false, null, null, false, null, null, 0);
+      if (rec.dose === 0) continue; // geen geldig recept bij dit volume/profiel — niet van toepassing
+      const steps = pourSteps(rec);
+      const sum = steps.reduce((s, step) => s + step.add, 0);
+      assert.equal(sum, rec.water, `${profileKey} (${rec.technique}): som van waterbeurten (${sum}) moet exact rec.water (${rec.water}) zijn`);
+      // De laatste stap ("Klaar") moet ook exact op het totale volume uitkomen.
+      assert.equal(rec.steps[rec.steps.length - 1].to, rec.water);
+    }
+  });
+
+  test('April huismethode: geen aparte bloomstap (skipBloom), 6 gelijke waterbeurten', () => {
+    const rec = api.computeRecipe('v60', 'medium', 'robuust', 300, null, false, null, null, false, null, null, 0);
+    assert.equal(rec.technique, 'April huismethode');
+    const steps = pourSteps(rec);
+    assert.equal(steps.length, 6);
+    assert.notEqual(steps[0].label, 'Bloom', 'April heeft bewust geen aparte bloomfase');
+  });
+
+  test('Hoffmann Ultimate: bloom blijft een aparte stap vóór de 2 hoofdpours (pulseCount telt de bloom NIET mee)', () => {
+    const rec = api.computeRecipe('v60', 'medium', 'fresh_clean', 300, null, false, null, null, false, null, null, 0);
+    assert.equal(rec.technique, 'Hoffmann Ultimate');
+    const steps = pourSteps(rec);
+    assert.equal(steps.length, 3, 'Hoffmann: bloom + 2 hoofdpours = 3 waterbeurten');
+    assert.equal(steps[0].label, 'Bloom');
+  });
+
+  test('D-4: totalTime volgt uit de giet-structuur, niet meer uit het vaste contactTimeGuidance-middelpunt — varieert mee met het aantal waterbeurten', () => {
+    const kasuya = api.computeRecipe('v60', 'medium', 'klassiek', 300, null, false, null, null, false, null, null, 0); // 5 beurten
+    const hoffmann = api.computeRecipe('v60', 'medium', 'fresh_clean', 300, null, false, null, null, false, null, null, 0); // 3 beurten
+    const april = api.computeRecipe('v60', 'medium', 'robuust', 300, null, false, null, null, false, null, null, 0); // 6 beurten
+    assert.notEqual(kasuya.totalTime, hoffmann.totalTime, 'Een ander aantal waterbeurten moet een andere schemalengte geven — anders is dit nog steeds het oude vaste middelpunt');
+    assert.ok(april.totalTime > hoffmann.totalTime, 'Meer waterbeurten (April, 6) moet een langer schema geven dan minder waterbeurten (Hoffmann, 3)');
+    assert.ok(kasuya.totalTime > hoffmann.totalTime, 'Meer waterbeurten (Kasuya, 5) moet een langer schema geven dan minder waterbeurten (Hoffmann, 3)');
+  });
+
+  test('non-negotiable "brew timer blijft betrouwbaar" (regressietest, Fase 3-risico): totalTime is altijd een eindig, positief getal en de laatste stap valt op totalTime', () => {
+    const profiles = ['klassiek', 'heel_fruitig', 'fresh_clean', 'robuust', 'snel_puur'];
+    for (const profileKey of profiles){
+      const rec = api.computeRecipe('v60', 'medium', profileKey, 300, null, false, null, null, false, null, null, 0);
+      assert.ok(Number.isFinite(rec.totalTime) && rec.totalTime > 0, `${profileKey}: totalTime moet een eindig, positief getal zijn, kreeg ${rec.totalTime}`);
+      const laatsteStap = rec.steps[rec.steps.length - 1];
+      assert.equal(laatsteStap.label, 'Klaar — laten doorlopen');
+      assert.equal(laatsteStap.t, rec.totalTime, 'De "Klaar"-stap moet op exact totalTime vallen — de timer telt hier naartoe');
+      // Elke stap moet een niet-negatieve, oplopende tijd hebben (geen tijdreis in het schema).
+      let prevT = -1;
+      for (const s of rec.steps){
+        assert.ok(s.t >= prevT, `${profileKey}: stap-tijden moeten niet-dalend zijn (${s.t} na ${prevT})`);
+        prevT = s.t;
+      }
+    }
+  });
+
+  test('contactTimeDiagnosticBand is de ONVERANDERDE apparaatband en stuurt totalTime niet meer — puur een controle-achteraf-veld', () => {
+    const rec = api.computeRecipe('v60', 'medium', 'klassiek', 300, null, false, null, null, false, null, null, 0);
+    // (individuele properties i.p.v. deepEqual op het hele object: het object komt uit de
+    // VM-sandbox en heeft dus een ander Object.prototype dan dit testbestand — deepEqual
+    // zou daar terecht "niet reference-equal" op zeggen ondanks identieke inhoud.)
+    assert.equal(rec.contactTimeDiagnosticBand.min, 120, 'De V60-diagnostische band zelf (registry) mag niet zijn aangepast');
+    assert.equal(rec.contactTimeDiagnosticBand.max, 210, 'De V60-diagnostische band zelf (registry) mag niet zijn aangepast');
+    assert.notEqual(rec.totalTime, Math.round((120 + 210) / 2), 'totalTime mag niet meer simpelweg het middelpunt van de diagnostische band zijn');
+  });
+});
+
+// NIEUW (Implementatieplan Zetadvies v3.0, §5 — Fase 4 testplan): "oordeel per parameter
+// klopt op de drie mengverhoudingen uit Fase 0; hardnessNudge() geeft aantoonbaar nog
+// steeds temp: 0." Plus dekking voor de nieuwe alkaliniteit-omrekening en verdunningswiskunde.
+describe('Waterprofiel — alkaliniteit, verdunning, per-parameter oordeel (Implementatieplan Zetadvies v3.0, Fase 4 / B-5, B-6)', () => {
+  test('hardnessNudge() blijft een FORBIDDEN edge: altijd temp:0, ongewijzigd t.o.v. vóór Fase 4', () => {
+    assert.equal(api.hardnessNudge(128).temp, 0);
+    assert.equal(api.hardnessNudge(30).temp, 0);
+    assert.equal(api.hardnessNudge(null).temp, 0);
+    assert.match(api.hardnessNudge(128).note, /50–175 mg\/L/);
+  });
+
+  test('alkalinityNudge() is ook een FORBIDDEN edge: altijd temp:0, nooit een receptinvloed', () => {
+    assert.equal(api.alkalinityNudge(50, 'CaCO3').temp, 0);
+    assert.equal(api.alkalinityNudge(200, 'HCO3').temp, 0);
+    assert.equal(api.alkalinityNudge(null, 'CaCO3').temp, 0);
+  });
+
+  test('HCO3→CaCO3-omrekening gebruikt exact de gedocumenteerde factor 0,82', () => {
+    assert.equal(api.HCO3_TO_CACO3_FACTOR, 0.82);
+    const result = api.alkalinityNudge(100, 'HCO3');
+    assert.ok(Math.abs(result.mgLCaCO3 - 82) < 1e-9, `100 mg/L HCO3 moet 82 mg/L CaCO3-equivalent geven, kreeg ${result.mgLCaCO3}`);
+  });
+
+  test('waterSCAVerdict() geeft drie losse, correcte uitspraken (onder/binnen/boven), nooit een samengevoegd oordeel', () => {
+    assert.match(api.waterSCAVerdict(30, 40, 70), /^onder/);
+    assert.match(api.waterSCAVerdict(50, 40, 70), /^binnen/);
+    assert.match(api.waterSCAVerdict(90, 40, 70), /^boven/);
+    // Hardheid en alkaliniteit hebben BEWUST verschillende richtwaarden — nooit dezelfde band hergebruikt.
+    // 45 mg/L: onder de hardheids-richtwaarde (50-175) maar wél binnen de alkaliniteits-richtwaarde (40-70).
+    assert.match(api.waterSCAVerdict(45, 50, 175), /^onder/);
+    assert.match(api.waterSCAVerdict(45, 40, 70), /^binnen/);
+  });
+
+  test('dilutedWaterValue(): de drie mengverhoudingen uit Fase 0 geven de in het plan getabelleerde effectieve waarden', () => {
+    // Fase 0-tabel: 128 mg/L hardheid kraanwater, 1:0 → 128, 2:1 → 85, 1:1 → 64 (plan §3, Fase 0-tabel).
+    assert.equal(Math.round(api.dilutedWaterValue(128, 1, 0)), 128);
+    assert.equal(Math.round(api.dilutedWaterValue(128, 2, 1)), 85);
+    assert.equal(Math.round(api.dilutedWaterValue(128, 1, 1)), 64);
+    // Zelfde tabel voor alkaliniteit: 100 → 100, 2:1 → 67, 1:1 → 50.
+    assert.equal(Math.round(api.dilutedWaterValue(100, 1, 0)), 100);
+    assert.equal(Math.round(api.dilutedWaterValue(100, 2, 1)), 67);
+    assert.equal(Math.round(api.dilutedWaterValue(100, 1, 1)), 50);
+  });
+
+  test('dilutedWaterValue() met een null/ontbrekende ruwe waarde blijft eerlijk null/undefined (geen verzonnen 0 of NaN)', () => {
+    assert.equal(api.dilutedWaterValue(null, 1, 1), null);
+    assert.equal(api.dilutedWaterValue(undefined, 1, 1), undefined);
+  });
+});
+
+describe('RECORD_SCHEMA_VERSION — schema v2 en v3 (Implementatieplan Zetadvies v3.0, Fase 5 en Fase 7)', () => {
+  test('RECORD_SCHEMA_VERSION staat op 3 (v2: Fase 5-logboekvelden, v3: Fase 7 approved/grindStartingPoint)', () => {
+    // De daadwerkelijke opslag- en weergavelogica (saveBrewLogEntry(), de Historie-kaart,
+    // en de migratie-/back-up-rondgangtests) draait via de echte DOM en staat daarom in
+    // tests/kernflow.smoke.test.mjs — deze pure-logic-check bewaakt alleen het versiegetal
+    // zelf, zodat een toekomstige per-ongeluk-terugdraai meteen opvalt.
+    assert.equal(api.RECORD_SCHEMA_VERSION, 3);
+  });
+});
+
+describe('cuppingSuggestionFor() — proef-naar-voorstel-mapping (Implementatieplan Zetadvies v3.0, Fase 6)', () => {
+  const SCALE = { L: 1, MID: 2, H: 3 }; // laag / midden / hoog op de 0-4-schaal (drempel 1 punt)
+  function scoresWith(overrides){
+    const base = { aroma: SCALE.MID, zuur: SCALE.MID, zoet: SCALE.MID, body: SCALE.MID, bitter: SCALE.MID, aftersmaak: SCALE.MID, balans: SCALE.MID };
+    return Object.assign(base, overrides);
+  }
+
+  test('cuppingAxisLevel(): drempel van 1 punt t.o.v. het midden (2) van de 0-4-schaal', () => {
+    assert.equal(api.CUPPING_SCALE_CENTER, 2);
+    assert.equal(api.CUPPING_NOISE_THRESHOLD, 1);
+    assert.equal(api.cuppingAxisLevel({ zuur: 3 }, 'zuur'), 'hoog');
+    assert.equal(api.cuppingAxisLevel({ zuur: 2 }, 'zuur'), 'midden');
+    assert.equal(api.cuppingAxisLevel({ zuur: 1 }, 'zuur'), 'laag');
+    assert.equal(api.cuppingAxisLevel({ zuur: 4 }, 'zuur'), 'hoog');
+    assert.equal(api.cuppingAxisLevel({ zuur: 0 }, 'zuur'), 'laag');
+    assert.equal(api.cuppingAxisLevel({}, 'zuur'), null, 'ontbrekende score blijft eerlijk null, geen verzonnen niveau');
+  });
+
+  test('Patroon 1 — zuur hoog + zoet laag + body laag → onderextractie, twee klikken fijner', () => {
+    const s = api.cuppingSuggestionFor(scoresWith({ zuur: SCALE.H, zoet: SCALE.L, body: SCALE.L }));
+    assert.ok(s, 'verwacht een match');
+    assert.equal(s.pattern, 'onderextractie');
+    assert.match(s.voorstel, /fijner/);
+  });
+
+  test('Patroon 2 — bitter hoog + aftersmaak hoog → overextractie, twee klikken grover', () => {
+    const s = api.cuppingSuggestionFor(scoresWith({ bitter: SCALE.H, aftersmaak: SCALE.H }));
+    assert.ok(s);
+    assert.equal(s.pattern, 'overextractie');
+    assert.match(s.voorstel, /grover/);
+  });
+
+  test('Patroon 3 — alle smaakassen laag + balans hoog → te zwak, meer dosis bij gelijk water', () => {
+    const s = api.cuppingSuggestionFor(scoresWith({
+      aroma: SCALE.L, zuur: SCALE.L, zoet: SCALE.L, body: SCALE.L, bitter: SCALE.L, aftersmaak: SCALE.L, balans: SCALE.H
+    }));
+    assert.ok(s);
+    assert.equal(s.pattern, 'te_zwak');
+    assert.match(s.voorstel, /dosis/);
+    assert.doesNotMatch(s.voorstel, /water(hoeveelheid)? (aan|ver)passen|meer water|minder water/i, 'water moet nadrukkelijk gelijk blijven, dit is geen watervoorstel');
+  });
+
+  test('Patroon 4 — zuur laag + bitter laag + aftersmaak laag (en balans niet hoog) → vlak/waterbuffering, verwijst naar waterprofiel', () => {
+    const s = api.cuppingSuggestionFor(scoresWith({ zuur: SCALE.L, bitter: SCALE.L, aftersmaak: SCALE.L, balans: SCALE.MID }));
+    assert.ok(s);
+    assert.equal(s.pattern, 'vlak_waterbuffering');
+    assert.equal(s.wijstNaarWaterprofiel, true);
+  });
+
+  test('Eén voorstel per keer: als zowel "te zwak" als "vlak/waterbuffering" tegelijk zouden matchen, wint de tabelvolgorde (te zwak eerst)', () => {
+    // Alle assen laag + balans hoog voldoet óók aan patroon 4 (zuur/bitter/aftersmaak laag)
+    // — de plantabel geeft geen expliciete tie-break, dus deze functie kiest bewust de
+    // volgorde uit de tabel zelf en geeft nooit twee voorstellen tegelijk.
+    const s = api.cuppingSuggestionFor(scoresWith({
+      aroma: SCALE.L, zuur: SCALE.L, zoet: SCALE.L, body: SCALE.L, bitter: SCALE.L, aftersmaak: SCALE.L, balans: SCALE.H
+    }));
+    assert.equal(s.pattern, 'te_zwak');
+  });
+
+  test('Geen enkel patroon matcht → null, geen verzonnen voorstel bij een neutrale of onduidelijke logging', () => {
+    assert.equal(api.cuppingSuggestionFor(scoresWith({})), null, 'alles op het midden mag nooit een voorstel opleveren');
+    assert.equal(api.cuppingSuggestionFor(scoresWith({ zuur: SCALE.H })), null, 'één enkele afwijkende as (geen volledig patroon) mag geen voorstel opleveren');
+    assert.equal(api.cuppingSuggestionFor(null), null);
+    assert.equal(api.cuppingSuggestionFor(undefined), null);
+  });
+
+  test('Nooit automatisch een receptveld raken: het voorstel is puur tekst/labels, geen recept- of statesleutels', () => {
+    const s = api.cuppingSuggestionFor(scoresWith({ zuur: SCALE.H, zoet: SCALE.L, body: SCALE.L }));
+    const keys = Object.keys(s).sort();
+    assert.deepEqual(keys, ['diagnose', 'pattern', 'voorstel', 'wijstNaarWaterprofiel'].sort());
+  });
+});
+
+describe('Boontype-model — buckets, terugvalladder, vervuilingsregels (Implementatieplan Zetadvies v3.0, Fase 7)', () => {
+  // Eigen, geïsoleerde app-instantie: deze tests muteren brewLog/beanLibrary rechtstreeks
+  // (live array-referenties uit __TEST_EXPORTS__) en mogen de eerdere describe-blokken
+  // hierboven (die de gedeelde top-level `api` gebruiken) niet kunnen beïnvloeden.
+  const { api: api2 } = loadApp();
+
+  const WATER_A = { hardnessMgL: 128, alkalinity: { value: 50, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } };
+  const WATER_B = { hardnessMgL: 90, alkalinity: { value: 50, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } };
+
+  function resetStores(){
+    api2.brewLog.length = 0;
+    api2.beanLibrary.length = 0;
+  }
+  function addBean(overrides){
+    const bean = Object.assign({ id: 'bean_' + Math.random().toString(36).slice(2), roastLevel: 'light', process: 'washed', intendedUse: null }, overrides);
+    api2.beanLibrary.push(bean);
+    return bean;
+  }
+  function addEntry(overrides){
+    const entry = Object.assign({
+      id: 'log_' + Math.random().toString(36).slice(2), method: 'v60', roast: 'light', approved: true,
+      grindStand: null, grindStartingPoint: 20, actualGrindClicks: 20,
+      waterProfileSnapshot: WATER_A
+    }, overrides);
+    api2.brewLog.push(entry);
+    return entry;
+  }
+
+  test('roastBucketFor()/processBucketFor(): exact de indeling uit het plan, onbekend geeft eerlijk null', () => {
+    assert.equal(api2.roastBucketFor('light'), 'light_lm');
+    assert.equal(api2.roastBucketFor('light_medium'), 'light_lm');
+    assert.equal(api2.roastBucketFor('medium'), 'medium');
+    assert.equal(api2.roastBucketFor('medium_dark'), 'mediumdark_dark');
+    assert.equal(api2.roastBucketFor('dark'), 'mediumdark_dark');
+    assert.equal(api2.roastBucketFor('onbekend'), null);
+    assert.equal(api2.processBucketFor('washed'), 'washed');
+    assert.equal(api2.processBucketFor('natural'), 'natural_anaerobic');
+    assert.equal(api2.processBucketFor('anaerobic'), 'natural_anaerobic');
+    assert.equal(api2.processBucketFor('honey'), 'honey');
+    assert.equal(api2.processBucketFor('overig'), null, '"Weet ik niet" geeft geen exact emmertje');
+  });
+
+  test('recipeGrindBaseline(): gebruikt grindStand als die er is, valt anders terug op grindStartingPoint ("het vertrekpunt")', () => {
+    assert.equal(api2.recipeGrindBaseline({ grindStand: 15, grindStartingPoint: 20 }), 15);
+    assert.equal(api2.recipeGrindBaseline({ grindStand: null, grindStartingPoint: 20 }), 20);
+    assert.equal(api2.recipeGrindBaseline({ grindStand: null, grindStartingPoint: null }), null);
+    assert.equal(api2.recipeGrindBaseline({}), null);
+  });
+
+  test('matchesWaterProfile(): alleen een exacte match op alle drie velden telt (B-7-basis)', () => {
+    assert.equal(api2.matchesWaterProfile(WATER_A, WATER_A), true);
+    assert.equal(api2.matchesWaterProfile({ hardnessMgL: 128, alkalinity: { value: 50, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } }, WATER_A), true, 'gelijke waarden, andere objectinstantie, moet nog steeds matchen');
+    assert.equal(api2.matchesWaterProfile(WATER_B, WATER_A), false, 'andere hardheid mag niet matchen');
+    assert.equal(api2.matchesWaterProfile(null, WATER_A), false, 'ontbrekende snapshot (bijv. schemaVersion < 3) matcht nooit');
+    assert.equal(api2.matchesWaterProfile(WATER_A, null), false);
+  });
+
+  test('Exact emmertje: bij n=3 in branddiepte+verwerking+methode krijg je level "exact" met het juiste gemiddelde', () => {
+    resetStores();
+    const bean = addBean({ roastLevel: 'light', process: 'washed' });
+    addEntry({ beanId: bean.id, roast: 'light', grindStartingPoint: 20, actualGrindClicks: 18 }); // -2
+    addEntry({ beanId: bean.id, roast: 'light', grindStartingPoint: 20, actualGrindClicks: 18 }); // -2
+    addEntry({ beanId: bean.id, roast: 'light', grindStartingPoint: 20, actualGrindClicks: 20 }); // 0
+    const result = api2.learningCorrectionFor(bean, 'v60', WATER_A);
+    assert.ok(result);
+    assert.equal(result.level, 'exact');
+    assert.equal(result.n, 3);
+    assert.ok(Math.abs(result.avgClicks - (-4/3)) < 1e-9, `verwacht gemiddelde -4/3, kreeg ${result.avgClicks}`);
+    assert.match(api2.learningCorrectionText(result), /fijner/, 'negatief gemiddelde (lager klikgetal) is fijner');
+  });
+
+  test('Terugvalladder: te weinig in het exacte emmertje verbreedt eerst naar "verwerking laten vallen" (roast_only)', () => {
+    resetStores();
+    const beanWashed = addBean({ roastLevel: 'light', process: 'washed' });
+    const beanNatural = addBean({ roastLevel: 'light_medium', process: 'natural' }); // zelfde branddiepte-bucket (light_lm), andere verwerking
+    addEntry({ beanId: beanWashed.id, roast: 'light', actualGrindClicks: 22 }); // +2, enige washed-logging (< LEARNING_MIN_N)
+    addEntry({ beanId: beanNatural.id, roast: 'light_medium', actualGrindClicks: 22 }); // +2
+    addEntry({ beanId: beanNatural.id, roast: 'light_medium', actualGrindClicks: 22 }); // +2
+    const result = api2.learningCorrectionFor(beanWashed, 'v60', WATER_A);
+    assert.ok(result);
+    assert.equal(result.level, 'roast_only', 'exact emmertje heeft maar n=1, moet verbreden naar branddiepte-bucket zonder verwerkingseis');
+    assert.equal(result.n, 3);
+    assert.equal(result.processBucket, null, 'op het roast_only-niveau is er geen enkel verwerkings-emmertje meer, dus geen enkele mag als "het" emmertje worden gepresenteerd');
+    assert.match(api2.learningCorrectionText(result), /verwerking losgelaten/);
+  });
+
+  test('Terugvalladder: nog steeds te weinig na verwerking laten vallen verbreedt ook naar branddiepte (method_only)', () => {
+    resetStores();
+    const beanLight = addBean({ roastLevel: 'light', process: 'washed' });
+    const beanDark = addBean({ roastLevel: 'dark', process: 'natural' }); // andere branddiepte-bucket
+    addEntry({ beanId: beanLight.id, roast: 'light', actualGrindClicks: 22 });
+    addEntry({ beanId: beanDark.id, roast: 'dark', actualGrindClicks: 24 });
+    addEntry({ beanId: beanDark.id, roast: 'dark', actualGrindClicks: 24 });
+    const result = api2.learningCorrectionFor(beanLight, 'v60', WATER_A);
+    assert.ok(result);
+    assert.equal(result.level, 'method_only');
+    assert.equal(result.n, 3);
+    assert.match(api2.learningCorrectionText(result), /breedst mogelijke niveau/);
+  });
+
+  test('Onder de drempel op elk niveau: eerlijk "onvoldoende" met het werkelijke n, nooit stilzwijgend niets', () => {
+    resetStores();
+    const bean = addBean({ roastLevel: 'light', process: 'washed' });
+    addEntry({ beanId: bean.id, roast: 'light', actualGrindClicks: 22 });
+    const result = api2.learningCorrectionFor(bean, 'v60', WATER_A);
+    assert.ok(result);
+    assert.equal(result.level, 'onvoldoende');
+    assert.equal(result.n, 1);
+    assert.equal(result.avgClicks, null, 'geen betrouwbaar gemiddelde tonen bij te weinig data');
+    assert.match(api2.learningCorrectionText(result), /1 goedgekeurde/);
+  });
+
+  test('Echt niets beschikbaar (geen enkele match) geeft null, geen "onvoldoende" met n=0', () => {
+    resetStores();
+    const bean = addBean({ roastLevel: 'light', process: 'washed' });
+    const result = api2.learningCorrectionFor(bean, 'v60', WATER_A);
+    assert.equal(result, null);
+  });
+
+  test('Vervuilingsregel 1: niet-goedgekeurde brouwsels tellen nooit mee, ook niet als er genoeg van zijn', () => {
+    resetStores();
+    const bean = addBean({ roastLevel: 'light', process: 'washed' });
+    addEntry({ beanId: bean.id, roast: 'light', approved: false, actualGrindClicks: 18 });
+    addEntry({ beanId: bean.id, roast: 'light', approved: false, actualGrindClicks: 18 });
+    addEntry({ beanId: bean.id, roast: 'light', approved: false, actualGrindClicks: 18 });
+    const result = api2.learningCorrectionFor(bean, 'v60', WATER_A);
+    assert.equal(result, null, 'drie NIET-goedgekeurde loggings mogen geen correctie opleveren');
+  });
+
+  test('Vervuilingsregel 2: espresso-bedoelde bonen zijn volledig uitgesloten, geen eigen emmertje', () => {
+    resetStores();
+    const bean = addBean({ roastLevel: 'medium', process: 'washed', intendedUse: 'espresso' });
+    addEntry({ beanId: bean.id, roast: 'medium', actualGrindClicks: 18 });
+    addEntry({ beanId: bean.id, roast: 'medium', actualGrindClicks: 18 });
+    addEntry({ beanId: bean.id, roast: 'medium', actualGrindClicks: 18 });
+    assert.equal(api2.learningCorrectionFor(bean, 'v60', WATER_A), null, 'espresso-bedoelde boon zelf mag geen correctie opleveren');
+
+    // Ook als iemand ANDERS (een niet-espresso boon in hetzelfde emmertje) om een correctie
+    // vraagt, mogen deze espresso-loggings niet stiekem meetellen in dat emmertje.
+    const beanFilter = addBean({ roastLevel: 'medium', process: 'washed', intendedUse: null });
+    const result = api2.learningCorrectionFor(beanFilter, 'v60', WATER_A);
+    assert.equal(result, null, 'espresso-loggings mogen niet meetellen voor een ANDERE (filter-bedoelde) boon in hetzelfde emmertje');
+  });
+
+  test('B-7: een gewijzigd waterprofiel sluit het lopende segment af — oudere loggings tellen niet meer mee', () => {
+    resetStores();
+    const bean = addBean({ roastLevel: 'light', process: 'washed' });
+    addEntry({ beanId: bean.id, roast: 'light', actualGrindClicks: 18, waterProfileSnapshot: WATER_A });
+    addEntry({ beanId: bean.id, roast: 'light', actualGrindClicks: 18, waterProfileSnapshot: WATER_A });
+    addEntry({ beanId: bean.id, roast: 'light', actualGrindClicks: 18, waterProfileSnapshot: WATER_A });
+    // Onder WATER_A precies genoeg voor "exact".
+    assert.equal(api2.learningCorrectionFor(bean, 'v60', WATER_A).level, 'exact');
+    // Na een (gesimuleerde) waterprofielwijziging naar WATER_B tellen dezelfde drie loggings niet meer mee.
+    assert.equal(api2.learningCorrectionFor(bean, 'v60', WATER_B), null, 'oude loggings onder een ander waterprofiel mogen het nieuwe segment niet vullen');
+  });
+
+  test('Ontbrekende klikgegevens (geen grindStartingPoint/grindStand of geen actualGrindClicks) tellen niet mee', () => {
+    resetStores();
+    const bean = addBean({ roastLevel: 'light', process: 'washed' });
+    addEntry({ beanId: bean.id, roast: 'light', actualGrindClicks: null }); // niet ingevuld bij het loggen
+    addEntry({ beanId: bean.id, roast: 'light', grindStartingPoint: null, grindStand: null, actualGrindClicks: 18 }); // geen vertrekpunt bekend
+    addEntry({ beanId: bean.id, roast: 'light', actualGrindClicks: 18 }); // deze is wel compleet
+    const result = api2.learningCorrectionFor(bean, 'v60', WATER_A);
+    assert.equal(result.level, 'onvoldoende');
+    assert.equal(result.n, 1, 'alleen de logging met zowel een vertrekpunt als een werkelijk klikgetal telt mee');
+  });
+});
