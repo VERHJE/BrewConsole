@@ -1485,6 +1485,7 @@
       <button class="start-btn" id="start-btn">Start brew →</button>
       <p class="disclaimer" id="disclaimer"></p>
 <p class="freshness-readout" id="target-window-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
+<p class="freshness-readout" id="retention-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
     </section>
 
     <!-- STEP 5: BREW / TIMER -->
@@ -1549,7 +1550,7 @@
       <label for="brewlog-actual-grind" style="font-size:12px; color:var(--text-faint); display:block; margin:14px 0 4px;">Werkelijk gebruikte maalstand <span style="text-transform:none; letter-spacing:0;">(optioneel — klikken, Timemore C3S Pro; alleen invullen als je van het advies bent afgeweken)</span></label>
       <input type="number" id="brewlog-actual-grind" class="form-input" placeholder="bijv. 22" min="0" max="60" step="1" style="max-width:220px;">
 
-      <label for="brewlog-cup-weight" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Kopgewicht na afloop <span style="text-transform:none; letter-spacing:0;">(optioneel, gram — hiermee kan later je werkelijke retentie berekend worden: (water − kopgewicht) / dosis. Wordt nu alleen bewaard; de ratio gebruikt nog steeds de vaste aanname van 2,0 g/g)</span></label>
+      <label for="brewlog-cup-weight" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Kopgewicht na afloop <span style="text-transform:none; letter-spacing:0;">(optioneel, gram — hiermee berekent de app je werkelijke retentie: (water − kopgewicht) / dosis. Vanaf 5 bruikbare metingen verschijnt je eigen gemiddelde op het Recept-scherm, náást de vaste aanname van 2,0 g/g. Het vervangt die aanname niet automatisch)</span></label>
       <input type="number" id="brewlog-cup-weight" class="form-input" placeholder="bijv. 268" min="0" max="2000" step="1" style="max-width:220px;">
 
       <!-- NIEUW (Implementatieplan Zetadvies v3.0, Fase 7, vervuilingsregel 1): bewust
@@ -6445,6 +6446,58 @@ function learningCorrectionText(correction){
   return `Je eigen gemeten correctie voor ${scopeText} (n=${correction.n}): gemiddeld ${amount} klik${amount===1?'':'ken'} ${dir} dan het vertrekpunt. Gebaseerd op je eigen goedgekeurde loggings binnen je huidige waterprofiel — geen algemene claim.${volText}`;
 }
 
+/* NIEUW (Reparatieplan v4.0, C-5 / bevinding E-07b, Bouwbesluit BB-3, akkoord gebruiker):
+   de retentie die de app tot nu toe alleen BELOOFDE te berekenen. retentie = (water -
+   kopgewicht) / dosis.
+
+   Uitsluitingen, elk met een reden:
+   - bypass-brouwsels: bij de concentraat-methode hangt het kopgewicht af van of het
+     bijgeschonken water al in de kop zat op het moment van wegen. Dat weten we niet, dus
+     meten we het niet.
+   - retentie buiten 1,0-3,5 g/g: een plausibiliteitsfilter, geen brouwclaim. Buiten dat
+     bereik is er vrijwel zeker verkeerd gewogen (kan meegewogen, kop half leeggedronken).
+     Uitgesloten metingen worden geteld en gemeld, nooit stil weggelaten.
+   - minder dan 5 bruikbare metingen: onder die drempel is het gemiddelde te gevoelig voor
+     een enkele meetfout om naast een aanname te zetten.
+
+   Vervangt LIQUID_RETAINED_RATIO NIET automatisch — dat zou elk receptgetal in de app
+   stilzwijgend wijzigen (non-negotiable N-1). Dit toont alleen. Gebruiker heeft dit vooraf
+   goedgekeurd (Bouwbesluit BB-3): alleen weergave in deze ronde, een schakelaar om de
+   aanname te vervangen is een aparte, latere beslissing. */
+const RETENTION_MIN_N = 5;
+const RETENTION_PLAUSIBLE = { min: 1.0, max: 3.5 };
+function measuredRetention(method){
+  const kandidaten = brewLog.filter(e =>
+    e.method === method && e.bypass !== true &&
+    e.cupWeightG != null && e.doseG != null && e.doseG > 0 && e.waterMl != null);
+  const waarden = [];
+  let uitgesloten = 0;
+  for (const e of kandidaten){
+    const r = (e.waterMl - e.cupWeightG) / e.doseG;
+    if (r >= RETENTION_PLAUSIBLE.min && r <= RETENTION_PLAUSIBLE.max) waarden.push(r);
+    else uitgesloten++;
+  }
+  if (waarden.length < RETENTION_MIN_N) return { n: waarden.length, uitgesloten, gemiddelde: null };
+  const gem = waarden.reduce((a,b)=>a+b, 0) / waarden.length;
+  const gesorteerd = waarden.slice().sort((a,b)=>a-b);
+  return {
+    n: waarden.length, uitgesloten,
+    gemiddelde: Math.round(gem * 100) / 100,
+    min: Math.round(gesorteerd[0] * 100) / 100,
+    max: Math.round(gesorteerd[gesorteerd.length-1] * 100) / 100
+  };
+}
+function measuredRetentionText(res, aanname){
+  if (!res) return '';
+  if (res.gemiddelde == null){
+    return `Nog geen gemeten retentie: ${res.n} bruikbare meting${res.n===1?'':'en'} met kopgewicht (minimaal ${RETENTION_MIN_N} nodig)${res.uitgesloten ? `, ${res.uitgesloten} uitgesloten als onwaarschijnlijk` : ''}. De ratio gebruikt nog steeds de vaste aanname van ${fmt(aanname,1)} g/g.`;
+  }
+  const afwijking = res.gemiddelde - aanname;
+  const richting = Math.abs(afwijking) < 0.05 ? 'praktisch gelijk aan'
+    : (afwijking > 0 ? 'hoger dan' : 'lager dan');
+  return `Jouw gemeten retentie op deze opstelling: gemiddeld ${fmt(res.gemiddelde,2)} g water per g koffie (n=${res.n}, spreiding ${fmt(res.min,2)}–${fmt(res.max,2)})${res.uitgesloten ? `, ${res.uitgesloten} meting${res.uitgesloten===1?'':'en'} uitgesloten als onwaarschijnlijk` : ''} — ${richting} de aanname van ${fmt(aanname,1)} g/g die de ratio hierboven gebruikt. Dit getal wordt NIET automatisch toegepast; het staat hier zodat je zelf ziet of de aanname voor jouw opstelling klopt.`;
+}
+
 /* ============================================================
    TRIAGE — "Waarom smaakt dit anders?" (expertreview B2, Elin/Bram)
    Productiseert precies de diagnose-volgorde die deze sessie tweemaal
@@ -7524,6 +7577,14 @@ function renderPrep(){
     const w = ENGINE_TARGET_WINDOWS[cluster];
     windowEl.textContent = `Doelvenster achter dit recept: ${fmt(w.strengthTDS[0],2)}–${fmt(w.strengthTDS[1],2)} %TDS bij ${w.extractionYieldEY[0]}–${w.extractionYieldEY[1]} %extractie. Deze twee getallenparen zijn door de app aangeleverd (SCA-Brewing-Control-Chart-achtig) en maken GEEN deel uit van het eigen onderzoekscorpus van dit project — de engine zelf markeert dit veld als openstaande onderzoeksvraag (G-CONTROL-CHART-01). Dosis en ratio hierboven volgen er rechtstreeks uit.`;
     windowEl.hidden = false;
+  }
+  const retEl = document.getElementById('retention-note');
+  if (retEl){
+    const B = window.BrewEngineBundle;
+    const aanname = (B && B.LIQUID_RETAINED_RATIO != null) ? B.LIQUID_RETAINED_RATIO : 2.0;
+    const txt = measuredRetentionText(measuredRetention(state.method), aanname);
+    retEl.textContent = txt;
+    retEl.hidden = !txt;
   }
   document.getElementById('disclaimer').textContent =
     '* Dosis/water/ratio komen algebraïsch uit een sterkte-/extractievenster (zie het doelvenster-blok hierboven — door de app aangeleverd, niet uit het eigen onderzoekscorpus) en het gevalideerde dosisbereik van dit toestel — nooit gekopieerd uit een naam-gebonden receptentabel. De ratio bevat een retentieaanname (LIQUID_RETAINED_RATIO = 2,0 g achtergebleven water per g droge koffie bij percolatie, tier 3-4/klasse C, gebaseerd op Rao en Coffee ad Astra) — zonder die aanname zou de ratio het achtergebleven water in het koffiebed negeren en te sterk lijken. Temperatuur is een ankerpunt + instructie binnen de apparaatband, gepositioneerd op branddiepte (Implementatieplan Zetadvies v3.0, Fase 2, Bouwbesluit B-1) — géén los geteste claim: de bevinding dat temperatuur weinig zelfstandig smaakeffect heeft (research-brewing-variables.md §2.1/§4.2; Batali, Ristenpart & Guinard, 2020) hield maling en zettijd bewust vast om TDS/extractie gelijk te houden en testte alleen 87/90/93°C, en die voorwaarde geldt hier niet. Eerlijk erbij (Reparatieplan v4.0, A-7): het ankerpunt voor lichte branding (94–96°C) ligt zélf boven dat geteste bereik — het steunt op gangbare praktijk voor lichte brandingen, niet op deze studie, en is dus een vertrekpunt, geen getest getal. Maling is de eerlijke (instelling, vertrouwensband, korrelgrootte-doel)-drieling van de Setting Translator — vandaag voor elke molen "Insufficient" (geen gevalideerde kalibratiecurve); waar een community-startklikrange wél bestaat, positioneert branddiepte alleen wáár je daarbinnen begint (fijner/lichter, grover/donkerder) — geen nieuw maalgetal. Branddiepte stuurt in beide gevallen nooit de ratio of dosis (die blijven voor elke branddiepte identiek). Een eventueel giet-schema hierboven is óf een gecorroboreerde, aan een naam gebonden pour-structuur (zie de recept-notitie), óf — als die er niet is — een eigen, gelijkmatige verdeling; giet-snelheid (g/sec) is altijd een generieke aanname, geen letterlijk gepubliceerd getal. De totale schemalengte (en dus de brouwtimer) volgt uit het aantal giet-momenten van dit schema, niet meer uit de apparaatbrede contacttijd-diagnostiek — die diagnostische band staat los, als plausibiliteitscontrole achteraf op het Klaar-scherm (Implementatieplan Zetadvies v3.0, Fase 3).';

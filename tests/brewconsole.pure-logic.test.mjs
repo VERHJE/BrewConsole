@@ -1086,3 +1086,39 @@ describe('C-4 — onderextractie verbreed + conflictbewaking (bevinding E-13)', 
     assert.equal(api.cuppingSuggestionFor(s).pattern, 'overextractie');
   });
 });
+
+describe('C-5 — retentiemeting (bevinding E-07b, Bouwbesluit BB-3, akkoord gebruiker: alleen weergave)', () => {
+  function resetBrewLog(){ api.brewLog.length = 0; }
+  function addEntry(overrides){
+    api.brewLog.push(Object.assign({ method:'v60', bypass:false, doseG:17, waterMl:300, cupWeightG:266 }, overrides));
+  }
+  test('5 loggingen met bruikbaar kopgewicht geven een gemiddelde', () => {
+    resetBrewLog();
+    for (let i=0;i<5;i++) addEntry({ cupWeightG: 266 }); // (300-266)/17 = 2.0
+    const res = api.measuredRetention('v60');
+    assert.equal(res.n, 5);
+    assert.equal(res.gemiddelde, 2.0);
+  });
+  test('4 loggingen geven gemiddelde:null met n:4 (onder RETENTION_MIN_N)', () => {
+    resetBrewLog();
+    for (let i=0;i<4;i++) addEntry({ cupWeightG: 266 });
+    const res = api.measuredRetention('v60');
+    assert.equal(res.n, 4);
+    assert.equal(res.gemiddelde, null);
+  });
+  test('een bypass-logging telt niet mee', () => {
+    resetBrewLog();
+    for (let i=0;i<5;i++) addEntry({ cupWeightG: 266 });
+    addEntry({ cupWeightG: 266, bypass: true });
+    const res = api.measuredRetention('v60');
+    assert.equal(res.n, 5, 'de bypass-logging mag het aantal bruikbare metingen niet ophogen');
+  });
+  test('een kopgewicht van 50 g bij 300 ml water (retentie 14,7 g/g) telt als uitgesloten, niet als geldig', () => {
+    resetBrewLog();
+    for (let i=0;i<5;i++) addEntry({ cupWeightG: 266 });
+    addEntry({ cupWeightG: 50 });
+    const res = api.measuredRetention('v60');
+    assert.equal(res.n, 5, 'de onwaarschijnlijke meting mag het gemiddelde niet aantasten');
+    assert.equal(res.uitgesloten, 1);
+  });
+});

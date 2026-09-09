@@ -107,7 +107,8 @@ export function loadApp(){
       CUPPING_PRIMARY_AXES,
       roastBucketFor, processBucketFor, ROAST_BUCKET_LABELS, PROCESS_BUCKET_LABELS,
       recipeGrindBaseline, matchesWaterProfile, learningCorrectionFor, learningCorrectionText,
-      LEARNING_MIN_N, brewLog, beanLibrary
+      LEARNING_MIN_N, brewLog, beanLibrary,
+      measuredRetention, measuredRetentionText, RETENTION_MIN_N, RETENTION_PLAUSIBLE
     };`,
     sandbox,
     { filename: 'test-exports-shim.js' }
