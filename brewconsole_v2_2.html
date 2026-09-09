@@ -2890,14 +2890,55 @@ function profileRecipeSignature(profileKey, methodKey){
 /* Geeft alle ANDERE profielsleutels die voor deze methode dezelfde signature hebben
    (dus een garandeerd identiek recept), beperkt tot profielen die op dit scherm
    sowieso al zichtbaar zijn (methodOnly-filter, zie renderProfileGrid()). */
+/* FIX (Reparatieplan v4.0, B-4 / bevinding E-09): profileRecipeSignature() vergelijkt het
+   GEMAPTE overlay-id, niet het GEGENEREERDE recept. Daardoor bleven sirooprig_vol
+   (FULLER::NONE) en evenwichtig_flex (FULLER::HEDRICK_1_2_1) onopgemerkt als tweeling,
+   terwijl ze byte-identieke recepten opleveren — Hedrick is namelijk nooit generatable,
+   dus evenwichtig_flex valt in de praktijk altijd terug op Core-only. Precies het defect
+   waarvoor dit mechanisme in v2 is gebouwd, teruggekomen op een andere plek.
+
+   De vergelijking gaat nu over wat de gebruiker daadwerkelijk brouwt: dosis, ratio,
+   temperatuur, maal-vertrekpunt en het volledige gietschema. De techniek-NAAM zit er
+   bewust NIET in — twee profielen die numeriek identiek zijn maar een andere naam boven
+   het schema tonen, zijn juist het probleem, niet de uitzondering.
+
+   Referentievolume: een vast getal per methode, geklemd in het geldige bereik van dít
+   profiel, zodat alle profielen op hetzelfde volume vergeleken worden. Gememoiseerd omdat
+   renderProfileGrid() dit voor elk profiel aanroept.
+   Let op (RADAR_LEVELS-les uit Bouwbesluiten v3): TWIN_REFERENCE_VOLUME en de cache zijn
+   literals zonder afhankelijkheid van andere top-level consts verderop in dit bestand. */
+const TWIN_REFERENCE_VOLUME = { v60: 300, chemex: 600 };
+const _recipeFingerprintCache = new Map();
+function recipeFingerprint(profileKey, methodKey){
+  const key = profileKey + '|' + methodKey;
+  if (_recipeFingerprintCache.has(key)) return _recipeFingerprintCache.get(key);
+  let fp = null;
+  try {
+    const range = engineValidVolumeRange(methodKey, profileKey);
+    const vol = clamp(TWIN_REFERENCE_VOLUME[methodKey] || 300, range.min, range.max);
+    const rec = computeRecipe(methodKey, 'medium', profileKey, vol, 'washed', false,
+                              null, null, false, false, null, 0);
+    if (rec && rec.dose > 0){
+      fp = JSON.stringify({ v: vol, d: rec.dose, r: rec.ratioText, t: rec.temp,
+        g: rec.grindStartingPoint, s: rec.steps.map(x => [x.t, x.add]) });
+    }
+  } catch(e){ fp = null; }
+  _recipeFingerprintCache.set(key, fp);
+  return fp;
+}
 function findProfileTwins(profileKey, methodKey){
-  const sig = profileRecipeSignature(profileKey, methodKey);
-  if (!sig) return [];
+  // Een profiel dat op deze methode helemaal niet zichtbaar is, heeft hier geen tweelingen —
+  // anders zou bloemig_delicaat (v60-only) op chemex tweelingen "vinden" die de gebruiker
+  // daar nooit naast elkaar ziet staan.
+  const selfOnly = PROFILE_INFO[profileKey] && PROFILE_INFO[profileKey].methodOnly;
+  if (selfOnly && selfOnly !== methodKey) return [];
+  const fp = recipeFingerprint(profileKey, methodKey);
+  if (!fp) return [];
   return Object.keys(PROFILE_INFO).filter(k=>{
     if (k === profileKey) return false;
     const only = PROFILE_INFO[k].methodOnly;
     if (only && only !== methodKey) return false;
-    return profileRecipeSignature(k, methodKey) === sig;
+    return recipeFingerprint(k, methodKey) === fp;
   });
 }
 
