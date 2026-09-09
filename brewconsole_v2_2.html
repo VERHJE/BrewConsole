@@ -6307,6 +6307,14 @@ const PROCESS_BUCKET_LABELS = { washed: 'Washed', natural_anaerobic: 'Natural / 
 
 const LEARNING_MIN_N = 3; // terugvalladder-drempel uit het plan
 
+/* NIEUW (Reparatieplan v4.0, C-3 / bevinding E-12): een leercorrectie mag alleen brouwsels
+   van vergelijkbaar formaat middelen — bij 265 ml en 380 ml op een V60 verschilt de
+   beddiepte ~40% en beweegt de optimale maalgraad mee. Bewust GEEN nieuw getal verzonnen:
+   dit is dezelfde 40% die de engine zelf al hanteert als "is dit nog hetzelfde formaat"
+   (SIZE_CONSISTENCY_TOLERANCE in ranking.ts, niet geexporteerd — vandaar de kopie hier,
+   met deze verwijzing als enige rechtvaardiging). */
+const LEARNING_VOLUME_TOLERANCE = 0.4;
+
 function recipeGrindBaseline(entry){
   if (entry && entry.grindStand != null) return entry.grindStand;
   if (entry && entry.grindStartingPoint != null) return entry.grindStartingPoint;
@@ -6344,9 +6352,11 @@ function entryProcessBucket(entry){
   return bean ? processBucketFor(bean.process) : null;
 }
 
-function learningEligibleEntries(method, currentProfile){
+function learningEligibleEntries(method, currentProfile, currentVolumeMl){
   return brewLog.filter(e =>
     e.method === method &&
+    (currentVolumeMl == null || e.waterMl == null ||
+      Math.abs(e.waterMl - currentVolumeMl) / Math.max(e.waterMl, currentVolumeMl) <= LEARNING_VOLUME_TOLERANCE) &&
     e.approved === true &&
     !entryIsEspressoRoast(e) &&
     matchesWaterProfile(e.waterProfileSnapshot, currentProfile) &&
@@ -6360,20 +6370,26 @@ function summarizeLearningCorrection(entries, level, roastBucket, processBucket,
   const n = entries.length;
   const diffs = entries.map(e => e.actualGrindClicks - recipeGrindBaseline(e));
   const avgClicks = n ? diffs.reduce((a,b)=>a+b, 0) / n : null;
-  return { level, n, avgClicks, roastBucket, processBucket, method };
+  // NIEUW (Reparatieplan v4.0, C-3): het volumebereik waarop deze correctie daadwerkelijk
+  // gemeten is — zodat de tekst zelf toont dat dit binnen de LEARNING_VOLUME_TOLERANCE-band
+  // valt, in plaats van dat alleen stilzwijgend te filteren.
+  const volumes = entries.map(e => e.waterMl).filter(v => v != null);
+  const volMin = volumes.length ? Math.min(...volumes) : null;
+  const volMax = volumes.length ? Math.max(...volumes) : null;
+  return { level, n, avgClicks, roastBucket, processBucket, method, volMin, volMax };
 }
 
 // Terugvalladder: exact (branddiepte+verwerking+methode) → verwerking laten vallen →
 // ook branddiepte laten vallen. Bij minder dan LEARNING_MIN_N zelfs op het breedste niveau:
 // eerlijk het n van dat breedste niveau melden (level:'onvoldoende'), nooit stilzwijgend niets.
-function learningCorrectionFor(bean, method, currentProfile){
+function learningCorrectionFor(bean, method, currentProfile, currentVolumeMl){
   if (!bean) return null;
   if (bean.intendedUse === 'espresso') return null; // vervuilingsregel 2
   const roastBucket = roastBucketFor(bean.roastLevel);
   if (!roastBucket) return null;
   const processBucket = processBucketFor(bean.process);
 
-  const inRoastBucket = learningEligibleEntries(method, currentProfile).filter(e => roastBucketFor(e.roast) === roastBucket);
+  const inRoastBucket = learningEligibleEntries(method, currentProfile, currentVolumeMl).filter(e => roastBucketFor(e.roast) === roastBucket);
 
   if (processBucket){
     const exact = inRoastBucket.filter(e => entryProcessBucket(e) === processBucket);
@@ -6381,7 +6397,7 @@ function learningCorrectionFor(bean, method, currentProfile){
   }
   if (inRoastBucket.length >= LEARNING_MIN_N) return summarizeLearningCorrection(inRoastBucket, 'roast_only', roastBucket, null, method);
 
-  const methodOnly = learningEligibleEntries(method, currentProfile);
+  const methodOnly = learningEligibleEntries(method, currentProfile, currentVolumeMl);
   if (methodOnly.length >= LEARNING_MIN_N) return summarizeLearningCorrection(methodOnly, 'method_only', null, null, method);
 
   if (methodOnly.length > 0) return { level: 'onvoldoende', n: methodOnly.length, avgClicks: null, roastBucket, processBucket, method };
@@ -6404,7 +6420,10 @@ function learningCorrectionText(correction){
   } else {
     scopeText = `alle branddieptes/verwerkingen, ${mInfo ? mInfo.name : correction.method} — breedst mogelijke niveau, te weinig data op een specifieker emmertje`;
   }
-  return `Je eigen gemeten correctie voor ${scopeText} (n=${correction.n}): gemiddeld ${amount} klik${amount===1?'':'ken'} ${dir} dan het vertrekpunt. Gebaseerd op je eigen goedgekeurde loggings binnen je huidige waterprofiel — geen algemene claim.`;
+  const volText = (correction.volMin != null)
+    ? ` Gemeten op brouwsels van ${correction.volMin === correction.volMax ? correction.volMin + ' ml' : correction.volMin + '–' + correction.volMax + ' ml'}.`
+    : '';
+  return `Je eigen gemeten correctie voor ${scopeText} (n=${correction.n}): gemiddeld ${amount} klik${amount===1?'':'ken'} ${dir} dan het vertrekpunt. Gebaseerd op je eigen goedgekeurde loggings binnen je huidige waterprofiel — geen algemene claim.${volText}`;
 }
 
 /* ============================================================
@@ -7298,7 +7317,7 @@ function renderPrep(){
   if (learningEl){
     const currentBean = state.beanId ? beanLibrary.find(b=>b.id===state.beanId) : null;
     const currentWaterProfile = { hardnessMgL: waterHardnessMgL, alkalinity: waterAlkalinity, dilution: waterDilution };
-    const correction = currentBean ? learningCorrectionFor(currentBean, state.method, currentWaterProfile) : null;
+    const correction = currentBean ? learningCorrectionFor(currentBean, state.method, currentWaterProfile, state.waterMl) : null;
     const textEl = document.getElementById('prep-learning-correction-text');
     if (correction && textEl){
       textEl.textContent = learningCorrectionText(correction);

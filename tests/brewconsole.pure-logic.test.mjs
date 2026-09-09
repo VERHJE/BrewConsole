@@ -853,6 +853,41 @@ describe('Boontype-model — buckets, terugvalladder, vervuilingsregels (Impleme
     assert.equal(result.level, 'onvoldoende');
     assert.equal(result.n, 1, 'alleen de logging met zowel een vertrekpunt als een werkelijk klikgetal telt mee');
   });
+
+  // NIEUW (Reparatieplan v4.0, C-3 / bevinding E-12): learningEligibleEntries() poolde tot
+  // nu toe over elk watervolume heen — een correctie uit een 265 ml-kop en een uit een
+  // 380 ml-kop werden ongewogen gemiddeld, terwijl de beddiepte daar ~40% verschilt.
+  test('C-3: drie goedgekeurde loggings op hetzelfde volume geven een correctie; verplaats er één buiten de LEARNING_VOLUME_TOLERANCE en ze telt niet meer mee', () => {
+    resetStores();
+    const bean = addBean({ roastLevel: 'light', process: 'washed' });
+    addEntry({ beanId: bean.id, roast: 'light', actualGrindClicks: 22, waterMl: 300 }); // +2
+    addEntry({ beanId: bean.id, roast: 'light', actualGrindClicks: 22, waterMl: 300 }); // +2
+    addEntry({ beanId: bean.id, roast: 'light', actualGrindClicks: 22, waterMl: 300 }); // +2
+    const voor = api2.learningCorrectionFor(bean, 'v60', WATER_A, 300);
+    assert.equal(voor.level, 'exact');
+    assert.equal(voor.n, 3);
+    assert.equal(voor.volMin, 300);
+    assert.equal(voor.volMax, 300);
+
+    // Verplaats de logging naar 600 ml (50% verschil met 300 ml, > de 40%-tolerantie) —
+    // die telt nu niet meer mee voor een aanvraag op 300 ml, dus n zakt naar 2 en level
+    // naar 'onvoldoende'.
+    api2.brewLog[0].waterMl = 600;
+    const na = api2.learningCorrectionFor(bean, 'v60', WATER_A, 300);
+    assert.equal(na.level, 'onvoldoende');
+    assert.equal(na.n, 2, 'de logging op 600 ml valt buiten de 40%-tolerantie t.o.v. de gevraagde 300 ml');
+  });
+
+  test('C-3: zonder currentVolumeMl (bv. bestaande aanroepen) blijft het gedrag ongewijzigd — geen volumefilter', () => {
+    resetStores();
+    const bean = addBean({ roastLevel: 'light', process: 'washed' });
+    addEntry({ beanId: bean.id, roast: 'light', actualGrindClicks: 22, waterMl: 265 });
+    addEntry({ beanId: bean.id, roast: 'light', actualGrindClicks: 22, waterMl: 380 });
+    addEntry({ beanId: bean.id, roast: 'light', actualGrindClicks: 22, waterMl: 300 });
+    const result = api2.learningCorrectionFor(bean, 'v60', WATER_A);
+    assert.equal(result.level, 'exact', 'zonder currentVolumeMl mag geen enkele logging worden uitgesloten op volume');
+    assert.equal(result.n, 3);
+  });
 });
 
 describe('Reparatieplan v4.0 — Fase A (eerlijkheidsherstel)', () => {
