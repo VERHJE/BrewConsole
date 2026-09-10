@@ -1122,3 +1122,105 @@ describe('C-5 — retentiemeting (bevinding E-07b, Bouwbesluit BB-3, akkoord geb
     assert.equal(res.uitgesloten, 1);
   });
 });
+
+describe('Implementatieplan v3.0 / C3S Pro Technische Deep-Dive — grinder registry v3', () => {
+  const B = sandbox.BrewEngineBundle;
+
+  test('mechanicalAdjustmentMicrons is een pure DERIVED-vermenigvuldiging, nooit een PSD-claim', () => {
+    assert.equal(B.mechanicalAdjustmentMicrons(0), 0);
+    assert.equal(B.mechanicalAdjustmentMicrons(15), 1249.5);
+    assert.equal(Math.round(B.mechanicalAdjustmentMicrons(18) * 10) / 10, 1499.4);
+  });
+
+  test('TIMEMORE_C3S_PRO_MECHANICAL_FACTS draagt het MECHANICAL_ADJUSTMENT-label en de gesourcete hardwarefeiten', () => {
+    const facts = B.TIMEMORE_C3S_PRO_MECHANICAL_FACTS;
+    assert.equal(facts.semantics, 'MECHANICAL_ADJUSTMENT');
+    assert.equal(facts.burr, 'S2C660');
+    assert.equal(facts.diameterMm, 38);
+    assert.equal(facts.material, 'SUS420');
+    assert.equal(facts.adjustmentMicronsPerClick, 83.3);
+    assert.equal(facts.clicksPerRotation, 12);
+    assert.equal(facts.approximatePositions, 36);
+  });
+
+  test('C3S Pro V60 practical range is 13-18, starting range is 15-17 — twee losse concepten', () => {
+    assert.equal(B.TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE.clicksMin, 13);
+    assert.equal(B.TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE.clicksMax, 18);
+    assert.equal(B.TIMEMORE_C3S_PRO_V60_STARTING_RANGE.clicksMin, 15);
+    assert.equal(B.TIMEMORE_C3S_PRO_V60_STARTING_RANGE.clicksMax, 17);
+  });
+
+  test('translateSetting() geeft voor C3S Pro/MEDIUM_FINE beide ranges als RESOLVED/SOURCED terug', () => {
+    const t = B.translateSetting(B.TIMEMORE_C3S_PRO_ID, 'MEDIUM_FINE');
+    assert.equal(t.startingRangeHint.state, 'RESOLVED');
+    assert.equal(t.startingRangeHint.provenance, 'SOURCED');
+    assert.equal(t.startingRangeHint.value.clicksMin, 15);
+    assert.equal(t.startingRangeHint.value.clicksMax, 17);
+    assert.equal(t.practicalRangeHint.state, 'RESOLVED');
+    assert.equal(t.practicalRangeHint.provenance, 'SOURCED');
+    assert.equal(t.practicalRangeHint.value.clicksMin, 13);
+    assert.equal(t.practicalRangeHint.value.clicksMax, 18);
+    assert.equal(t.micronsPerClickEstimate.state, 'RESOLVED');
+    assert.equal(t.micronsPerClickEstimate.provenance, 'SOURCED');
+    assert.equal(t.micronsPerClickEstimate.value, 83.3);
+    // Nooit meer CONTESTED voor deze molen sinds v3 (bevinding uit de deep-dive is
+    // geconsolideerd, niet langer een onbesliste tegenspraak).
+    assert.notEqual(t.micronsPerClickEstimate.state, 'CONTESTED');
+  });
+
+  test('Chemex-band (niet MEDIUM_FINE) blijft RESEARCH_GAP voor beide C3S Pro-ranges', () => {
+    const t = B.translateSetting(B.TIMEMORE_C3S_PRO_ID, 'MEDIUM');
+    assert.equal(t.startingRangeHint.state, 'RESEARCH_GAP');
+    assert.equal(t.practicalRangeHint.state, 'RESEARCH_GAP');
+  });
+
+  test('een niet-herkende molen krijgt RESEARCH_GAP voor beide ranges en het micron-getal', () => {
+    const t = B.translateSetting('SOME_UNKNOWN_GRINDER', 'MEDIUM_FINE');
+    assert.equal(t.startingRangeHint.state, 'RESEARCH_GAP');
+    assert.equal(t.practicalRangeHint.state, 'RESEARCH_GAP');
+    assert.equal(t.micronsPerClickEstimate.state, 'RESEARCH_GAP');
+  });
+
+  test('de 50-micron-claim staat alleen nog in de historical ledger, nooit als live micronsPerClickEstimate', () => {
+    const ledger = B.TIMEMORE_C3S_PRO_MICRON_HISTORICAL_LEDGER;
+    assert.ok(Array.isArray(ledger) && ledger.length === 2);
+    assert.ok(ledger.some(e => /50 microns/.test(e.claim)));
+    assert.ok(ledger.every(e => e.supersededBy), 'elk ledger-item moet zijn opvolger-status vermelden');
+    const t = B.translateSetting(B.TIMEMORE_C3S_PRO_ID, 'MEDIUM_FINE');
+    assert.notEqual(t.micronsPerClickEstimate.value, 50);
+  });
+
+  test('unsafe floor blokkeert nog steeds elke setting op/onder TIMEMORE_C3S_PRO_CLICK_FLOOR_MAX (defensieve check blijft actief)', () => {
+    // De huidige 15/13-ondergrenzen liggen ruim boven de floor (7); dit bewaakt alleen
+    // dat de defensieve HARD_CONSTRAINT_VIOLATION-check zelf nog vuurt, niet dat hij
+    // vandaag geraakt wordt.
+    assert.ok(B.TIMEMORE_C3S_PRO_V60_STARTING_RANGE.clicksMin > 7);
+    assert.ok(B.TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE.clicksMin > 7);
+  });
+
+  test('geen Chestnut X/S2C860-registry bestaat — C3S Pro-data kan dus nooit op die grinder worden toegepast', () => {
+    assert.ok(!('CHESTNUT_X' in B.GRINDER_REGISTRY));
+    assert.ok(!('TIMEMORE_CHESTNUT_X' in B.GRINDER_REGISTRY));
+    assert.deepEqual(Object.keys(B.GRINDER_REGISTRY).sort(), [B.GENERIC_UNLISTED_ID, B.TIMEMORE_C3S_PRO_ID].sort());
+  });
+
+  test('computeRecipe(): grindStartingRange/grindPracticalRange/grindMechanicalMicron komen door tot in het recept', () => {
+    const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
+    assert.equal(rec.grindStartingRange.brewMethodLabel, 'V60 pour-over');
+    assert.equal(rec.grindStartingRange.clicksMin, 15);
+    assert.equal(rec.grindStartingRange.clicksMax, 17);
+    assert.equal(rec.grindPracticalRange.clicksMin, 13);
+    assert.equal(rec.grindPracticalRange.clicksMax, 18);
+    assert.equal(rec.grindMechanicalMicron, 83.3);
+    assert.equal(rec.grindMicronContest, null, 'geen CONTESTED meer voor C3S Pro sinds v3');
+    // Startpunt-positionering (ROAST_GRIND_ANCHOR_FRACTION) blijft binnen de NIEUWE 15-17 range.
+    assert.ok(rec.grindStartingPoint >= 15 && rec.grindStartingPoint <= 17);
+  });
+
+  test('Chemex: grindStartingRange/grindPracticalRange blijven null (RESEARCH_GAP), geen verzonnen getal', () => {
+    const rec = api.computeRecipe('chemex','medium','klassiek',600,null,false,null,null,false,null,null,0);
+    assert.equal(rec.grindStartingRange, null);
+    assert.equal(rec.grindPracticalRange, null);
+    assert.equal(rec.grindStartingPoint, null);
+  });
+});

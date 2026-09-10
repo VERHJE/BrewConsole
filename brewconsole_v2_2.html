@@ -1670,24 +1670,67 @@
     ),
     relativeInstructionOnly: true
   };
-  var TIMEMORE_C3S_PRO_V60_STARTING_RANGE = {
+  // v3 (Implementatieplan v3.0 / Timemore C3S Pro \u2014 Technische Deep-Dive, 2026-09-10):
+  // het oude 13-16 was \u00e9\u00e9n ongedifferentieerd "starting range"-begrip. De nieuwe,
+  // geconsolideerde bron onderscheidt een bredere PRACTICAL range ("zinvolle praktische
+  // V60-zone") van een smallere STARTING range ("algemeen startgebied") binnen die
+  // practical range \u2014 twee losse concepten, plan \xA79. Beide zijn SOURCED
+  // manufacturer-/community-consolidatie, geen instrumentele per-toestel-meting. Bestaande
+  // loggingen/snapshots die op het oude 13-16-startpunt zijn gebaseerd blijven ongewijzigd
+  // leesbaar (recipe-snapshot-discipline in de app-laag) \u2014 dit is een voorwaartse
+  // wijziging, geen herschrijving van bestaande data (plan \xA720).
+  var TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE = {
     brewMethodLabel: "V60 pour-over",
     clicksMin: 13,
-    clicksMax: 16,
-    basis: "Community/retailer-sourced, not independently measured or SKU-specific-instrument-verified: 1 independent Pro-adjacent retailer (Slow Pour Supply) + 1 sibling-model (base C3S, not the exact Pro SKU) corroboration; excludes 1 outlier (6-10 clicks) and 1 inadmissible AI-generated source. A starting point for your own self-calibration, not a validated setting."
+    clicksMax: 18,
+    basis: "Timemore C3S Pro \u2014 Technische Deep-Dive (technische consolidatie van fabrikantgegevens + onafhankelijke/derde-partij observaties, 2026-09-10): meerdere Timemore-gebaseerde bronnen plaatsen pour-over grofweg rond 13\u201316 clicks; een onafhankelijke C3S-test vond ongeveer 15\u201318 clicks interessant voor medium grind. Gebruikt als brede, zinvolle praktische V60-zone \u2014 geen claim over uniforme particle size binnen die zone."
   };
-  var TIMEMORE_C3S_PRO_MICRON_POSITIONS = [
+  var TIMEMORE_C3S_PRO_V60_STARTING_RANGE = {
+    brewMethodLabel: "V60 pour-over",
+    clicksMin: 15,
+    clicksMax: 17,
+    basis: "Timemore C3S Pro \u2014 Technische Deep-Dive (technische consolidatie, 2026-09-10): 15\u201317 clicks als algemeen startgebied binnen de practical range hierboven \u2014 een vertrekpunt voor eigen kalibratie, geen gevalideerde instelling. Vervangt het eerdere, smallere 13-16-community-cijfer (Slow Pour Supply + sibling-model-corroboratie); zie decision-grind-starting-range-v60.md v2 voor de provenance-vergelijking tussen beide bronnen."
+  };
+  // v3: de nieuwe technische deep-dive consolideert 83,3 \u00b5m/click als hoge-zekerheid
+  // mechanische fabrikantspecificatie (herhaald over meerdere onafhankelijke retailers,
+  // consistent met 12 clicks/rotatie en ~36 posities \u2014 zie TIMEMORE_C3S_PRO_MECHANICAL_FACTS
+  // hieronder). De losstaande 50-micron-claim (\u00e9\u00e9n bron, tekkysui.com, ongepubliceerde
+  // methodologie) blijft hier bewaard als historical/contested ledger-item voor
+  // audit-doeleinden, maar wordt niet langer als gelijkwaardig aan 83,3 \u00b5m getoond in de
+  // gewone recept-UI (plan \xA711, acceptance checklist: "50 \u00b5m claim niet meer als
+  // gelijkwaardige actieve hardwarewaarde in UI").
+  var TIMEMORE_C3S_PRO_MICRON_HISTORICAL_LEDGER = [
     {
       claim: "\u22480.083 mm (83 microns) of burr movement per click. Timemore's own product page states this, and it is repeated verbatim across multiple independent retail listings (Slow Pour Supply, koffiekompaan.nl, kalvecoffee.com, thebasicbarista.com) \u2014 2 of these name the Pro SKU explicitly, the others the sibling base C3S on the same dial family.",
       source: "Timemore manufacturer spec sheet, repeated across retail copy \u2014 no source in this chain discloses an instrument measurement of the adjustment screw itself.",
-      evidenceClass: "F"
+      evidenceClass: "F",
+      supersededBy: "TIMEMORE_C3S_PRO_MECHANICAL_FACTS.adjustmentMicronsPerClick (v3: consolidated as SOURCED, class B, by the Technische Deep-Dive)"
     },
     {
       claim: "0.050 mm (50 microns) per click, stated for the same C3S Pro \u2014 a direct numeric contradiction of the 83-micron figure above, not a different SKU, a unit-conversion slip, or a rounding difference.",
       source: "tekkysui.com comparison blog (2026-08-17) \u2014 independently operated from the 83-micron sources above, but equally undisclosed methodology.",
-      evidenceClass: "F"
+      evidenceClass: "F",
+      supersededBy: "Not corroborated by the v3 Technische Deep-Dive consolidation \u2014 single-source, retained here for audit trail only, never surfaced as a live hardware value."
     }
   ];
+  // NIEUW (plan \xA77.1/\xA77.3/\xA712): mechanical setting als eigen, apart datadomein, los van
+  // practical range / PSD observations / personal calibration. adjustmentMicronsPerClick is
+  // een MECHANICAL_ADJUSTMENT-getal (hoever het mechanisme verstelt), nooit een
+  // particle-size-/D50/D90-claim \u2014 zie mechanicalAdjustmentMicrons() hieronder, de enige
+  // plek waar dit getal met clicks vermenigvuldigd wordt, uitdrukkelijk als DERIVED
+  // mechanical adjustment gelabeld.
+  var TIMEMORE_C3S_PRO_MECHANICAL_FACTS = Object.freeze({
+    burr: "S2C660",
+    diameterMm: 38,
+    material: "SUS420",
+    adjustmentMicronsPerClick: 83.3,
+    clicksPerRotation: 12,
+    approximatePositions: 36,
+    semantics: "MECHANICAL_ADJUSTMENT"
+  });
+  function mechanicalAdjustmentMicrons(clicks) {
+    return clicks * TIMEMORE_C3S_PRO_MECHANICAL_FACTS.adjustmentMicronsPerClick;
+  }
   var GENERIC_UNLISTED_ID = "GENERIC_UNLISTED";
   var genericInternalTarget = {
     qualitativeBand: "MEDIUM",
@@ -1761,25 +1804,51 @@
     const confidenceBand = "INSUFFICIENT";
     const fallbackGapId = curve.state === "RESEARCH_GAP" ? curve.gapId : "GRIND_BAND_MATCH_UNRESOLVED";
     let startingRangeHint;
+    let practicalRangeHint;
     if (grinderRegistryId === TIMEMORE_C3S_PRO_ID && desiredQualitativeBand === "MEDIUM_FINE") {
       if (TIMEMORE_C3S_PRO_V60_STARTING_RANGE.clicksMin <= TIMEMORE_C3S_PRO_CLICK_FLOOR_MAX) {
         throw new Error(
           `HARD_CONSTRAINT_VIOLATION: TIMEMORE_C3S_PRO_V60_STARTING_RANGE.clicksMin (${TIMEMORE_C3S_PRO_V60_STARTING_RANGE.clicksMin}) falls inside the evidenced unsafe zone (avoid clicks 0-${TIMEMORE_C3S_PRO_CLICK_FLOOR_MAX} from zero, audit-timemore-c3s-pro-deep-audit.md \xA72-3) \u2014 this must never be offered as a starting point. [Implementation, defensive]`
         );
       }
-      startingRangeHint = resolved(TIMEMORE_C3S_PRO_V60_STARTING_RANGE, "ESTIMATED", "C");
+      // NIEUW (plan \u00a79): dezelfde defensieve HARD_CONSTRAINT_VIOLATION-check, nu ook voor
+      // de bredere practical range \u2014 die begint op dezelfde 13 als voorheen, dus dit vuurt
+      // vandaag niet, maar bewaakt tegen een toekomstige, onveilige wijziging van dat getal.
+      if (TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE.clicksMin <= TIMEMORE_C3S_PRO_CLICK_FLOOR_MAX) {
+        throw new Error(
+          `HARD_CONSTRAINT_VIOLATION: TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE.clicksMin (${TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE.clicksMin}) falls inside the evidenced unsafe zone (avoid clicks 0-${TIMEMORE_C3S_PRO_CLICK_FLOOR_MAX} from zero, audit-timemore-c3s-pro-deep-audit.md \xA72-3) \u2014 this must never be offered as a practical range. [Implementation, defensive]`
+        );
+      }
+      startingRangeHint = resolved(TIMEMORE_C3S_PRO_V60_STARTING_RANGE, "SOURCED", "B");
+      practicalRangeHint = resolved(TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE, "SOURCED", "B");
     } else if (grinderRegistryId === TIMEMORE_C3S_PRO_ID) {
       startingRangeHint = researchGap(
         "G-GRIND-TIMEMORE-CHEMEX-01",
         "No community-sourced starting range meets this project's evidence bar for this brew method on this grinder (research-timemore-c3s-pro-brewing-application.md \xA79: Chemex-specific guidance is 'Effectively NOT FOUND at reliable confidence') \u2014 do not surface a number here."
+      );
+      practicalRangeHint = researchGap(
+        "G-GRIND-TIMEMORE-CHEMEX-01",
+        "No community-sourced practical range meets this project's evidence bar for this brew method on this grinder \u2014 do not surface a number here."
       );
     } else {
       startingRangeHint = researchGap(
         fallbackGapId,
         "No starting-range research exists for this grinder."
       );
+      practicalRangeHint = researchGap(
+        fallbackGapId,
+        "No practical-range research exists for this grinder."
+      );
     }
-    const micronsPerClickEstimate = grinderRegistryId === TIMEMORE_C3S_PRO_ID ? contested(TIMEMORE_C3S_PRO_MICRON_POSITIONS) : researchGap(
+    // v3 (plan \u00a711): 83,3 \u00b5m/click is nu een SOURCED mechanische specificatie i.p.v. een
+    // CONTESTED-status tussen twee even zwaar wegende claims \u2014 zie
+    // TIMEMORE_C3S_PRO_MECHANICAL_FACTS/TIMEMORE_C3S_PRO_MICRON_HISTORICAL_LEDGER
+    // hierboven voor de volledige herkomst en de gearchiveerde 50-micron-tegenclaim.
+    const micronsPerClickEstimate = grinderRegistryId === TIMEMORE_C3S_PRO_ID ? resolved(
+      TIMEMORE_C3S_PRO_MECHANICAL_FACTS.adjustmentMicronsPerClick,
+      "SOURCED",
+      "B"
+    ) : researchGap(
       fallbackGapId,
       "No micron-per-click figure \u2014 measured or even contested \u2014 exists anywhere in the corpus for this grinder."
     );
@@ -1798,6 +1867,7 @@
       },
       grinderRecognized,
       startingRangeHint,
+      practicalRangeHint,
       micronsPerClickEstimate
     };
   }
@@ -2679,7 +2749,15 @@
     // te dupliceren — dus de bestaande, interne ratioFromWindow() (en de constante erachter)
     // hier alsnog ontsloten, in plaats van een tweede kopie van dezelfde formule te schrijven.
     ratioFromWindow,
-    LIQUID_RETAINED_RATIO
+    LIQUID_RETAINED_RATIO,
+    // NIEUW (Implementatieplan v3.0 / C3S Pro Technische Deep-Dive, §7/§9/§11/§12):
+    // mechanical facts / practical range / historical micron-ledger als eigen,
+    // ontsloten datadomeinen — zie de toelichting bij hun definitie hierboven.
+    TIMEMORE_C3S_PRO_MECHANICAL_FACTS,
+    mechanicalAdjustmentMicrons,
+    TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE,
+    TIMEMORE_C3S_PRO_V60_STARTING_RANGE,
+    TIMEMORE_C3S_PRO_MICRON_HISTORICAL_LEDGER
   };
 })();
 
@@ -2756,9 +2834,10 @@ const ROAST_TEMP_ANCHOR = {
   dark:         { band:{min:88,max:92}, instruction:'koken, ongeveer 1 minuut wachten' }
 };
 // Positie (0 = fijne kant/ondergrens, 1 = grove kant/bovengrens) binnen de bestaande,
-// al-gepubliceerde klikrange (bv. TIMEMORE_C3S_PRO_V60_STARTING_RANGE, 13-16) — licht
-// brandt fijn, donker brandt grof. Voegt geen nieuwe claim toe, positioneert alleen
-// binnen een bereik dat er al staat (§2c).
+// al-gepubliceerde klikrange (bv. TIMEMORE_C3S_PRO_V60_STARTING_RANGE, 15-17 sinds
+// Implementatieplan v3.0 / C3S Pro Technische Deep-Dive) — licht brandt fijn, donker
+// brandt grof. Voegt geen nieuwe claim toe, positioneert alleen binnen een bereik dat er
+// al staat (§2c).
 const ROAST_GRIND_ANCHOR_FRACTION = { light:0, light_medium:0.25, medium:0.5, medium_dark:0.75, dark:1 };
 
 const PROFILE_INFO = {
@@ -3704,7 +3783,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
 function buildFallbackRecipe(reason, waterMl){
   return {
     dose:0, water: waterMl, pourWaterMl: waterMl, bypassMl:0, temp:0, tempClamped:false,
-    grindMicron:null, grindStand:null, grindClamped:false, grindConfidence:'INSUFFICIENT', grindBandLabel:'', grindStartingRange:null, grindStartingPoint:null, grindMicronContest:null,
+    grindMicron:null, grindStand:null, grindClamped:false, grindConfidence:'INSUFFICIENT', grindBandLabel:'', grindStartingRange:null, grindPracticalRange:null, grindStartingPoint:null, grindMicronContest:null, grindMechanicalMicron:null,
     tempBandNote:'', tempBand:{min:0,max:0}, tempInstruction:'', deviceTempBand:{min:0,max:0},
     totalTime:0, steps:[],
     technique:'Geen geldig recept bij dit watervolume', author:'—',
@@ -3856,7 +3935,14 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // for the Timemore C3S Pro's V60 band today; RESEARCH_GAP everywhere else, including
   // Chemex. See src/registry/grinders.ts's TIMEMORE_C3S_PRO_V60_STARTING_RANGE and
   // decision-grind-starting-range-v60.md for the sourcing/exclusions behind this.
+  // BIJGEWERKT (Implementatieplan v3.0 / C3S Pro Technische Deep-Dive, §9): 13-16 -> 15-17,
+  // nu als apart "starting"-concept naast de bredere practical range hieronder.
   const grindStartingRange = core.grind.startingRangeHint.state === 'RESOLVED' ? core.grind.startingRangeHint.value : null;
+  // NIEUW (plan §9/§12): de bredere "zinvolle praktische V60-zone" (13-18) — een apart
+  // concept van de smallere starting range hierboven, nooit gebruikt om een startpunt te
+  // positioneren (dat blijft binnen grindStartingRange), puur om te laten zien hoe breed
+  // het werkbare gebied daadwerkelijk is.
+  const grindPracticalRange = core.grind.practicalRangeHint && core.grind.practicalRangeHint.state === 'RESOLVED' ? core.grind.practicalRangeHint.value : null;
   // NIEUW (Implementatieplan Zetadvies v3.0, Fase 2c, Bouwbesluit B-1): maalRICHTING,
   // geen maalgetal — een positie BINNEN de al-gepubliceerde klikrange hierboven (licht
   // brandt fijn/ondergrens, donker brandt grof/bovengrens). Voegt geen nieuwe claim toe
@@ -3865,12 +3951,15 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   const grindStartingPoint = grindStartingRange
     ? Math.round(grindStartingRange.clicksMin + (ROAST_GRIND_ANCHOR_FRACTION[roastKey] != null ? ROAST_GRIND_ANCHOR_FRACTION[roastKey] : 0.5) * (grindStartingRange.clicksMax - grindStartingRange.clicksMin))
     : null;
-  // Contested (never resolved) thread-pitch disclosure — two conflicting, unverified
-  // manufacturer/retailer-derived micron-per-click figures for the Timemore C3S Pro,
-  // shown as a dispute the engine explicitly does not referee. RESEARCH_GAP (→ null)
-  // for every other grinder. See src/registry/grinders.ts's
-  // TIMEMORE_C3S_PRO_MICRON_POSITIONS and decision-grind-microns-per-click-contested.md.
+  // BIJGEWERKT (Implementatieplan v3.0 / C3S Pro Technische Deep-Dive, §11): het
+  // micron-per-click-getal is niet langer CONTESTED — de nieuwe technische deep-dive
+  // consolideert 83,3 µm/click als SOURCED mechanische specificatie (zie
+  // TIMEMORE_C3S_PRO_MECHANICAL_FACTS in de engine); de vroegere 50-micron-tegenclaim
+  // staat nu alleen nog in een historical ledger, niet meer gelijkwaardig in de UI.
+  // grindMicronContest (het OUDE tegenspraak-object) blijft null voor de C3S Pro — zie
+  // grindMechanicalMicron hieronder voor de nieuwe, opgeloste weergave.
   const grindMicronContest = core.grind.micronsPerClickEstimate.state === 'CONTESTED' ? core.grind.micronsPerClickEstimate.positions : null;
+  const grindMechanicalMicron = core.grind.micronsPerClickEstimate.state === 'RESOLVED' ? core.grind.micronsPerClickEstimate.value : null;
 
   // Giet-schema — eerlijk generiek, zie buildPourSchedule() hierboven.
   const overlayPulseCount = overlay && overlay.pulseCount.state === 'RESOLVED' ? overlay.pulseCount.value : null;
@@ -3966,7 +4055,7 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   return {
     dose, water: Math.round(water), pourWaterMl, bypassMl, temp, tempClamped:false,
     grindMicron: grindResolvedNum, grindStand: grindResolvedNum, grindClamped:false,
-    grindConfidence, grindBandLabel, grindStartingRange, grindStartingPoint, grindMicronContest, tempBandNote, tempBand:{min:tMin,max:tMax}, tempInstruction, deviceTempBand:{min:deviceTMin,max:deviceTMax},
+    grindConfidence, grindBandLabel, grindStartingRange, grindPracticalRange, grindStartingPoint, grindMicronContest, grindMechanicalMicron, tempBandNote, tempBand:{min:tMin,max:tMax}, tempInstruction, deviceTempBand:{min:deviceTMin,max:deviceTMax},
     totalTime, steps,
     technique, author,
     notes, ratioText, processNote, freshnessNote, altitudeNote, hardnessNote, bypassNote, strengthNote,
@@ -7426,8 +7515,10 @@ function renderPrep(){
       <div class="stat-value">${rec.grindMicron != null ? rec.grindMicron + ' µm' : (rec.grindBandLabel || '—')}</div>
       <div class="stat-sub">${rec.grindMicron != null ? `stand ${rec.grindStand} · Timemore C3S Pro` : `Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}`}</div>
       ${rec.grindMicron == null ? `<div class="stat-sub">Geen gevalideerde kalibratiecurve voor deze molen gevonden — relatieve instructie i.p.v. een verzonnen getal. Vertrek vanaf ${escapeHtml(rec.grindBandLabel || 'medium')} en stel bij op smaak.</div>` : ''}
-      ${rec.grindStartingRange ? `<div class="stat-sub">Startpunt uit community-/winkelbronnen (niet gemeten, niet per-toestel geverifieerd): klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} vanaf het nulpunt voor ${escapeHtml(rec.grindStartingRange.brewMethodLabel)}. Vermijd klik 0–6/7 (risico op beschadiging maalschijven). Zie dit als eigen kalibratie-vertrekpunt, geen gevalideerde instelling.</div>` : ''}
-      ${rec.grindStartingPoint != null ? `<div class="stat-sub">Maalrichting bij deze branddiepte: begin rond klik ${rec.grindStartingPoint} binnen dat bereik (lichter brandt fijner/lager, donkerder brandt grover/hoger) — een positie binnen de bestaande range hierboven, geen nieuw maalgetal.</div>` : ''}
+      ${rec.grindStartingRange ? `<div class="stat-sub">Algemeen startgebied (Timemore C3S Pro — Technische Deep-Dive, technische consolidatie van fabrikantgegevens + onafhankelijke bronnen, niet per-toestel geverifieerd): klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} vanaf het nulpunt voor ${escapeHtml(rec.grindStartingRange.brewMethodLabel)}. Vermijd klik 0–6/7 (risico op beschadiging maalschijven). Zie dit als eigen kalibratie-vertrekpunt, geen gevalideerde instelling.</div>` : ''}
+      ${rec.grindPracticalRange ? `<div class="stat-sub">Practical V60 range: klik ${rec.grindPracticalRange.clicksMin}–${rec.grindPracticalRange.clicksMax} vanaf het nulpunt — een bredere, zinvolle werkzone; het startgebied hierboven ligt daarbinnen.</div>` : ''}
+      ${rec.grindStartingPoint != null ? `<div class="stat-sub">Maalrichting bij deze branddiepte: begin rond klik ${rec.grindStartingPoint} binnen het startgebied (lichter brandt fijner/lager, donkerder brandt grover/hoger) — een positie binnen de bestaande range hierboven, geen nieuw maalgetal.</div>` : ''}
+      ${rec.grindMechanicalMicron != null ? `<div class="stat-sub">Mechanische resolutie: ${fmt(rec.grindMechanicalMicron,1)} µm mechanische verstelling per click (S2C660, 38 mm, SUS420 — sourced fabrikantspecificatie, herhaald over meerdere onafhankelijke retailers). Dit is géén particle-size-/deeltjesgrootte-meting. Een eerder afwijkende 50 µm-claim (één bron, niet onderbouwd) staat niet meer gelijkwaardig in deze UI.</div>` : ''}
       ${rec.grindMicronContest ? `<div class="stat-sub">Micron per klik: onopgeloste tegenstrijdigheid tussen bronnen, geen van beide instrumenteel gemeten. ~83 micron/klik (Timemore's eigen opgave, herhaald door meerdere winkels) tegenover 50 micron/klik (afwijkende winkelbron, specifiek voor dit model). Verandert niets aan de klikrange hierboven — puur ter info, niet als gevalideerd getal te lezen.</div>` : ''}
     </div>
     <div class="stat-block">
