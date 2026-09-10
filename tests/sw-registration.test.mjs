@@ -146,4 +146,91 @@ describe('Service worker registratie (bijlage A — bevinding F, opgelost)', () 
     await ctx.close();
     server2.close();
   });
+
+  // NIEUW (Implementatieplan v3.0, P2 §22 — "PWA E2E / Offline reliability"): de twee
+  // scenario's uit het plan se testplan die nog niet end-to-end gedekt waren (in
+  // tegenstelling tot "C3S Pro selected"/"Bypass selected on unsupported brewer", die al
+  // in kernflow.smoke.test.mjs zaten sinds de P1-ronde). Draait bewust in DEZE testfile
+  // (http + echte service worker), niet in kernflow.smoke.test.mjs (file://, geen
+  // netwerkgrens om uit te zetten) — zelfde reden als de bestaande offline-tests hierboven.
+  test('Start brew timer online → ga offline → receptscherm/brouwtimer blijven werken zonder crash ("Start brew timer → disable network → timer continues", "Open recipe offline → no network-dependent UI crash")', async () => {
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await page.clock.install({ time: Date.now() });
+
+    await page.goto(base, { waitUntil: 'load' });
+    await page.evaluate(() => navigator.serviceWorker.ready);
+
+    await page.click('.navbar [data-nav="method"]');
+    await page.waitForFunction(() => document.getElementById('screen-method').classList.contains('active'));
+    await page.click('[data-method="v60"]');
+    await page.waitForFunction(() => document.getElementById('screen-roast').classList.contains('active'));
+    await page.click('#roast-grid [data-roast] >> nth=0');
+    await page.waitForFunction(() => document.getElementById('screen-profile').classList.contains('active'));
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await page.waitForFunction(() => document.getElementById('screen-prep').classList.contains('active'));
+
+    // Vanaf hier offline — het receptscherm staat al, en de brouwtimer moet zonder
+    // netwerk kunnen starten en doorlopen (alles hierna is pure client-side JS/timers).
+    await ctx.setOffline(true);
+
+    await page.click('#start-btn');
+    await page.waitForFunction(() => document.getElementById('screen-brew').classList.contains('active'));
+
+    await page.clock.fastForward('20:00');
+    await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
+
+    assert.deepEqual(errors, [], 'geen onafgevangen fouten tijdens receptweergave/brouwtimer terwijl offline');
+    await page.close();
+    await ctx.close();
+  });
+
+  test('Brouwlogging offline aanmaken en lokaal bewaren; weer online geeft geen dubbele logging ("Create brew log offline → persist locally", "Re-enable network → no duplicate log creation")', async () => {
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    await page.clock.install({ time: Date.now() });
+
+    await page.goto(base, { waitUntil: 'load' });
+    await page.evaluate(() => navigator.serviceWorker.ready);
+
+    await ctx.setOffline(true);
+
+    await page.click('.navbar [data-nav="method"]');
+    await page.waitForFunction(() => document.getElementById('screen-method').classList.contains('active'));
+    await page.click('[data-method="v60"]');
+    await page.waitForFunction(() => document.getElementById('screen-roast').classList.contains('active'));
+    await page.click('#roast-grid [data-roast] >> nth=0');
+    await page.waitForFunction(() => document.getElementById('screen-profile').classList.contains('active'));
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await page.waitForFunction(() => document.getElementById('screen-prep').classList.contains('active'));
+    await page.click('#start-btn');
+    await page.waitForFunction(() => document.getElementById('screen-brew').classList.contains('active'));
+    await page.clock.fastForward('20:00');
+    await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
+    await page.click('#brewlog-open-btn');
+    await page.waitForFunction(() => document.getElementById('screen-brewlog').classList.contains('active'));
+    await page.click('#brewlog-save-btn');
+    await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
+
+    const offlineLogCount = await page.evaluate(() => {
+      const raw = localStorage.getItem('brewConsoleLog');
+      return raw ? JSON.parse(raw).length : 0;
+    });
+    assert.equal(offlineLogCount, 1, 'de logging moet lokaal (localStorage) bewaard zijn, ook zonder netwerk — geen serverafhankelijke save');
+
+    // Weer online: opnieuw laden mag de al lokaal opgeslagen logging niet verdubbelen —
+    // er bestaat geen enkel netwerk-sync-pad dat dit zou kunnen doen, dit bevestigt dat.
+    await ctx.setOffline(false);
+    await page.reload({ waitUntil: 'load' });
+    const onlineLogCount = await page.evaluate(() => {
+      const raw = localStorage.getItem('brewConsoleLog');
+      return raw ? JSON.parse(raw).length : 0;
+    });
+    assert.equal(onlineLogCount, 1, 'terug online + herladen mag de offline-aangemaakte logging niet dupliceren');
+
+    await page.close();
+    await ctx.close();
+  });
 });
