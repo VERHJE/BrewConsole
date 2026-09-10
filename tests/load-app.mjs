@@ -101,7 +101,7 @@ export function loadApp(){
       RECORD_SCHEMA_VERSION, GRIND_CONFIDENCE_LABELS, translateGrindConfidence,
       canonicalProfileKey, visibleProfileKeys, displayScoreFor, PROFILE_MERGE_GROUPS,
       FRESHNESS_TIERS, freshnessTierForDays, coreOnlyReason,
-      computeRecipe, engineValidVolumeRange, ENGINE_TARGET_WINDOWS,
+      computeRecipe, engineValidVolumeRange, ENGINE_TARGET_WINDOWS, MODEL_POLICY,
       hardnessNudge, alkalinityNudge, dilutedWaterValue, waterSCAVerdict, HCO3_TO_CACO3_FACTOR,
       cuppingSuggestionFor, cuppingAxisLevel, CUPPING_NOISE_THRESHOLD, CUPPING_SCALE_CENTER,
       CUPPING_PRIMARY_AXES,

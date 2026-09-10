@@ -1122,3 +1122,224 @@ describe('C-5 — retentiemeting (bevinding E-07b, Bouwbesluit BB-3, akkoord geb
     assert.equal(res.uitgesloten, 1);
   });
 });
+
+describe('Implementatieplan v3.0 / C3S Pro Technische Deep-Dive — grinder registry v3', () => {
+  const B = sandbox.BrewEngineBundle;
+
+  test('mechanicalAdjustmentMicrons is een pure DERIVED-vermenigvuldiging, nooit een PSD-claim', () => {
+    assert.equal(B.mechanicalAdjustmentMicrons(0), 0);
+    assert.equal(B.mechanicalAdjustmentMicrons(15), 1249.5);
+    assert.equal(Math.round(B.mechanicalAdjustmentMicrons(18) * 10) / 10, 1499.4);
+  });
+
+  test('TIMEMORE_C3S_PRO_MECHANICAL_FACTS draagt het MECHANICAL_ADJUSTMENT-label en de gesourcete hardwarefeiten', () => {
+    const facts = B.TIMEMORE_C3S_PRO_MECHANICAL_FACTS;
+    assert.equal(facts.semantics, 'MECHANICAL_ADJUSTMENT');
+    assert.equal(facts.burr, 'S2C660');
+    assert.equal(facts.diameterMm, 38);
+    assert.equal(facts.material, 'SUS420');
+    assert.equal(facts.adjustmentMicronsPerClick, 83.3);
+    assert.equal(facts.clicksPerRotation, 12);
+    assert.equal(facts.approximatePositions, 36);
+  });
+
+  test('C3S Pro V60 practical range is 13-18, starting range is 15-17 — twee losse concepten', () => {
+    assert.equal(B.TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE.clicksMin, 13);
+    assert.equal(B.TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE.clicksMax, 18);
+    assert.equal(B.TIMEMORE_C3S_PRO_V60_STARTING_RANGE.clicksMin, 15);
+    assert.equal(B.TIMEMORE_C3S_PRO_V60_STARTING_RANGE.clicksMax, 17);
+  });
+
+  test('translateSetting() geeft voor C3S Pro/MEDIUM_FINE beide ranges als RESOLVED/SOURCED terug', () => {
+    const t = B.translateSetting(B.TIMEMORE_C3S_PRO_ID, 'MEDIUM_FINE');
+    assert.equal(t.startingRangeHint.state, 'RESOLVED');
+    assert.equal(t.startingRangeHint.provenance, 'SOURCED');
+    assert.equal(t.startingRangeHint.value.clicksMin, 15);
+    assert.equal(t.startingRangeHint.value.clicksMax, 17);
+    assert.equal(t.practicalRangeHint.state, 'RESOLVED');
+    assert.equal(t.practicalRangeHint.provenance, 'SOURCED');
+    assert.equal(t.practicalRangeHint.value.clicksMin, 13);
+    assert.equal(t.practicalRangeHint.value.clicksMax, 18);
+    assert.equal(t.micronsPerClickEstimate.state, 'RESOLVED');
+    assert.equal(t.micronsPerClickEstimate.provenance, 'SOURCED');
+    assert.equal(t.micronsPerClickEstimate.value, 83.3);
+    // Nooit meer CONTESTED voor deze molen sinds v3 (bevinding uit de deep-dive is
+    // geconsolideerd, niet langer een onbesliste tegenspraak).
+    assert.notEqual(t.micronsPerClickEstimate.state, 'CONTESTED');
+  });
+
+  test('Chemex-band (niet MEDIUM_FINE) blijft RESEARCH_GAP voor beide C3S Pro-ranges', () => {
+    const t = B.translateSetting(B.TIMEMORE_C3S_PRO_ID, 'MEDIUM');
+    assert.equal(t.startingRangeHint.state, 'RESEARCH_GAP');
+    assert.equal(t.practicalRangeHint.state, 'RESEARCH_GAP');
+  });
+
+  test('een niet-herkende molen krijgt RESEARCH_GAP voor beide ranges en het micron-getal', () => {
+    const t = B.translateSetting('SOME_UNKNOWN_GRINDER', 'MEDIUM_FINE');
+    assert.equal(t.startingRangeHint.state, 'RESEARCH_GAP');
+    assert.equal(t.practicalRangeHint.state, 'RESEARCH_GAP');
+    assert.equal(t.micronsPerClickEstimate.state, 'RESEARCH_GAP');
+  });
+
+  test('de 50-micron-claim staat alleen nog in de historical ledger, nooit als live micronsPerClickEstimate', () => {
+    const ledger = B.TIMEMORE_C3S_PRO_MICRON_HISTORICAL_LEDGER;
+    assert.ok(Array.isArray(ledger) && ledger.length === 2);
+    assert.ok(ledger.some(e => /50 microns/.test(e.claim)));
+    assert.ok(ledger.every(e => e.supersededBy), 'elk ledger-item moet zijn opvolger-status vermelden');
+    const t = B.translateSetting(B.TIMEMORE_C3S_PRO_ID, 'MEDIUM_FINE');
+    assert.notEqual(t.micronsPerClickEstimate.value, 50);
+  });
+
+  test('unsafe floor blokkeert nog steeds elke setting op/onder TIMEMORE_C3S_PRO_CLICK_FLOOR_MAX (defensieve check blijft actief)', () => {
+    // De huidige 15/13-ondergrenzen liggen ruim boven de floor (7); dit bewaakt alleen
+    // dat de defensieve HARD_CONSTRAINT_VIOLATION-check zelf nog vuurt, niet dat hij
+    // vandaag geraakt wordt.
+    assert.ok(B.TIMEMORE_C3S_PRO_V60_STARTING_RANGE.clicksMin > 7);
+    assert.ok(B.TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE.clicksMin > 7);
+  });
+
+  test('geen Chestnut X/S2C860-registry bestaat — C3S Pro-data kan dus nooit op die grinder worden toegepast', () => {
+    assert.ok(!('CHESTNUT_X' in B.GRINDER_REGISTRY));
+    assert.ok(!('TIMEMORE_CHESTNUT_X' in B.GRINDER_REGISTRY));
+    assert.deepEqual(Object.keys(B.GRINDER_REGISTRY).sort(), [B.GENERIC_UNLISTED_ID, B.TIMEMORE_C3S_PRO_ID].sort());
+  });
+
+  test('computeRecipe(): grindStartingRange/grindPracticalRange/grindMechanicalMicron komen door tot in het recept', () => {
+    const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
+    assert.equal(rec.grindStartingRange.brewMethodLabel, 'V60 pour-over');
+    assert.equal(rec.grindStartingRange.clicksMin, 15);
+    assert.equal(rec.grindStartingRange.clicksMax, 17);
+    assert.equal(rec.grindPracticalRange.clicksMin, 13);
+    assert.equal(rec.grindPracticalRange.clicksMax, 18);
+    assert.equal(rec.grindMechanicalMicron, 83.3);
+    assert.equal(rec.grindMicronContest, null, 'geen CONTESTED meer voor C3S Pro sinds v3');
+    // Startpunt-positionering (ROAST_GRIND_ANCHOR_FRACTION) blijft binnen de NIEUWE 15-17 range.
+    assert.ok(rec.grindStartingPoint >= 15 && rec.grindStartingPoint <= 17);
+  });
+
+  test('Chemex: grindStartingRange/grindPracticalRange blijven null (RESEARCH_GAP), geen verzonnen getal', () => {
+    const rec = api.computeRecipe('chemex','medium','klassiek',600,null,false,null,null,false,null,null,0);
+    assert.equal(rec.grindStartingRange, null);
+    assert.equal(rec.grindPracticalRange, null);
+    assert.equal(rec.grindStartingPoint, null);
+  });
+});
+
+describe('Implementatieplan v3.0 — Model Policy (versioned TDS/EY target windows)', () => {
+  test('MODEL_POLICY.version is "3.0" en elk target window heeft provenance APP_ASSUMED + evidenceStatus RESEARCH_GAP', () => {
+    assert.equal(api.MODEL_POLICY.version, '3.0');
+    for (const key of ['LOWER_STRENGTH_MODERATE_EXTRACTION', 'FULLER_BODIED']){
+      const w = api.MODEL_POLICY.targetWindows[key];
+      assert.equal(w.provenance, 'APP_ASSUMED');
+      assert.equal(w.evidenceStatus, 'RESEARCH_GAP');
+      assert.ok(Array.isArray(w.tds) && w.tds.length === 2);
+      assert.ok(Array.isArray(w.ey) && w.ey.length === 2);
+    }
+  });
+
+  test('ENGINE_TARGET_WINDOWS blijft getalsmatig exact afgeleid van MODEL_POLICY — geen tweede kopie van dezelfde getallen', () => {
+    // NB: assert.deepEqual op arrays die uit de vm-sandbox komen (een ander realm dan dit
+    // testbestand) geeft valse negatieven ("not reference-equal") ondanks identieke
+    // waarden — vandaar element-voor-element vergelijken i.p.v. deepEqual.
+    const pairs = [
+      [api.ENGINE_TARGET_WINDOWS.LOWER_STRENGTH_MODERATE_EXTRACTION.strengthTDS, [1.15, 1.30]],
+      [api.ENGINE_TARGET_WINDOWS.LOWER_STRENGTH_MODERATE_EXTRACTION.extractionYieldEY, [18, 20]],
+      [api.ENGINE_TARGET_WINDOWS.FULLER_BODIED.strengthTDS, [1.30, 1.45]],
+      [api.ENGINE_TARGET_WINDOWS.FULLER_BODIED.extractionYieldEY, [20, 22]],
+      [api.MODEL_POLICY.targetWindows.LOWER_STRENGTH_MODERATE_EXTRACTION.tds, [1.15, 1.30]],
+      [api.MODEL_POLICY.targetWindows.LOWER_STRENGTH_MODERATE_EXTRACTION.ey, [18, 20]],
+      [api.MODEL_POLICY.targetWindows.FULLER_BODIED.tds, [1.30, 1.45]],
+      [api.MODEL_POLICY.targetWindows.FULLER_BODIED.ey, [20, 22]]
+    ];
+    for (const [actual, expected] of pairs){
+      assert.equal(actual.length, expected.length);
+      expected.forEach((v, i) => assert.equal(actual[i], v));
+    }
+  });
+
+  test('computeRecipe() stempelt elk recept met modelPolicyVersion "3.0"', () => {
+    const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
+    assert.equal(rec.modelPolicyVersion, '3.0');
+  });
+});
+
+describe('Implementatieplan v3.0 — Bypass method guard (P1, §14)', () => {
+  test('bypassEnabled op Chemex wordt nooit toegepast, zelfs niet als de aanroep het toch true doorgeeft', () => {
+    const rec = api.computeRecipe('chemex','medium','klassiek',600,null,false,null,null,true,null,null,0);
+    assert.equal(rec.pourWaterMl, rec.water, 'op Chemex mag pourWaterMl nooit afwijken van het volledige watervolume');
+    assert.equal(rec.bypassMl, 0);
+    assert.match(rec.bypassNote, /NIET toegepast/, 'moet expliciet melden dat bypass genegeerd is, nooit stil');
+  });
+  test('bypassEnabled op V60 werkt onveranderd (negatieve controle — de guard raakt alleen andere methodes)', () => {
+    const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,true,null,null,0);
+    assert.ok(rec.pourWaterMl < rec.water, 'op V60 moet bypass nog gewoon werken');
+    assert.match(rec.bypassNote, /In de brewer zet je feitelijk op 1:/);
+  });
+  test('zonder bypassEnabled blijft bypassNote leeg op elke methode (geen ongevraagde meldingen)', () => {
+    const v60 = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
+    const chemex = api.computeRecipe('chemex','medium','klassiek',600,null,false,null,null,false,null,null,0);
+    assert.equal(v60.bypassNote, '');
+    assert.equal(chemex.bypassNote, '');
+  });
+});
+
+describe('Implementatieplan v3.0 — Technique provenance audit (P1, §15)', () => {
+  test('authorUnverified is true voor Rao-op-Chemex (ongeverifieerde toeschrijving) en false voor Kasuya (geverifieerd)', () => {
+    const raoChemex = api.computeRecipe('chemex','medium','fruitig_clean',400,null,false,null,null,false,null,null,0);
+    assert.equal(raoChemex.authorUnverified, true, 'RAO_CHEMEX_DISCLOSED heeft attribution.verified === false');
+    assert.match(raoChemex.author, /ongeverifieerd toegeschreven/);
+    const kasuya = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
+    assert.equal(kasuya.authorUnverified, false);
+    assert.doesNotMatch(kasuya.author, /ongeverifieerd/);
+  });
+
+  test('Perger (snel_puur) wordt getoond als bronREGEL (decision rule), niet als bronstructuur met een verzonnen schema', () => {
+    const rec = api.computeRecipe('v60','medium','snel_puur',300,null,false,null,null,false,null,null,0);
+    assert.equal(rec.technique, 'Perger 80/20');
+    assert.equal(rec.pulseCountSourced, false, 'Perger publiceert zelf geen giet-schema — het aantal beurten is eigen invulling');
+    assert.match(rec.notes, /beslisregel|decision rule|geen schema/i);
+  });
+
+  test('research-gap-profielen (geen overlay generatable) tonen "Alleen kernrecept", geen verzonnen techniek', () => {
+    // Elk profiel heeft op elke methode een core recipe; als er geen overlay is, moet
+    // hasNamedOverlay false zijn en de techniek terugvallen op "Kernrecept".
+    const rec = api.computeRecipe('chemex','medium','klassiek',600,null,false,null,null,false,null,null,0);
+    if (!rec.hasNamedOverlay){
+      assert.equal(rec.technique, 'Kernrecept');
+      assert.equal(rec.pulseCountSourced, false);
+    }
+  });
+});
+
+describe('Implementatieplan v3.0 — Canonical recommendation pipeline (P1, §13/§27)', () => {
+  // computeRecipe() koos de overlay voorheen via een eigen .find() op
+  // ENGINE_PROFILE_MAP[profiel].overlay, volledig buiten B.selectRecommendation()/
+  // computeRecipeFit()/computeEvidenceConfidence() om. Deze suite bewijst dat de
+  // vervangende selectViaCanonicalPipeline()-route (brewconsole_v2_2.html) voor elk van
+  // de vier eerder bestaande selectie-scenario's exact dezelfde winnaar oplevert als
+  // voorheen — de volledige baseline-sweep (_baselines_v3/baseline_na_canonical_pipeline.txt
+  // t.o.v. baseline_na_provenance.txt) bevestigt dit bovendien voor ALLE bestaande
+  // methode/profiel/roast/sterkte-combinaties, niet alleen deze vier representatieve gevallen.
+  test('voorkeurs-overlay met voldoende bewijs wint (klassiek/v60 -> Kasuya 4:6)', () => {
+    const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
+    assert.equal(rec.hasNamedOverlay, true);
+    assert.match(rec.technique, /Kasuya/i);
+  });
+
+  test('voorkeurs-overlay binnen zijn harde plafond wint (fruitig_clean/chemex, 400ml -> Rao Clarity)', () => {
+    const rec = api.computeRecipe('chemex','medium','fruitig_clean',400,null,false,null,null,false,null,null,0);
+    assert.equal(rec.technique, 'Rao Clarity');
+  });
+
+  test('voorkeurs-overlay boven zijn harde plafond wordt uitgesloten -> pipeline valt terug op kernrecept, niet stil op een andere overlay (fruitig_clean/chemex, 600ml)', () => {
+    const rec = api.computeRecipe('chemex','medium','fruitig_clean',600,null,false,null,null,false,null,null,0);
+    assert.equal(rec.hasNamedOverlay, false);
+    assert.equal(rec.technique, 'Kernrecept');
+  });
+
+  test('profiel zonder enige gekoppelde overlay (sirooprig_vol) levert altijd het kernrecept, nooit een verzonnen techniek', () => {
+    const rec = api.computeRecipe('v60','medium','sirooprig_vol',300,null,false,null,null,false,null,null,0);
+    assert.equal(rec.hasNamedOverlay, false);
+    assert.equal(rec.technique, 'Kernrecept');
+  });
+});

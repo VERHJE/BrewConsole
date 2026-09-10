@@ -1670,24 +1670,67 @@
     ),
     relativeInstructionOnly: true
   };
-  var TIMEMORE_C3S_PRO_V60_STARTING_RANGE = {
+  // v3 (Implementatieplan v3.0 / Timemore C3S Pro \u2014 Technische Deep-Dive, 2026-09-10):
+  // het oude 13-16 was \u00e9\u00e9n ongedifferentieerd "starting range"-begrip. De nieuwe,
+  // geconsolideerde bron onderscheidt een bredere PRACTICAL range ("zinvolle praktische
+  // V60-zone") van een smallere STARTING range ("algemeen startgebied") binnen die
+  // practical range \u2014 twee losse concepten, plan \xA79. Beide zijn SOURCED
+  // manufacturer-/community-consolidatie, geen instrumentele per-toestel-meting. Bestaande
+  // loggingen/snapshots die op het oude 13-16-startpunt zijn gebaseerd blijven ongewijzigd
+  // leesbaar (recipe-snapshot-discipline in de app-laag) \u2014 dit is een voorwaartse
+  // wijziging, geen herschrijving van bestaande data (plan \xA720).
+  var TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE = {
     brewMethodLabel: "V60 pour-over",
     clicksMin: 13,
-    clicksMax: 16,
-    basis: "Community/retailer-sourced, not independently measured or SKU-specific-instrument-verified: 1 independent Pro-adjacent retailer (Slow Pour Supply) + 1 sibling-model (base C3S, not the exact Pro SKU) corroboration; excludes 1 outlier (6-10 clicks) and 1 inadmissible AI-generated source. A starting point for your own self-calibration, not a validated setting."
+    clicksMax: 18,
+    basis: "Timemore C3S Pro \u2014 Technische Deep-Dive (technische consolidatie van fabrikantgegevens + onafhankelijke/derde-partij observaties, 2026-09-10): meerdere Timemore-gebaseerde bronnen plaatsen pour-over grofweg rond 13\u201316 clicks; een onafhankelijke C3S-test vond ongeveer 15\u201318 clicks interessant voor medium grind. Gebruikt als brede, zinvolle praktische V60-zone \u2014 geen claim over uniforme particle size binnen die zone."
   };
-  var TIMEMORE_C3S_PRO_MICRON_POSITIONS = [
+  var TIMEMORE_C3S_PRO_V60_STARTING_RANGE = {
+    brewMethodLabel: "V60 pour-over",
+    clicksMin: 15,
+    clicksMax: 17,
+    basis: "Timemore C3S Pro \u2014 Technische Deep-Dive (technische consolidatie, 2026-09-10): 15\u201317 clicks als algemeen startgebied binnen de practical range hierboven \u2014 een vertrekpunt voor eigen kalibratie, geen gevalideerde instelling. Vervangt het eerdere, smallere 13-16-community-cijfer (Slow Pour Supply + sibling-model-corroboratie); zie decision-grind-starting-range-v60.md v2 voor de provenance-vergelijking tussen beide bronnen."
+  };
+  // v3: de nieuwe technische deep-dive consolideert 83,3 \u00b5m/click als hoge-zekerheid
+  // mechanische fabrikantspecificatie (herhaald over meerdere onafhankelijke retailers,
+  // consistent met 12 clicks/rotatie en ~36 posities \u2014 zie TIMEMORE_C3S_PRO_MECHANICAL_FACTS
+  // hieronder). De losstaande 50-micron-claim (\u00e9\u00e9n bron, tekkysui.com, ongepubliceerde
+  // methodologie) blijft hier bewaard als historical/contested ledger-item voor
+  // audit-doeleinden, maar wordt niet langer als gelijkwaardig aan 83,3 \u00b5m getoond in de
+  // gewone recept-UI (plan \xA711, acceptance checklist: "50 \u00b5m claim niet meer als
+  // gelijkwaardige actieve hardwarewaarde in UI").
+  var TIMEMORE_C3S_PRO_MICRON_HISTORICAL_LEDGER = [
     {
       claim: "\u22480.083 mm (83 microns) of burr movement per click. Timemore's own product page states this, and it is repeated verbatim across multiple independent retail listings (Slow Pour Supply, koffiekompaan.nl, kalvecoffee.com, thebasicbarista.com) \u2014 2 of these name the Pro SKU explicitly, the others the sibling base C3S on the same dial family.",
       source: "Timemore manufacturer spec sheet, repeated across retail copy \u2014 no source in this chain discloses an instrument measurement of the adjustment screw itself.",
-      evidenceClass: "F"
+      evidenceClass: "F",
+      supersededBy: "TIMEMORE_C3S_PRO_MECHANICAL_FACTS.adjustmentMicronsPerClick (v3: consolidated as SOURCED, class B, by the Technische Deep-Dive)"
     },
     {
       claim: "0.050 mm (50 microns) per click, stated for the same C3S Pro \u2014 a direct numeric contradiction of the 83-micron figure above, not a different SKU, a unit-conversion slip, or a rounding difference.",
       source: "tekkysui.com comparison blog (2026-08-17) \u2014 independently operated from the 83-micron sources above, but equally undisclosed methodology.",
-      evidenceClass: "F"
+      evidenceClass: "F",
+      supersededBy: "Not corroborated by the v3 Technische Deep-Dive consolidation \u2014 single-source, retained here for audit trail only, never surfaced as a live hardware value."
     }
   ];
+  // NIEUW (plan \xA77.1/\xA77.3/\xA712): mechanical setting als eigen, apart datadomein, los van
+  // practical range / PSD observations / personal calibration. adjustmentMicronsPerClick is
+  // een MECHANICAL_ADJUSTMENT-getal (hoever het mechanisme verstelt), nooit een
+  // particle-size-/D50/D90-claim \u2014 zie mechanicalAdjustmentMicrons() hieronder, de enige
+  // plek waar dit getal met clicks vermenigvuldigd wordt, uitdrukkelijk als DERIVED
+  // mechanical adjustment gelabeld.
+  var TIMEMORE_C3S_PRO_MECHANICAL_FACTS = Object.freeze({
+    burr: "S2C660",
+    diameterMm: 38,
+    material: "SUS420",
+    adjustmentMicronsPerClick: 83.3,
+    clicksPerRotation: 12,
+    approximatePositions: 36,
+    semantics: "MECHANICAL_ADJUSTMENT"
+  });
+  function mechanicalAdjustmentMicrons(clicks) {
+    return clicks * TIMEMORE_C3S_PRO_MECHANICAL_FACTS.adjustmentMicronsPerClick;
+  }
   var GENERIC_UNLISTED_ID = "GENERIC_UNLISTED";
   var genericInternalTarget = {
     qualitativeBand: "MEDIUM",
@@ -1761,25 +1804,51 @@
     const confidenceBand = "INSUFFICIENT";
     const fallbackGapId = curve.state === "RESEARCH_GAP" ? curve.gapId : "GRIND_BAND_MATCH_UNRESOLVED";
     let startingRangeHint;
+    let practicalRangeHint;
     if (grinderRegistryId === TIMEMORE_C3S_PRO_ID && desiredQualitativeBand === "MEDIUM_FINE") {
       if (TIMEMORE_C3S_PRO_V60_STARTING_RANGE.clicksMin <= TIMEMORE_C3S_PRO_CLICK_FLOOR_MAX) {
         throw new Error(
           `HARD_CONSTRAINT_VIOLATION: TIMEMORE_C3S_PRO_V60_STARTING_RANGE.clicksMin (${TIMEMORE_C3S_PRO_V60_STARTING_RANGE.clicksMin}) falls inside the evidenced unsafe zone (avoid clicks 0-${TIMEMORE_C3S_PRO_CLICK_FLOOR_MAX} from zero, audit-timemore-c3s-pro-deep-audit.md \xA72-3) \u2014 this must never be offered as a starting point. [Implementation, defensive]`
         );
       }
-      startingRangeHint = resolved(TIMEMORE_C3S_PRO_V60_STARTING_RANGE, "ESTIMATED", "C");
+      // NIEUW (plan \u00a79): dezelfde defensieve HARD_CONSTRAINT_VIOLATION-check, nu ook voor
+      // de bredere practical range \u2014 die begint op dezelfde 13 als voorheen, dus dit vuurt
+      // vandaag niet, maar bewaakt tegen een toekomstige, onveilige wijziging van dat getal.
+      if (TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE.clicksMin <= TIMEMORE_C3S_PRO_CLICK_FLOOR_MAX) {
+        throw new Error(
+          `HARD_CONSTRAINT_VIOLATION: TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE.clicksMin (${TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE.clicksMin}) falls inside the evidenced unsafe zone (avoid clicks 0-${TIMEMORE_C3S_PRO_CLICK_FLOOR_MAX} from zero, audit-timemore-c3s-pro-deep-audit.md \xA72-3) \u2014 this must never be offered as a practical range. [Implementation, defensive]`
+        );
+      }
+      startingRangeHint = resolved(TIMEMORE_C3S_PRO_V60_STARTING_RANGE, "SOURCED", "B");
+      practicalRangeHint = resolved(TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE, "SOURCED", "B");
     } else if (grinderRegistryId === TIMEMORE_C3S_PRO_ID) {
       startingRangeHint = researchGap(
         "G-GRIND-TIMEMORE-CHEMEX-01",
         "No community-sourced starting range meets this project's evidence bar for this brew method on this grinder (research-timemore-c3s-pro-brewing-application.md \xA79: Chemex-specific guidance is 'Effectively NOT FOUND at reliable confidence') \u2014 do not surface a number here."
+      );
+      practicalRangeHint = researchGap(
+        "G-GRIND-TIMEMORE-CHEMEX-01",
+        "No community-sourced practical range meets this project's evidence bar for this brew method on this grinder \u2014 do not surface a number here."
       );
     } else {
       startingRangeHint = researchGap(
         fallbackGapId,
         "No starting-range research exists for this grinder."
       );
+      practicalRangeHint = researchGap(
+        fallbackGapId,
+        "No practical-range research exists for this grinder."
+      );
     }
-    const micronsPerClickEstimate = grinderRegistryId === TIMEMORE_C3S_PRO_ID ? contested(TIMEMORE_C3S_PRO_MICRON_POSITIONS) : researchGap(
+    // v3 (plan \u00a711): 83,3 \u00b5m/click is nu een SOURCED mechanische specificatie i.p.v. een
+    // CONTESTED-status tussen twee even zwaar wegende claims \u2014 zie
+    // TIMEMORE_C3S_PRO_MECHANICAL_FACTS/TIMEMORE_C3S_PRO_MICRON_HISTORICAL_LEDGER
+    // hierboven voor de volledige herkomst en de gearchiveerde 50-micron-tegenclaim.
+    const micronsPerClickEstimate = grinderRegistryId === TIMEMORE_C3S_PRO_ID ? resolved(
+      TIMEMORE_C3S_PRO_MECHANICAL_FACTS.adjustmentMicronsPerClick,
+      "SOURCED",
+      "B"
+    ) : researchGap(
       fallbackGapId,
       "No micron-per-click figure \u2014 measured or even contested \u2014 exists anywhere in the corpus for this grinder."
     );
@@ -1798,6 +1867,7 @@
       },
       grinderRecognized,
       startingRangeHint,
+      practicalRangeHint,
       micronsPerClickEstimate
     };
   }
@@ -2679,7 +2749,15 @@
     // te dupliceren — dus de bestaande, interne ratioFromWindow() (en de constante erachter)
     // hier alsnog ontsloten, in plaats van een tweede kopie van dezelfde formule te schrijven.
     ratioFromWindow,
-    LIQUID_RETAINED_RATIO
+    LIQUID_RETAINED_RATIO,
+    // NIEUW (Implementatieplan v3.0 / C3S Pro Technische Deep-Dive, §7/§9/§11/§12):
+    // mechanical facts / practical range / historical micron-ledger als eigen,
+    // ontsloten datadomeinen — zie de toelichting bij hun definitie hierboven.
+    TIMEMORE_C3S_PRO_MECHANICAL_FACTS,
+    mechanicalAdjustmentMicrons,
+    TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE,
+    TIMEMORE_C3S_PRO_V60_STARTING_RANGE,
+    TIMEMORE_C3S_PRO_MICRON_HISTORICAL_LEDGER
   };
 })();
 
@@ -2756,9 +2834,10 @@ const ROAST_TEMP_ANCHOR = {
   dark:         { band:{min:88,max:92}, instruction:'koken, ongeveer 1 minuut wachten' }
 };
 // Positie (0 = fijne kant/ondergrens, 1 = grove kant/bovengrens) binnen de bestaande,
-// al-gepubliceerde klikrange (bv. TIMEMORE_C3S_PRO_V60_STARTING_RANGE, 13-16) — licht
-// brandt fijn, donker brandt grof. Voegt geen nieuwe claim toe, positioneert alleen
-// binnen een bereik dat er al staat (§2c).
+// al-gepubliceerde klikrange (bv. TIMEMORE_C3S_PRO_V60_STARTING_RANGE, 15-17 sinds
+// Implementatieplan v3.0 / C3S Pro Technische Deep-Dive) — licht brandt fijn, donker
+// brandt grof. Voegt geen nieuwe claim toe, positioneert alleen binnen een bereik dat er
+// al staat (§2c).
 const ROAST_GRIND_ANCHOR_FRACTION = { light:0, light_medium:0.25, medium:0.5, medium_dark:0.75, dark:1 };
 
 const PROFILE_INFO = {
@@ -3046,9 +3125,44 @@ function rawKeyForVisibleSelection(canonicalKey, scores){
    the recipe notes" terwijl de getallen nergens in de UI stonden. Dat is nu wél zo:
    renderPrep() rendert #target-window-note met de letterlijke TDS/EY-grenzen én de
    herkomst ("door de app aangeleverd, engine zegt RESEARCH_GAP"). */
+/* NIEUW (Implementatieplan v3.0, §6 "Model Policy"): de twee numerieke TDS/EY-vensters
+   hieronder zijn productmatig gewenst en blijven getalsmatig ONGEWIJZIGD — dit voegt
+   uitsluitend een expliciete, versieerbare Model Policy-laag toe i.p.v. een kale const.
+   De engine zelf markeert de bronbasis van deze vensters als RESEARCH_GAP
+   (G-CONTROL-CHART-01, SENSORY_TARGET_CLUSTERS); resolveTargetWindow() accepteert dit
+   uitdrukkelijk als override ("a caller MAY supply its own numeric window... this engine
+   does not compute one on its own"). MODEL_POLICY.version wordt vanaf nu meegeschreven op
+   elke nieuwe recept-/logboekrecord (los van RECORD_SCHEMA_VERSION, additief veld) zodat
+   een toekomstige policy-wijziging historische loggingen niet met terugwerkende kracht
+   herinterpreteert — zie computeRecipe() en saveBrewLogEntry(). Voorkomt ook dat deze
+   waarden per ongeluk via een generieke override-route als RESOLVED/STATED gemarkeerd
+   raken: resolveTargetWindow() blijft onderscheid maken tussen extern-STATED input en
+   interne model policy (provenance staat hieronder altijd op APP_ASSUMED). */
+const MODEL_POLICY = Object.freeze({
+  version: "3.0",
+  name: "Brew Engine target-window model policy",
+  targetWindows: Object.freeze({
+    LOWER_STRENGTH_MODERATE_EXTRACTION: Object.freeze({
+      tds: [1.15, 1.30],
+      ey: [18, 20],
+      provenance: "APP_ASSUMED",
+      evidenceStatus: "RESEARCH_GAP",
+      rationale: "SCA-Brewing-Control-Chart-achtig doelvenster voor het lagere-sterkte/matige-extractie-cluster (bright/clean-leaning profielen). Door de app aangeleverd, geen sourced numeric evidence — de engine markeert dit veld zelf als G-CONTROL-CHART-01."
+    }),
+    FULLER_BODIED: Object.freeze({
+      tds: [1.30, 1.45],
+      ey: [20, 22],
+      provenance: "APP_ASSUMED",
+      evidenceStatus: "RESEARCH_GAP",
+      rationale: "SCA-Brewing-Control-Chart-achtig doelvenster voor het fuller-bodied-cluster. Door de app aangeleverd, geen sourced numeric evidence — de engine markeert dit veld zelf als G-CONTROL-CHART-01."
+    })
+  })
+});
+// Afgeleid van MODEL_POLICY hierboven — nooit een tweede, losse kopie van dezelfde
+// getallen. resolveTargetWindow() consumeert dit exact zoals voorheen (ongewijzigde vorm).
 const ENGINE_TARGET_WINDOWS = {
-  LOWER_STRENGTH_MODERATE_EXTRACTION: { strengthTDS:[1.15,1.30], extractionYieldEY:[18,20] },
-  FULLER_BODIED:                      { strengthTDS:[1.30,1.45], extractionYieldEY:[20,22] }
+  LOWER_STRENGTH_MODERATE_EXTRACTION: { strengthTDS: MODEL_POLICY.targetWindows.LOWER_STRENGTH_MODERATE_EXTRACTION.tds, extractionYieldEY: MODEL_POLICY.targetWindows.LOWER_STRENGTH_MODERATE_EXTRACTION.ey },
+  FULLER_BODIED:                      { strengthTDS: MODEL_POLICY.targetWindows.FULLER_BODIED.tds,                      extractionYieldEY: MODEL_POLICY.targetWindows.FULLER_BODIED.ey }
 };
 
 
@@ -3704,14 +3818,92 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
 function buildFallbackRecipe(reason, waterMl){
   return {
     dose:0, water: waterMl, pourWaterMl: waterMl, bypassMl:0, temp:0, tempClamped:false,
-    grindMicron:null, grindStand:null, grindClamped:false, grindConfidence:'INSUFFICIENT', grindBandLabel:'', grindStartingRange:null, grindStartingPoint:null, grindMicronContest:null,
+    grindMicron:null, grindStand:null, grindClamped:false, grindConfidence:'INSUFFICIENT', grindBandLabel:'', grindStartingRange:null, grindPracticalRange:null, grindStartingPoint:null, grindMicronContest:null, grindMechanicalMicron:null,
     tempBandNote:'', tempBand:{min:0,max:0}, tempInstruction:'', deviceTempBand:{min:0,max:0},
     totalTime:0, steps:[],
     technique:'Geen geldig recept bij dit watervolume', author:'—',
     notes:`${reason} Pas de waterhoeveelheid aan (stel bijv. terug naar het midden van het bereik) of kies de andere zettermethode.`,
     ratioText:'—', processNote:'', freshnessNote:'', altitudeNote:'', hardnessNote:'', bypassNote:'', strengthNote:'',
-    bypassAdv:{ pct:0, factor:1 }, contactTimeDiagnosticBand:null, pulseCountSourced:false
+    bypassAdv:{ pct:0, factor:1 }, contactTimeDiagnosticBand:null, pulseCountSourced:false,
+    authorUnverified:false,
+    modelPolicyVersion: MODEL_POLICY.version
   };
+}
+
+/* NIEUW (Implementatieplan v3.0, P1 §13/§27 — "canonical recommendation pipeline"):
+   tot nu toe koos computeRecipe() de overlay zelf via een eigen .find() op
+   mapEntry.overlay — de motor se eigen B.selectRecommendation()/computeRecipeFit()/
+   computeEvidenceConfidence() (gebouwd voor precies deze taak) lagen volledig ongebruikt.
+   Dit verving die schaduw-selectie DOOR de canonieke pipeline, zonder een
+   nagemaakte TDS/EY-voorspelling per kandidaat te verzinnen: elke kandidaat in één
+   generateCandidates()-aanroep deelt letterlijk dezelfde core.targetWindow (overlays
+   passen alleen de giettechniek aan, nooit dosis/water/ratio/maling — zie
+   buildStyleOverlay()), dus candidateWindow === targetWindow is een echte eigenschap
+   van hoe recepten hier worden afgeleid, geen fictieve precisie. Het enige echte
+   onderscheid tussen kandidaten is welke techniek bij het gekozen profiel hoort — dat
+   bestond al (ENGINE_PROFILE_MAP[profielKey].overlay) en wordt nu doorgegeven als
+   computeRecipeFit()'s softConstraintMismatch-signaal i.p.v. buiten de pipeline om
+   direct te kiezen. Resultaat geverifieerd via de volledige baseline-sweep (_baselines_v3/):
+   0 diff op elk bestaand recept. */
+function overlayTemplateIdOf(genCandidate){
+  return genCandidate.styleOverlay.state === 'RESOLVED'
+    ? genCandidate.styleOverlay.value.id.split('::')[0]
+    : null;
+}
+function evidenceClassToBand(evidenceClass){
+  if (evidenceClass === 'A') return 'HIGH';
+  if (evidenceClass === 'B') return 'MEDIUM';
+  return 'LOW'; // C, D, of onbekend — geen hogere band verzinnen dan de bron aangeeft
+}
+function selectViaCanonicalPipeline(B, gen, preferredOverlayId, targetWindowValue){
+  const isPreferred = (genCandidate) => {
+    const oid = overlayTemplateIdOf(genCandidate);
+    return preferredOverlayId ? oid === preferredOverlayId : oid === null;
+  };
+  const pipelineCandidates = gen.candidates.map((genCandidate) => {
+    const core = genCandidate.recipeCore;
+    const oid = overlayTemplateIdOf(genCandidate);
+    const doseBand = core.dose.state === 'RESOLVED' ? evidenceClassToBand(core.dose.evidenceClass) : 'LOW';
+    const grindHint = core.grind.startingRangeHint;
+    const grindNoDataFallback = !grindHint || grindHint.state !== 'RESOLVED';
+    const grindBandLabel = grindNoDataFallback ? 'LOW' : evidenceClassToBand(grindHint.evidenceClass);
+    const perParameter = { dose: doseBand, grind: grindBandLabel };
+    return {
+      id: oid || `core::${core.id}`,
+      genCandidate,
+      passedHardConstraints: genCandidate.passedHardConstraints,
+      loadBearingParameters: ['dose', 'grind'],
+      confidence: {
+        perParameter,
+        ...B.computeEvidenceConfidence(
+          { loadBearingParameters: ['dose', 'grind'], confidence: { perParameter } },
+          {
+            loadBearingRestsOnContestedOrGap: false,
+            coffeeAgeOrRoastDateTriggersCap: false,
+            grinderInNoDataFallback: grindNoDataFallback,
+            waterLoadBearingAndCoarseProvenance: false,
+            chemexComparedToParallelV60: false
+          }
+        )
+      },
+      fit: B.computeRecipeFit({
+        candidateWindow: core.targetWindow,
+        targetWindow: targetWindowValue,
+        softConstraintMismatch: !isPreferred(genCandidate),
+        wellCenteredInAchievableRange: true,
+        smuggledForbiddenEdge: false,
+        personalHistoryContradicts: false
+      })
+    };
+  });
+  const rec = B.selectRecommendation({
+    candidates: pipelineCandidates,
+    buildReasoningChain: (pc) => pc.fit.reasons,
+    areDistinct: (a, b) => a.id !== b.id,
+    experimentalEligibleCandidateIds: new Set()
+  });
+  if (rec.top.state !== 'RESOLVED') return null;
+  return rec.top.value.candidate.genCandidate;
 }
 
 function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, experimentalFlag, roastDays, altitudeMasl, bypassEnabled, flavorFermentEvidence, waterHardnessMgLArg, strengthAdjust){
@@ -3776,14 +3968,9 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   });
 
   let entry = null;
-  if (gen.blocked.state !== 'RESOLVED'){
+  if (gen.blocked.state !== 'RESOLVED' && targetWindow.state === 'RESOLVED'){
     const preferred = typeof mapEntry.overlay === 'string' ? mapEntry.overlay : (mapEntry.overlay ? mapEntry.overlay[methodKey] : null);
-    if (preferred){
-      entry = gen.candidates.find(c => c.styleOverlay.state === 'RESOLVED' && c.styleOverlay.value.id.split('::')[0] === preferred) || null;
-    }
-    if (!entry){
-      entry = gen.candidates.find(c => c.styleOverlay.state !== 'RESOLVED') || gen.candidates[0] || null;
-    }
+    entry = selectViaCanonicalPipeline(B, gen, preferred, targetWindow.value);
   }
 
   if (!entry){
@@ -3830,7 +4017,17 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // Concentraat/bypass — vast percentage (zie bypassAdvice()), niet langer proces-
   // conditioneel: verwerkingsmethode mag dit getal structureel niet meer sturen.
   const bypassAdv = bypassAdvice();
-  const pourWaterMl = bypassEnabled ? Math.round(water * bypassAdv.factor / 5) * 5 : water;
+  // NIEUW (Implementatieplan v3.0, §14, P1 "Bypass method guard"): de concentraat-methode
+  // is V60-georiënteerd — de brontechniek (Drip Roast's V60-bypassgids) en de bestaande
+  // 30%-vuistregel gelden niet aantoonbaar voor Chemex. renderBypassToggle() schakelt de
+  // knop hierop al uit, maar dit is de eigenlijke garantie: zelfs als bypassEnabled toch
+  // true binnenkomt op een niet-V60-methode (bv. handmatig aangepaste state), past de
+  // motor het nooit stilzwijgend toe — net zo min als B-1's dosisklem een overschrijding
+  // stilzwijgend liet passeren.
+  const bypassMethodSupported = methodKey === 'v60';
+  const bypassIgnoredForMethod = bypassEnabled && !bypassMethodSupported;
+  const bypassActuallyApplied = bypassEnabled && bypassMethodSupported;
+  const pourWaterMl = bypassActuallyApplied ? Math.round(water * bypassAdv.factor / 5) * 5 : water;
   const bypassMl = Math.max(0, Math.round(water - pourWaterMl));
 
   // Temperatuur — FIX (Implementatieplan Zetadvies v3.0, Fase 2a/2b, Bouwbesluit B-1):
@@ -3856,7 +4053,14 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // for the Timemore C3S Pro's V60 band today; RESEARCH_GAP everywhere else, including
   // Chemex. See src/registry/grinders.ts's TIMEMORE_C3S_PRO_V60_STARTING_RANGE and
   // decision-grind-starting-range-v60.md for the sourcing/exclusions behind this.
+  // BIJGEWERKT (Implementatieplan v3.0 / C3S Pro Technische Deep-Dive, §9): 13-16 -> 15-17,
+  // nu als apart "starting"-concept naast de bredere practical range hieronder.
   const grindStartingRange = core.grind.startingRangeHint.state === 'RESOLVED' ? core.grind.startingRangeHint.value : null;
+  // NIEUW (plan §9/§12): de bredere "zinvolle praktische V60-zone" (13-18) — een apart
+  // concept van de smallere starting range hierboven, nooit gebruikt om een startpunt te
+  // positioneren (dat blijft binnen grindStartingRange), puur om te laten zien hoe breed
+  // het werkbare gebied daadwerkelijk is.
+  const grindPracticalRange = core.grind.practicalRangeHint && core.grind.practicalRangeHint.state === 'RESOLVED' ? core.grind.practicalRangeHint.value : null;
   // NIEUW (Implementatieplan Zetadvies v3.0, Fase 2c, Bouwbesluit B-1): maalRICHTING,
   // geen maalgetal — een positie BINNEN de al-gepubliceerde klikrange hierboven (licht
   // brandt fijn/ondergrens, donker brandt grof/bovengrens). Voegt geen nieuwe claim toe
@@ -3865,12 +4069,15 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   const grindStartingPoint = grindStartingRange
     ? Math.round(grindStartingRange.clicksMin + (ROAST_GRIND_ANCHOR_FRACTION[roastKey] != null ? ROAST_GRIND_ANCHOR_FRACTION[roastKey] : 0.5) * (grindStartingRange.clicksMax - grindStartingRange.clicksMin))
     : null;
-  // Contested (never resolved) thread-pitch disclosure — two conflicting, unverified
-  // manufacturer/retailer-derived micron-per-click figures for the Timemore C3S Pro,
-  // shown as a dispute the engine explicitly does not referee. RESEARCH_GAP (→ null)
-  // for every other grinder. See src/registry/grinders.ts's
-  // TIMEMORE_C3S_PRO_MICRON_POSITIONS and decision-grind-microns-per-click-contested.md.
+  // BIJGEWERKT (Implementatieplan v3.0 / C3S Pro Technische Deep-Dive, §11): het
+  // micron-per-click-getal is niet langer CONTESTED — de nieuwe technische deep-dive
+  // consolideert 83,3 µm/click als SOURCED mechanische specificatie (zie
+  // TIMEMORE_C3S_PRO_MECHANICAL_FACTS in de engine); de vroegere 50-micron-tegenclaim
+  // staat nu alleen nog in een historical ledger, niet meer gelijkwaardig in de UI.
+  // grindMicronContest (het OUDE tegenspraak-object) blijft null voor de C3S Pro — zie
+  // grindMechanicalMicron hieronder voor de nieuwe, opgeloste weergave.
   const grindMicronContest = core.grind.micronsPerClickEstimate.state === 'CONTESTED' ? core.grind.micronsPerClickEstimate.positions : null;
+  const grindMechanicalMicron = core.grind.micronsPerClickEstimate.state === 'RESOLVED' ? core.grind.micronsPerClickEstimate.value : null;
 
   // Giet-schema — eerlijk generiek, zie buildPourSchedule() hierboven.
   const overlayPulseCount = overlay && overlay.pulseCount.state === 'RESOLVED' ? overlay.pulseCount.value : null;
@@ -3896,11 +4103,18 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // generatable voor deze brewer) of, eerlijk, uit het kernrecept alleen.
   let technique, author, notes;
   let pulseCountSourced = false;
+  // NIEUW (Implementatieplan v3.0, §15 "Technique provenance"): de "Unverified
+  // attribution"-categorie uit de taxonomie — vandaag alleen RAO_CHEMEX_DISCLOSED
+  // (att.verified === false). Stond al als parenthetische tekst in `author`; hier ook als
+  // eigen boolean zodat de UI er een zichtbare badge van kan maken i.p.v. alleen tekst die
+  // in de auteursregel kan verdwijnen.
+  let authorUnverified = false;
   if (overlay){
     const disp = OVERLAY_DISPLAY[overlayId] || { name: overlayId };
     technique = disp.name;
     const att = overlay.attribution.state === 'RESOLVED' ? overlay.attribution.value : null;
-    author = att ? (att.practitioner + (att.verified === false ? ' (ongeverifieerd toegeschreven)' : '')) : 'Onbekend';
+    authorUnverified = !!(att && att.verified === false);
+    author = att ? (att.practitioner + (authorUnverified ? ' (ongeverifieerd toegeschreven)' : '')) : 'Onbekend';
     const structureNote = overlay.pourStructure || '';
     // FIX (Implementatieplan Zetadvies v3.0, Fase 3): tekst geactualiseerd — de schemalengte
     // komt niet meer uit de apparaatbrede contacttijd-diagnostiek (die staat nu los, als
@@ -3958,15 +4172,17 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // NIEUW (Reparatieplan v4.0, B-5 / bevinding E-08): de percolatie vindt plaats op een
   // heel andere ratio dan de kaart toont. Dat getal hoort erbij, en het voorbehoud
   // erachter ook: het doelvenster waaruit dosis/ratio zijn afgeleid, geldt niet meer.
-  const brewerRatio = (bypassEnabled && dose > 0) ? (pourWaterMl / dose) : null;
-  const bypassNote = bypassEnabled
+  const brewerRatio = (bypassActuallyApplied && dose > 0) ? (pourWaterMl / dose) : null;
+  const bypassNote = bypassActuallyApplied
     ? `In de brewer zet je feitelijk op 1:${fmt(brewerRatio, 1)} (${fmt(dose,1)} g op ${pourWaterMl} ml), niet op de ${ratioText} die hierboven staat — die geldt pas ná het bijschenken. Belangrijk voorbehoud: het sterkte-/extractievenster waaruit dosis en ratio zijn afgeleid, gaat ervan uit dat ál het water door het koffiebed gaat. Bij de concentraat-methode is dat niet zo, dus de werkelijke extractie ligt buiten dat venster en de app kan niet voorspellen hoever. Vergeet niet: na het zetten ${bypassMl} ml vers heet water toevoegen aan de kan/kop (zie stat-blok hierboven) — dat brengt ${pourWaterMl} ml geconcentreerde koffie terug op ${Math.round(water)} ml, de normale sterkte. Concentraat-methode actief op een vast ${bypassAdv.pct}% bypass (vuistregel, niet per boon afgestemd — zie renderBypassToggle()). Werkt volgens de brontechniek (Drip Roast's V60-bypassgids) doorgaans het meest overtuigend bij funky naturals, anaerobic/experimentele fermentaties en dark roasts. Maling en temperatuur hierboven zijn NIET aangepast voor de concentraat-methode — er is geen gevalideerd getal voor die aanpassing gevonden; proef bewust en stel zelf bij (doorgaans iets fijner/warmer) indien nodig.`
-    : '';
+    : (bypassIgnoredForMethod
+        ? `Concentraat-methode NIET toegepast: deze methode is V60-georiënteerd (Drip Roast's V60-bypassgids) — er is geen gevalideerde basis gevonden om het vaste bypasspercentage op deze methode toe te passen, dus dit recept blijft op de normale ratio. Geen stille substitutie: dit wordt hier expliciet gemeld.`
+        : '');
 
   return {
     dose, water: Math.round(water), pourWaterMl, bypassMl, temp, tempClamped:false,
     grindMicron: grindResolvedNum, grindStand: grindResolvedNum, grindClamped:false,
-    grindConfidence, grindBandLabel, grindStartingRange, grindStartingPoint, grindMicronContest, tempBandNote, tempBand:{min:tMin,max:tMax}, tempInstruction, deviceTempBand:{min:deviceTMin,max:deviceTMax},
+    grindConfidence, grindBandLabel, grindStartingRange, grindPracticalRange, grindStartingPoint, grindMicronContest, grindMechanicalMicron, tempBandNote, tempBand:{min:tMin,max:tMax}, tempInstruction, deviceTempBand:{min:deviceTMin,max:deviceTMax},
     totalTime, steps,
     technique, author,
     notes, ratioText, processNote, freshnessNote, altitudeNote, hardnessNote, bypassNote, strengthNote,
@@ -3987,10 +4203,17 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     // een eigen invulling is — gebruikt door de evidence-badge, zodat die de disclaimer
     // in `notes` nooit kan tegenspreken.
     pulseCountSourced,
+    // NIEUW (Implementatieplan v3.0, §15): zie de toelichting bij authorUnverified hierboven.
+    authorUnverified,
     // NIEUW (Implementatieplan Zetadvies v3.0, Fase 3c/D-4): zie de toelichting bij
     // contactTimeDiagnosticBand hierboven — gebruikt door renderBrewLogHonestSummary(),
     // stuurt totalTime/steps niet (meer).
-    contactTimeDiagnosticBand
+    contactTimeDiagnosticBand,
+    // NIEUW (Implementatieplan v3.0, §6/§20): welke Model Policy-versie de TDS/EY-vensters
+    // van dít recept leverde — meegeschreven op elke nieuwe logging (saveBrewLogEntry())
+    // zodat een toekomstige policy-wijziging historische loggingen niet met
+    // terugwerkende kracht herinterpreteert.
+    modelPolicyVersion: MODEL_POLICY.version
   };
 }
 
@@ -6008,6 +6231,10 @@ function saveBrewLogEntry(){
     // NIEUW (Fase 5) — het aanbevolen recept, voor de vergelijking met wat er echt gebeurde:
     doseG: (typeof rec.dose === 'number') ? rec.dose : null,
     ratioText: rec.ratioText || null,
+    // NIEUW (Implementatieplan v3.0, §6/§20): welke Model Policy-versie het aanbevolen
+    // recept leverde — additief, RECORD_SCHEMA_VERSION-onafhankelijk. Oudere records
+    // missen dit veld simpelweg; niets leest het terug om ze te migreren.
+    modelPolicyVersion: rec.modelPolicyVersion || null,
     // NIEUW (Fase 5) — wat er ECHT gebeurde, niet het advies: fundament voor Fase 6/7.
     actualGrindClicks: readOptionalNumberInput('brewlog-actual-grind'),
     actualTimeSec: actualTime,
@@ -7022,6 +7249,22 @@ function renderStrengthToggle(){
 function renderBypassToggle(){
   const el = document.getElementById('bypass-chip');
   if (!el) return;
+  // NIEUW (Implementatieplan v3.0, §14, P1 "Bypass method guard"): de concentraat-methode
+  // is V60-georiënteerd (Drip Roast's V60-bypassgids); buiten V60 wordt de knop
+  // uitgeschakeld getoond i.p.v. stil toegepast — nooit blocked/disabled-gedrag verzwijgen
+  // (plan §22 E2E-eis: "Bypass selected on unsupported brewer → blocked/disabled"). Zet
+  // hier ook zelf state.bypass terug, zodat een leftover bypass=true van een eerdere
+  // V60-sessie nooit onopgemerkt blijft hangen na een methodewissel.
+  if (state.method !== 'v60'){
+    if (state.bypass) state.bypass = false;
+    el.innerHTML = `<button type="button" class="chip" id="bypass-btn" data-selected="false" disabled title="Concentraat-methode is V60-georiënteerd — er is geen gevalideerde basis gevonden om dit op deze methode toe te passen.">🌊 Concentraat-methode (alleen op V60)</button>`;
+    const fitEl = document.getElementById('bypass-fit-note');
+    if (fitEl){
+      const mInfo = METHOD_INFO[state.method];
+      fitEl.textContent = `Niet beschikbaar op ${mInfo ? mInfo.name : state.method}: de concentraat-methode en het vaste bypasspercentage zijn afgeleid van een V60-specifieke bron (Drip Roast's V60-bypassgids) — geen gevalideerde basis om dit op een andere methode toe te passen.`;
+    }
+    return;
+  }
   const adv = bypassAdvice(state.process, state.roast, state.experimental, state.fermentEvidence);
   el.innerHTML = `<button type="button" class="chip" id="bypass-btn" data-selected="${state.bypass}">🌊 Concentraat-methode (${adv.pct}% bypass)</button>`;
   const btn = document.getElementById('bypass-btn');
@@ -7426,8 +7669,10 @@ function renderPrep(){
       <div class="stat-value">${rec.grindMicron != null ? rec.grindMicron + ' µm' : (rec.grindBandLabel || '—')}</div>
       <div class="stat-sub">${rec.grindMicron != null ? `stand ${rec.grindStand} · Timemore C3S Pro` : `Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}`}</div>
       ${rec.grindMicron == null ? `<div class="stat-sub">Geen gevalideerde kalibratiecurve voor deze molen gevonden — relatieve instructie i.p.v. een verzonnen getal. Vertrek vanaf ${escapeHtml(rec.grindBandLabel || 'medium')} en stel bij op smaak.</div>` : ''}
-      ${rec.grindStartingRange ? `<div class="stat-sub">Startpunt uit community-/winkelbronnen (niet gemeten, niet per-toestel geverifieerd): klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} vanaf het nulpunt voor ${escapeHtml(rec.grindStartingRange.brewMethodLabel)}. Vermijd klik 0–6/7 (risico op beschadiging maalschijven). Zie dit als eigen kalibratie-vertrekpunt, geen gevalideerde instelling.</div>` : ''}
-      ${rec.grindStartingPoint != null ? `<div class="stat-sub">Maalrichting bij deze branddiepte: begin rond klik ${rec.grindStartingPoint} binnen dat bereik (lichter brandt fijner/lager, donkerder brandt grover/hoger) — een positie binnen de bestaande range hierboven, geen nieuw maalgetal.</div>` : ''}
+      ${rec.grindStartingRange ? `<div class="stat-sub">Algemeen startgebied (Timemore C3S Pro — Technische Deep-Dive, technische consolidatie van fabrikantgegevens + onafhankelijke bronnen, niet per-toestel geverifieerd): klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} vanaf het nulpunt voor ${escapeHtml(rec.grindStartingRange.brewMethodLabel)}. Vermijd klik 0–6/7 (risico op beschadiging maalschijven). Zie dit als eigen kalibratie-vertrekpunt, geen gevalideerde instelling.</div>` : ''}
+      ${rec.grindPracticalRange ? `<div class="stat-sub">Practical V60 range: klik ${rec.grindPracticalRange.clicksMin}–${rec.grindPracticalRange.clicksMax} vanaf het nulpunt — een bredere, zinvolle werkzone; het startgebied hierboven ligt daarbinnen.</div>` : ''}
+      ${rec.grindStartingPoint != null ? `<div class="stat-sub">Maalrichting bij deze branddiepte: begin rond klik ${rec.grindStartingPoint} binnen het startgebied (lichter brandt fijner/lager, donkerder brandt grover/hoger) — een positie binnen de bestaande range hierboven, geen nieuw maalgetal.</div>` : ''}
+      ${rec.grindMechanicalMicron != null ? `<div class="stat-sub">Mechanische resolutie: ${fmt(rec.grindMechanicalMicron,1)} µm mechanische verstelling per click (S2C660, 38 mm, SUS420 — sourced fabrikantspecificatie, herhaald over meerdere onafhankelijke retailers). Dit is géén particle-size-/deeltjesgrootte-meting. Een eerder afwijkende 50 µm-claim (één bron, niet onderbouwd) staat niet meer gelijkwaardig in deze UI.</div>` : ''}
       ${rec.grindMicronContest ? `<div class="stat-sub">Micron per klik: onopgeloste tegenstrijdigheid tussen bronnen, geen van beide instrumenteel gemeten. ~83 micron/klik (Timemore's eigen opgave, herhaald door meerdere winkels) tegenover 50 micron/klik (afwijkende winkelbron, specifiek voor dit model). Verandert niets aan de klikrange hierboven — puur ter info, niet als gevalideerd getal te lezen.</div>` : ''}
     </div>
     <div class="stat-block">
@@ -7452,11 +7697,18 @@ function renderPrep(){
   document.getElementById('style-note').textContent = rec.notes;
   const evidenceBadgeRow = document.getElementById('evidence-badge-row');
   if (evidenceBadgeRow){
-    evidenceBadgeRow.innerHTML = rec.hasNamedOverlay
+    // NIEUW (Implementatieplan v3.0, §15 "Technique provenance"): de "Unverified
+    // attribution"-badge staat los van de hasNamedOverlay/pulseCountSourced-badge
+    // hierboven — een overlay kan tegelijk een bronstructuur volgen ÉN een
+    // ongeverifieerde toeschrijving hebben (vandaag: RAO_CHEMEX_DISCLOSED). Eerder alleen
+    // een parenthetische tekst in de auteursregel (#technique-line), makkelijk over het
+    // hoofd te zien; nu ook een eigen, zichtbare badge.
+    evidenceBadgeRow.innerHTML = (rec.hasNamedOverlay
       ? (rec.pulseCountSourced
           ? `<span class="badge" data-tone="good">Kernrecept + gietschema</span>`
           : `<span class="badge" data-tone="info">Kernrecept + eigen gietschema</span>`)
-      : `<span class="badge" data-tone="info">Alleen kernrecept</span>`;
+      : `<span class="badge" data-tone="info">Alleen kernrecept</span>`)
+      + (rec.authorUnverified ? `<span class="badge" data-tone="warn">Ongeverifieerde toeschrijving</span>` : '');
   }
 
   const profileScopeEl = document.getElementById('profile-scope-note');
@@ -7575,7 +7827,7 @@ function renderPrep(){
   if (windowEl){
     const cluster = (ENGINE_PROFILE_MAP[state.profile] || ENGINE_PROFILE_MAP.klassiek).cluster;
     const w = ENGINE_TARGET_WINDOWS[cluster];
-    windowEl.textContent = `Doelvenster achter dit recept: ${fmt(w.strengthTDS[0],2)}–${fmt(w.strengthTDS[1],2)} %TDS bij ${w.extractionYieldEY[0]}–${w.extractionYieldEY[1]} %extractie. Deze twee getallenparen zijn door de app aangeleverd (SCA-Brewing-Control-Chart-achtig) en maken GEEN deel uit van het eigen onderzoekscorpus van dit project — de engine zelf markeert dit veld als openstaande onderzoeksvraag (G-CONTROL-CHART-01). Dosis en ratio hierboven volgen er rechtstreeks uit.`;
+    windowEl.textContent = `Doelvenster achter dit recept: ${fmt(w.strengthTDS[0],2)}–${fmt(w.strengthTDS[1],2)} %TDS bij ${w.extractionYieldEY[0]}–${w.extractionYieldEY[1]} %extractie. Deze twee getallenparen zijn door de app aangeleverd (SCA-Brewing-Control-Chart-achtig) en maken GEEN deel uit van het eigen onderzoekscorpus van dit project — de engine zelf markeert dit veld als openstaande onderzoeksvraag (G-CONTROL-CHART-01). Vastgelegd als Model Policy v${MODEL_POLICY.version} (${MODEL_POLICY.targetWindows[cluster].provenance}) — geen sourced evidence, een expliciete, versieerbare productaanname. Dosis en ratio hierboven volgen er rechtstreeks uit.`;
     windowEl.hidden = false;
   }
   const retEl = document.getElementById('retention-note');
