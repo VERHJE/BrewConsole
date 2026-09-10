@@ -4960,12 +4960,28 @@ SCA_FLAVOR_WHEEL.forEach(cat=>cat.subgroups.forEach(sg=>sg.tags.forEach(tg=>{ FL
    elkaar op een zak. City/Full City/French/Italian zijn informele, niet-gestandaardiseerde
    Amerikaanse roast-namen (meerdere bronnen wijzen erop dat ze per rooster verschillen) —
    toegevoegd als losse aanvulling, niet als vervanging van de directe branddiepte-woorden. */
+/* NIEUW (Implementatieplan v3.0, P3 §OCR-hardening — "robuustere tekstherkenning"): 'light'
+   en 'dark' stonden hier tot nu toe alleen als onderdeel van meerwoordige frasen ('light
+   roast', 'dark roast') — en fuzzyMatchesKeyword() matcht meerwoordige termen bewust NOOIT
+   fuzzy (te grote kans op een zinloze combinatie van toevallige losse tikfouten, zie
+   toelichting daar). Een OCR-fout ergens in zo'n frase (bijv. "Ilght Roast", een klassieke
+   I/l-verwarring) kon dus NOOIT via het fuzzy-vangnet alsnog herkend worden — in
+   tegenstelling tot medium/washed/natural/honey/anaerobic/filter/espresso/omni, die allemaal
+   al een kaal, los woord als vangnet hadden. Deze twee kale woorden geven light/dark
+   dezelfde typfouttolerantie als de rest van de lijst, niets meer.
+   Objectvolgorde is BEWUST licht_medium/medium_dark vóór light/medium/dark: de matching-
+   loop hieronder stopt bij de eerste hit, en "medium" zit al als los woord in de kale
+   medium-categorie (dat bestond al, vóór deze wijziging) — zonder de samengestelde
+   categorieën eerst te checken zou "medium-dark roast" of "light medium roast" verkeerd als
+   het kale medium/light gelezen worden i.p.v. de preciezere samengestelde categorie. Zelfde
+   "langste/specifiekste-eerst"-principe als REGION_SCAN_SYNONYMS/VARIETY_SCAN_SYNONYMS
+   hieronder al toepassen. */
 const ROAST_SCAN_KEYWORDS = {
-  light:        ['light roast','licht gebrand','lichte branding','licht','cinnamon roast','blonde roast'],
   light_medium: ['light-medium roast','light medium roast','medium-light roast','licht-middel','city roast'],
-  medium:       ['medium roast','medium','middel gebrand','middel'],
   medium_dark:  ['medium-dark roast','medium dark roast','middel-donker','full city roast','full city','vienna roast'],
-  dark:         ['dark roast','donker gebrand','donker','french roast','italian roast']
+  light:        ['light roast','licht gebrand','lichte branding','licht','light','cinnamon roast','blonde roast'],
+  medium:       ['medium roast','medium','middel gebrand','middel'],
+  dark:         ['dark roast','donker gebrand','donker','dark','french roast','italian roast']
 };
 /* Beoogd-gebruik-woorden — voorheen (verkeerd) vermengd met branddiepte in
    ROAST_SCAN_KEYWORDS.omni, zie INTENDED_USE_INFO hierboven voor de uitleg.
