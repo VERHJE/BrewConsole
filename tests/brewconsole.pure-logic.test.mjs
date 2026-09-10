@@ -1343,3 +1343,73 @@ describe('Implementatieplan v3.0 — Canonical recommendation pipeline (P1, §13
     assert.equal(rec.technique, 'Kernrecept');
   });
 });
+
+describe('Implementatieplan v3.0 — Personal calibration refinement (P2, §13)', () => {
+  // Eigen, geïsoleerde app-instantie, zelfde patroon als het bestaande "Boontype-model"-
+  // blok hierboven (die tests muteren dezelfde live brewLog-array).
+  const { api: api3, sandbox: sandbox3 } = loadApp();
+  const WATER_A = { hardnessMgL: 128, alkalinity: { value: 50, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } };
+
+  function resetStore(){ api3.brewLog.length = 0; }
+  function addEntry(overrides){
+    const entry = Object.assign({
+      id: 'log_' + Math.random().toString(36).slice(2), method: 'v60', roast: 'light', approved: true,
+      grindStand: null, grindStartingPoint: 15, actualGrindClicks: 15,
+      waterProfileSnapshot: WATER_A
+    }, overrides);
+    api3.brewLog.push(entry);
+    return entry;
+  }
+
+  test('minder dan PERSONAL_CALIBRATION_MIN_N (5) goedgekeurde metingen: geen persoonlijk bereik, eerlijke n-melding', () => {
+    resetStore();
+    addEntry({ actualGrindClicks: 16 });
+    addEntry({ actualGrindClicks: 16 });
+    const cal = api3.personalCalibrationFor('v60', WATER_A, null);
+    assert.equal(cal.suggestedPersonalRange, null);
+    assert.equal(cal.n, 2);
+    assert.match(api3.personalCalibrationText(cal), /Nog geen persoonlijke kalibratie.*2.*minimaal 5/s);
+  });
+
+  test('exact 5 goedgekeurde metingen: PERSONAL_MEASURED bereik met correcte min/max/mediaan, confidence LOW', () => {
+    resetStore();
+    [14,15,15,16,17].forEach(clicks => addEntry({ actualGrindClicks: clicks, grindStartingPoint: 15 }));
+    const cal = api3.personalCalibrationFor('v60', WATER_A, null);
+    assert.equal(cal.provenance, 'PERSONAL_MEASURED');
+    assert.equal(cal.grinder, 'TIMEMORE_C3S_PRO');
+    assert.equal(cal.confidence, 'LOW');
+    assert.equal(cal.observedSuccessfulClicks.min, 14);
+    assert.equal(cal.observedSuccessfulClicks.max, 17);
+    assert.equal(cal.observedSuccessfulClicks.median, 15);
+    assert.equal(cal.observedSuccessfulClicks.n, 5);
+    assert.equal(cal.suggestedPersonalRange.min, 14);
+    assert.equal(cal.suggestedPersonalRange.max, 17);
+    assert.equal(cal.observedStartingClicks.mean, 15);
+    assert.match(cal.disclaimer, /geen universele C3S Pro-specificatie/);
+  });
+
+  test('confidence-banden: 10 metingen -> MEDIUM, 20 metingen -> HIGH', () => {
+    resetStore();
+    for (let i=0;i<10;i++) addEntry({ actualGrindClicks: 15 });
+    assert.equal(api3.personalCalibrationFor('v60', WATER_A, null).confidence, 'MEDIUM');
+    resetStore();
+    for (let i=0;i<20;i++) addEntry({ actualGrindClicks: 15 });
+    assert.equal(api3.personalCalibrationFor('v60', WATER_A, null).confidence, 'HIGH');
+  });
+
+  test('hergebruikt learningEligibleEntries()\'s bestaande regels: approved=false telt niet mee, nooit hardware facts overschreven', () => {
+    resetStore();
+    for (let i=0;i<5;i++) addEntry({ actualGrindClicks: 15, approved: false });
+    const cal = api3.personalCalibrationFor('v60', WATER_A, null);
+    assert.equal(cal.suggestedPersonalRange, null, 'approved=false mag nooit meetellen (zelfde regel als de bestaande leerlus)');
+  });
+
+  test('non-negotiable (plan §13.1/§28): personal calibration kan nooit de SOURCED mechanical facts overschrijven', () => {
+    resetStore();
+    for (let i=0;i<20;i++) addEntry({ actualGrindClicks: 30 }); // ver buiten elke geldige range
+    api3.personalCalibrationFor('v60', WATER_A, null);
+    const facts = sandbox3.BrewEngineBundle.TIMEMORE_C3S_PRO_MECHANICAL_FACTS;
+    assert.equal(Object.isFrozen(facts), true);
+    assert.equal(facts.adjustmentMicronsPerClick, 83.3, 'personalCalibrationFor() mag dit SOURCED getal nooit aanraken, ongeacht de brewlog-inhoud');
+  });
+});
