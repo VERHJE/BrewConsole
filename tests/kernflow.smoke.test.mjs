@@ -352,6 +352,42 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
+  // NIEUW (Implementatieplan v3.0, §14/§22, P1 "Bypass method guard"): op een methode
+  // waarvoor de concentraat-methode geen gevalideerde basis heeft (Chemex), moet de knop
+  // uitgeschakeld staan i.p.v. de gebruiker een werkende toggle te tonen die de motor
+  // vervolgens stil negeert.
+  test('Bypass method guard: op Chemex is de concentraat-knop uitgeschakeld, op V60 werkt hij gewoon', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="method"]');
+    await assertBecomesActive(page, '#screen-method');
+    await page.click('[data-method="chemex"]');
+    await page.click('#roast-grid [data-roast] >> nth=0');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await assertBecomesActive(page, '#screen-prep');
+
+    const chemexBtn = page.locator('#bypass-btn');
+    await assert.ok(await chemexBtn.isDisabled(), 'op Chemex moet de concentraat-knop disabled zijn');
+    const chemexNote = (await page.locator('#bypass-fit-note').textContent()).trim();
+    assert.match(chemexNote, /Niet beschikbaar op Chemex/);
+
+    await page.click('[data-back="profile"]');
+    await assertBecomesActive(page, '#screen-profile');
+    await page.click('[data-back="roast"]');
+    await assertBecomesActive(page, '#screen-roast');
+    await page.click('#screen-roast [data-back="method"]');
+    await assertBecomesActive(page, '#screen-method');
+    await page.click('[data-method="v60"]');
+    await page.click('#roast-grid [data-roast] >> nth=0');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await assertBecomesActive(page, '#screen-prep');
+
+    const v60Btn = page.locator('#bypass-btn');
+    await assert.ok(!(await v60Btn.isDisabled()), 'op V60 moet de concentraat-knop gewoon bruikbaar zijn');
+
+    await page.close();
+  });
+
   // NIEUW (Implementatieplan Zetadvies v3.0, §5 — Fase 1 testplan): de schuifregelaar
   // moet klemmen op het engine-geldige bereik, niet op het fysieke apparaatbereik van
   // METHOD_INFO — anders zou de gebruiker via de +/- knoppen een volume kunnen kiezen

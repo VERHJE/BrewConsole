@@ -3945,7 +3945,17 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // Concentraat/bypass — vast percentage (zie bypassAdvice()), niet langer proces-
   // conditioneel: verwerkingsmethode mag dit getal structureel niet meer sturen.
   const bypassAdv = bypassAdvice();
-  const pourWaterMl = bypassEnabled ? Math.round(water * bypassAdv.factor / 5) * 5 : water;
+  // NIEUW (Implementatieplan v3.0, §14, P1 "Bypass method guard"): de concentraat-methode
+  // is V60-georiënteerd — de brontechniek (Drip Roast's V60-bypassgids) en de bestaande
+  // 30%-vuistregel gelden niet aantoonbaar voor Chemex. renderBypassToggle() schakelt de
+  // knop hierop al uit, maar dit is de eigenlijke garantie: zelfs als bypassEnabled toch
+  // true binnenkomt op een niet-V60-methode (bv. handmatig aangepaste state), past de
+  // motor het nooit stilzwijgend toe — net zo min als B-1's dosisklem een overschrijding
+  // stilzwijgend liet passeren.
+  const bypassMethodSupported = methodKey === 'v60';
+  const bypassIgnoredForMethod = bypassEnabled && !bypassMethodSupported;
+  const bypassActuallyApplied = bypassEnabled && bypassMethodSupported;
+  const pourWaterMl = bypassActuallyApplied ? Math.round(water * bypassAdv.factor / 5) * 5 : water;
   const bypassMl = Math.max(0, Math.round(water - pourWaterMl));
 
   // Temperatuur — FIX (Implementatieplan Zetadvies v3.0, Fase 2a/2b, Bouwbesluit B-1):
@@ -4083,10 +4093,12 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // NIEUW (Reparatieplan v4.0, B-5 / bevinding E-08): de percolatie vindt plaats op een
   // heel andere ratio dan de kaart toont. Dat getal hoort erbij, en het voorbehoud
   // erachter ook: het doelvenster waaruit dosis/ratio zijn afgeleid, geldt niet meer.
-  const brewerRatio = (bypassEnabled && dose > 0) ? (pourWaterMl / dose) : null;
-  const bypassNote = bypassEnabled
+  const brewerRatio = (bypassActuallyApplied && dose > 0) ? (pourWaterMl / dose) : null;
+  const bypassNote = bypassActuallyApplied
     ? `In de brewer zet je feitelijk op 1:${fmt(brewerRatio, 1)} (${fmt(dose,1)} g op ${pourWaterMl} ml), niet op de ${ratioText} die hierboven staat — die geldt pas ná het bijschenken. Belangrijk voorbehoud: het sterkte-/extractievenster waaruit dosis en ratio zijn afgeleid, gaat ervan uit dat ál het water door het koffiebed gaat. Bij de concentraat-methode is dat niet zo, dus de werkelijke extractie ligt buiten dat venster en de app kan niet voorspellen hoever. Vergeet niet: na het zetten ${bypassMl} ml vers heet water toevoegen aan de kan/kop (zie stat-blok hierboven) — dat brengt ${pourWaterMl} ml geconcentreerde koffie terug op ${Math.round(water)} ml, de normale sterkte. Concentraat-methode actief op een vast ${bypassAdv.pct}% bypass (vuistregel, niet per boon afgestemd — zie renderBypassToggle()). Werkt volgens de brontechniek (Drip Roast's V60-bypassgids) doorgaans het meest overtuigend bij funky naturals, anaerobic/experimentele fermentaties en dark roasts. Maling en temperatuur hierboven zijn NIET aangepast voor de concentraat-methode — er is geen gevalideerd getal voor die aanpassing gevonden; proef bewust en stel zelf bij (doorgaans iets fijner/warmer) indien nodig.`
-    : '';
+    : (bypassIgnoredForMethod
+        ? `Concentraat-methode NIET toegepast: deze methode is V60-georiënteerd (Drip Roast's V60-bypassgids) — er is geen gevalideerde basis gevonden om het vaste bypasspercentage op deze methode toe te passen, dus dit recept blijft op de normale ratio. Geen stille substitutie: dit wordt hier expliciet gemeld.`
+        : '');
 
   return {
     dose, water: Math.round(water), pourWaterMl, bypassMl, temp, tempClamped:false,
@@ -7156,6 +7168,22 @@ function renderStrengthToggle(){
 function renderBypassToggle(){
   const el = document.getElementById('bypass-chip');
   if (!el) return;
+  // NIEUW (Implementatieplan v3.0, §14, P1 "Bypass method guard"): de concentraat-methode
+  // is V60-georiënteerd (Drip Roast's V60-bypassgids); buiten V60 wordt de knop
+  // uitgeschakeld getoond i.p.v. stil toegepast — nooit blocked/disabled-gedrag verzwijgen
+  // (plan §22 E2E-eis: "Bypass selected on unsupported brewer → blocked/disabled"). Zet
+  // hier ook zelf state.bypass terug, zodat een leftover bypass=true van een eerdere
+  // V60-sessie nooit onopgemerkt blijft hangen na een methodewissel.
+  if (state.method !== 'v60'){
+    if (state.bypass) state.bypass = false;
+    el.innerHTML = `<button type="button" class="chip" id="bypass-btn" data-selected="false" disabled title="Concentraat-methode is V60-georiënteerd — er is geen gevalideerde basis gevonden om dit op deze methode toe te passen.">🌊 Concentraat-methode (alleen op V60)</button>`;
+    const fitEl = document.getElementById('bypass-fit-note');
+    if (fitEl){
+      const mInfo = METHOD_INFO[state.method];
+      fitEl.textContent = `Niet beschikbaar op ${mInfo ? mInfo.name : state.method}: de concentraat-methode en het vaste bypasspercentage zijn afgeleid van een V60-specifieke bron (Drip Roast's V60-bypassgids) — geen gevalideerde basis om dit op een andere methode toe te passen.`;
+    }
+    return;
+  }
   const adv = bypassAdvice(state.process, state.roast, state.experimental, state.fermentEvidence);
   el.innerHTML = `<button type="button" class="chip" id="bypass-btn" data-selected="${state.bypass}">🌊 Concentraat-methode (${adv.pct}% bypass)</button>`;
   const btn = document.getElementById('bypass-btn');

@@ -1262,3 +1262,23 @@ describe('Implementatieplan v3.0 — Model Policy (versioned TDS/EY target windo
     assert.equal(rec.modelPolicyVersion, '3.0');
   });
 });
+
+describe('Implementatieplan v3.0 — Bypass method guard (P1, §14)', () => {
+  test('bypassEnabled op Chemex wordt nooit toegepast, zelfs niet als de aanroep het toch true doorgeeft', () => {
+    const rec = api.computeRecipe('chemex','medium','klassiek',600,null,false,null,null,true,null,null,0);
+    assert.equal(rec.pourWaterMl, rec.water, 'op Chemex mag pourWaterMl nooit afwijken van het volledige watervolume');
+    assert.equal(rec.bypassMl, 0);
+    assert.match(rec.bypassNote, /NIET toegepast/, 'moet expliciet melden dat bypass genegeerd is, nooit stil');
+  });
+  test('bypassEnabled op V60 werkt onveranderd (negatieve controle — de guard raakt alleen andere methodes)', () => {
+    const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,true,null,null,0);
+    assert.ok(rec.pourWaterMl < rec.water, 'op V60 moet bypass nog gewoon werken');
+    assert.match(rec.bypassNote, /In de brewer zet je feitelijk op 1:/);
+  });
+  test('zonder bypassEnabled blijft bypassNote leeg op elke methode (geen ongevraagde meldingen)', () => {
+    const v60 = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
+    const chemex = api.computeRecipe('chemex','medium','klassiek',600,null,false,null,null,false,null,null,0);
+    assert.equal(v60.bypassNote, '');
+    assert.equal(chemex.bypassNote, '');
+  });
+});
