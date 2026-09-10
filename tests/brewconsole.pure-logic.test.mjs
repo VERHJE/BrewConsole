@@ -1282,3 +1282,31 @@ describe('Implementatieplan v3.0 — Bypass method guard (P1, §14)', () => {
     assert.equal(chemex.bypassNote, '');
   });
 });
+
+describe('Implementatieplan v3.0 — Technique provenance audit (P1, §15)', () => {
+  test('authorUnverified is true voor Rao-op-Chemex (ongeverifieerde toeschrijving) en false voor Kasuya (geverifieerd)', () => {
+    const raoChemex = api.computeRecipe('chemex','medium','fruitig_clean',400,null,false,null,null,false,null,null,0);
+    assert.equal(raoChemex.authorUnverified, true, 'RAO_CHEMEX_DISCLOSED heeft attribution.verified === false');
+    assert.match(raoChemex.author, /ongeverifieerd toegeschreven/);
+    const kasuya = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
+    assert.equal(kasuya.authorUnverified, false);
+    assert.doesNotMatch(kasuya.author, /ongeverifieerd/);
+  });
+
+  test('Perger (snel_puur) wordt getoond als bronREGEL (decision rule), niet als bronstructuur met een verzonnen schema', () => {
+    const rec = api.computeRecipe('v60','medium','snel_puur',300,null,false,null,null,false,null,null,0);
+    assert.equal(rec.technique, 'Perger 80/20');
+    assert.equal(rec.pulseCountSourced, false, 'Perger publiceert zelf geen giet-schema — het aantal beurten is eigen invulling');
+    assert.match(rec.notes, /beslisregel|decision rule|geen schema/i);
+  });
+
+  test('research-gap-profielen (geen overlay generatable) tonen "Alleen kernrecept", geen verzonnen techniek', () => {
+    // Elk profiel heeft op elke methode een core recipe; als er geen overlay is, moet
+    // hasNamedOverlay false zijn en de techniek terugvallen op "Kernrecept".
+    const rec = api.computeRecipe('chemex','medium','klassiek',600,null,false,null,null,false,null,null,0);
+    if (!rec.hasNamedOverlay){
+      assert.equal(rec.technique, 'Kernrecept');
+      assert.equal(rec.pulseCountSourced, false);
+    }
+  });
+});

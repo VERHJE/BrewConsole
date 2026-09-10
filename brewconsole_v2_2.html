@@ -3825,6 +3825,7 @@ function buildFallbackRecipe(reason, waterMl){
     notes:`${reason} Pas de waterhoeveelheid aan (stel bijv. terug naar het midden van het bereik) of kies de andere zettermethode.`,
     ratioText:'—', processNote:'', freshnessNote:'', altitudeNote:'', hardnessNote:'', bypassNote:'', strengthNote:'',
     bypassAdv:{ pct:0, factor:1 }, contactTimeDiagnosticBand:null, pulseCountSourced:false,
+    authorUnverified:false,
     modelPolicyVersion: MODEL_POLICY.version
   };
 }
@@ -4031,11 +4032,18 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // generatable voor deze brewer) of, eerlijk, uit het kernrecept alleen.
   let technique, author, notes;
   let pulseCountSourced = false;
+  // NIEUW (Implementatieplan v3.0, §15 "Technique provenance"): de "Unverified
+  // attribution"-categorie uit de taxonomie — vandaag alleen RAO_CHEMEX_DISCLOSED
+  // (att.verified === false). Stond al als parenthetische tekst in `author`; hier ook als
+  // eigen boolean zodat de UI er een zichtbare badge van kan maken i.p.v. alleen tekst die
+  // in de auteursregel kan verdwijnen.
+  let authorUnverified = false;
   if (overlay){
     const disp = OVERLAY_DISPLAY[overlayId] || { name: overlayId };
     technique = disp.name;
     const att = overlay.attribution.state === 'RESOLVED' ? overlay.attribution.value : null;
-    author = att ? (att.practitioner + (att.verified === false ? ' (ongeverifieerd toegeschreven)' : '')) : 'Onbekend';
+    authorUnverified = !!(att && att.verified === false);
+    author = att ? (att.practitioner + (authorUnverified ? ' (ongeverifieerd toegeschreven)' : '')) : 'Onbekend';
     const structureNote = overlay.pourStructure || '';
     // FIX (Implementatieplan Zetadvies v3.0, Fase 3): tekst geactualiseerd — de schemalengte
     // komt niet meer uit de apparaatbrede contacttijd-diagnostiek (die staat nu los, als
@@ -4124,6 +4132,8 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     // een eigen invulling is — gebruikt door de evidence-badge, zodat die de disclaimer
     // in `notes` nooit kan tegenspreken.
     pulseCountSourced,
+    // NIEUW (Implementatieplan v3.0, §15): zie de toelichting bij authorUnverified hierboven.
+    authorUnverified,
     // NIEUW (Implementatieplan Zetadvies v3.0, Fase 3c/D-4): zie de toelichting bij
     // contactTimeDiagnosticBand hierboven — gebruikt door renderBrewLogHonestSummary(),
     // stuurt totalTime/steps niet (meer).
@@ -7616,11 +7626,18 @@ function renderPrep(){
   document.getElementById('style-note').textContent = rec.notes;
   const evidenceBadgeRow = document.getElementById('evidence-badge-row');
   if (evidenceBadgeRow){
-    evidenceBadgeRow.innerHTML = rec.hasNamedOverlay
+    // NIEUW (Implementatieplan v3.0, §15 "Technique provenance"): de "Unverified
+    // attribution"-badge staat los van de hasNamedOverlay/pulseCountSourced-badge
+    // hierboven — een overlay kan tegelijk een bronstructuur volgen ÉN een
+    // ongeverifieerde toeschrijving hebben (vandaag: RAO_CHEMEX_DISCLOSED). Eerder alleen
+    // een parenthetische tekst in de auteursregel (#technique-line), makkelijk over het
+    // hoofd te zien; nu ook een eigen, zichtbare badge.
+    evidenceBadgeRow.innerHTML = (rec.hasNamedOverlay
       ? (rec.pulseCountSourced
           ? `<span class="badge" data-tone="good">Kernrecept + gietschema</span>`
           : `<span class="badge" data-tone="info">Kernrecept + eigen gietschema</span>`)
-      : `<span class="badge" data-tone="info">Alleen kernrecept</span>`;
+      : `<span class="badge" data-tone="info">Alleen kernrecept</span>`)
+      + (rec.authorUnverified ? `<span class="badge" data-tone="warn">Ongeverifieerde toeschrijving</span>` : '');
   }
 
   const profileScopeEl = document.getElementById('profile-scope-note');
