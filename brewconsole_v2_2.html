@@ -3830,6 +3830,82 @@ function buildFallbackRecipe(reason, waterMl){
   };
 }
 
+/* NIEUW (Implementatieplan v3.0, P1 §13/§27 — "canonical recommendation pipeline"):
+   tot nu toe koos computeRecipe() de overlay zelf via een eigen .find() op
+   mapEntry.overlay — de motor se eigen B.selectRecommendation()/computeRecipeFit()/
+   computeEvidenceConfidence() (gebouwd voor precies deze taak) lagen volledig ongebruikt.
+   Dit verving die schaduw-selectie DOOR de canonieke pipeline, zonder een
+   nagemaakte TDS/EY-voorspelling per kandidaat te verzinnen: elke kandidaat in één
+   generateCandidates()-aanroep deelt letterlijk dezelfde core.targetWindow (overlays
+   passen alleen de giettechniek aan, nooit dosis/water/ratio/maling — zie
+   buildStyleOverlay()), dus candidateWindow === targetWindow is een echte eigenschap
+   van hoe recepten hier worden afgeleid, geen fictieve precisie. Het enige echte
+   onderscheid tussen kandidaten is welke techniek bij het gekozen profiel hoort — dat
+   bestond al (ENGINE_PROFILE_MAP[profielKey].overlay) en wordt nu doorgegeven als
+   computeRecipeFit()'s softConstraintMismatch-signaal i.p.v. buiten de pipeline om
+   direct te kiezen. Resultaat geverifieerd via de volledige baseline-sweep (_baselines_v3/):
+   0 diff op elk bestaand recept. */
+function overlayTemplateIdOf(genCandidate){
+  return genCandidate.styleOverlay.state === 'RESOLVED'
+    ? genCandidate.styleOverlay.value.id.split('::')[0]
+    : null;
+}
+function evidenceClassToBand(evidenceClass){
+  if (evidenceClass === 'A') return 'HIGH';
+  if (evidenceClass === 'B') return 'MEDIUM';
+  return 'LOW'; // C, D, of onbekend — geen hogere band verzinnen dan de bron aangeeft
+}
+function selectViaCanonicalPipeline(B, gen, preferredOverlayId, targetWindowValue){
+  const isPreferred = (genCandidate) => {
+    const oid = overlayTemplateIdOf(genCandidate);
+    return preferredOverlayId ? oid === preferredOverlayId : oid === null;
+  };
+  const pipelineCandidates = gen.candidates.map((genCandidate) => {
+    const core = genCandidate.recipeCore;
+    const oid = overlayTemplateIdOf(genCandidate);
+    const doseBand = core.dose.state === 'RESOLVED' ? evidenceClassToBand(core.dose.evidenceClass) : 'LOW';
+    const grindHint = core.grind.startingRangeHint;
+    const grindNoDataFallback = !grindHint || grindHint.state !== 'RESOLVED';
+    const grindBandLabel = grindNoDataFallback ? 'LOW' : evidenceClassToBand(grindHint.evidenceClass);
+    const perParameter = { dose: doseBand, grind: grindBandLabel };
+    return {
+      id: oid || `core::${core.id}`,
+      genCandidate,
+      passedHardConstraints: genCandidate.passedHardConstraints,
+      loadBearingParameters: ['dose', 'grind'],
+      confidence: {
+        perParameter,
+        ...B.computeEvidenceConfidence(
+          { loadBearingParameters: ['dose', 'grind'], confidence: { perParameter } },
+          {
+            loadBearingRestsOnContestedOrGap: false,
+            coffeeAgeOrRoastDateTriggersCap: false,
+            grinderInNoDataFallback: grindNoDataFallback,
+            waterLoadBearingAndCoarseProvenance: false,
+            chemexComparedToParallelV60: false
+          }
+        )
+      },
+      fit: B.computeRecipeFit({
+        candidateWindow: core.targetWindow,
+        targetWindow: targetWindowValue,
+        softConstraintMismatch: !isPreferred(genCandidate),
+        wellCenteredInAchievableRange: true,
+        smuggledForbiddenEdge: false,
+        personalHistoryContradicts: false
+      })
+    };
+  });
+  const rec = B.selectRecommendation({
+    candidates: pipelineCandidates,
+    buildReasoningChain: (pc) => pc.fit.reasons,
+    areDistinct: (a, b) => a.id !== b.id,
+    experimentalEligibleCandidateIds: new Set()
+  });
+  if (rec.top.state !== 'RESOLVED') return null;
+  return rec.top.value.candidate.genCandidate;
+}
+
 function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, experimentalFlag, roastDays, altitudeMasl, bypassEnabled, flavorFermentEvidence, waterHardnessMgLArg, strengthAdjust){
   const B = window.BrewEngineBundle;
 
@@ -3892,14 +3968,9 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   });
 
   let entry = null;
-  if (gen.blocked.state !== 'RESOLVED'){
+  if (gen.blocked.state !== 'RESOLVED' && targetWindow.state === 'RESOLVED'){
     const preferred = typeof mapEntry.overlay === 'string' ? mapEntry.overlay : (mapEntry.overlay ? mapEntry.overlay[methodKey] : null);
-    if (preferred){
-      entry = gen.candidates.find(c => c.styleOverlay.state === 'RESOLVED' && c.styleOverlay.value.id.split('::')[0] === preferred) || null;
-    }
-    if (!entry){
-      entry = gen.candidates.find(c => c.styleOverlay.state !== 'RESOLVED') || gen.candidates[0] || null;
-    }
+    entry = selectViaCanonicalPipeline(B, gen, preferred, targetWindow.value);
   }
 
   if (!entry){

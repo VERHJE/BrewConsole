@@ -1310,3 +1310,36 @@ describe('Implementatieplan v3.0 — Technique provenance audit (P1, §15)', () 
     }
   });
 });
+
+describe('Implementatieplan v3.0 — Canonical recommendation pipeline (P1, §13/§27)', () => {
+  // computeRecipe() koos de overlay voorheen via een eigen .find() op
+  // ENGINE_PROFILE_MAP[profiel].overlay, volledig buiten B.selectRecommendation()/
+  // computeRecipeFit()/computeEvidenceConfidence() om. Deze suite bewijst dat de
+  // vervangende selectViaCanonicalPipeline()-route (brewconsole_v2_2.html) voor elk van
+  // de vier eerder bestaande selectie-scenario's exact dezelfde winnaar oplevert als
+  // voorheen — de volledige baseline-sweep (_baselines_v3/baseline_na_canonical_pipeline.txt
+  // t.o.v. baseline_na_provenance.txt) bevestigt dit bovendien voor ALLE bestaande
+  // methode/profiel/roast/sterkte-combinaties, niet alleen deze vier representatieve gevallen.
+  test('voorkeurs-overlay met voldoende bewijs wint (klassiek/v60 -> Kasuya 4:6)', () => {
+    const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
+    assert.equal(rec.hasNamedOverlay, true);
+    assert.match(rec.technique, /Kasuya/i);
+  });
+
+  test('voorkeurs-overlay binnen zijn harde plafond wint (fruitig_clean/chemex, 400ml -> Rao Clarity)', () => {
+    const rec = api.computeRecipe('chemex','medium','fruitig_clean',400,null,false,null,null,false,null,null,0);
+    assert.equal(rec.technique, 'Rao Clarity');
+  });
+
+  test('voorkeurs-overlay boven zijn harde plafond wordt uitgesloten -> pipeline valt terug op kernrecept, niet stil op een andere overlay (fruitig_clean/chemex, 600ml)', () => {
+    const rec = api.computeRecipe('chemex','medium','fruitig_clean',600,null,false,null,null,false,null,null,0);
+    assert.equal(rec.hasNamedOverlay, false);
+    assert.equal(rec.technique, 'Kernrecept');
+  });
+
+  test('profiel zonder enige gekoppelde overlay (sirooprig_vol) levert altijd het kernrecept, nooit een verzonnen techniek', () => {
+    const rec = api.computeRecipe('v60','medium','sirooprig_vol',300,null,false,null,null,false,null,null,0);
+    assert.equal(rec.hasNamedOverlay, false);
+    assert.equal(rec.technique, 'Kernrecept');
+  });
+});
