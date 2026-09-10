@@ -3,9 +3,11 @@
 Op basis van `Brew_Engine_Implementatieplan_v3_C3S_Pro` (docx/pdf), met
 `Timemore_C3S_Pro_Technische_Deep_Dive.pdf` als brongebonden achtergrond voor de
 grinder-feiten en `Brew_Engine_Expert_Audit_Report_v2_with_C3S_Deep_Dive.pdf` als
-corroborerende audit (geen tegenstrijdigheden met het plan gevonden). Scope voor deze
-ronde, in overleg vastgesteld: **P0 + P1 volledig gebouwd; P2/P3 gedocumenteerd als
-vervolgwerk, niet gebouwd** (zie "P2/P3 — bewust niet gebouwd" hieronder).
+corroborerende audit (geen tegenstrijdigheden met het plan gevonden). Oorspronkelijke
+scope, in overleg vastgesteld: P0 + P1 volledig, P2/P3 als gedocumenteerd vervolgwerk
+(niet gebouwd). Op verzoek is dat vervolgwerk in een tweede ronde alsnog volledig
+gebouwd — **P0 t/m P3 zijn nu allemaal opgeleverd** (zie "P2/P3 — daadwerkelijk gebouwd
+(vervolgronde)" hieronder).
 
 De motor-bundel is deze ronde bewust wél aangepast — met expliciete toestemming, die
 het "engine blijft byte-identiek"-non-negotiable uit de vorige ronde (Reparatieplan
@@ -136,9 +138,13 @@ van bestaande records — historische logs blijven onaangeroerd, zoals het plan 
   eist expliciet dat dit zo blijft).
 - **Personal calibration** (P2): zie hieronder.
 
-## P2/P3 — bewust niet gebouwd deze ronde (vervolgwerk)
+## P2/P3 — status bij afsluiten van de eerste ronde (P0+P1) — inmiddels ALLE alsnog gebouwd
 
-In overleg vastgesteld scope: P0+P1 volledig, P2/P3 als gedocumenteerd vervolgwerk.
+De onderstaande vier alinea's zijn de oorspronkelijke, bij het afsluiten van de P0+P1-ronde
+vastgestelde scope (P2/P3 als gedocumenteerd vervolgwerk, niet gebouwd) — ongewijzigd
+bewaard voor de audit trail. Op verzoek is dit vervolgwerk in een tweede ronde alsnog
+volledig gebouwd; zie "P2/P3 — daadwerkelijk gebouwd (vervolgronde)" direct hieronder voor
+wat er per punt is opgeleverd.
 
 - **P2 — Personal calibration refinement** ("Approved learning"): de bestaande
   goedgekeurd-alleen leerlus (C-3 uit Reparatieplan v4.0) blijft ongewijzigd. Het plan se
@@ -161,6 +167,54 @@ In overleg vastgesteld scope: P0+P1 volledig, P2/P3 als gedocumenteerd vervolgwe
 - **P3 — Evidence/OCR hardening** ("Better future ingestion"): geen wijziging aan de
   boon-OCR-pijplijn deze ronde; buiten scope van dit plan (raakt geen enkele
   C3S/recommendation-taak).
+
+## P2/P3 — daadwerkelijk gebouwd (vervolgronde)
+
+Vier commits (`f33fac7`..`281c5bc`), elk los getest en baseline-diff-geverifieerd:
+
+- **P2 — Personal calibration refinement** (`f33fac7`): `personalCalibrationFor()` +
+  `personalCalibrationText()` — exact de outputvorm uit plan §13.2
+  (observedStartingClicks/observedSuccessfulClicks/suggestedPersonalRange/confidence/
+  provenance/disclaimer), hergebruikt bewust de bestaande `learningEligibleEntries()`-
+  selectie (approved-only/waterprofiel/volumetolerantie) i.p.v. een tweede "wat telt
+  mee"-regel te verzinnen. Non-negotiable expliciet getest: `TIMEMORE_C3S_PRO_MECHANICAL_FACTS`
+  blijft `Object.freeze()`'d, dit blok schrijft er nooit naar — alleen een nieuw
+  `#personal-calibration-note`-weergaveblok op het Prep-scherm, zelfde patroon als C-5's
+  retentiemeting.
+- **P2 — Golden fixtures** (`a2fb57d`): `tests/fixtures/golden-recipes.txt` (180 regels,
+  committed) + `tests/golden-fixtures.test.mjs`, die CI zelf laat falen op elke stille
+  receptwijziging. Handmatig bevestigd dat een gefabriceerde 1-regel-afwijking
+  daadwerkelijk faalt (met regel/kolom-precieze foutmelding) en na herstel weer groen is.
+  Zelfde commit: de drie nog ontbrekende §21.3-provenance-unit-tests (APP-ASSUMED windows
+  nooit als sourced evidence; PSD blijft RESEARCH_GAP; `mechanicalAdjustmentMicrons()`
+  retourneert nu expliciet `resolved(value, "DERIVED", "B")` i.p.v. DERIVED alleen in
+  commentaar te beweren — geen enkele call site buiten de eigen tests, dus geen
+  receptgetal geraakt).
+- **P2 — PWA E2E** (`0607a6a`): de twee scenario's die het plan expliciet noemt
+  ("C3S Pro selected"/"Bypass selected on unsupported brewer") hadden al dekking sinds de
+  P1-ronde (`kernflow.smoke.test.mjs`). De vier resterende, echt-offline §22-scenario's
+  ("Start brew timer → disable network → timer continues", "Open recipe offline → no
+  network-dependent UI crash", "Create brew log offline → persist locally", "Re-enable
+  network → no duplicate log creation") zijn nu gedekt in `sw-registration.test.mjs` (http
+  + echte service worker — de enige testfile met een echte online/offline-grens).
+- **P3 — OCR hardening** (`281c5bc`, gebruiker akkoord op de richting "robuustere
+  tekstherkenning"): `light`/`dark` kregen een kaal trefwoord (elke andere roast-/proces-/
+  intended-use-categorie had dit al, en `fuzzyMatchesKeyword()` matcht meerwoordige termen
+  bewust nooit fuzzy — zonder een kaal woord dus geen typfouttolerantie). Bijvangst:
+  `ROAST_SCAN_KEYWORDS`'s matching-volgorde had al vóór deze wijziging hetzelfde
+  "medium-dark roast → verkeerd als kale medium" risico (bevestigd met een tijdelijke
+  revert-en-test); opgelost door de samengestelde categorieën (`light_medium`/`medium_dark`)
+  vóór hun simpele tegenhangers te zetten, zelfde "specifiekste-eerst"-principe als
+  `REGION_SCAN_SYNONYMS`/`VARIETY_SCAN_SYNONYMS` al gebruiken. Nieuwe Playwright-test geeft
+  `applyParsedTextToForm()` (tot nu toe volledig ongetest) zijn eerste E2E-dekking. Bewust
+  NIET toegevoegd: een nieuwe procescategorie zoals "wet-hulled" — `PROCESS_INFO` kent maar
+  vijf waarden (washed/natural/honey/anaerobic/overig) en het toevoegen van een
+  herkenningswoord voor een niet-bestaande zesde waarde zou ofwel nergens naartoe wijzen,
+  ofwel een fout label op een bestaande categorie plakken; dat is nieuwe app-functionaliteit,
+  geen "meer synoniemen/typfouttolerantie" — buiten de afgesproken scope.
+
+Eindresultaat na deze vier commits: **170/170 QA-tests groen**, baseline-diff leeg op alle
+vier taken (geen enkel receptgetal geraakt).
 
 ## Wat niet is veranderd
 

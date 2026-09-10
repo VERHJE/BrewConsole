@@ -1486,6 +1486,7 @@
       <p class="disclaimer" id="disclaimer"></p>
 <p class="freshness-readout" id="target-window-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
 <p class="freshness-readout" id="retention-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
+<p class="freshness-readout" id="personal-calibration-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
     </section>
 
     <!-- STEP 5: BREW / TIMER -->
@@ -1728,8 +1729,14 @@
     approximatePositions: 36,
     semantics: "MECHANICAL_ADJUSTMENT"
   });
+  // NIEUW (Implementatieplan v3.0, P2 §21.3 — "1249.5 at click 15 is DERIVED mechanical
+  // adjustment"): het resultaat draagt voortaan expliciet DERIVED-provenance (i.p.v. een
+  // kaal getal dat DERIVED alleen in commentaar beweerde) — zelfde resolved()-patroon als
+  // elke andere provenance-waarde in deze motor. Nooit aangeroepen door computeRecipe() of
+  // enige rendering (geverifieerd: geen enkele call site buiten deze definitie en de eigen
+  // tests) — deze wijziging raakt dus geen bestaand receptgetal.
   function mechanicalAdjustmentMicrons(clicks) {
-    return clicks * TIMEMORE_C3S_PRO_MECHANICAL_FACTS.adjustmentMicronsPerClick;
+    return resolved(clicks * TIMEMORE_C3S_PRO_MECHANICAL_FACTS.adjustmentMicronsPerClick, "DERIVED", "B");
   }
   var GENERIC_UNLISTED_ID = "GENERIC_UNLISTED";
   var genericInternalTarget = {
@@ -4953,12 +4960,28 @@ SCA_FLAVOR_WHEEL.forEach(cat=>cat.subgroups.forEach(sg=>sg.tags.forEach(tg=>{ FL
    elkaar op een zak. City/Full City/French/Italian zijn informele, niet-gestandaardiseerde
    Amerikaanse roast-namen (meerdere bronnen wijzen erop dat ze per rooster verschillen) —
    toegevoegd als losse aanvulling, niet als vervanging van de directe branddiepte-woorden. */
+/* NIEUW (Implementatieplan v3.0, P3 §OCR-hardening — "robuustere tekstherkenning"): 'light'
+   en 'dark' stonden hier tot nu toe alleen als onderdeel van meerwoordige frasen ('light
+   roast', 'dark roast') — en fuzzyMatchesKeyword() matcht meerwoordige termen bewust NOOIT
+   fuzzy (te grote kans op een zinloze combinatie van toevallige losse tikfouten, zie
+   toelichting daar). Een OCR-fout ergens in zo'n frase (bijv. "Ilght Roast", een klassieke
+   I/l-verwarring) kon dus NOOIT via het fuzzy-vangnet alsnog herkend worden — in
+   tegenstelling tot medium/washed/natural/honey/anaerobic/filter/espresso/omni, die allemaal
+   al een kaal, los woord als vangnet hadden. Deze twee kale woorden geven light/dark
+   dezelfde typfouttolerantie als de rest van de lijst, niets meer.
+   Objectvolgorde is BEWUST licht_medium/medium_dark vóór light/medium/dark: de matching-
+   loop hieronder stopt bij de eerste hit, en "medium" zit al als los woord in de kale
+   medium-categorie (dat bestond al, vóór deze wijziging) — zonder de samengestelde
+   categorieën eerst te checken zou "medium-dark roast" of "light medium roast" verkeerd als
+   het kale medium/light gelezen worden i.p.v. de preciezere samengestelde categorie. Zelfde
+   "langste/specifiekste-eerst"-principe als REGION_SCAN_SYNONYMS/VARIETY_SCAN_SYNONYMS
+   hieronder al toepassen. */
 const ROAST_SCAN_KEYWORDS = {
-  light:        ['light roast','licht gebrand','lichte branding','licht','cinnamon roast','blonde roast'],
   light_medium: ['light-medium roast','light medium roast','medium-light roast','licht-middel','city roast'],
-  medium:       ['medium roast','medium','middel gebrand','middel'],
   medium_dark:  ['medium-dark roast','medium dark roast','middel-donker','full city roast','full city','vienna roast'],
-  dark:         ['dark roast','donker gebrand','donker','french roast','italian roast']
+  light:        ['light roast','licht gebrand','lichte branding','licht','light','cinnamon roast','blonde roast'],
+  medium:       ['medium roast','medium','middel gebrand','middel'],
+  dark:         ['dark roast','donker gebrand','donker','dark','french roast','italian roast']
 };
 /* Beoogd-gebruik-woorden — voorheen (verkeerd) vermengd met branddiepte in
    ROAST_SCAN_KEYWORDS.omni, zie INTENDED_USE_INFO hierboven voor de uitleg.
@@ -6673,6 +6696,50 @@ function learningCorrectionText(correction){
   return `Je eigen gemeten correctie voor ${scopeText} (n=${correction.n}): gemiddeld ${amount} klik${amount===1?'':'ken'} ${dir} dan het vertrekpunt. Gebaseerd op je eigen goedgekeurde loggings binnen je huidige waterprofiel — geen algemene claim.${volText}`;
 }
 
+/* NIEUW (Implementatieplan v3.0, P2 §13/§13.1/§13.2 — "personal calibration refinement"):
+   een PERSONAL_MEASURED samenvatting van wat een gebruiker zelf, op goedgekeurde loggingen,
+   daadwerkelijk als succesvolle klikstand gebruikte — los van, en nooit in de plaats van,
+   de SOURCED starting/practical range (TIMEMORE_C3S_PRO_MECHANICAL_FACTS blijft
+   Object.freeze()'d; dit blok schrijft er nooit naar, alleen weergave, precies zoals
+   C-5's retentiemeting hieronder al deed). Hergebruikt bewust dezelfde goedgekeurd-alleen/
+   waterprofiel/volumetolerantie-selectie als learningEligibleEntries() (Reparatieplan
+   v4.0, C-3) — geen nieuwe, tweede "wat telt mee"-regel verzonnen naast de bestaande. Het
+   plan se §12-schema noemt minimumApprovedSamples:5 — dezelfde drempel als C-5's
+   RETENTION_MIN_N hieronder, hergebruikt i.p.v. een nieuw getal te verzinnen. */
+const PERSONAL_CALIBRATION_MIN_N = 5;
+function median(sortedArr){
+  const mid = Math.floor(sortedArr.length / 2);
+  return sortedArr.length % 2 ? sortedArr[mid] : (sortedArr[mid - 1] + sortedArr[mid]) / 2;
+}
+function personalCalibrationFor(method, currentProfile, currentVolumeMl){
+  const B = window.BrewEngineBundle;
+  const entries = learningEligibleEntries(method, currentProfile, currentVolumeMl);
+  const n = entries.length;
+  if (n < PERSONAL_CALIBRATION_MIN_N) return { grinder: B.TIMEMORE_C3S_PRO_ID, method, n, suggestedPersonalRange: null };
+  const startingClicks = entries.map(e => recipeGrindBaseline(e)).sort((a,b)=>a-b);
+  const successfulClicks = entries.map(e => e.actualGrindClicks).sort((a,b)=>a-b);
+  const mean = (arr) => arr.reduce((a,b)=>a+b, 0) / arr.length;
+  // NIEUW: geen letterlijke n-drempel per band in het plan gegeven — eigen, verdedigbare
+  // keuze (rondgetallen), zelfde geest als elders in dit project (bv. FRESHNESS_TIERS).
+  const confidence = n >= 20 ? 'HIGH' : (n >= 10 ? 'MEDIUM' : 'LOW');
+  return {
+    grinder: B.TIMEMORE_C3S_PRO_ID, method,
+    observedStartingClicks: { mean: Math.round(mean(startingClicks) * 10) / 10, median: median(startingClicks), n },
+    observedSuccessfulClicks: { min: successfulClicks[0], max: successfulClicks[successfulClicks.length - 1], median: median(successfulClicks), n },
+    suggestedPersonalRange: { min: successfulClicks[0], max: successfulClicks[successfulClicks.length - 1] },
+    confidence,
+    provenance: 'PERSONAL_MEASURED',
+    disclaimer: 'Persoonlijke kalibratie; geen universele C3S Pro-specificatie.'
+  };
+}
+function personalCalibrationText(cal){
+  if (!cal) return '';
+  if (cal.suggestedPersonalRange == null){
+    return `Nog geen persoonlijke kalibratie: ${cal.n} goedgekeurde logging${cal.n===1?'':'s'} met bruikbare klikgegevens (minimaal ${PERSONAL_CALIBRATION_MIN_N} nodig).`;
+  }
+  return `Jouw eigen kalibratie (${cal.provenance}, vertrouwen: ${cal.confidence.toLowerCase()}, n=${cal.observedSuccessfulClicks.n}): succesvolle klikstand ${cal.suggestedPersonalRange.min}–${cal.suggestedPersonalRange.max} (mediaan ${cal.observedSuccessfulClicks.median}), t.o.v. een voorgesteld startpunt van gemiddeld ${cal.observedStartingClicks.mean}. ${cal.disclaimer}`;
+}
+
 /* NIEUW (Reparatieplan v4.0, C-5 / bevinding E-07b, Bouwbesluit BB-3, akkoord gebruiker):
    de retentie die de app tot nu toe alleen BELOOFDE te berekenen. retentie = (water -
    kopgewicht) / dosis.
@@ -7837,6 +7904,13 @@ function renderPrep(){
     const txt = measuredRetentionText(measuredRetention(state.method), aanname);
     retEl.textContent = txt;
     retEl.hidden = !txt;
+  }
+  const calEl = document.getElementById('personal-calibration-note');
+  if (calEl){
+    const currentWaterProfile = { hardnessMgL: waterHardnessMgL, alkalinity: waterAlkalinity, dilution: waterDilution };
+    const txt = personalCalibrationText(personalCalibrationFor(state.method, currentWaterProfile, state.waterMl));
+    calEl.textContent = txt;
+    calEl.hidden = !txt;
   }
   document.getElementById('disclaimer').textContent =
     '* Dosis/water/ratio komen algebraïsch uit een sterkte-/extractievenster (zie het doelvenster-blok hierboven — door de app aangeleverd, niet uit het eigen onderzoekscorpus) en het gevalideerde dosisbereik van dit toestel — nooit gekopieerd uit een naam-gebonden receptentabel. De ratio bevat een retentieaanname (LIQUID_RETAINED_RATIO = 2,0 g achtergebleven water per g droge koffie bij percolatie, tier 3-4/klasse C, gebaseerd op Rao en Coffee ad Astra) — zonder die aanname zou de ratio het achtergebleven water in het koffiebed negeren en te sterk lijken. Temperatuur is een ankerpunt + instructie binnen de apparaatband, gepositioneerd op branddiepte (Implementatieplan Zetadvies v3.0, Fase 2, Bouwbesluit B-1) — géén los geteste claim: de bevinding dat temperatuur weinig zelfstandig smaakeffect heeft (research-brewing-variables.md §2.1/§4.2; Batali, Ristenpart & Guinard, 2020) hield maling en zettijd bewust vast om TDS/extractie gelijk te houden en testte alleen 87/90/93°C, en die voorwaarde geldt hier niet. Eerlijk erbij (Reparatieplan v4.0, A-7): het ankerpunt voor lichte branding (94–96°C) ligt zélf boven dat geteste bereik — het steunt op gangbare praktijk voor lichte brandingen, niet op deze studie, en is dus een vertrekpunt, geen getest getal. Maling is de eerlijke (instelling, vertrouwensband, korrelgrootte-doel)-drieling van de Setting Translator — vandaag voor elke molen "Insufficient" (geen gevalideerde kalibratiecurve); waar een community-startklikrange wél bestaat, positioneert branddiepte alleen wáár je daarbinnen begint (fijner/lichter, grover/donkerder) — geen nieuw maalgetal. Branddiepte stuurt in beide gevallen nooit de ratio of dosis (die blijven voor elke branddiepte identiek). Een eventueel giet-schema hierboven is óf een gecorroboreerde, aan een naam gebonden pour-structuur (zie de recept-notitie), óf — als die er niet is — een eigen, gelijkmatige verdeling; giet-snelheid (g/sec) is altijd een generieke aanname, geen letterlijk gepubliceerd getal. De totale schemalengte (en dus de brouwtimer) volgt uit het aantal giet-momenten van dit schema, niet meer uit de apparaatbrede contacttijd-diagnostiek — die diagnostische band staat los, als plausibiliteitscontrole achteraf op het Klaar-scherm (Implementatieplan Zetadvies v3.0, Fase 3).';

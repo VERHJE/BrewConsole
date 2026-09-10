@@ -1098,6 +1098,48 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
+  // NIEUW (Implementatieplan v3.0, P3 §OCR-hardening — "robuustere tekstherkenning"): de
+  // eerste end-to-end dekking van de tekstherkenning op het boon-toevoegen-formulier
+  // (applyParsedTextToForm(), tot nu toe volledig ongetest). Gebruikt bewust de plak-
+  // tekstinvoer (#f-scan-text + #scan-text-btn) i.p.v. de foto-scan zelf — precies het pad
+  // dat de app als eigen offline-vangnet aanbiedt ("Geen verbinding? Plak de tekst
+  // hieronder"), dus geen externe OCR-library nodig om dit te testen.
+  test('Tekstherkenning: samengestelde branddieptes winnen van de nieuwe kale light/dark-trefwoorden, geen verkeerde classificatie', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="beans"]');
+    await assertBecomesActive(page, '#screen-beans');
+    await page.click('#bean-add-link');
+    await assertBecomesActive(page, '#screen-bean-add');
+
+    async function scanText(text){
+      await page.fill('#f-scan-text', text);
+      await page.click('#scan-text-btn');
+    }
+    async function selectedRoast(){
+      return page.locator('#f-roast-chips [data-froast][data-selected="true"]').getAttribute('data-froast');
+    }
+
+    // "light medium roast" bevat zelf de substring "light" — moet toch als de preciezere
+    // samengestelde categorie herkend worden, niet als kale 'light'.
+    await scanText('Kenya AA — washed — light medium roast. Floral, bergamot.');
+    assert.equal(await selectedRoast(), 'light_medium');
+
+    // Zelfde risico voor "medium-dark roast" (bevat zelf "medium").
+    await scanText('Guatemala Antigua — natural — medium-dark roast. Chocolate, spice.');
+    assert.equal(await selectedRoast(), 'medium_dark');
+
+    // De nieuwe kale 'dark'/'light'-trefwoorden zelf: vóór deze wijziging kon een kale
+    // "Dark" (zonder het woord "roast" erbij) helemaal niet herkend worden.
+    await scanText('Brazil Cerrado — natural — Dark. Chocolate, nuts.');
+    assert.equal(await selectedRoast(), 'dark');
+
+    await scanText('Ethiopia Guji — washed — Light. Jasmine, peach, black tea.');
+    assert.equal(await selectedRoast(), 'light');
+
+    await page.close();
+  });
+
   test('Geen console- of pageerrors opgetreden tijdens de hele kernflow', () => {
     assert.deepEqual(consoleErrors, [], 'Onverwachte console.error()-aanroepen tijdens de kernflow');
     assert.deepEqual(pageErrors, [], 'Onverwachte onafgevangen JS-fouten tijdens de kernflow');
