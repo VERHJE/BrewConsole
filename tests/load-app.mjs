@@ -99,7 +99,7 @@ export function loadApp(){
       resolvedOverlayIdFor,
       levenshtein, maxFuzzyDistance, tokenizeForFuzzy, fuzzyMatchesKeyword, textOrFuzzyIncludes,
       RECORD_SCHEMA_VERSION, GRIND_CONFIDENCE_LABELS, translateGrindConfidence,
-      canonicalProfileKey, visibleProfileKeys, displayScoreFor,
+      canonicalProfileKey, visibleProfileKeys, displayScoreFor, PROFILE_MERGE_GROUPS,
       FRESHNESS_TIERS, freshnessTierForDays, coreOnlyReason,
       computeRecipe, engineValidVolumeRange, ENGINE_TARGET_WINDOWS,
       hardnessNudge, alkalinityNudge, dilutedWaterValue, waterSCAVerdict, HCO3_TO_CACO3_FACTOR,
@@ -107,7 +107,8 @@ export function loadApp(){
       CUPPING_PRIMARY_AXES,
       roastBucketFor, processBucketFor, ROAST_BUCKET_LABELS, PROCESS_BUCKET_LABELS,
       recipeGrindBaseline, matchesWaterProfile, learningCorrectionFor, learningCorrectionText,
-      LEARNING_MIN_N, brewLog, beanLibrary
+      LEARNING_MIN_N, brewLog, beanLibrary,
+      measuredRetention, measuredRetentionText, RETENTION_MIN_N, RETENTION_PLAUSIBLE
     };`,
     sandbox,
     { filename: 'test-exports-shim.js' }

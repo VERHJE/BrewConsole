@@ -74,7 +74,10 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#advisor-link');
     await assertBecomesActive(page, '#screen-advice');
     const adviceProfileCount = await page.locator('#advice-profile [data-adv-profile]').count();
-    assert.equal(adviceProfileCount, 9, 'Advisor-profielchips: verwacht 9 zichtbare keuzes (11 - 2 samengevoegde), zie visibleProfileKeys()');
+    // BIJGEWERKT (Reparatieplan v4.0, C-1 / Bouwbesluit BB-2): 'zoet' is uit
+    // PROFILE_MERGE_GROUPS gehaald (eigen gietschema sinds C-1) — nog maar 1 samengevoegd
+    // profiel (vol_rond), dus 11 - 1 = 10 zichtbaar, niet 9.
+    assert.equal(adviceProfileCount, 10, 'Advisor-profielchips: verwacht 10 zichtbare keuzes (11 - 1 samengevoegde sinds C-1), zie visibleProfileKeys()');
     await assertNoZeroSizeElements(page, '#advice-profile [data-adv-profile]', 'advice-profile chips');
 
     await page.click('#advice-roast [data-adv-roast] >> nth=0');
@@ -125,6 +128,38 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
+  // NIEUW (Reparatieplan v4.0, B-2a — bevinding E-03), BIJGEWERKT na B-2b (Bouwbesluit
+  // BB-1): vóór B-2b viel ELK Chemex-schema buiten de band, dus 'klassiek' (het 3-pulse
+  // Kernrecept) volstond. Na B-2b landt precies dát 3-pulse-schema weer BINNEN de band —
+  // de winst van B-2b. 'fresh_clean' (Hoffmann, 2 pulses) heeft een ander aantal
+  // giet-momenten en blijft daarom terecht buiten de band (D-4 blijft intact), dus de
+  // eerlijke samenvatting mag de gebruiker ook daar nooit de schuld geven van zijn eigen
+  // brouwtijd — hij moet zeggen dat het VOORGESCHREVEN schema zelf al buiten de band valt.
+  test('B-2a: op Chemex meldt het Klaar-scherm dat het schema zelf buiten de band valt, niet de gebruiker', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="method"]');
+    await assertBecomesActive(page, '#screen-method');
+    await page.click('[data-method="chemex"]');
+    await assertBecomesActive(page, '#screen-roast');
+    await page.click('#roast-grid [data-roast] >> nth=0');
+    await assertBecomesActive(page, '#screen-profile');
+    await page.click('#profile-grid [data-profile="fresh_clean"]');
+    await assertBecomesActive(page, '#screen-prep');
+
+    await page.click('#start-btn');
+    await assertBecomesActive(page, '#screen-brew');
+    await page.clock.fastForward(FAST_FORWARD);
+    await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
+    await page.click('#brewlog-open-btn');
+    await assertBecomesActive(page, '#screen-brewlog');
+
+    const honestSummary = (await page.locator('#brewlog-honest-summary').textContent()).trim();
+    assert.match(honestSummary, /valt zelf al buiten/, 'moet melden dat het SCHEMA buiten de band valt, niet de gebruiker beoordelen');
+
+    await page.close();
+  });
+
   test('Route B — handmatig: Methode → Roast → Profiel (samengevoegd) → Recept', async () => {
     const page = await newTrackedPage();
     await page.goto(FILE_URL, { waitUntil: 'load' });
@@ -142,10 +177,20 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await assertBecomesActive(page, '#screen-profile');
 
     const gridProfileCount = await page.locator('#profile-grid [data-profile]').count();
-    assert.equal(gridProfileCount, 9, 'profile-grid: verwacht 9 zichtbare profielen op V60 (methodOnly-profielen blijven zichtbaar op v60)');
+    // BIJGEWERKT (Reparatieplan v4.0, C-1 / Bouwbesluit BB-2): zie de toelichting bij de
+    // adviceProfileCount hierboven — 10 zichtbaar sinds 'zoet' niet meer wordt samengevoegd.
+    assert.equal(gridProfileCount, 10, 'profile-grid: verwacht 10 zichtbare profielen op V60 (methodOnly-profielen blijven zichtbaar op v60)');
     await assertNoZeroSizeElements(page, '#profile-grid [data-profile]', 'profile-grid buttons');
+    // BIJGEWERKT (Reparatieplan v4.0, B-4 / bevinding E-09): findProfileTwins() vergelijkt
+    // sinds B-4 het WERKELIJKE recept i.p.v. het gemapte overlay-id, en detecteert daardoor
+    // nu ook twee eerder gemiste tweelinggroepen — fruitig_clean/bloemig_delicaat (Rao's
+    // pulseCount is RESEARCH_GAP, dus beide vallen terug op hetzelfde generieke schema) en
+    // sirooprig_vol/evenwichtig_flex (Hedrick is nooit generatable). Die twee groepen zijn
+    // NIET samengevoegd tot één knop (dat is alleen klassiek/vol_rond), dus elk van hun 4
+    // leden krijgt terecht een zichtbare tweelingnotitie — precies de winst van B-4: een
+    // schijnkeuze die eerder onopgemerkt bleef, is dat nu niet meer.
     const twinNoteCount = await page.locator('#profile-grid .profile-twin-note').count();
-    assert.equal(twinNoteCount, 0, 'profile-grid: de klassiek/vol_rond/zoet-tweelingnotitie hoort te verdwijnen zodra ze één knop zijn');
+    assert.equal(twinNoteCount, 4, 'profile-grid: verwacht 4 tweelingnotities (fruitig_clean/bloemig_delicaat + sirooprig_vol/evenwichtig_flex), sinds B-4 correct gedetecteerd');
 
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
@@ -364,6 +409,48 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     const disclaimerText = (await page.locator('#disclaimer').textContent()).trim();
     assert.match(disclaimerText, /retentieaanname/i, 'De disclaimer moet vermelden dat de ratio een retentieaanname bevat');
     assert.match(disclaimerText, /2,0/, 'De disclaimer moet de gebruikte retentiewaarde (2,0 g/g) noemen');
+
+    await page.close();
+  });
+
+  // NIEUW (Reparatieplan v4.0, A-1 — bevinding E-07a): het doelvenster (TDS/EY) en zijn
+  // herkomst (G-CONTROL-CHART-01) moeten daadwerkelijk in de UI staan, niet alleen in de
+  // disclaimer-tekst beweerd worden.
+  test('A-1: het doelvenster-blok toont de TDS/EY-getallen en de G-CONTROL-CHART-01-herkomst', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="method"]');
+    await assertBecomesActive(page, '#screen-method');
+    await page.click('[data-method="v60"]');
+    await page.click('#roast-grid [data-roast] >> nth=0');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await assertBecomesActive(page, '#screen-prep');
+
+    const windowNote = page.locator('#target-window-note');
+    await assert.ok(await windowNote.isVisible(), '#target-window-note moet zichtbaar zijn op het Prep-scherm');
+    const windowText = (await windowNote.textContent()).trim();
+    assert.match(windowText, /%TDS/, 'moet de %TDS-grenzen noemen');
+    assert.match(windowText, /G-CONTROL-CHART-01/, 'moet de herkomst (research gap) noemen');
+
+    await page.close();
+  });
+
+  // NIEUW (Reparatieplan v4.0, A-3 — bevinding E-01, tussenoplossing): altijd zichtbare
+  // uitleg dat het profiel vandaag vooral het gietschema stuurt, niet de receptgetallen.
+  test('A-3: #profile-scope-note is zichtbaar en meldt dat het profiel vooral het gietschema stuurt', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="method"]');
+    await assertBecomesActive(page, '#screen-method');
+    await page.click('[data-method="v60"]');
+    await page.click('#roast-grid [data-roast] >> nth=0');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await assertBecomesActive(page, '#screen-prep');
+
+    const scopeNote = page.locator('#profile-scope-note');
+    await assert.ok(await scopeNote.isVisible(), '#profile-scope-note moet zichtbaar zijn op het Prep-scherm');
+    const scopeText = (await scopeNote.textContent()).trim();
+    assert.match(scopeText, /gietschema/, 'moet melden dat het profiel het gietschema stuurt');
 
     await page.close();
   });
@@ -588,6 +675,147 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     assert.match(cardText, /werkelijke stand 21/);
     assert.match(cardText, /werkelijke tijd 3:05/, `verwacht 185s als 3:05, kreeg "${cardText}"`);
     assert.match(cardText, /kopgewicht 262\.5 g/);
+
+    await page.close();
+  });
+
+  // NIEUW (Reparatieplan v4.0, C-2 / bevinding E-11 — verplicht, N-3/N-4): een back-up van
+  // schemaVersion 1, 2 ÉN 3 (allemaal van vóór beanSnapshot bestond) moet zonder verlies
+  // laden — additief, geen migratie, geen verzonnen velden.
+  test('C-2 migratie: schemaVersion 1, 2 én 3 laden allemaal zonder verlies en zonder beanSnapshot te verzinnen', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="beans"]');
+    await assertBecomesActive(page, '#screen-beans');
+
+    const mixedBackup = {
+      app: 'brew-console', backupVersion: 2, exportedAt: new Date().toISOString(),
+      beans: [],
+      brewLog: [
+        { id: 'log_v1', schemaVersion: 1, timestamp: Date.now(),
+          beanId: null, method: 'v60', profile: 'klassiek', roast: 'medium',
+          waterMl: 300, bypass: false, grindMicron: 650, grindStand: 20, temp: 94,
+          scores: {}, note: 'schemaVersion 1' },
+        { id: 'log_v2', schemaVersion: 2, timestamp: Date.now(),
+          beanId: null, method: 'v60', profile: 'klassiek', roast: 'medium',
+          waterMl: 300, bypass: false, grindMicron: 650, grindStand: 20, temp: 94,
+          scores: {}, note: 'schemaVersion 2', doseG: 17, ratioText: '1:17,6',
+          actualGrindClicks: 18, actualTimeSec: 190, cupWeightG: 260,
+          waterProfileSnapshot: { hardnessMgL: 100, alkalinity: { value: 40, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } } },
+        { id: 'log_v3', schemaVersion: 3, timestamp: Date.now(),
+          beanId: null, method: 'v60', profile: 'klassiek', roast: 'medium',
+          waterMl: 300, bypass: false, grindMicron: 650, grindStand: 20, temp: 94,
+          scores: {}, note: 'schemaVersion 3', doseG: 17, ratioText: '1:17,6',
+          actualGrindClicks: 18, actualTimeSec: 190, cupWeightG: 260, approved: true, grindStartingPoint: 14,
+          waterProfileSnapshot: { hardnessMgL: 100, alkalinity: { value: 40, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } } }
+        // Bewust GEEN beanSnapshot op geen van de drie — dat veld bestaat pas sinds C-2
+        // (schemaVersion 4) en mag hier niet met terugwerkende kracht verzonnen worden.
+      ]
+    };
+    await page.setInputFiles('#backup-import-file', {
+      name: 'c2-migratie-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(mixedBackup))
+    });
+    await page.waitForFunction(() => document.getElementById('backup-status').hidden === false);
+    const statusText = (await page.locator('#backup-status').textContent()).trim();
+    assert.match(statusText, /3 nieuwe loggings/);
+    assert.doesNotMatch(statusText, /undefined|NaN/);
+
+    await page.click('.navbar [data-nav="brewlog-history"]');
+    await assertBecomesActive(page, '#screen-brewlog-history');
+    const historyText = (await page.locator('#brewlog-history-list').innerText()).trim();
+    assert.match(historyText, /schemaVersion 1/);
+    assert.match(historyText, /schemaVersion 2/);
+    assert.match(historyText, /schemaVersion 3/);
+    assert.doesNotMatch(historyText, /undefined|NaN/);
+
+    await page.close();
+  });
+
+  // NIEUW (Reparatieplan v4.0, C-2 — verplicht): een schemaVersion-3-record zonder
+  // beanSnapshot (van vóór C-2) moet nog steeds precies dezelfde leercorrectie opleveren
+  // als vóór deze wijziging — de live-boonopzoeking-terugval moet het gedrag op bestaande
+  // data volledig onveranderd laten.
+  test('C-2: een schemaVersion-3-record zonder beanSnapshot levert nog steeds dezelfde leercorrectie op (live terugval)', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="beans"]');
+    await assertBecomesActive(page, '#screen-beans');
+
+    const bean = { id: 'bean_c2', name: 'C-2 testboon', roastLevel: 'light', process: 'washed', intendedUse: 'filter', profileKey: 'klassiek' };
+    const makeEntry = (id, clicks) => ({
+      id, schemaVersion: 3, timestamp: Date.now(),
+      beanId: bean.id, method: 'v60', profile: 'klassiek', roast: 'light',
+      waterMl: 300, bypass: false, grindMicron: 650, grindStand: null, temp: 95,
+      scores: {}, note: '', approved: true, grindStartingPoint: 14, actualGrindClicks: clicks
+      // Bewust GEEN beanSnapshot — dit is precies het schemaVersion-3-record dat C-2 zegt
+      // via entryBeanFor()/de live boon te blijven bedienen.
+    });
+    const backup = {
+      app: 'brew-console', backupVersion: 2, exportedAt: new Date().toISOString(),
+      beans: [bean],
+      brewLog: [makeEntry('log_a', 12), makeEntry('log_b', 12), makeEntry('log_c', 12)]
+    };
+    await page.setInputFiles('#backup-import-file', {
+      name: 'c2-leercorrectie-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(backup))
+    });
+    await page.waitForFunction(() => document.getElementById('backup-status').hidden === false);
+
+    await page.click('#bean-list .bean-card >> nth=0 >> .bean-card-name');
+    await assertBecomesActive(page, '#screen-bean-detail');
+    await page.click('#bean-detail-use-btn');
+    await assertBecomesActive(page, '#screen-advice');
+    await page.click('#advice-batch [data-adv-batch="single"]');
+    await page.waitForFunction(() => getComputedStyle(document.getElementById('advice-result')).display !== 'none');
+    await page.click('#advice-cta');
+    await assertBecomesActive(page, '#screen-prep');
+
+    const prepText = (await page.locator('#screen-prep').innerText()).trim();
+    assert.match(prepText, /leercorrectie|klikken (fijner|grover)|exact/i,
+      'drie goedgekeurde schemaVersion-3-loggings (zonder beanSnapshot) horen nog steeds een leercorrectie te tonen, via de live boon-terugval');
+
+    await page.close();
+  });
+
+  // NIEUW (Reparatieplan v4.0, C-2 — verplicht, N-4): export → import → export van een
+  // schemaVersion-4-record (mét beanSnapshot) is rondgang-identiek.
+  test('C-2 back-up-rondgang: een schemaVersion-4-record met beanSnapshot komt na import ongeschonden terug', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="beans"]');
+    await assertBecomesActive(page, '#screen-beans');
+
+    const entry = {
+      id: 'log_v4', schemaVersion: 4, timestamp: Date.now(),
+      beanId: 'bean_v4', method: 'v60', profile: 'klassiek', roast: 'light',
+      waterMl: 300, bypass: false, grindMicron: 650, grindStand: 20, temp: 95,
+      scores: {}, note: 'v4 rondgang', doseG: 17, ratioText: '1:17,6',
+      actualGrindClicks: 18, actualTimeSec: 190, cupWeightG: 260, approved: true, grindStartingPoint: 14,
+      beanSnapshot: { process: 'natural', intendedUse: 'filter', roastLevel: 'light' },
+      waterProfileSnapshot: { hardnessMgL: 100, alkalinity: { value: 40, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } }
+    };
+    const backup = {
+      app: 'brew-console', backupVersion: 2, exportedAt: new Date().toISOString(),
+      beans: [{ id: 'bean_v4', name: 'V4-boon', roastLevel: 'light', process: 'natural', intendedUse: 'filter' }],
+      brewLog: [entry]
+    };
+    await page.setInputFiles('#backup-import-file', {
+      name: 'c2-rondgang-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(backup))
+    });
+    await page.waitForFunction(() => document.getElementById('backup-status').hidden === false);
+
+    // De rondgang: lees de live brewLog-state (exact wat exportBackup() ook zou serialiseren)
+    // terug uit de pagina en vergelijk met wat er is geïmporteerd.
+    const storedEntry = await page.evaluate(() => brewLog.find(e => e.id === 'log_v4'));
+    assert.deepEqual(storedEntry.beanSnapshot, entry.beanSnapshot, 'beanSnapshot moet ongeschonden terugkomen');
+    assert.equal(storedEntry.schemaVersion, 4);
+    assert.equal(storedEntry.doseG, entry.doseG);
+    assert.equal(storedEntry.cupWeightG, entry.cupWeightG);
 
     await page.close();
   });
