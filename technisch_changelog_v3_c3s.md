@@ -169,7 +169,61 @@ brouwtimer/wake-lock-logica, de service-worker-cachestrategie, en alle Reparatie
 v4.0-non-negotiables (N-1 t/m N-8) blijven intact. Chemex' C3S Pro-startbereik blijft
 `RESEARCH_GAP` (plan §28 eist dit expliciet).
 
-## Acceptance checklist (plan §28)
+## Eindcontrole — acceptance checklist (plan §28)
 
-Zie `Eindcontrole`-sectie in de PR-beschrijving voor de puntsgewijze aftekening tegen
-alle 19 items uit §28.
+Volledige testsuite op de eind-HEAD (`e128b42`..`afabc10`, incl. deze documentatie-commit):
+**157/157 groen** (`npm run qa`). Baseline-sweep vóór deze ronde
+(`_baselines_v3/baseline_voor.txt`, 180 methode×profiel×roast×sterkte-combinaties) vs. ná
+alle zes commits: **0 verschil** op dose/ratioText/temp/totalTime/technique/steps op alle
+180 rijen; het enige verschil is `grindStartingPoint`/`grindStartingRange` op alle 99
+V60-rijen (13–16 → 15–17, exact zoals bedoeld — geverifieerd dat elke verschoven waarde
+klopt met `ROAST_GRIND_ANCHOR_FRACTION`'s bestaande, ongewijzigde formule toegepast op de
+nieuwe range); de 81 Chemex-rijen zijn op die twee kolommen ook 0 verschil (blijft leeg/
+`RESEARCH_GAP`, zoals vereist).
+
+- [x] Baseline tests groen. — 157/157 (`npm run qa`).
+- [x] Canonical RecommendationOutput geïmplementeerd. — `selectViaCanonicalPipeline()`
+      roept `B.selectRecommendation()` aan (commit `e128b42`).
+- [x] `computeRecipe()` omzeilt recommendation ranking niet meer. — de oude `.find()`-
+      schaduwselectie is vervangen; geverifieerd via 4 gerichte tests + volledige
+      baseline-sweep.
+- [x] C3S Pro registry bevat S2C660 / 38 mm / SUS420. — `TIMEMORE_C3S_PRO_MECHANICAL_FACTS`
+      (commit `6446a99`).
+- [x] 83,3 µm/click is SOURCED mechanical fact. — idem, `evidenceClass: "B"`.
+- [x] Geen click→PSD conversion. — `mechanicalAdjustmentMicrons()` is de enige
+      vermenigvuldiging met clicks; er bestaat geen particle-size/D50/D90-veld dat dit
+      resultaat ontvangt (niet gebouwd, per plan §26).
+- [x] 13–18 V60 practical range. — `TIMEMORE_C3S_PRO_V60_PRACTICAL_RANGE`.
+- [x] 15–17 V60 starting range. — `TIMEMORE_C3S_PRO_V60_STARTING_RANGE`.
+- [x] 0–6/7 safety floor blijft hard. — defensieve `HARD_CONSTRAINT_VIOLATION`-check geldt
+      nu voor beide ranges (was: alleen de ene range die bestond).
+- [x] Chemex C3S Pro numeric starting range blijft unresolved. — bevestigd via
+      baseline-sweep: alle 81 Chemex-rijen houden lege grind-kolommen, vóór én ná.
+- [x] 50 µm-claim niet meer als gelijkwaardige actieve hardwarewaarde in UI. — verplaatst
+      naar `TIMEMORE_C3S_PRO_MICRON_HISTORICAL_LEDGER` (audit-only) met `supersededBy`;
+      UI toont alleen de SOURCED 83,3 µm-waarde.
+- [x] TDS/EY windows versioned APP-ASSUMED. — `MODEL_POLICY` v3.0 (commit `5cc4987`).
+- [x] Bypass V60-scoped. — `bypassMethodSupported`/`bypassActuallyApplied` +
+      `renderBypassToggle()`-guard (commit `6299b46`).
+- [x] Source recipe vs app synthesis zichtbaar. — audit tegen de plan se 5-categorie
+      taxonomie (commit `b275889`): 4/5 al zichtbaar, nieuwe "Ongeverifieerde
+      toeschrijving"-badge voor de 5e.
+- [x] Approved-only learning intact. — niet aangeraakt deze ronde; de goedgekeurd-alleen
+      leerlus uit Reparatieplan v4.0 (C-3) is ongewijzigd, alle bestaande leerlus-tests
+      blijven groen.
+- [x] Historical snapshots intact. — geen enkele bestaande brewlog-veld herschreven;
+      `modelPolicyVersion` is additief (`null` op oudere records); `RECORD_SCHEMA_VERSION`
+      niet opgehoogd.
+- [x] Personal calibration cannot overwrite hardware facts. — `TIMEMORE_C3S_PRO_MECHANICAL_FACTS`
+      is `Object.freeze()`'d; geen enkel calibratie- of leerlus-pad in de hele codebase
+      schrijft ernaar.
+- [x] Provenance tests groen. — 3 nieuwe technique-provenance-tests + 10 nieuwe C3S
+      registry-tests, alle groen.
+- [x] PWA offline E2E groen. — `sw-registration.test.mjs`, 3/3, ongewijzigd en nog steeds
+      groen.
+- [x] Import/export backwards compatibility groen. — geen import/export-code aangeraakt
+      deze ronde (`git diff` op `brewconsole_v2_2.html` bevat geen wijziging in die
+      functies); bestaande gedrag dus ongewijzigd.
+- [x] Changelog/documentation bijgewerkt. — dit document.
+
+**19/19 items uit §28 afgetekend.**
