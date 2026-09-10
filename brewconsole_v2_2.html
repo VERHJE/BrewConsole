@@ -3125,9 +3125,44 @@ function rawKeyForVisibleSelection(canonicalKey, scores){
    the recipe notes" terwijl de getallen nergens in de UI stonden. Dat is nu wél zo:
    renderPrep() rendert #target-window-note met de letterlijke TDS/EY-grenzen én de
    herkomst ("door de app aangeleverd, engine zegt RESEARCH_GAP"). */
+/* NIEUW (Implementatieplan v3.0, §6 "Model Policy"): de twee numerieke TDS/EY-vensters
+   hieronder zijn productmatig gewenst en blijven getalsmatig ONGEWIJZIGD — dit voegt
+   uitsluitend een expliciete, versieerbare Model Policy-laag toe i.p.v. een kale const.
+   De engine zelf markeert de bronbasis van deze vensters als RESEARCH_GAP
+   (G-CONTROL-CHART-01, SENSORY_TARGET_CLUSTERS); resolveTargetWindow() accepteert dit
+   uitdrukkelijk als override ("a caller MAY supply its own numeric window... this engine
+   does not compute one on its own"). MODEL_POLICY.version wordt vanaf nu meegeschreven op
+   elke nieuwe recept-/logboekrecord (los van RECORD_SCHEMA_VERSION, additief veld) zodat
+   een toekomstige policy-wijziging historische loggingen niet met terugwerkende kracht
+   herinterpreteert — zie computeRecipe() en saveBrewLogEntry(). Voorkomt ook dat deze
+   waarden per ongeluk via een generieke override-route als RESOLVED/STATED gemarkeerd
+   raken: resolveTargetWindow() blijft onderscheid maken tussen extern-STATED input en
+   interne model policy (provenance staat hieronder altijd op APP_ASSUMED). */
+const MODEL_POLICY = Object.freeze({
+  version: "3.0",
+  name: "Brew Engine target-window model policy",
+  targetWindows: Object.freeze({
+    LOWER_STRENGTH_MODERATE_EXTRACTION: Object.freeze({
+      tds: [1.15, 1.30],
+      ey: [18, 20],
+      provenance: "APP_ASSUMED",
+      evidenceStatus: "RESEARCH_GAP",
+      rationale: "SCA-Brewing-Control-Chart-achtig doelvenster voor het lagere-sterkte/matige-extractie-cluster (bright/clean-leaning profielen). Door de app aangeleverd, geen sourced numeric evidence — de engine markeert dit veld zelf als G-CONTROL-CHART-01."
+    }),
+    FULLER_BODIED: Object.freeze({
+      tds: [1.30, 1.45],
+      ey: [20, 22],
+      provenance: "APP_ASSUMED",
+      evidenceStatus: "RESEARCH_GAP",
+      rationale: "SCA-Brewing-Control-Chart-achtig doelvenster voor het fuller-bodied-cluster. Door de app aangeleverd, geen sourced numeric evidence — de engine markeert dit veld zelf als G-CONTROL-CHART-01."
+    })
+  })
+});
+// Afgeleid van MODEL_POLICY hierboven — nooit een tweede, losse kopie van dezelfde
+// getallen. resolveTargetWindow() consumeert dit exact zoals voorheen (ongewijzigde vorm).
 const ENGINE_TARGET_WINDOWS = {
-  LOWER_STRENGTH_MODERATE_EXTRACTION: { strengthTDS:[1.15,1.30], extractionYieldEY:[18,20] },
-  FULLER_BODIED:                      { strengthTDS:[1.30,1.45], extractionYieldEY:[20,22] }
+  LOWER_STRENGTH_MODERATE_EXTRACTION: { strengthTDS: MODEL_POLICY.targetWindows.LOWER_STRENGTH_MODERATE_EXTRACTION.tds, extractionYieldEY: MODEL_POLICY.targetWindows.LOWER_STRENGTH_MODERATE_EXTRACTION.ey },
+  FULLER_BODIED:                      { strengthTDS: MODEL_POLICY.targetWindows.FULLER_BODIED.tds,                      extractionYieldEY: MODEL_POLICY.targetWindows.FULLER_BODIED.ey }
 };
 
 
@@ -3789,7 +3824,8 @@ function buildFallbackRecipe(reason, waterMl){
     technique:'Geen geldig recept bij dit watervolume', author:'—',
     notes:`${reason} Pas de waterhoeveelheid aan (stel bijv. terug naar het midden van het bereik) of kies de andere zettermethode.`,
     ratioText:'—', processNote:'', freshnessNote:'', altitudeNote:'', hardnessNote:'', bypassNote:'', strengthNote:'',
-    bypassAdv:{ pct:0, factor:1 }, contactTimeDiagnosticBand:null, pulseCountSourced:false
+    bypassAdv:{ pct:0, factor:1 }, contactTimeDiagnosticBand:null, pulseCountSourced:false,
+    modelPolicyVersion: MODEL_POLICY.version
   };
 }
 
@@ -4079,7 +4115,12 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     // NIEUW (Implementatieplan Zetadvies v3.0, Fase 3c/D-4): zie de toelichting bij
     // contactTimeDiagnosticBand hierboven — gebruikt door renderBrewLogHonestSummary(),
     // stuurt totalTime/steps niet (meer).
-    contactTimeDiagnosticBand
+    contactTimeDiagnosticBand,
+    // NIEUW (Implementatieplan v3.0, §6/§20): welke Model Policy-versie de TDS/EY-vensters
+    // van dít recept leverde — meegeschreven op elke nieuwe logging (saveBrewLogEntry())
+    // zodat een toekomstige policy-wijziging historische loggingen niet met
+    // terugwerkende kracht herinterpreteert.
+    modelPolicyVersion: MODEL_POLICY.version
   };
 }
 
@@ -6097,6 +6138,10 @@ function saveBrewLogEntry(){
     // NIEUW (Fase 5) — het aanbevolen recept, voor de vergelijking met wat er echt gebeurde:
     doseG: (typeof rec.dose === 'number') ? rec.dose : null,
     ratioText: rec.ratioText || null,
+    // NIEUW (Implementatieplan v3.0, §6/§20): welke Model Policy-versie het aanbevolen
+    // recept leverde — additief, RECORD_SCHEMA_VERSION-onafhankelijk. Oudere records
+    // missen dit veld simpelweg; niets leest het terug om ze te migreren.
+    modelPolicyVersion: rec.modelPolicyVersion || null,
     // NIEUW (Fase 5) — wat er ECHT gebeurde, niet het advies: fundament voor Fase 6/7.
     actualGrindClicks: readOptionalNumberInput('brewlog-actual-grind'),
     actualTimeSec: actualTime,
@@ -7666,7 +7711,7 @@ function renderPrep(){
   if (windowEl){
     const cluster = (ENGINE_PROFILE_MAP[state.profile] || ENGINE_PROFILE_MAP.klassiek).cluster;
     const w = ENGINE_TARGET_WINDOWS[cluster];
-    windowEl.textContent = `Doelvenster achter dit recept: ${fmt(w.strengthTDS[0],2)}–${fmt(w.strengthTDS[1],2)} %TDS bij ${w.extractionYieldEY[0]}–${w.extractionYieldEY[1]} %extractie. Deze twee getallenparen zijn door de app aangeleverd (SCA-Brewing-Control-Chart-achtig) en maken GEEN deel uit van het eigen onderzoekscorpus van dit project — de engine zelf markeert dit veld als openstaande onderzoeksvraag (G-CONTROL-CHART-01). Dosis en ratio hierboven volgen er rechtstreeks uit.`;
+    windowEl.textContent = `Doelvenster achter dit recept: ${fmt(w.strengthTDS[0],2)}–${fmt(w.strengthTDS[1],2)} %TDS bij ${w.extractionYieldEY[0]}–${w.extractionYieldEY[1]} %extractie. Deze twee getallenparen zijn door de app aangeleverd (SCA-Brewing-Control-Chart-achtig) en maken GEEN deel uit van het eigen onderzoekscorpus van dit project — de engine zelf markeert dit veld als openstaande onderzoeksvraag (G-CONTROL-CHART-01). Vastgelegd als Model Policy v${MODEL_POLICY.version} (${MODEL_POLICY.targetWindows[cluster].provenance}) — geen sourced evidence, een expliciete, versieerbare productaanname. Dosis en ratio hierboven volgen er rechtstreeks uit.`;
     windowEl.hidden = false;
   }
   const retEl = document.getElementById('retention-note');

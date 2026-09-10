@@ -1224,3 +1224,41 @@ describe('Implementatieplan v3.0 / C3S Pro Technische Deep-Dive — grinder regi
     assert.equal(rec.grindStartingPoint, null);
   });
 });
+
+describe('Implementatieplan v3.0 — Model Policy (versioned TDS/EY target windows)', () => {
+  test('MODEL_POLICY.version is "3.0" en elk target window heeft provenance APP_ASSUMED + evidenceStatus RESEARCH_GAP', () => {
+    assert.equal(api.MODEL_POLICY.version, '3.0');
+    for (const key of ['LOWER_STRENGTH_MODERATE_EXTRACTION', 'FULLER_BODIED']){
+      const w = api.MODEL_POLICY.targetWindows[key];
+      assert.equal(w.provenance, 'APP_ASSUMED');
+      assert.equal(w.evidenceStatus, 'RESEARCH_GAP');
+      assert.ok(Array.isArray(w.tds) && w.tds.length === 2);
+      assert.ok(Array.isArray(w.ey) && w.ey.length === 2);
+    }
+  });
+
+  test('ENGINE_TARGET_WINDOWS blijft getalsmatig exact afgeleid van MODEL_POLICY — geen tweede kopie van dezelfde getallen', () => {
+    // NB: assert.deepEqual op arrays die uit de vm-sandbox komen (een ander realm dan dit
+    // testbestand) geeft valse negatieven ("not reference-equal") ondanks identieke
+    // waarden — vandaar element-voor-element vergelijken i.p.v. deepEqual.
+    const pairs = [
+      [api.ENGINE_TARGET_WINDOWS.LOWER_STRENGTH_MODERATE_EXTRACTION.strengthTDS, [1.15, 1.30]],
+      [api.ENGINE_TARGET_WINDOWS.LOWER_STRENGTH_MODERATE_EXTRACTION.extractionYieldEY, [18, 20]],
+      [api.ENGINE_TARGET_WINDOWS.FULLER_BODIED.strengthTDS, [1.30, 1.45]],
+      [api.ENGINE_TARGET_WINDOWS.FULLER_BODIED.extractionYieldEY, [20, 22]],
+      [api.MODEL_POLICY.targetWindows.LOWER_STRENGTH_MODERATE_EXTRACTION.tds, [1.15, 1.30]],
+      [api.MODEL_POLICY.targetWindows.LOWER_STRENGTH_MODERATE_EXTRACTION.ey, [18, 20]],
+      [api.MODEL_POLICY.targetWindows.FULLER_BODIED.tds, [1.30, 1.45]],
+      [api.MODEL_POLICY.targetWindows.FULLER_BODIED.ey, [20, 22]]
+    ];
+    for (const [actual, expected] of pairs){
+      assert.equal(actual.length, expected.length);
+      expected.forEach((v, i) => assert.equal(actual[i], v));
+    }
+  });
+
+  test('computeRecipe() stempelt elk recept met modelPolicyVersion "3.0"', () => {
+    const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
+    assert.equal(rec.modelPolicyVersion, '3.0');
+  });
+});
