@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    name: QA suite (pure-logic + Playwright smoke + service worker)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Downloadt Playwright's eigen, door Playwright beheerde Chromium-build (in
+      # ~/.cache/ms-playwright) plus de systeembibliotheken die een headless Chromium op een
+      # kale Ubuntu-runner nodig heeft. tests/kernflow.smoke.test.mjs en
+      # tests/sw-registration.test.mjs vallen automatisch op deze managed browser terug zodra
+      # hun vaste sandbox-pad (/opt/pw-browsers/chromium) niet bestaat — geen verdere
+      # CI-specifieke configuratie nodig.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run QA suite
+        run: npm run qa
