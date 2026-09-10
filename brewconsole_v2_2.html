@@ -1729,8 +1729,14 @@
     approximatePositions: 36,
     semantics: "MECHANICAL_ADJUSTMENT"
   });
+  // NIEUW (Implementatieplan v3.0, P2 §21.3 — "1249.5 at click 15 is DERIVED mechanical
+  // adjustment"): het resultaat draagt voortaan expliciet DERIVED-provenance (i.p.v. een
+  // kaal getal dat DERIVED alleen in commentaar beweerde) — zelfde resolved()-patroon als
+  // elke andere provenance-waarde in deze motor. Nooit aangeroepen door computeRecipe() of
+  // enige rendering (geverifieerd: geen enkele call site buiten deze definitie en de eigen
+  // tests) — deze wijziging raakt dus geen bestaand receptgetal.
   function mechanicalAdjustmentMicrons(clicks) {
-    return clicks * TIMEMORE_C3S_PRO_MECHANICAL_FACTS.adjustmentMicronsPerClick;
+    return resolved(clicks * TIMEMORE_C3S_PRO_MECHANICAL_FACTS.adjustmentMicronsPerClick, "DERIVED", "B");
   }
   var GENERIC_UNLISTED_ID = "GENERIC_UNLISTED";
   var genericInternalTarget = {

@@ -1127,9 +1127,12 @@ describe('Implementatieplan v3.0 / C3S Pro Technische Deep-Dive — grinder regi
   const B = sandbox.BrewEngineBundle;
 
   test('mechanicalAdjustmentMicrons is een pure DERIVED-vermenigvuldiging, nooit een PSD-claim', () => {
-    assert.equal(B.mechanicalAdjustmentMicrons(0), 0);
-    assert.equal(B.mechanicalAdjustmentMicrons(15), 1249.5);
-    assert.equal(Math.round(B.mechanicalAdjustmentMicrons(18) * 10) / 10, 1499.4);
+    assert.equal(B.mechanicalAdjustmentMicrons(0).value, 0);
+    assert.equal(B.mechanicalAdjustmentMicrons(0).provenance, 'DERIVED');
+    assert.equal(B.mechanicalAdjustmentMicrons(15).value, 1249.5);
+    assert.equal(B.mechanicalAdjustmentMicrons(15).provenance, 'DERIVED');
+    assert.equal(B.mechanicalAdjustmentMicrons(15).state, 'RESOLVED');
+    assert.equal(Math.round(B.mechanicalAdjustmentMicrons(18).value * 10) / 10, 1499.4);
   });
 
   test('TIMEMORE_C3S_PRO_MECHANICAL_FACTS draagt het MECHANICAL_ADJUSTMENT-label en de gesourcete hardwarefeiten', () => {
@@ -1411,5 +1414,34 @@ describe('Implementatieplan v3.0 — Personal calibration refinement (P2, §13)'
     const facts = sandbox3.BrewEngineBundle.TIMEMORE_C3S_PRO_MECHANICAL_FACTS;
     assert.equal(Object.isFrozen(facts), true);
     assert.equal(facts.adjustmentMicronsPerClick, 83.3, 'personalCalibrationFor() mag dit SOURCED getal nooit aanraken, ongeacht de brewlog-inhoud');
+  });
+});
+
+describe('Implementatieplan v3.0 — Provenance unit tests (P2, §21.3)', () => {
+  // De vijf expliciet genoemde eisen uit het plan: "APP-ASSUMED target windows never
+  // render as sourced numeric evidence", "83.3 is SOURCED mechanical fact" (al gedekt in
+  // het bestaande C3S-registry-blok hierboven), "1249.5 at click 15 is DERIVED mechanical
+  // adjustment", "PSD observations remain OBSERVED and cannot be used as universal
+  // calibration", "Personal calibration is PERSONAL_MEASURED and never overwrites hardware
+  // facts" (al gedekt in het Personal calibration-blok hierboven).
+  const B = sandbox.BrewEngineBundle;
+
+  test('APP-ASSUMED target windows renderen nooit als sourced numeric evidence', () => {
+    assert.equal(api.MODEL_POLICY.targetWindows.LOWER_STRENGTH_MODERATE_EXTRACTION.provenance, 'APP_ASSUMED');
+    assert.equal(api.MODEL_POLICY.targetWindows.FULLER_BODIED.provenance, 'APP_ASSUMED');
+    assert.notEqual(api.MODEL_POLICY.targetWindows.LOWER_STRENGTH_MODERATE_EXTRACTION.provenance, 'SOURCED');
+    assert.notEqual(api.MODEL_POLICY.targetWindows.LOWER_STRENGTH_MODERATE_EXTRACTION.provenance, 'MEASURED');
+  });
+
+  test('1249.5 bij click 15 is expliciet DERIVED (mechanicalAdjustmentMicrons)', () => {
+    const r = B.mechanicalAdjustmentMicrons(15);
+    assert.equal(r.value, 1249.5);
+    assert.equal(r.provenance, 'DERIVED');
+  });
+
+  test('PSD-observaties voor C3S Pro blijven RESEARCH_GAP, nooit een verzonnen universele click→particle-size-claim', () => {
+    const t = B.translateSetting(B.TIMEMORE_C3S_PRO_ID, 'MEDIUM_FINE');
+    assert.equal(t.psdTarget.micronRange.state, 'RESEARCH_GAP');
+    assert.notEqual(t.psdTarget.micronRange.state, 'RESOLVED', 'geen enkele PSD-waarde mag als bewezen getal getoond worden — plan §26');
   });
 });
