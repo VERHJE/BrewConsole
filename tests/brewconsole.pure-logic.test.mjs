@@ -14,7 +14,8 @@
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadApp } from './load-app.mjs';
+import { readFileSync } from 'node:fs';
+import { loadApp, APP_HTML_PATH, extractScripts } from './load-app.mjs';
 
 const { api, sandbox } = loadApp();
 
@@ -1443,5 +1444,110 @@ describe('Implementatieplan v3.0 — Provenance unit tests (P2, §21.3)', () => 
     const t = B.translateSetting(B.TIMEMORE_C3S_PRO_ID, 'MEDIUM_FINE');
     assert.equal(t.psdTarget.micronRange.state, 'RESEARCH_GAP');
     assert.notEqual(t.psdTarget.micronRange.state, 'RESOLVED', 'geen enkele PSD-waarde mag als bewezen getal getoond worden — plan §26');
+  });
+});
+
+describe('Nieuwe Reparaties v2.2 — §2: bewijs dat er maar één winnaarspad is', () => {
+  // Structurele bewaking: computeRecipe() mag NERGENS buiten
+  // selectViaCanonicalPipeline() zelf een kandidaat als "beste" selecteren. Scant de
+  // ECHTE broncode (niet een aanname erover) — vangt een toekomstige regressie waarbij
+  // iemand per ongeluk weer een tweede .find()-schaduwselectie naast de canonical
+  // pipeline zet, precies het risico dat het document benoemt.
+  test('computeRecipe() bevat geen kandidaat-selectielogica buiten selectViaCanonicalPipeline()', () => {
+    const html = readFileSync(APP_HTML_PATH, 'utf8');
+    const [, appScript] = extractScripts(html);
+
+    const fnStart = appScript.indexOf('function computeRecipe(');
+    assert.ok(fnStart >= 0, 'computeRecipe() moet bestaan');
+    // Volgende top-level "function " na de start markeert het einde van deze functie
+    // (bestaande stijl: functies zijn nooit genest op dit niveau in dit bestand).
+    const fnEnd = appScript.indexOf('\nfunction ', fnStart + 1);
+    const body = appScript.slice(fnStart, fnEnd > 0 ? fnEnd : undefined);
+
+    assert.ok(body.includes('selectViaCanonicalPipeline('), 'computeRecipe() moet de canonical pipeline aanroepen');
+    assert.doesNotMatch(body, /gen\.candidates\.find\(/, 'computeRecipe() mag zelf geen .find() op gen.candidates doen — dat is precies de oude schaduwselectie die vervangen is');
+    assert.doesNotMatch(body, /gen\.candidates\[0\]/, 'computeRecipe() mag zelf geen index-0-kandidaat kiezen — dat moet via selectViaCanonicalPipeline() lopen');
+  });
+
+  // Gedragsbewaking: "Overlay application cannot change dose, water, ratio, temperature
+  // or core grind recommendation." — binnen één cluster delen alle profielen (met of
+  // zonder overlay, en welke overlay dan ook) exact dezelfde core-cijfers; alleen
+  // techniek/schema/auteur mogen verschillen. Dit dekt de volledige ENGINE_PROFILE_MAP,
+  // niet maar één steekproef.
+  const PROFILES_BY_CLUSTER = {};
+  for (const p of Object.keys(api.ENGINE_PROFILE_MAP)){
+    const cluster = api.ENGINE_PROFILE_MAP[p].cluster;
+    (PROFILES_BY_CLUSTER[cluster] ??= []).push(p);
+  }
+
+  for (const method of ['v60', 'chemex']){
+    for (const cluster of Object.keys(PROFILES_BY_CLUSTER)){
+      test(`overlay verandert nooit dose/water/ratio/temp/grind — cluster ${cluster}, methode ${method}`, () => {
+        const vol = method === 'v60' ? 300 : 600;
+        const profiles = PROFILES_BY_CLUSTER[cluster].filter(p => {
+          const only = api.PROFILE_INFO[p].methodOnly;
+          return !only || only === method;
+        });
+        assert.ok(profiles.length >= 2, `verwacht minstens 2 vergelijkbare profielen in cluster ${cluster} voor ${method}`);
+        const recipes = profiles.map(p => ({ p, r: api.computeRecipe(method, 'medium', p, vol, null, false, null, null, false, null, null, 0) }));
+        const [first, ...rest] = recipes;
+        for (const { p, r } of rest){
+          assert.equal(r.dose, first.r.dose, `dose moet gelijk zijn tussen ${first.p} en ${p} (zelfde cluster ${cluster})`);
+          assert.equal(r.water, first.r.water, `water moet gelijk zijn tussen ${first.p} en ${p}`);
+          assert.equal(r.ratioText, first.r.ratioText, `ratio moet gelijk zijn tussen ${first.p} en ${p}`);
+          assert.equal(r.temp, first.r.temp, `temp moet gelijk zijn tussen ${first.p} en ${p}`);
+          assert.equal(r.grindStartingPoint, first.r.grindStartingPoint, `grind-startpunt moet gelijk zijn tussen ${first.p} en ${p}`);
+        }
+      });
+    }
+  }
+});
+
+describe('Nieuwe Reparaties v2.2 — §3: C3S Pro semantiek/ranges (13/15/17/18/12/19, PSD, Chemex)', () => {
+  const B = sandbox.BrewEngineBundle;
+
+  test('13, 15, 17 en 18 clicks zijn semantisch geldig: 13/18 zijn de practical-grenzen, 15/17 de starting-grenzen', () => {
+    const t = B.translateSetting(B.TIMEMORE_C3S_PRO_ID, 'MEDIUM_FINE');
+    assert.equal(t.practicalRangeHint.value.clicksMin, 13);
+    assert.equal(t.practicalRangeHint.value.clicksMax, 18);
+    assert.equal(t.startingRangeHint.value.clicksMin, 15);
+    assert.equal(t.startingRangeHint.value.clicksMax, 17);
+    // De starting range moet volledig BINNEN de practical range vallen — 15 en 17 zijn dus
+    // geldige punten in beide ranges tegelijk, geen tegenstrijdigheid.
+    assert.ok(t.startingRangeHint.value.clicksMin >= t.practicalRangeHint.value.clicksMin);
+    assert.ok(t.startingRangeHint.value.clicksMax <= t.practicalRangeHint.value.clicksMax);
+  });
+
+  test('12 en 19 kunnen nooit stilzwijgend als normale V60-aanbeveling verschijnen — grindStartingPoint blijft structureel binnen [15,17] voor elke branddiepte', () => {
+    for (const roast of ['light','light_medium','medium','medium_dark','dark']){
+      const rec = api.computeRecipe('v60', roast, 'klassiek', 300, null, false, null, null, false, null, null, 0);
+      assert.ok(rec.grindStartingPoint >= 15 && rec.grindStartingPoint <= 17,
+        `grindStartingPoint (${rec.grindStartingPoint}) voor roast=${roast} moet binnen [15,17] liggen, nooit 12 of 19`);
+      assert.notEqual(rec.grindStartingPoint, 12);
+      assert.notEqual(rec.grindStartingPoint, 19);
+    }
+  });
+
+  test('een PSD-veld mag nooit gevuld worden met een afgeleide micrometerberekening (V60 én Chemex-band)', () => {
+    for (const band of ['MEDIUM_FINE', 'MEDIUM_COARSE']){
+      const t = B.translateSetting(B.TIMEMORE_C3S_PRO_ID, band);
+      assert.equal(t.psdTarget.micronRange.state, 'RESEARCH_GAP', `psdTarget.micronRange voor band ${band} moet RESEARCH_GAP blijven`);
+      assert.equal(t.psdTarget.micronRange.value, undefined, 'een RESEARCH_GAP-status mag geen numerieke .value dragen');
+    }
+    // mechanicalAdjustmentMicrons() en psdTarget zijn structureel gescheiden functies/velden
+    // — er bestaat geen enkel codepad dat de ene uitkomst in de andere zet.
+    const derived = B.mechanicalAdjustmentMicrons(15);
+    assert.equal(derived.provenance, 'DERIVED');
+    const t2 = B.translateSetting(B.TIMEMORE_C3S_PRO_ID, 'MEDIUM_FINE');
+    assert.notEqual(t2.psdTarget.micronRange.value, derived.value);
+  });
+
+  test('Chemex + C3S Pro genereert geen verzonnen click-range', () => {
+    const t = B.translateSetting(B.TIMEMORE_C3S_PRO_ID, 'MEDIUM_COARSE'); // Chemex' band, ENGINE_GRIND_BAND.chemex
+    assert.equal(t.startingRangeHint.state, 'RESEARCH_GAP');
+    assert.equal(t.practicalRangeHint.state, 'RESEARCH_GAP');
+    const rec = api.computeRecipe('chemex', 'medium', 'klassiek', 600, null, false, null, null, false, null, null, 0);
+    assert.equal(rec.grindStartingRange, null);
+    assert.equal(rec.grindPracticalRange, null);
   });
 });
