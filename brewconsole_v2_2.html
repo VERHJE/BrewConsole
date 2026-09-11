@@ -568,6 +568,11 @@
   }
   .stat-value{font-family:var(--font-mono); font-size:19px; color:var(--copper-light); font-variant-numeric:tabular-nums;}
   .stat-sub{font-size:10.5px; color:var(--text-muted); margin-top:3px;}
+  /* NIEUW (Visual Design 2.0 fase 2, spec §12 "ratio/grind/brew-time secondary" + §27
+     "secondary information stays quiet"): kleinere waarde, gedempt label — zelfde kaart,
+     minder visueel gewicht dan de drie dominante stat-blocks. */
+  .stat-block--secondary .stat-value{font-size:14px; color:var(--text-dim); font-variant-numeric:tabular-nums;}
+  .stat-block--secondary .stat-label{color:var(--text-faint);}
 
   .style-note{
     font-size:13px; color:var(--text-dim); line-height:1.5;
@@ -633,6 +638,13 @@
   }
   .start-btn:hover{background:var(--copper-light);}
   .start-btn:active{transform:translateY(1px) scale(.98); box-shadow:0 1px 0 rgba(255,255,255,.1) inset, 0 2px 6px rgba(212,165,116,.14);}
+  /* NIEUW (Visual Design 2.0 fase 2, spec §12 "Start Brew primary, Adjust secondary"):
+     Aanpassen (.advisor-primary, al de bestaande SecondaryButton-stijl) + Start Brew
+     naast elkaar, Start Brew nadrukkelijk breder/zwaarder — nooit gelijkwaardig aan de
+     primaire actie (§27 "no secondary card competes with the primary action"). */
+  .prep-cta-row{display:flex; gap:10px; align-items:stretch;}
+  .prep-cta-row .prep-adjust-btn{flex:1; margin-top:0; min-height:auto;}
+  .prep-cta-row .start-btn{flex:1.8;}
   .disclaimer{font-size:11px; color:var(--text-faint); margin-top:10px; line-height:1.4;}
 
   /* brew screen */
@@ -1881,7 +1893,16 @@
       <button type="button" class="link-secondary" id="test-sound-btn" style="display:block; margin:0 auto 14px;">🔔 Test geluid &amp; trilling</button>
       <p class="process-note" id="test-sound-result" hidden></p>
 
-      <button class="start-btn" id="start-btn">Start brew →</button>
+      <!-- NIEUW (Visual Design 2.0 fase 2, spec §12 "Start Brew is primary; Adjust
+           secondary", detail-referentie scherm 06): een secundaire Aanpassen-knop naast
+           Start Brew. Hergebruikt het al bestaande, al-geteste [data-back]-navigatie-
+           mechanisme (zie de generieke listener onderaan het script) i.p.v. nieuwe
+           navigatielogica te verzinnen — functioneel identiek aan de "← Profiel"-terugknop
+           bovenaan dit scherm, alleen hier als tweede CTA naast Start Brew. -->
+      <div class="prep-cta-row">
+        <button type="button" class="advisor-primary prep-adjust-btn" data-back="profile">Aanpassen</button>
+        <button class="start-btn" id="start-btn">Start brew →</button>
+      </div>
       <p class="disclaimer" id="disclaimer"></p>
 <p class="freshness-readout" id="target-window-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
 <p class="freshness-readout" id="retention-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
@@ -8196,23 +8217,18 @@ function renderPrep(){
       }
     }
   }
+  // NIEUW (Visual Design 2.0 fase 2, spec §12 "dose/water/temperature dominant, ratio/
+  // grind/brew-time secondary"): dose/temp/water blijven vooraan als de drie dominante
+  // waarden; ratio/maalgraad/brouwtijd volgen als stillere .stat-block--secondary-items —
+  // ZELFDE #stats-grid-container, ZELFDE innerText-inhoud per veld, alleen volgorde +
+  // een modifier-class. Bewust geen apart grid-element: de bestaande tests zoeken
+  // "#stats-grid .stat-block" (incl. .first() voor de dosis) en die aanname blijft kloppen
+  // zolang Dosis het eerste blok is en Maalgraad ergens in dezelfde grid staat.
   document.getElementById('stats-grid').innerHTML = `
     <div class="stat-block"${stockWarning ? ' style="border-color:var(--danger);"' : ''}>
       <div class="stat-label">Gemalen koffie</div>
       <div class="stat-value">${fmt(rec.dose,1)} g</div>
-      <div class="stat-sub">ratio ${rec.ratioText}</div>
       ${stockWarning}
-    </div>
-    <div class="stat-block">
-      <div class="stat-label">Maalgraad</div>
-      <div class="stat-value">${rec.grindMicron != null ? rec.grindMicron + ' µm' : (rec.grindBandLabel || '—')}</div>
-      <div class="stat-sub">${rec.grindMicron != null ? `stand ${rec.grindStand} · Timemore C3S Pro` : `Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}`}</div>
-      ${rec.grindMicron == null ? `<div class="stat-sub">Geen gevalideerde kalibratiecurve voor deze molen gevonden — relatieve instructie i.p.v. een verzonnen getal. Vertrek vanaf ${escapeHtml(rec.grindBandLabel || 'medium')} en stel bij op smaak.</div>` : ''}
-      ${rec.grindStartingRange ? `<div class="stat-sub">Algemeen startgebied (Timemore C3S Pro — Technische Deep-Dive, technische consolidatie van fabrikantgegevens + onafhankelijke bronnen, niet per-toestel geverifieerd): klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} vanaf het nulpunt voor ${escapeHtml(rec.grindStartingRange.brewMethodLabel)}. Vermijd klik 0–6/7 (risico op beschadiging maalschijven). Zie dit als eigen kalibratie-vertrekpunt, geen gevalideerde instelling.</div>` : ''}
-      ${rec.grindPracticalRange ? `<div class="stat-sub">Practical V60 range: klik ${rec.grindPracticalRange.clicksMin}–${rec.grindPracticalRange.clicksMax} vanaf het nulpunt — een bredere, zinvolle werkzone; het startgebied hierboven ligt daarbinnen.</div>` : ''}
-      ${rec.grindStartingPoint != null ? `<div class="stat-sub">Maalrichting bij deze branddiepte: begin rond klik ${rec.grindStartingPoint} binnen het startgebied (lichter brandt fijner/lager, donkerder brandt grover/hoger) — een positie binnen de bestaande range hierboven, geen nieuw maalgetal.</div>` : ''}
-      ${rec.grindMechanicalMicron != null ? `<div class="stat-sub">Mechanische resolutie: ${fmt(rec.grindMechanicalMicron,1)} µm mechanische verstelling per click (S2C660, 38 mm, SUS420 — sourced fabrikantspecificatie, herhaald over meerdere onafhankelijke retailers). Dit is géén particle-size-/deeltjesgrootte-meting. Een eerder afwijkende 50 µm-claim (één bron, niet onderbouwd) staat niet meer gelijkwaardig in deze UI.</div>` : ''}
-      ${rec.grindMicronContest ? `<div class="stat-sub">Micron per klik: onopgeloste tegenstrijdigheid tussen bronnen, geen van beide instrumenteel gemeten. ~83 micron/klik (Timemore's eigen opgave, herhaald door meerdere winkels) tegenover 50 micron/klik (afwijkende winkelbron, specifiek voor dit model). Verandert niets aan de klikrange hierboven — puur ter info, niet als gevalideerd getal te lezen.</div>` : ''}
     </div>
     <div class="stat-block">
       <div class="stat-label">Watertemperatuur</div>
@@ -8231,6 +8247,25 @@ function renderPrep(){
       <div class="stat-value" style="color:var(--copper-light);">+${rec.bypassMl} ml</div>
       <div class="stat-sub">vers heet water, voor ${rec.water} ml op normale sterkte</div>
     </div>` : ''}
+    <div class="stat-block stat-block--secondary">
+      <div class="stat-label">Ratio</div>
+      <div class="stat-value">${rec.ratioText}</div>
+    </div>
+    <div class="stat-block stat-block--secondary">
+      <div class="stat-label">Maalgraad</div>
+      <div class="stat-value">${rec.grindMicron != null ? rec.grindMicron + ' µm' : (rec.grindBandLabel || '—')}</div>
+      <div class="stat-sub">${rec.grindMicron != null ? `stand ${rec.grindStand} · Timemore C3S Pro` : `Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}`}</div>
+      ${rec.grindMicron == null ? `<div class="stat-sub">Geen gevalideerde kalibratiecurve voor deze molen gevonden — relatieve instructie i.p.v. een verzonnen getal. Vertrek vanaf ${escapeHtml(rec.grindBandLabel || 'medium')} en stel bij op smaak.</div>` : ''}
+      ${rec.grindStartingRange ? `<div class="stat-sub">Algemeen startgebied (Timemore C3S Pro — Technische Deep-Dive, technische consolidatie van fabrikantgegevens + onafhankelijke bronnen, niet per-toestel geverifieerd): klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} vanaf het nulpunt voor ${escapeHtml(rec.grindStartingRange.brewMethodLabel)}. Vermijd klik 0–6/7 (risico op beschadiging maalschijven). Zie dit als eigen kalibratie-vertrekpunt, geen gevalideerde instelling.</div>` : ''}
+      ${rec.grindPracticalRange ? `<div class="stat-sub">Practical V60 range: klik ${rec.grindPracticalRange.clicksMin}–${rec.grindPracticalRange.clicksMax} vanaf het nulpunt — een bredere, zinvolle werkzone; het startgebied hierboven ligt daarbinnen.</div>` : ''}
+      ${rec.grindStartingPoint != null ? `<div class="stat-sub">Maalrichting bij deze branddiepte: begin rond klik ${rec.grindStartingPoint} binnen het startgebied (lichter brandt fijner/lager, donkerder brandt grover/hoger) — een positie binnen de bestaande range hierboven, geen nieuw maalgetal.</div>` : ''}
+      ${rec.grindMechanicalMicron != null ? `<div class="stat-sub">Mechanische resolutie: ${fmt(rec.grindMechanicalMicron,1)} µm mechanische verstelling per click (S2C660, 38 mm, SUS420 — sourced fabrikantspecificatie, herhaald over meerdere onafhankelijke retailers). Dit is géén particle-size-/deeltjesgrootte-meting. Een eerder afwijkende 50 µm-claim (één bron, niet onderbouwd) staat niet meer gelijkwaardig in deze UI.</div>` : ''}
+      ${rec.grindMicronContest ? `<div class="stat-sub">Micron per klik: onopgeloste tegenstrijdigheid tussen bronnen, geen van beide instrumenteel gemeten. ~83 micron/klik (Timemore's eigen opgave, herhaald door meerdere winkels) tegenover 50 micron/klik (afwijkende winkelbron, specifiek voor dit model). Verandert niets aan de klikrange hierboven — puur ter info, niet als gevalideerd getal te lezen.</div>` : ''}
+    </div>
+    <div class="stat-block stat-block--secondary">
+      <div class="stat-label">Brouwtijd</div>
+      <div class="stat-value">${fmtTime(rec.totalTime)}</div>
+    </div>
   `;
 
   document.getElementById('style-note').textContent = rec.notes;
