@@ -350,6 +350,11 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
 
+    // FIX (visuele afstemming referentiebeeld): de langere kalibratie-/range-toelichtingen
+    // staan sinds de Maalgraad-compactheidsslag achter een lokale "Meer over deze
+    // maalstand"-toggle (innerText() sluit verborgen tekst uit, anders dan textContent()).
+    await page.click('#grind-more-toggle');
+
     const grindBlockText = (await page.locator('#stats-grid .stat-block', { hasText: 'Maalgraad' }).innerText()).trim();
     assert.match(grindBlockText, /klik 15–17/, 'moet het nieuwe 15-17 startgebied tonen');
     assert.match(grindBlockText, /Practical V60 range: klik 13–18/, 'moet de aparte, bredere practical range tonen');
@@ -577,6 +582,12 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#roast-grid [data-roast] >> nth=0');
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
+
+    // FIX (visuele afstemming referentiebeeld "Aanvullende informatie"): het waterprofiel-
+    // invoerveld zit sinds de Prep-compactheidsslag in de collapsed-by-default "Verfijn dit
+    // recept"-accordion — open 'm expliciet vóór .fill()/.selectOption(), die (anders dan
+    // .inputValue()/.textContent() hierboven) wél zichtbaarheid vereisen.
+    await page.evaluate(() => { document.getElementById('refine-details').open = true; });
 
     // Vóór invullen: alkaliniteit moet eerlijk "niet ingevuld" tonen, geen "binnen de richtwaarde".
     const beforeAlk = (await page.locator('#alkalinity-readout').textContent()).trim();

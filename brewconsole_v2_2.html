@@ -658,6 +658,17 @@
   .stat-icon{ width:13px; height:13px; flex-shrink:0; opacity:.85; }
   .stat-value{font-family:var(--font-mono); font-size:19px; color:var(--copper-light); font-variant-numeric:tabular-nums;}
   .stat-sub{font-size:10.5px; color:var(--text-muted); margin-top:3px;}
+  /* NIEUW (visuele afstemming referentiebeeld): lokale "meer info"-toggle binnen een
+     stat-block (vandaag alleen Maalgraad) — houdt de kaart standaard compact terwijl de
+     volledige, ongewijzigde toelichting één tik verderop blijft. */
+  .stat-more-toggle{
+    display:block; background:none; border:none; color:var(--copper-light); cursor:pointer;
+    font-size:10.5px; font-family:var(--font-mono); letter-spacing:.02em; padding:0; margin-top:6px;
+    text-align:left;
+  }
+  .stat-more-toggle:hover{ text-decoration:underline; }
+  .stat-more-body{ margin-top:4px; }
+  .stat-more-body[hidden]{ display:none; }
   /* NIEUW (Visual Design 2.0 fase 2, spec §12 "ratio/grind/brew-time secondary" + §27
      "secondary information stays quiet"): kleinere waarde, gedempt label — zelfde kaart,
      minder visueel gewicht dan de drie dominante stat-blocks. */
@@ -2121,60 +2132,6 @@
         </div>
       </div>
 
-      <div class="advice-q" style="margin:14px 0;">
-        <p class="advice-q-label">Branddatum <span style="text-transform:none; letter-spacing:0;">(optioneel, staat vaak op de zak — preciezer bloom-advies)</span></p>
-        <input type="date" id="prep-roast-date" class="form-input" style="max-width:220px;">
-        <p class="freshness-readout" id="freshness-readout" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
-      </div>
-
-      <div class="advice-q" style="margin:14px 0;">
-        <p class="advice-q-label">Zak geopend op <span style="text-transform:none; letter-spacing:0;">(optioneel — los van branddatum, waarschuwt voor oxidatie na openen)</span></p>
-        <input type="date" id="prep-opened-date" class="form-input" style="max-width:220px;">
-        <p class="freshness-readout" id="opened-readout" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
-      </div>
-
-      <div class="advice-q" style="margin:14px 0;">
-        <p class="advice-q-label">Waterprofiel <span style="text-transform:none; letter-spacing:0;">(optioneel — je kraanwater, blijft onthouden, los van deze boon/methode)</span></p>
-        <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:0 0 8px;">Vereenvoudiging: hardheid (calcium/magnesium) is niet hetzelfde als alkaliniteit (bufferende werking tegen zuren) — vooral bij fruitige/zure profielen bepaalt alkaliniteit minstens zo sterk hoe zuur de kop aankomt. Elke parameter hieronder krijgt daarom zijn EIGEN oordeel, nooit één samengevoegd "water is goed"-signaal (Implementatieplan Zetadvies v3.0, Fase 4/Bouwbesluit B-5).</p>
-
-        <label for="prep-water-hardness" style="font-size:12px; color:var(--text-faint); display:block; margin:10px 0 4px;">Hardheid (mg/L als CaCO3)</label>
-        <input type="number" id="prep-water-hardness" class="form-input" placeholder="bijv. 128" min="0" max="600" step="1" style="max-width:220px;">
-
-        <label for="prep-water-alkalinity" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Alkaliniteit</label>
-        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-          <input type="number" id="prep-water-alkalinity" class="form-input" placeholder="bijv. 50" min="0" max="600" step="1" style="max-width:150px;">
-          <select id="prep-water-alkalinity-unit" class="form-input" style="max-width:150px;">
-            <option value="CaCO3">mg/L CaCO3</option>
-            <option value="HCO3">mg/L HCO3</option>
-          </select>
-        </div>
-        <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:6px 0 0;">Te vinden op het kwaliteitsoverzicht per productiebedrijf van je waterbedrijf, of met een KH-druppeltest. HCO3 wordt omgerekend naar CaCO3-equivalent (×0,82) voor de SCA-vergelijking hieronder.</p>
-
-        <label for="prep-water-dilution" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Verdunning kraan : gedemineraliseerd <span style="text-transform:none; letter-spacing:0;">(optioneel — herberekent het effectieve profiel hieronder, puur rekenkundig, geen receptinvloed)</span></label>
-        <select id="prep-water-dilution" class="form-input" style="max-width:220px;">
-          <option value="1:0">Geen verdunning (1:0, puur kraanwater)</option>
-          <option value="2:1">2 : 1</option>
-          <option value="1:1">1 : 1</option>
-        </select>
-
-        <p class="freshness-readout" id="hardness-readout" style="font-size:12.5px; color:var(--text-faint); margin:10px 0 0;"></p>
-        <p class="freshness-readout" id="alkalinity-readout" style="font-size:12.5px; color:var(--text-faint); margin:4px 0 0;"></p>
-        <p class="freshness-readout" id="ph-readout" style="font-size:12.5px; color:var(--text-faint); margin:4px 0 0;"></p>
-        <p class="freshness-readout" id="water-confidence-readout" style="font-size:11px; color:var(--text-faint); margin:8px 0 0;"></p>
-      </div>
-
-      <div class="advice-q" style="margin:14px 0;">
-        <p class="advice-q-label">Sterkte <span style="text-transform:none; letter-spacing:0;">(optioneel — directe ratio-aanpassing, los van concentraat/bypass hieronder)</span></p>
-        <div class="chip-row" id="strength-chip"></div>
-        <p class="freshness-readout" id="strength-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
-      </div>
-
-      <div class="advice-q" style="margin:14px 0;">
-        <p class="advice-q-label">Intensiteit <span style="text-transform:none; letter-spacing:0;">(optioneel, voor extra smaakexpressie)</span></p>
-        <div class="chip-row" id="bypass-chip"></div>
-        <p class="freshness-readout" id="bypass-fit-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
-      </div>
-
       <!-- NIEUW (Visual Design 2.0, §5 "Recipe: slightly warmer focal glow around primary
            recipe area"): #stats-grid is precies het dosis/maling/temperatuur/water-blok uit
            §12 ("three primary values ... are dominant") — zie #stats-grid::before hieronder. -->
@@ -2201,14 +2158,78 @@
            achter één inklapbare "Verfijn dit recept"-sectie (Brainstorm A) — kernrecept
            (stats-grid/recept-tabel) en de startknop blijven standaard zichtbaar; het
            badge-getal toont hoeveel factoren zijn meegenomen zonder dat je open hoeft te
-           klikken. native <details> geeft dit gratis toetsenbord-/screenreader-gedrag. -->
-      <details class="flavor-category" id="refine-details" hidden>
+           klikken. native <details> geeft dit gratis toetsenbord-/screenreader-gedrag.
+
+           HERZIEN (visuele afstemming referentiebeeld "Aanvullende informatie"): de
+           optionele invulvelden zelf (Branddatum/Zak geopend/Waterprofiel/Sterkte/
+           Intensiteit — voorheen altijd zichtbaar, samen ruim 700px) zijn hierin
+           verplaatst, vóór de afgeleide *-note-teksten. Geen enkel veld/ID/listener
+           gewijzigd, puur waar ze in de DOM staan. De sectie is daarom niet meer
+           voorwaardelijk verborgen (zie renderPrep() — refineDetails.hidden werd eerder
+           op refineCount===0 gezet, wat de invulvelden zelf ontoegankelijk zou maken
+           zodra er nog niets was ingevuld); alleen het badge-getal blijft afhankelijk
+           van hoeveel *-notes daadwerkelijk iets te zeggen hebben. -->
+      <details class="flavor-category" id="refine-details">
         <summary style="color:var(--copper-light)">
           <span>Verfijn dit recept</span>
           <span class="flavor-category-count" id="refine-count"></span>
           <span class="flavor-category-arrow">+</span>
         </summary>
         <div class="flavor-category-body">
+          <div class="advice-q" style="margin:0 0 14px;">
+            <p class="advice-q-label">Branddatum <span style="text-transform:none; letter-spacing:0;">(optioneel, staat vaak op de zak — preciezer bloom-advies)</span></p>
+            <input type="date" id="prep-roast-date" class="form-input" style="max-width:220px;">
+            <p class="freshness-readout" id="freshness-readout" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
+          </div>
+
+          <div class="advice-q" style="margin:14px 0;">
+            <p class="advice-q-label">Zak geopend op <span style="text-transform:none; letter-spacing:0;">(optioneel — los van branddatum, waarschuwt voor oxidatie na openen)</span></p>
+            <input type="date" id="prep-opened-date" class="form-input" style="max-width:220px;">
+            <p class="freshness-readout" id="opened-readout" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
+          </div>
+
+          <div class="advice-q" style="margin:14px 0;">
+            <p class="advice-q-label">Waterprofiel <span style="text-transform:none; letter-spacing:0;">(optioneel — je kraanwater, blijft onthouden, los van deze boon/methode)</span></p>
+            <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:0 0 8px;">Vereenvoudiging: hardheid (calcium/magnesium) is niet hetzelfde als alkaliniteit (bufferende werking tegen zuren) — vooral bij fruitige/zure profielen bepaalt alkaliniteit minstens zo sterk hoe zuur de kop aankomt. Elke parameter hieronder krijgt daarom zijn EIGEN oordeel, nooit één samengevoegd "water is goed"-signaal (Implementatieplan Zetadvies v3.0, Fase 4/Bouwbesluit B-5).</p>
+
+            <label for="prep-water-hardness" style="font-size:12px; color:var(--text-faint); display:block; margin:10px 0 4px;">Hardheid (mg/L als CaCO3)</label>
+            <input type="number" id="prep-water-hardness" class="form-input" placeholder="bijv. 128" min="0" max="600" step="1" style="max-width:220px;">
+
+            <label for="prep-water-alkalinity" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Alkaliniteit</label>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <input type="number" id="prep-water-alkalinity" class="form-input" placeholder="bijv. 50" min="0" max="600" step="1" style="max-width:150px;">
+              <select id="prep-water-alkalinity-unit" class="form-input" style="max-width:150px;">
+                <option value="CaCO3">mg/L CaCO3</option>
+                <option value="HCO3">mg/L HCO3</option>
+              </select>
+            </div>
+            <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:6px 0 0;">Te vinden op het kwaliteitsoverzicht per productiebedrijf van je waterbedrijf, of met een KH-druppeltest. HCO3 wordt omgerekend naar CaCO3-equivalent (×0,82) voor de SCA-vergelijking hieronder.</p>
+
+            <label for="prep-water-dilution" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Verdunning kraan : gedemineraliseerd <span style="text-transform:none; letter-spacing:0;">(optioneel — herberekent het effectieve profiel hieronder, puur rekenkundig, geen receptinvloed)</span></label>
+            <select id="prep-water-dilution" class="form-input" style="max-width:220px;">
+              <option value="1:0">Geen verdunning (1:0, puur kraanwater)</option>
+              <option value="2:1">2 : 1</option>
+              <option value="1:1">1 : 1</option>
+            </select>
+
+            <p class="freshness-readout" id="hardness-readout" style="font-size:12.5px; color:var(--text-faint); margin:10px 0 0;"></p>
+            <p class="freshness-readout" id="alkalinity-readout" style="font-size:12.5px; color:var(--text-faint); margin:4px 0 0;"></p>
+            <p class="freshness-readout" id="ph-readout" style="font-size:12.5px; color:var(--text-faint); margin:4px 0 0;"></p>
+            <p class="freshness-readout" id="water-confidence-readout" style="font-size:11px; color:var(--text-faint); margin:8px 0 0;"></p>
+          </div>
+
+          <div class="advice-q" style="margin:14px 0;">
+            <p class="advice-q-label">Sterkte <span style="text-transform:none; letter-spacing:0;">(optioneel — directe ratio-aanpassing, los van concentraat/bypass hieronder)</span></p>
+            <div class="chip-row" id="strength-chip"></div>
+            <p class="freshness-readout" id="strength-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
+          </div>
+
+          <div class="advice-q" style="margin:14px 0 18px;">
+            <p class="advice-q-label">Intensiteit <span style="text-transform:none; letter-spacing:0;">(optioneel, voor extra smaakexpressie)</span></p>
+            <div class="chip-row" id="bypass-chip"></div>
+            <p class="freshness-readout" id="bypass-fit-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
+          </div>
+
           <p class="process-note" id="process-note" hidden></p>
           <p class="process-note" id="freshness-note" hidden></p>
           <p class="process-note" id="opened-note" hidden></p>
@@ -8992,6 +9013,31 @@ function renderPrep(){
   else if (rec.grindPracticalRange) grindHeadline = `Klik ${rec.grindPracticalRange.clicksMin}–${rec.grindPracticalRange.clicksMax}`;
   else grindHeadline = rec.grindBandLabel || '—';
 
+  // NIEUW (visuele afstemming referentiebeeld): de langere kalibratie-/range-toelichtingen
+  // bij Maalgraad (voorheen altijd alle tegelijk zichtbaar, samen een muur tekst die het
+  // compacte kaart-uiterlijk van de referentie doorbrak) staan voortaan achter een lokale
+  // "Meer over deze maalstand"-toggle — woordelijk dezelfde teksten, alleen niet meer
+  // permanent uitgeklapt. De korte "stand X/vertrouwen"-regel blijft altijd zichtbaar.
+  const grindMoreNotes = [];
+  if (rec.grindMicron == null){
+    grindMoreNotes.push(`Geen gevalideerde kalibratiecurve voor deze molen gevonden — relatieve instructie i.p.v. een verzonnen getal. Vertrek vanaf ${escapeHtml(rec.grindBandLabel || 'medium')} en stel bij op smaak.`);
+  }
+  if (rec.grindStartingRange){
+    grindMoreNotes.push(`Algemeen startgebied (Timemore C3S Pro — Technische Deep-Dive, technische consolidatie van fabrikantgegevens + onafhankelijke bronnen, niet per-toestel geverifieerd): klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} vanaf het nulpunt voor ${escapeHtml(rec.grindStartingRange.brewMethodLabel)}. Vermijd klik 0–6/7 (risico op beschadiging maalschijven). Zie dit als eigen kalibratie-vertrekpunt, geen gevalideerde instelling.`);
+  }
+  if (rec.grindPracticalRange){
+    grindMoreNotes.push(`Practical V60 range: klik ${rec.grindPracticalRange.clicksMin}–${rec.grindPracticalRange.clicksMax} vanaf het nulpunt — een bredere, zinvolle werkzone; het startgebied hierboven ligt daarbinnen.`);
+  }
+  if (rec.grindStartingPoint != null){
+    grindMoreNotes.push(`Maalrichting bij deze branddiepte: begin rond klik ${rec.grindStartingPoint} binnen het startgebied (lichter brandt fijner/lager, donkerder brandt grover/hoger) — een positie binnen de bestaande range hierboven, geen nieuw maalgetal.`);
+  }
+  if (rec.grindMechanicalMicron != null){
+    grindMoreNotes.push(`Mechanische resolutie: ${fmt(rec.grindMechanicalMicron,1)} µm mechanische verstelling per click (S2C660, 38 mm, SUS420 — sourced fabrikantspecificatie, herhaald over meerdere onafhankelijke retailers). Dit is géén particle-size-/deeltjesgrootte-meting. Een eerder afwijkende 50 µm-claim (één bron, niet onderbouwd) staat niet meer gelijkwaardig in deze UI.`);
+  }
+  if (rec.grindMicronContest){
+    grindMoreNotes.push(`Micron per klik: onopgeloste tegenstrijdigheid tussen bronnen, geen van beide instrumenteel gemeten. ~83 micron/klik (Timemore's eigen opgave, herhaald door meerdere winkels) tegenover 50 micron/klik (afwijkende winkelbron, specifiek voor dit model). Verandert niets aan de klikrange hierboven — puur ter info, niet als gevalideerd getal te lezen.`);
+  }
+
   const statIconDose = `<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3c4 2 7 5.5 7 10a7 7 0 0 1-14 0c0-4.5 3-8 7-10Z"/></svg>`;
   const statIconTemp = `<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 14.5V4a2 2 0 1 0-4 0v10.5a4 4 0 1 0 4 0Z"/></svg>`;
   const statIconWater = `<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3c3 3.5 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7.5 6-11Z"/></svg>`;
@@ -9028,12 +9074,9 @@ function renderPrep(){
       <div class="stat-value">${escapeHtml(grindHeadline)}</div>
       ${rec.grindMicron == null && rec.grindBandLabel ? `<div class="stat-sub">${escapeHtml(rec.grindBandLabel)}</div>` : ''}
       <div class="stat-sub">${rec.grindMicron != null ? `stand ${rec.grindStand} · Timemore C3S Pro` : `Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}`}</div>
-      ${rec.grindMicron == null ? `<div class="stat-sub">Geen gevalideerde kalibratiecurve voor deze molen gevonden — relatieve instructie i.p.v. een verzonnen getal. Vertrek vanaf ${escapeHtml(rec.grindBandLabel || 'medium')} en stel bij op smaak.</div>` : ''}
-      ${rec.grindStartingRange ? `<div class="stat-sub">Algemeen startgebied (Timemore C3S Pro — Technische Deep-Dive, technische consolidatie van fabrikantgegevens + onafhankelijke bronnen, niet per-toestel geverifieerd): klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} vanaf het nulpunt voor ${escapeHtml(rec.grindStartingRange.brewMethodLabel)}. Vermijd klik 0–6/7 (risico op beschadiging maalschijven). Zie dit als eigen kalibratie-vertrekpunt, geen gevalideerde instelling.</div>` : ''}
-      ${rec.grindPracticalRange ? `<div class="stat-sub">Practical V60 range: klik ${rec.grindPracticalRange.clicksMin}–${rec.grindPracticalRange.clicksMax} vanaf het nulpunt — een bredere, zinvolle werkzone; het startgebied hierboven ligt daarbinnen.</div>` : ''}
-      ${rec.grindStartingPoint != null ? `<div class="stat-sub">Maalrichting bij deze branddiepte: begin rond klik ${rec.grindStartingPoint} binnen het startgebied (lichter brandt fijner/lager, donkerder brandt grover/hoger) — een positie binnen de bestaande range hierboven, geen nieuw maalgetal.</div>` : ''}
-      ${rec.grindMechanicalMicron != null ? `<div class="stat-sub">Mechanische resolutie: ${fmt(rec.grindMechanicalMicron,1)} µm mechanische verstelling per click (S2C660, 38 mm, SUS420 — sourced fabrikantspecificatie, herhaald over meerdere onafhankelijke retailers). Dit is géén particle-size-/deeltjesgrootte-meting. Een eerder afwijkende 50 µm-claim (één bron, niet onderbouwd) staat niet meer gelijkwaardig in deze UI.</div>` : ''}
-      ${rec.grindMicronContest ? `<div class="stat-sub">Micron per klik: onopgeloste tegenstrijdigheid tussen bronnen, geen van beide instrumenteel gemeten. ~83 micron/klik (Timemore's eigen opgave, herhaald door meerdere winkels) tegenover 50 micron/klik (afwijkende winkelbron, specifiek voor dit model). Verandert niets aan de klikrange hierboven — puur ter info, niet als gevalideerd getal te lezen.</div>` : ''}
+      ${grindMoreNotes.length ? `
+      <button type="button" class="stat-more-toggle" id="grind-more-toggle" aria-expanded="false">Meer over deze maalstand ↓</button>
+      <div class="stat-more-body" id="grind-more-body" hidden>${grindMoreNotes.map(n=>`<div class="stat-sub">${n}</div>`).join('')}</div>` : ''}
     </div>
     <div class="stat-block stat-block--secondary">
       <div class="stat-label">Brouwtijd</div>
@@ -9151,11 +9194,13 @@ function renderPrep(){
     const el = document.getElementById(id);
     return n + (el && !el.hidden ? 1 : 0);
   }, 0);
-  const refineDetails = document.getElementById('refine-details');
+  // FIX (nodig sinds de verplaatsing van de invulvelden zelf in #refine-details): deze
+  // sectie werd voorheen volledig verborgen bij refineCount===0 — dat was veilig zolang
+  // ze alleen afgeleide *-notes bevatte (niets te tonen = niets te verbergen), maar zou nu
+  // ook Branddatum/Zak geopend/Waterprofiel/Sterkte/Intensiteit zelf ontoegankelijk maken
+  // voordat er iets is ingevuld. De sectie blijft daarom altijd bereikbaar; alleen het
+  // badge-getal hieronder toont nog hoeveel *-notes daadwerkelijk actief zijn.
   const refineCountEl = document.getElementById('refine-count');
-  if (refineDetails){
-    refineDetails.hidden = refineCount === 0;
-  }
   if (refineCountEl){
     refineCountEl.textContent = refineCount > 0 ? String(refineCount) : '';
   }
@@ -9213,6 +9258,19 @@ function renderPrep(){
     waterBlock.addEventListener('keydown', (e)=>{ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openWaterModal(); } });
   }
   syncWaterModal();
+
+  // NIEUW (visuele afstemming referentiebeeld): "Meer over deze maalstand"-toggle opnieuw
+  // bekabelen na elke render (zelfde reden als hierboven — innerHTML vervangt het element).
+  const grindMoreToggle = document.getElementById('grind-more-toggle');
+  if (grindMoreToggle){
+    grindMoreToggle.addEventListener('click', ()=>{
+      const body = document.getElementById('grind-more-body');
+      if (!body) return;
+      body.hidden = !body.hidden;
+      grindMoreToggle.setAttribute('aria-expanded', String(!body.hidden));
+      grindMoreToggle.textContent = body.hidden ? 'Meer over deze maalstand ↓' : 'Minder tonen ↑';
+    });
+  }
 }
 
 function updateServingBounds(){
