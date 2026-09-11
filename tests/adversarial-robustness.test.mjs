@@ -103,6 +103,22 @@ describe('Adversarial robustness — import/storage/rapid-click (Full QA §18/§
     const page = await browser.newPage();
     await page.goto(FILE_URL, { waitUntil: 'load' });
 
+    // FIX (Pagina-Polish-spec §4.3): een écht nieuwe/lege localStorage levert sinds de
+    // "geen seeddata voor de gewone lege staat"-wijziging in loadBeans() een lege
+    // beanLibrary op (geen automatische seed-bonen meer) — dus zonder zelf een boon toe te
+    // voegen zou deze test niets zinvols exporteren/importeren. Eén boon direct via state
+    // toevoegen (zelfde patroon als elders in dit bestand) om de rondgang echt te dekken.
+    await page.evaluate(() => {
+      beanLibrary.push({
+        id: 'bean_roundtrip_test', schemaVersion: RECORD_SCHEMA_VERSION, name: 'Roundtrip Boon',
+        country: 'Colombia', region: '', farm: '', process: 'washed', variety: '',
+        flavorNotes: [], roastLevel: 'medium', profileKey: 'klassiek', flavorScores: {},
+        fermentEvidence: false, experimental: false, roastDate: null, openedDate: null,
+        intendedUse: null, altitude: null, bagSizeG: null, doseUsedG: 0
+      });
+      saveBeansToStorage();
+    });
+
     // Geen "Clear all data"-knop bestaat in de app (bevinding, zie eindrapport) — dit
     // simuleert het praktische equivalent op storage-niveau, wat het eigenlijke doel van
     // §20 dekt: bewijst dat import de volledige, ongewijzigde staat terugzet.
@@ -112,6 +128,7 @@ describe('Adversarial robustness — import/storage/rapid-click (Full QA §18/§
       waterHardnessMgL: null, waterAlkalinity: { value:null, unit:'CaCO3' }, waterDilution: { tapParts:1, demiParts:0 }
     }));
     const beanCountBefore = exportedPayload.beans.length;
+    assert.ok(beanCountBefore > 0, 'testopzet moet minstens één boon exporteren om de rondgang zinvol te maken');
 
     await page.evaluate(() => localStorage.clear());
     await page.reload({ waitUntil: 'load' });
@@ -125,9 +142,9 @@ describe('Adversarial robustness — import/storage/rapid-click (Full QA §18/§
     await page.waitForFunction(() => document.getElementById('backup-status').hidden === false);
 
     const beanCountAfter = await page.evaluate(() => beanLibrary.length);
-    // Na localStorage.clear() valt de app terug op verse seed-bonen (eigen unieke id's),
-    // dus import voegt de geëxporteerde set TOE naast die seed-bonen — vandaar >=, niet ===.
-    assert.ok(beanCountAfter >= beanCountBefore, `verwacht minstens de ${beanCountBefore} geëxporteerde bonen terug, kreeg ${beanCountAfter}`);
+    // Na localStorage.clear() + herladen is beanLibrary weer echt leeg (geen seed-bonen
+    // meer) totdat import de geëxporteerde set terugzet — dus voortaan een exacte match.
+    assert.equal(beanCountAfter, beanCountBefore, `verwacht exact de ${beanCountBefore} geëxporteerde bonen terug, kreeg ${beanCountAfter}`);
     const restoredIds = await page.evaluate(() => beanLibrary.map(b=>b.id));
     for (const b of exportedPayload.beans){
       assert.ok(restoredIds.includes(b.id), `boon ${b.id} moet na de rondgang terug aanwezig zijn`);

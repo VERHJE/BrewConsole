@@ -188,7 +188,10 @@
     display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
     padding:0 0 max(56px, var(--safe-b));
     overflow:hidden;
-    animation:splashOut .6s var(--ease-in) 1.6s both;
+    /* FIX (Pagina-Polish-spec §3.3): doel is ~0,5s zichtbaar, geen kunstmatige 1-2s wachttijd
+       — was 1,6s vertraging + 0,6s fade (~2,2s totaal). Fade-out nu var(--motion-standard),
+       binnen de gevraagde 200-280ms. */
+    animation:splashOut var(--motion-standard) var(--ease-in) .5s both;
   }
   .splash-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
   .splash-scrim{
@@ -397,6 +400,20 @@
     line-height:1.2;
     margin:0 0 6px;
   }
+  /* NIEUW (Pagina-Polish-spec §4.1 "Title links. Plus button rechtsboven."): generieke
+     titel+actie-header-rij, herbruikbaar voor elk scherm dat een primaire header-actie
+     nodig heeft — vandaag alleen Bonen. */
+  .screen-header-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:20px; }
+  .screen-header-row .title{ margin-bottom:2px; }
+  .header-icon-btn{
+    width:44px; height:44px; border-radius:var(--radius-sm); flex-shrink:0;
+    border:1px solid var(--border); background:var(--surface-2); color:var(--copper-light);
+    font-size:22px; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:border-color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
+  }
+  .header-icon-btn:hover{ border-color:var(--copper); }
+  .header-icon-btn:active{ transform:scale(.94); }
   .subtitle{
     color:var(--text-dim);
     font-size:14px;
@@ -859,6 +876,11 @@
   }
   .advisor-link:hover{border-color:var(--copper); color:var(--copper-light);}
   .advisor-link:active{transform:scale(.99);}
+  /* FIX (self-caught tijdens Bonen-header-controle, zelfde klasse fout als .bean-search-row
+     eerder): display:block hierboven wint van de standaard [hidden]-UA-stijl. #bean-add-link
+     wordt sinds de Pagina-Polish-spec conditioneel verborgen (alleen lege-staat-CTA) — zonder
+     deze regel bleef hij altijd zichtbaar. */
+  .advisor-link[hidden]{display:none;}
   /* NIEUW (Visual Design 2.0 fase 2, Instellingen "Reset app"): destructieve variant van
      dezelfde SecondaryButton-vorm — nooit gevuld/prominent zoals .start-btn, dat zou een
      destructieve actie visueel laten concurreren met een primaire CTA (§27). */
@@ -1538,8 +1560,17 @@
     <!-- BEAN LIBRARY -->
     <section class="screen" id="screen-beans" data-screen="beans">
       <button class="back-btn" data-back="method">← Methode</button>
-      <h1 class="title">Mijn bonen</h1>
-      <p class="subtitle">Bewaar bonen met hun kenmerken en gebruik ze direct in het methode-advies.</p>
+      <!-- NIEUW (Pagina-Polish-spec §4.1): titel + plus-knop op één regel i.p.v. de tekstlink
+           onderaan de lijst — zelfde openBeanAddFromList()-actie als voorheen #bean-add-link
+           alleen deed, nu ook bereikbaar vanaf de header. #bean-add-link zelf blijft bestaan
+           (zelfde ID/listener) maar is voortaan alleen de lege-staat-CTA, zie hieronder. -->
+      <div class="screen-header-row">
+        <div>
+          <h1 class="title" style="margin-bottom:2px;">Mijn bonen</h1>
+          <p class="subtitle" style="margin-bottom:0;">Bewaar en ontdek je koffies.</p>
+        </div>
+        <button type="button" class="header-icon-btn" id="bean-add-header-btn" aria-label="Nieuwe boon toevoegen">+</button>
+      </div>
       <div class="bean-search-row" id="bean-search-row" hidden>
         <input type="text" id="bean-search-input" class="form-input" placeholder="Zoek op naam, land, regio, smaak…">
         <select id="bean-sort-select" class="form-input">
@@ -1548,8 +1579,19 @@
           <option value="freshest">Meest vers</option>
         </select>
       </div>
+      <!-- NIEUW (Pagina-Polish-spec §4.1 "Alle/Favorieten/Recent"): hergebruikt bestaande
+           beanSortMode voor "Recent" en het nieuwe bean.favorite-veld voor "Favorieten" —
+           geen nieuwe filterlogica los van bestaande data/state, zie filterSortBeans(). -->
+      <div class="chip-row" id="bean-filter-chip" style="margin-bottom:14px;" hidden></div>
       <div class="bean-list" id="bean-list"></div>
       <button class="advisor-link" id="bean-add-link">+ Nieuwe boon toevoegen</button>
+      <!-- .link-secondary is block-level (volle breedte) — de knop op een eigen regel
+           houden i.p.v. inline tekst ernaast/erna te verwachten (leverde eerder een
+           wees-lopend leesteken op een eigen regel op). -->
+      <p class="empty-hint" id="bean-empty-backup-hint" style="margin:-4px 0 0;" hidden>
+        Of importeer een eerdere backup
+        <button type="button" class="link-secondary" id="bean-empty-backup-link">via Instellingen →</button>
+      </p>
       <button class="advisor-link" id="triage-open-btn" style="margin-top:4px;">🔍 Waarom smaakt dit anders dan normaal?</button>
       <!-- VERPLAATST (Visual Design 2.0 fase 2): backup-export/import + #backup-status
            staan nu op het nieuwe Instellingen-scherm (Data-sectie) — zelfde ID's, dus
@@ -6183,12 +6225,21 @@ function loadBeans(){
     if (raw){
       beanLibrary = JSON.parse(raw);
     } else {
-      beanLibrary = buildSeedBeans();
+      // FIX (Pagina-Polish-spec §4.3 "Geen seeddata alleen om de UI gevuld te laten
+      // lijken"): een écht nieuwe gebruiker (nog nooit iets opgeslagen — raw is null) kreeg
+      // hier voorheen buildSeedBeans() te zien, alsof het z'n eigen bonen waren. Een genuine
+      // eerste-gebruik is voortaan een echte lege staat. buildSeedBeans() blijft wél bestaan
+      // en wordt hieronder in de catch nog gebruikt als crash-herstel bij corrupte/onleesbare
+      // opslag — dat is een bewust geteste, aparte situatie (zie adversarial-robustness.test.mjs
+      // "corrupte localStorage bij opstart crasht de app niet"), geen normale lege staat.
+      beanLibrary = [];
       saveBeansToStorage();
     }
   } catch(e){
     // localStorage niet beschikbaar (bijv. binnen Claude's eigen artifact-preview,
-    // of privénavigatie) — werkt dan alleen tijdens deze sessie, in het geheugen.
+    // of privénavigatie), of de opgeslagen inhoud is corrupt (JSON.parse hierboven mislukt)
+    // — in beide gevallen is dit geen normale lege staat maar een storingssituatie; val
+    // terug op herkenbare seed-bonen i.p.v. een onverklaarbaar lege of kapotte UI.
     console.error('Bonen laden mislukt — werkt deze sessie alleen in het geheugen', e);
     beanLibrary = buildSeedBeans();
   }
@@ -6209,6 +6260,11 @@ function saveBeansToStorage(){
    bibliotheek niet nodeloos drukker te maken. */
 let beanSearchQuery = '';
 let beanSortMode = 'recent';
+// NIEUW (Pagina-Polish-spec §4.1, filterchips "Alle/Favorieten/Recent"): 'alle' = geen extra
+// filter (behoudt beanSortMode zoals ingesteld), 'favorieten' filtert op het bestaande
+// bean.favorite-veld, 'recent' zet beanSortMode terug naar 'recent' — hergebruikt dus puur
+// bestaande sort-/filterdata, geen nieuwe logica.
+let beanFilterMode = 'alle';
 function filterSortBeans(list){
   let out = list.slice();
   const q = beanSearchQuery.trim().toLowerCase();
@@ -6218,6 +6274,9 @@ function filterSortBeans(list){
         .filter(Boolean).join(' ').toLowerCase();
       return haystack.includes(q);
     });
+  }
+  if (beanFilterMode === 'favorieten'){
+    out = out.filter(b=>b.favorite);
   }
   if (beanSortMode === 'name'){
     out.sort((a,b)=>(a.name||'').localeCompare(b.name||'', 'nl'));
@@ -6232,26 +6291,48 @@ function filterSortBeans(list){
   }
   return out;
 }
+function renderBeanFilterChip(){
+  const el = document.getElementById('bean-filter-chip');
+  if (!el) return;
+  el.hidden = !beanLibrary.length;
+  if (!beanLibrary.length) return;
+  const options = [ { v:'alle', label:'Alle' }, { v:'favorieten', label:'Favorieten' }, { v:'recent', label:'Recent' } ];
+  el.innerHTML = options.map(o=>
+    `<button type="button" class="chip" data-bean-filter="${o.v}" data-selected="${beanFilterMode===o.v}">${o.label}</button>`
+  ).join('');
+  el.querySelectorAll('[data-bean-filter]').forEach(btn=>btn.addEventListener('click', ()=>{
+    beanFilterMode = btn.getAttribute('data-bean-filter');
+    if (beanFilterMode === 'recent') beanSortMode = 'recent';
+    const sortSelect = document.getElementById('bean-sort-select');
+    if (sortSelect) sortSelect.value = beanSortMode;
+    renderBeanLibraryScreen();
+  }));
+}
 function renderBeanLibraryScreen(){
   const el = document.getElementById('bean-list');
   if (!el) return;
   const searchRow = document.getElementById('bean-search-row');
   if (searchRow) searchRow.hidden = beanLibrary.length < 4;
+  renderBeanFilterChip();
+  // NIEUW (Pagina-Polish-spec §4.3): de "+ Nieuwe boon toevoegen"-knop en de backup-hint
+  // zijn voortaan alleen de lege-staat-CTA — bij een gevulde bibliotheek doet de nieuwe
+  // header-plusknop (#bean-add-header-btn) dezelfde taak.
+  const addLinkEl = document.getElementById('bean-add-link');
+  const backupHintEl = document.getElementById('bean-empty-backup-hint');
+  if (addLinkEl) addLinkEl.hidden = beanLibrary.length > 0;
+  if (backupHintEl) backupHintEl.hidden = beanLibrary.length > 0;
   if (!beanLibrary.length){
-    el.innerHTML = '<p class="empty-hint">Nog geen bonen opgeslagen — voeg er een toe met de knop hieronder.</p>';
+    el.innerHTML = '<p class="empty-hint">Nog geen bonen — voeg er een toe met de knop hieronder.</p>';
     return;
   }
   const visible = filterSortBeans(beanLibrary);
   if (!visible.length){
-    el.innerHTML = '<p class="empty-hint">Geen bonen gevonden voor deze zoekterm.</p>';
+    el.innerHTML = `<p class="empty-hint">${beanFilterMode === 'favorieten' ? "Nog geen favoriete bonen — tik op het hartje bij een boon om 'm hier terug te vinden." : 'Geen bonen gevonden voor deze zoekterm.'}</p>`;
     return;
   }
   el.innerHTML = visible.map(b=>{
-    const p = PROFILE_INFO[b.profileKey] || PROFILE_INFO.fresh_clean;
     const r = ROAST_INFO[b.roastLevel] || ROAST_INFO.medium;
     const procName = PROCESS_INFO[b.process] ? PROCESS_INFO[b.process].name : null;
-    const altText = b.altitude ? `${b.altitude} m` : null;
-    const meta = [b.country, b.region, altText].filter(Boolean).join(' · ');
     // NIEUW (vervolgplan v2.3, Fase 4 — Bouwbesluit B5): versheids-/voorraadbadge via het
     // ene gedeelde badge-component, i.p.v. losse gekleurde tekst. --berry i.p.v. --danger
     // voor "Bijna op" (bevinding: --danger leest als foutmelding, geen attentiesignaal).
@@ -6267,6 +6348,18 @@ function renderBeanLibraryScreen(){
       const label = remaining > 0 ? `${fmt(remaining,0)} g over` : 'Zak waarschijnlijk leeg';
       stockBadge = `<span class="badge" data-tone="${low ? 'warn' : 'neutral'}">${label}</span>`;
     }
+    // NIEUW (Pagina-Polish-spec §4.2): tweede regel wordt "Process · Roast" i.p.v. herkomst
+    // (land/regio/hoogte) — die blijft volledig beschikbaar op Bean Detail (één tik verder),
+    // hier gaat het om scanbaarheid. Experimenteel-markering hangt hier aan vast i.p.v. een
+    // eigen chip-rij (die rij, incl. het profiel-chipje, is komen te vervallen — het profiel
+    // blijft af te lezen aan de gekleurde smaak-tags eronder).
+    const processRoastLine = [procName, r.name].filter(Boolean).join(' · ') + (b.experimental ? ' · 🧪 experimenteel' : '');
+    // Maximaal 3 smaak-tags zichtbaar op de kaart, overflow als "+N" i.p.v. de volledige
+    // (mogelijk lange) lijst — flavorTagChipsHtml() zelf blijft ongewijzigd, elders (Bean
+    // Detail) toont die nog steeds de volledige lijst.
+    const flavorTags = b.flavorNotes || [];
+    const visibleFlavorTags = flavorTags.slice(0, 3);
+    const overflowCount = flavorTags.length - visibleFlavorTags.length;
     return `<div class="bean-card" data-open-detail="${b.id}" role="button" tabindex="0" aria-label="Bekijk ${escapeHtml(b.name || 'boon')}">
       <div class="bean-card-top">
         <!-- NIEUW (Visual Design 2.0 fase 2, detail-referentie schermen 03/11): een kleine
@@ -6280,23 +6373,22 @@ function renderBeanLibraryScreen(){
         <div class="bean-card-top-text">
           <div class="bean-card-header">
             <span class="bean-card-name">${escapeHtml(b.name || 'Naamloze boon')}</span>
+            <!-- Edit/verwijderen zijn hier bewust behouden (niet in de referentieschets
+                 zichtbaar, die alleen ♥ › toont) — dit is de ENIGE plek in de app waar een
+                 boon verwijderd kan worden; weglaten zou functionaliteit breken, wat de
+                 spec zelf ("functional honesty vóór visual reference", §17) boven de
+                 mockup-vorm stelt. -->
             <span class="bean-card-actions">
               <button class="bean-fav" data-fav="${b.id}" aria-pressed="${b.favorite ? 'true' : 'false'}" aria-label="${b.favorite ? 'Verwijderen uit favorieten' : 'Toevoegen aan favorieten'}">${b.favorite ? '♥' : '♡'}</button>
               <button class="bean-edit" data-edit="${b.id}" aria-label="Bewerken">✎</button>
               <button class="bean-delete" data-del="${b.id}" aria-label="Verwijderen">×</button>
             </span>
           </div>
-          ${meta ? `<p class="bean-card-meta">${escapeHtml(meta)}</p>` : ''}
-          ${freshBadge || stockBadge ? `<div class="badge-row">${freshBadge}${stockBadge}</div>` : ''}
+          ${processRoastLine ? `<p class="bean-card-meta">${escapeHtml(processRoastLine)}</p>` : ''}
         </div>
       </div>
-      <div class="bean-tags">
-        <span class="bean-tag" style="border-color:${p.color}; color:${p.color}">${p.name}</span>
-        <span class="bean-tag">${r.name}</span>
-        ${procName ? `<span class="bean-tag">${procName}</span>` : ''}
-        ${b.experimental ? `<span class="bean-tag">🧪 experimenteel</span>` : ''}
-      </div>
-      ${b.flavorNotes && b.flavorNotes.length ? `<div class="bean-tags" style="margin-top:2px;">${flavorTagChipsHtml(b.flavorNotes)}</div>` : ''}
+      ${visibleFlavorTags.length ? `<div class="bean-tags">${flavorTagChipsHtml(visibleFlavorTags)}${overflowCount > 0 ? `<span class="bean-tag" data-overflow="true">+${overflowCount}</span>` : ''}</div>` : ''}
+      ${freshBadge || stockBadge ? `<div class="badge-row">${freshBadge}${stockBadge}</div>` : ''}
       <div class="bean-card-btnrow">
         ${b.lastBrew ? `<button class="bean-use-btn bean-again-btn" data-again="${b.id}">↻ Brouw opnieuw (${METHOD_INFO[b.lastBrew.method] ? METHOD_INFO[b.lastBrew.method].name : b.lastBrew.method}${b.lastBrew.bypass ? ', bypass' : ''})</button>` : ''}
         <button class="bean-use-btn" data-use="${b.id}">Zet deze boon →</button>
@@ -8976,12 +9068,18 @@ if (prepSuggestionWaterLink) prepSuggestionWaterLink.addEventListener('click', (
   const target = document.getElementById('prep-water-hardness');
   if (target){ target.scrollIntoView({ behavior:'smooth', block:'center' }); target.focus(); }
 });
-document.getElementById('bean-add-link').addEventListener('click', ()=>{
+// NIEUW (Pagina-Polish-spec §4.1): gedeelde actie voor zowel de lege-staat-CTA
+// (#bean-add-link) als de nieuwe header-plusknop (#bean-add-header-btn) — exact dezelfde
+// stappen als voorheen inline op #bean-add-link stonden, nu op één plek.
+function openBeanAddFromList(){
   beanAddReturnTo = 'beans';
   exitEditMode();
   resetBeanForm();
   showScreen('bean-add');
-});
+}
+document.getElementById('bean-add-link').addEventListener('click', openBeanAddFromList);
+document.getElementById('bean-add-header-btn').addEventListener('click', openBeanAddFromList);
+document.getElementById('bean-empty-backup-link').addEventListener('click', ()=>{ showScreen('settings'); });
 document.getElementById('cancel-edit-bean-btn').addEventListener('click', ()=>{
   exitEditMode();
   resetBeanForm();
