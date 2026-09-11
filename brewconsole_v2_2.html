@@ -839,8 +839,9 @@
   textarea.form-input{resize:vertical; min-height:72px; line-height:1.4;}
 
   .scan-block{
-    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
     padding:16px; margin-bottom:6px;
+    box-shadow:var(--shadow-card);
   }
   .scan-status{
     display:flex; align-items:center; gap:8px;
@@ -855,23 +856,35 @@
   @keyframes spin{ to{ transform:rotate(360deg); } }
   .scan-status[data-error="true"]{ color:var(--danger); }
   .scan-status[data-error="true"]::before{ display:none; }
+  /* BEVINDING (Visual Design 2.0 QA — Bean Add-scherm): #scan-status had het `hidden`-
+     attribuut, maar .scan-status{display:flex} is een author-regel en wint van de UA-regel
+     [hidden]{display:none} ongeacht specificiteit — exact hetzelfde patroon als de al
+     opgeloste .link-secondary[hidden]-bug hierboven (zie dat commentaar). Zonder deze regel
+     toonde het lege statusblokje zijn ::before-spinner permanent, ook vóórdat een scan
+     gestart was. Puur een zichtbaarheidsfix — scanStatus.hidden-logica in JS ongewijzigd. */
+  .scan-status[hidden]{ display:none; }
 
   .bean-list{display:flex; flex-direction:column; gap:12px; margin-bottom:16px;}
-  .bean-card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px;}
+  .bean-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px;
+    box-shadow:var(--shadow-card);
+  }
   .bean-card-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;}
   .bean-card-name{font-family:var(--font-display); font-weight:600; font-size:16px;}
   .bean-card-actions{display:flex; align-items:center; margin:-11px -11px -11px 0;}
   .bean-edit, .bean-delete{
     background:none; border:none; color:var(--text-faint); font-size:20px; line-height:1; cursor:pointer;
     width:44px; height:44px; display:flex; align-items:center; justify-content:center;
+    transition:color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
   .bean-edit{font-size:16px;}
   .bean-edit:hover, .bean-edit:active{color:var(--copper-light);}
   .bean-delete:hover{color:var(--danger);}
   .bean-delete:active{color:var(--danger);}
+  .bean-edit:active, .bean-delete:active{transform:scale(.9);}
   .bean-card-meta{font-size:12px; color:var(--text-dim); margin:0 0 10px;}
   .bean-tags{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;}
-  .bean-tag{font-size:11px; border:1px solid var(--border); border-radius:999px; padding:3px 10px; color:var(--text-dim);}
+  .bean-tag{font-size:11px; border:1px solid var(--border); border-radius:var(--radius-pill); padding:3px 10px; color:var(--text-dim);}
   .bean-card-notes{font-size:12px; color:var(--text-faint); font-style:italic; margin:0 0 12px;}
   .bean-use-btn{
     width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm);
@@ -890,7 +903,7 @@
   .bean-card-stock{font-size:11.5px; color:var(--text-faint); margin:2px 0 8px;}
   .bean-card-stock[data-low="true"]{color:var(--danger);}
   .backup-row{display:flex; gap:8px; margin-top:12px;}
-  .backup-row .advisor-link{flex:1; text-align:center; border:1px solid var(--border); border-radius:9px; padding:8px;}
+  .backup-row .advisor-link{flex:1; text-align:center; border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px;}
   .empty-hint{font-size:13px; color:var(--text-faint); margin-bottom:16px;}
 
   .chip[data-selected="true"] .chip-check{display:inline;}
@@ -914,8 +927,9 @@
 
   /* SCA flavor wheel accordion */
   details.flavor-category{
-    border:1px solid var(--border); border-radius:12px; margin-bottom:10px; overflow:hidden;
+    border:1px solid var(--border); border-radius:var(--radius-md); margin-bottom:10px; overflow:hidden;
     background:var(--surface);
+    box-shadow:var(--shadow-card);
   }
   details.flavor-category summary{
     padding:12px 14px; cursor:pointer; list-style:none;
