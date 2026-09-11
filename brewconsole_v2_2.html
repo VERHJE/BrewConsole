@@ -964,10 +964,14 @@
 
   /* Foto-klare beeldblokken (Bouwbesluit B6) — vast formaat, neutraal vlak
      i.p.v. een <img>, zodat een foto later alleen een src + contrastmeting is. */
+  /* NIEUW (Visual Design 2.0, §18 Photography "content, not decoration"): --shadow-card
+     toegevoegd zodat foto's dezelfde fysieke aanwezigheid krijgen als andere Level-1-
+     oppervlakken — kleur/crop/gradient (photo-scrim hieronder) ongewijzigd. */
   .photo-slot{
     display:flex; align-items:center; justify-content:center;
-    background:var(--surface-2); border:1px solid var(--border); border-radius:14px;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-md);
     color:var(--text-faint); overflow:hidden; position:relative;
+    box-shadow:var(--shadow-card);
   }
   .photo-slot svg{width:28px; height:28px; opacity:.5;}
   .photo-slot--hero{aspect-ratio:16/9; margin-bottom:16px;}
@@ -990,13 +994,18 @@
   .photo-slot-img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;}
   .photo-slot[data-has-photo="true"] svg{display:none;}
 
-  /* Home-scherm */
+  /* Home-scherm — NIEUW (Visual Design 2.0, §10): tactiele diepte op de CTA-kaarten en
+     een lichte hover/press-lift op de boon-strip-kaarten (al <button>-elementen, alleen
+     presentatie toegevoegd — geen enkele klik-handler aangeraakt). */
   .home-greeting{font-family:var(--font-display); font-size:22px; font-weight:600; margin:0 0 4px;}
   .home-cta{
     display:block; width:100%; text-align:left; background:var(--surface); border:1px solid var(--copper-dim);
-    border-radius:14px; padding:16px; margin-bottom:12px; cursor:pointer; color:var(--text);
+    border-radius:var(--radius-md); padding:16px; margin-bottom:12px; cursor:pointer; color:var(--text);
+    box-shadow:var(--shadow-card);
+    transition:border-color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
-  .home-cta:hover{border-color:var(--copper);}
+  .home-cta:hover{border-color:var(--copper); box-shadow:var(--shadow-card), 0 0 0 1px var(--accent-glow);}
+  .home-cta:active{transform:scale(.99);}
   .home-cta-title{font-family:var(--font-display); font-weight:600; font-size:16px; display:block; margin-bottom:3px;}
   .home-cta-desc{font-size:12.5px; color:var(--text-dim);}
   .home-section-label{
@@ -1004,8 +1013,10 @@
     color:var(--text-faint); margin:22px 0 10px;
   }
   .home-strip{display:flex; gap:10px; overflow-x:auto; padding-bottom:4px;}
-  .home-strip-item{flex-shrink:0; width:130px;}
+  .home-strip-item{flex-shrink:0; width:130px; transition:transform var(--motion-standard) var(--ease-out);}
   .home-strip-item .photo-slot{width:130px; height:88px; margin-bottom:6px;}
+  .home-strip-item:hover{transform:translateY(-2px);}
+  .home-strip-item:active{transform:translateY(0) scale(.97);}
   .home-strip-name{font-size:12px; color:var(--text-dim);}
 
   /* Bean Detail */
