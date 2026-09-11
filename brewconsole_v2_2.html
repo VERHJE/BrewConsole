@@ -1635,7 +1635,7 @@
       <!-- NIEUW (Pagina-Polish-spec §4.1 "Alle/Favorieten/Recent"): hergebruikt bestaande
            beanSortMode voor "Recent" en het nieuwe bean.favorite-veld voor "Favorieten" —
            geen nieuwe filterlogica los van bestaande data/state, zie filterSortBeans(). -->
-      <div class="chip-row" id="bean-filter-chip" style="margin-bottom:14px;" hidden></div>
+      <div class="chip-row" id="bean-filter-chip" style="margin-bottom:14px;" role="radiogroup" aria-label="Bonen filteren" hidden></div>
       <div class="bean-list" id="bean-list"></div>
       <button class="advisor-link" id="bean-add-link">+ Nieuwe boon toevoegen</button>
       <!-- .link-secondary is block-level (volle breedte) — de knop op een eigen regel
@@ -6364,7 +6364,7 @@ function renderBeanFilterChip(){
   if (!beanLibrary.length) return;
   const options = [ { v:'alle', label:'Alle' }, { v:'favorieten', label:'Favorieten' }, { v:'recent', label:'Recent' } ];
   el.innerHTML = options.map(o=>
-    `<button type="button" class="chip" data-bean-filter="${o.v}" data-selected="${beanFilterMode===o.v}">${o.label}</button>`
+    `<button type="button" class="chip" role="radio" aria-checked="${beanFilterMode===o.v}" data-bean-filter="${o.v}" data-selected="${beanFilterMode===o.v}">${o.label}</button>`
   ).join('');
   el.querySelectorAll('[data-bean-filter]').forEach(btn=>btn.addEventListener('click', ()=>{
     beanFilterMode = btn.getAttribute('data-bean-filter');
@@ -9941,8 +9941,14 @@ if (backupImportBtn && backupImportFile){
 // voorkeur (brewconsole_theme) blijft bewust ongemoeid: dat is geen "data" in de zin van
 // deze sectie, en onverwacht van thema wisselen bij een reset zou verrassend zijn.
 function resetAppData(){
+  // FIX (Pagina-Polish-spec §7.5, self-caught tijdens verificatie): de tekst beweerde
+  // "en instellingen" te wissen, maar hieronder worden uitsluitend brewconsole_beans en
+  // BREW_LOG_KEY verwijderd — thema (spec §7.5: "blijft ongemoeid") en waterprofiel
+  // blijven bewust staan. De tekst moest exact matchen wat er werkelijk gebeurt, anders
+  // is dit zelf een voorbeeld van de "fake"/overclaimende tekst die deze hele spec net
+  // wil voorkomen.
   showConfirmModal(
-    'Alle bonen, loggings en instellingen worden permanent gewist en kunnen niet worden hersteld. Weet je het zeker?',
+    'Alle bonen en loggings worden permanent gewist en kunnen niet worden hersteld. Weet je het zeker?',
     { confirmLabel:'Ja, alles wissen', cancelLabel:'Nee, terug' }
   ).then(ok=>{
     if (!ok) return;
