@@ -572,6 +572,10 @@
      "secondary information stays quiet"): kleinere waarde, gedempt label — zelfde kaart,
      minder visueel gewicht dan de drie dominante stat-blocks. */
   .stat-block--secondary .stat-value{font-size:14px; color:var(--text-dim); font-variant-numeric:tabular-nums;}
+  /* NIEUW (Visual Design 2.0 fase 3, detail-referentie recept-scherm): het waterhoeveelheid-
+     statblok is nu tikbaar (opent #water-modal) — zelfde tactiele taal als .bean-card. */
+  #stats-water-block{ cursor:pointer; transition:transform var(--motion-micro) var(--ease-out); }
+  #stats-water-block:active{ transform:scale(.98); }
   .stat-block--secondary .stat-label{color:var(--text-faint);}
 
   .style-note{
@@ -1372,6 +1376,28 @@
     <div class="modal-actions">
       <button type="button" class="modal-btn modal-btn-secondary" id="confirm-modal-cancel">Nee, terug</button>
       <button type="button" class="modal-btn modal-btn-danger" id="confirm-modal-ok">Ja, doorgaan</button>
+    </div>
+  </div>
+</div>
+<!-- NIEUW (Visual Design 2.0 fase 3, detail-referentie recept-scherm "waterhoeveelheid
+     aanpassen"-modal): een grotere, tastbaardere versie van de al bestaande
+     waterhoeveelheid-stepper (.serving-row/#serving-minus/#serving-plus, die op het
+     receptscherm blijft staan — een bestaande test klikt daar rechtstreeks op) — hier
+     bereikbaar door op het waterhoeveelheid-statblok te tikken. Zelfde state.waterMl,
+     zelfde engineValidVolumeRange()-klem, geen nieuwe berekening of receptlogica; zie
+     openWaterModal()/syncWaterModal() verderop in het script. -->
+<div class="modal-overlay" id="water-modal" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="water-modal-title">
+    <p id="water-modal-title" style="font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); margin:0 0 4px;">Waterhoeveelheid aanpassen</p>
+    <p class="mono" id="water-modal-value" style="font-size:32px; font-weight:600; color:var(--text); margin:0 0 16px;">250 ml</p>
+    <div class="stepper" style="justify-content:center; margin-bottom:14px;">
+      <button type="button" id="water-modal-minus" aria-label="Minder water">−</button>
+      <input type="range" id="water-modal-slider" step="1" style="flex:1; margin:0 4px;">
+      <button type="button" id="water-modal-plus" aria-label="Meer water">+</button>
+    </div>
+    <p style="font-size:11.5px; color:var(--text-faint); margin:0 0 18px;" id="water-modal-range-note"></p>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn modal-btn-secondary" id="water-modal-close">Klaar</button>
     </div>
   </div>
 </div>
@@ -8563,10 +8589,11 @@ function renderPrep(){
       <div class="stat-sub">${escapeHtml(rec.tempInstruction || '')} (${rec.temp}°C als middenwaarde van deze branddiepte-band)</div>
       <div class="stat-sub">Ankerpunt binnen de apparaatband van dit toestel (${rec.deviceTempBand.min}–${rec.deviceTempBand.max}°C) — positie, geen apart geteste claim; zie disclaimer onderaan. Ratio en dosis blijven voor elke branddiepte gelijk.</div>
     </div>
-    <div class="stat-block">
+    <div class="stat-block" id="stats-water-block" role="button" tabindex="0" aria-label="Waterhoeveelheid aanpassen">
       <div class="stat-label">${state.bypass ? 'Water dóór de koffie' : 'Waterhoeveelheid'}</div>
       <div class="stat-value">${rec.pourWaterMl} ml</div>
       ${state.bypass ? `<div class="stat-sub">van ${rec.water} ml totaal</div>` : ''}
+      <div class="stat-sub">Tik om aan te passen →</div>
     </div>
     ${state.bypass ? `
     <div class="stat-block" style="border-color:var(--copper-light);">
@@ -8749,6 +8776,17 @@ function renderPrep(){
   }
   document.getElementById('disclaimer').textContent =
     '* Dosis/water/ratio komen algebraïsch uit een sterkte-/extractievenster (zie het doelvenster-blok hierboven — door de app aangeleverd, niet uit het eigen onderzoekscorpus) en het gevalideerde dosisbereik van dit toestel — nooit gekopieerd uit een naam-gebonden receptentabel. De ratio bevat een retentieaanname (LIQUID_RETAINED_RATIO = 2,0 g achtergebleven water per g droge koffie bij percolatie, tier 3-4/klasse C, gebaseerd op Rao en Coffee ad Astra) — zonder die aanname zou de ratio het achtergebleven water in het koffiebed negeren en te sterk lijken. Temperatuur is een ankerpunt + instructie binnen de apparaatband, gepositioneerd op branddiepte (Implementatieplan Zetadvies v3.0, Fase 2, Bouwbesluit B-1) — géén los geteste claim: de bevinding dat temperatuur weinig zelfstandig smaakeffect heeft (research-brewing-variables.md §2.1/§4.2; Batali, Ristenpart & Guinard, 2020) hield maling en zettijd bewust vast om TDS/extractie gelijk te houden en testte alleen 87/90/93°C, en die voorwaarde geldt hier niet. Eerlijk erbij (Reparatieplan v4.0, A-7): het ankerpunt voor lichte branding (94–96°C) ligt zélf boven dat geteste bereik — het steunt op gangbare praktijk voor lichte brandingen, niet op deze studie, en is dus een vertrekpunt, geen getest getal. Maling is de eerlijke (instelling, vertrouwensband, korrelgrootte-doel)-drieling van de Setting Translator — vandaag voor elke molen "Insufficient" (geen gevalideerde kalibratiecurve); waar een community-startklikrange wél bestaat, positioneert branddiepte alleen wáár je daarbinnen begint (fijner/lichter, grover/donkerder) — geen nieuw maalgetal. Branddiepte stuurt in beide gevallen nooit de ratio of dosis (die blijven voor elke branddiepte identiek). Een eventueel giet-schema hierboven is óf een gecorroboreerde, aan een naam gebonden pour-structuur (zie de recept-notitie), óf — als die er niet is — een eigen, gelijkmatige verdeling; giet-snelheid (g/sec) is altijd een generieke aanname, geen letterlijk gepubliceerd getal. De totale schemalengte (en dus de brouwtimer) volgt uit het aantal giet-momenten van dit schema, niet meer uit de apparaatbrede contacttijd-diagnostiek — die diagnostische band staat los, als plausibiliteitscontrole achteraf op het Klaar-scherm (Implementatieplan Zetadvies v3.0, Fase 3).';
+
+  // NIEUW (Visual Design 2.0 fase 3): het waterhoeveelheid-statblok hierboven opnieuw
+  // tikbaar maken na elke render (het element wordt via innerHTML vervangen, dus oude
+  // listeners verdwijnen vanzelf mee — geen stapeling). syncWaterModal() ververst de al-
+  // open modal als state.waterMl elders wijzigde (bypass/sterkte/±50-knoppen).
+  const waterBlock = document.getElementById('stats-water-block');
+  if (waterBlock){
+    waterBlock.addEventListener('click', openWaterModal);
+    waterBlock.addEventListener('keydown', (e)=>{ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openWaterModal(); } });
+  }
+  syncWaterModal();
 }
 
 function updateServingBounds(){
@@ -8758,6 +8796,51 @@ function updateServingBounds(){
   const range = engineValidVolumeRange(state.method, state.profile);
   state.waterMl = clamp(state.waterMl, range.min, range.max);
 }
+
+// NIEUW (Visual Design 2.0 fase 3, detail-referentie recept-scherm "waterhoeveelheid
+// aanpassen"-modal): grotere stepper+slider-variant van de bestaande #serving-minus/
+// #serving-plus-stepper (die ongewijzigd op het receptscherm blijft staan — zie het
+// commentaar bij #water-modal in de body). Zelfde state.waterMl, zelfde
+// engineValidVolumeRange()-klem, zelfde renderPrep()-herberekening — geen nieuwe
+// receptlogica, puur een tweede, tastbaardere ingang naar dezelfde waarde.
+function openWaterModal(){
+  document.getElementById('water-modal').hidden = false;
+  syncWaterModal();
+}
+function syncWaterModal(){
+  const modal = document.getElementById('water-modal');
+  if (!modal || modal.hidden) return;
+  const range = engineValidVolumeRange(state.method, state.profile);
+  const slider = document.getElementById('water-modal-slider');
+  slider.min = range.min; slider.max = range.max; slider.value = state.waterMl;
+  document.getElementById('water-modal-value').textContent = state.waterMl + ' ml';
+  document.getElementById('water-modal-range-note').textContent =
+    `Bereik binnen dit recept: ${range.min}–${range.max} ml (het engine-geldige venster voor deze methode/profiel).`;
+}
+document.getElementById('water-modal-close').addEventListener('click', ()=>{
+  document.getElementById('water-modal').hidden = true;
+});
+document.getElementById('water-modal-minus').addEventListener('click', ()=>{
+  const range = engineValidVolumeRange(state.method, state.profile);
+  state.waterMl = clamp(state.waterMl - 50, range.min, range.max);
+  renderPrep();
+});
+document.getElementById('water-modal-plus').addEventListener('click', ()=>{
+  const range = engineValidVolumeRange(state.method, state.profile);
+  state.waterMl = clamp(state.waterMl + 50, range.min, range.max);
+  renderPrep();
+});
+document.getElementById('water-modal-slider').addEventListener('input', (e)=>{
+  // FIX (self-caught tijdens Playwright-controle): een step="50" op de <input type="range">
+  // snapt op de browser-eigen stapgrid vanaf MIN (265, 315, 365, ...) — als max (380) daar
+  // niet op valt, wordt hij nooit bereikbaar door helemaal naar rechts te slepen (de browser
+  // snapt terug naar 365). Zelfde soort fout als D-2 (250 ml nooit bereikbaar via de knop),
+  // nu via de slider i.p.v. de stepper. Fix: step="1" op het element (altijd exact tot en
+  // met min/max bereikbaar) en hier gewoon direct klemmen, geen eigen 50-ml-afronding.
+  const range = engineValidVolumeRange(state.method, state.profile);
+  state.waterMl = clamp(Math.round(Number(e.target.value)), range.min, range.max);
+  renderPrep();
+});
 
 /* ============================================================
    NAVIGATION
