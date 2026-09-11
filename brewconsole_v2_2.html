@@ -414,6 +414,54 @@
   }
   .header-icon-btn:hover{ border-color:var(--copper); }
   .header-icon-btn:active{ transform:scale(.94); }
+
+  /* NIEUW (Pagina-Polish-spec §6, Triage-scherm): subtiel expert/vraag-icoon boven de titel,
+     en de "één vraag per stap"-kaart met genummerde categorie, radiokaart-opties (surface +
+     copper + check i.p.v. alleen kleur, spec §6.2) en een voortgangsindicator. */
+  .triage-header-icon{
+    width:44px; height:44px; margin:4px auto 14px; border-radius:50%;
+    background:var(--surface-2); border:1px solid var(--border); color:var(--copper-light);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-size:19px; font-weight:600;
+  }
+  .triage-step-meta{ display:flex; align-items:baseline; gap:10px; margin-bottom:8px; }
+  .triage-step-number{ font-family:var(--font-mono); font-size:22px; color:var(--copper-light); font-weight:600; font-variant-numeric:tabular-nums; }
+  .triage-step-category{ font-family:var(--font-mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); }
+  .triage-step-question{ font-family:var(--font-display); font-size:19px; font-weight:600; line-height:1.35; margin:0 0 18px; }
+  .triage-options{ display:flex; flex-direction:column; gap:8px; }
+  .triage-option{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    width:100%; text-align:left; min-height:52px; padding:14px 16px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
+    color:var(--text); font-family:var(--font-body); font-size:14.5px; cursor:pointer;
+    box-shadow:var(--shadow-card);
+    transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
+  }
+  .triage-option::after{
+    content:''; width:18px; height:18px; border-radius:50%; border:1.5px solid var(--border); flex-shrink:0;
+    transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out);
+  }
+  .triage-option[aria-checked="true"]{
+    border-color:var(--copper); background:var(--surface-2); color:var(--copper-light);
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.3), 0 0 0 1px var(--accent-glow);
+  }
+  .triage-option[aria-checked="true"]::after{
+    border-color:var(--copper-light);
+    background:radial-gradient(circle, var(--copper-light) 0 40%, transparent 44%);
+  }
+  .triage-option:active{ transform:scale(.99); }
+  .triage-step-footer{ display:flex; align-items:center; justify-content:space-between; margin-top:14px; min-height:32px; }
+  .triage-progress{ font-family:var(--font-mono); font-size:12px; color:var(--text-faint); font-variant-numeric:tabular-nums; }
+  /* Resultaatkaarten: vraag → waarom → praktische volgende stap per gevlagde oorzaak
+     (spec §6.3) — bewust GEEN percentage/waarschijnlijkheidsgetal (§14 "geen Triage
+     probability"). */
+  .triage-result-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
+    padding:14px; margin-bottom:10px; box-shadow:var(--shadow-card);
+  }
+  .triage-result-question{ font-weight:600; font-size:14px; color:var(--text); margin:0 0 6px; }
+  .triage-result-why{ font-size:13px; color:var(--text-dim); line-height:1.5; margin:0 0 8px; }
+  .triage-result-action{ font-size:13px; color:var(--copper-light); margin:0; }
   .subtitle{
     color:var(--text-dim);
     font-size:14px;
@@ -2243,12 +2291,17 @@
     </section>
 
     <!-- TRIAGE (expertreview B2) -->
+    <!-- HERZIEN (Pagina-Polish-spec §6): één vraag per stap i.p.v. alle vijf tegelijk, met
+         voortgangsindicator en resultaat pas na de laatste vraag — zie renderTriageQuestions()/
+         updateTriageResult() verderop. TRIAGE_QUESTIONS zelf (tekst/opties/flagOn/diagnosis)
+         blijft ongewijzigd; category/action zijn puur additieve weergave-/actievelden. -->
     <section class="screen" id="screen-triage" data-screen="triage">
       <button class="back-btn" data-back="beans">← Mijn bonen</button>
-      <h1 class="title">Waarom smaakt dit anders?</h1>
-      <p class="subtitle">Dezelfde vragen die hier stap voor stap gesteld worden bij een smaakklacht — nu direct in de app, geen gesprek nodig. Beantwoord wat je nog weet; hoe meer, hoe scherper de diagnose.</p>
+      <div class="triage-header-icon" aria-hidden="true">?</div>
+      <h1 class="title" data-screen-heading tabindex="-1" style="text-align:center;">Waarom smaakt dit anders?</h1>
+      <p class="subtitle" style="text-align:center;">Beantwoord een paar korte vragen om de meest waarschijnlijke oorzaak te vinden.</p>
       <div id="triage-questions"></div>
-      <div id="triage-result" class="advice-secondary-notes" style="display:none;"></div>
+      <div id="triage-result" style="display:none;"></div>
     </section>
   </main>
   </div>
@@ -7778,58 +7831,114 @@ function measuredRetentionText(res, aanname){
    gestructureerde checklist — dezelfde volgorde/onderbouwing die al in
    deze twee eerdere gesprekken gebruikt is, nu direct in de app.
    ============================================================ */
+// category/action zijn NIEUW (Pagina-Polish-spec §6.2/§6.3) en puur additief — text/options/
+// flagOn/diagnosis zijn woordelijk ongewijzigd (spec: "Do not alter TRIAGE_QUESTIONS
+// semantics"). category is het korte kopje boven de vraag ("01 MOLENSTAND"); action is een
+// generieke, rechtstreeks uit de bestaande diagnosis afgeleide volgende-stap-zin — geen
+// nieuwe claim, puur de bestaande uitleg omgezet in een concrete actie.
 const TRIAGE_QUESTIONS = [
-  { id:'grind', text:'Was de molenstand exact hetzelfde als je vorige (goede) brouwsel met deze boon?',
+  { id:'grind', category:'Molenstand', text:'Was de molenstand exact hetzelfde als je vorige (goede) brouwsel met deze boon?',
     options:['Ja','Nee','Weet ik niet'], flagOn:'Nee',
-    diagnosis:'Grind is de grootste hefboom voor extractie — al één klik verschil is merkbaar. Grover dan normaal geeft een vlakkere, wateriger kop (onder-extractie); fijner geeft juist bitterheid.' },
-  { id:'bypass', text:'Gebruikte je de concentraat/bypass-methode — en zo ja, precies de aanbevolen hoeveelheid water achteraf toegevoegd?',
+    diagnosis:'Grind is de grootste hefboom voor extractie — al één klik verschil is merkbaar. Grover dan normaal geeft een vlakkere, wateriger kop (onder-extractie); fijner geeft juist bitterheid.',
+    action:'Zet de molenstand voor de volgende kop terug naar dezelfde stand als je vorige goede brouwsel, en noteer die dit keer zodat je kunt vergelijken.' },
+  { id:'bypass', category:'Bypass / concentraat', text:'Gebruikte je de concentraat/bypass-methode — en zo ja, precies de aanbevolen hoeveelheid water achteraf toegevoegd?',
     options:['Ja, precies goed','Nee, andere hoeveelheid','Geen bypass gebruikt'], flagOn:'Nee, andere hoeveelheid',
-    diagnosis:'Te veel bypass-water verdunt verder dan bedoeld — dat proeft precies als "wateriger, minder intens". Te weinig geeft juist een overdreven sterke kop.' },
-  { id:'age', text:'Is deze boon sinds je vorige goede brouwsel duidelijk ouder geworden, of de zak al langer open?',
+    diagnosis:'Te veel bypass-water verdunt verder dan bedoeld — dat proeft precies als "wateriger, minder intens". Te weinig geeft juist een overdreven sterke kop.',
+    action:'Volg de aanbevolen bypass-hoeveelheid uit het recept exact, of laat bypass weg als je die niet precies kunt afmeten.' },
+  { id:'age', category:'Versheid', text:'Is deze boon sinds je vorige goede brouwsel duidelijk ouder geworden, of de zak al langer open?',
     options:['Ja, merkbaar ouder','Nee, vergelijkbaar'], flagOn:'Ja, merkbaar ouder',
-    diagnosis:'Koffie verliest geleidelijk CO2 en aroma na het branden (piek meestal 1-3 weken, duidelijk verval na ~6 weken) en oxideert verder zodra de zak open is. Dat geeft precies minder fruitigheid en een vlakkere, wateriger indruk — geen technische fout, gewoon een oudere boon.' },
-  { id:'processroast', text:'Was het dezelfde boon, roast en proces als je vorige goede brouwsel, of iets nieuws?',
+    diagnosis:'Koffie verliest geleidelijk CO2 en aroma na het branden (piek meestal 1-3 weken, duidelijk verval na ~6 weken) en oxideert verder zodra de zak open is. Dat geeft precies minder fruitigheid en een vlakkere, wateriger indruk — geen technische fout, gewoon een oudere boon.',
+    action:'Dit is geen instelfout — een versere zak van dezelfde boon zou het verschil bevestigen; met deze zak is de huidige, iets vlakkere smaak het nieuwe normaal totdat je een verse zak opent.' },
+  { id:'processroast', category:'Boon / roast / proces', text:'Was het dezelfde boon, roast en proces als je vorige goede brouwsel, of iets nieuws?',
     options:['Zelfde als altijd','Nieuwe boon/roast/proces'], flagOn:'Nieuwe boon/roast/proces',
-    diagnosis:'Een andere boon, branddiepte of proces vraagt van nature andere instellingen — dit is geen fout in de techniek, gewoon een ander uitgangspunt dat een ander recept nodig heeft.' },
-  { id:'water', text:'Vers gekookt water, net als anders (niet lang laten staan of opgewarmd restwater)?',
+    diagnosis:'Een andere boon, branddiepte of proces vraagt van nature andere instellingen — dit is geen fout in de techniek, gewoon een ander uitgangspunt dat een ander recept nodig heeft.',
+    action:'Vraag een nieuw advies aan met déze boon als uitgangspunt — het recept dat je vergelijkt was voor een andere boon/roast/proces afgestemd.' },
+  { id:'water', category:'Water', text:'Vers gekookt water, net als anders (niet lang laten staan of opgewarmd restwater)?',
     options:['Ja, vers','Nee, anders dan normaal'], flagOn:'Nee, anders dan normaal',
-    diagnosis:'Water dat lang gekookt heeft, afgekoeld en herverwarmd is, of lang heeft stilgestaan verliest opgeloste zuurstof — dat kan een merkbaar vlakkere, "dodere" kop geven.' }
+    diagnosis:'Water dat lang gekookt heeft, afgekoeld en herverwarmd is, of lang heeft stilgestaan verliest opgeloste zuurstof — dat kan een merkbaar vlakkere, "dodere" kop geven.',
+    action:'Gebruik voor de volgende kop vers gekookt water, net van de kook af.' }
 ];
 const triageAnswers = {};
+// NIEUW (Pagina-Polish-spec §6.2 "Eén vraag per stap"): index van de huidige vraag —
+// 0..TRIAGE_QUESTIONS.length-1 tijdens het invullen, === length zodra alle vragen
+// beantwoord zijn (dan toont renderTriageQuestions() niets meer en neemt het resultaatblok
+// het over). Reset in openTriage(), net als triageAnswers.
+let triageStep = 0;
 function renderTriageQuestions(){
   const el = document.getElementById('triage-questions');
   if (!el) return;
-  el.innerHTML = TRIAGE_QUESTIONS.map(q => `
-    <div class="advice-q">
-      <p class="advice-q-label">${escapeHtml(q.text)}</p>
-      <div class="chip-row">
-        ${q.options.map(opt => `<button type="button" class="chip" data-triage="${q.id}" data-opt="${escapeHtml(opt)}" data-selected="${triageAnswers[q.id]===opt}">${escapeHtml(opt)}</button>`).join('')}
+  if (triageStep >= TRIAGE_QUESTIONS.length){ el.innerHTML = ''; return; }
+  const q = TRIAGE_QUESTIONS[triageStep];
+  el.innerHTML = `
+    <div class="triage-step">
+      <div class="triage-step-meta">
+        <span class="triage-step-number">${String(triageStep + 1).padStart(2,'0')}</span>
+        <span class="triage-step-category">${escapeHtml(q.category)}</span>
       </div>
-    </div>
-  `).join('');
-  el.querySelectorAll('[data-triage]').forEach(btn=>{
+      <p class="triage-step-question">${escapeHtml(q.text)}</p>
+      <div class="triage-options" role="radiogroup" aria-label="${escapeHtml(q.text)}">
+        ${q.options.map(opt => `<button type="button" class="triage-option" role="radio" aria-checked="${triageAnswers[q.id]===opt}" data-triage-opt="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`).join('')}
+      </div>
+      <div class="triage-step-footer">
+        ${triageStep > 0 ? `<button type="button" class="link-secondary" id="triage-prev-btn" style="width:auto; padding:0; margin-top:0;">← Vorige vraag</button>` : '<span></span>'}
+        <span class="triage-progress">${triageStep + 1} / ${TRIAGE_QUESTIONS.length}</span>
+      </div>
+    </div>`;
+  el.querySelectorAll('[data-triage-opt]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      triageAnswers[btn.getAttribute('data-triage')] = btn.getAttribute('data-opt');
+      triageAnswers[q.id] = btn.getAttribute('data-triage-opt');
+      triageStep++;
       renderTriageQuestions();
       updateTriageResult();
     });
   });
+  const prevBtn = document.getElementById('triage-prev-btn');
+  if (prevBtn) prevBtn.addEventListener('click', ()=>{
+    triageStep = Math.max(0, triageStep - 1);
+    renderTriageQuestions();
+    updateTriageResult();
+  });
+}
+// NIEUW (Pagina-Polish-spec §6.4 acties): "Opnieuw naar recept" navigeert puur naar het
+// al bestaande #screen-prep (state.recipe/state.waterMl etc. blijven ongewijzigd — Triage
+// raakt nooit receptvelden aan); "Terug naar bonen" is de bestaande back-bestemming.
+function triageActionsHtml(){
+  return `<div class="prep-cta-row" style="margin-top:18px;">
+    <button type="button" class="advisor-primary" id="triage-back-beans-btn" style="margin-top:0;">Terug naar bonen</button>
+    <button type="button" class="start-btn" id="triage-to-recipe-btn">Opnieuw naar recept</button>
+  </div>`;
+}
+function wireTriageActionButtons(){
+  const backBtn = document.getElementById('triage-back-beans-btn');
+  if (backBtn) backBtn.addEventListener('click', ()=> showScreen('beans'));
+  const recipeBtn = document.getElementById('triage-to-recipe-btn');
+  if (recipeBtn) recipeBtn.addEventListener('click', ()=> showScreen('prep'));
 }
 function updateTriageResult(){
   const resEl = document.getElementById('triage-result');
   if (!resEl) return;
+  if (triageStep < TRIAGE_QUESTIONS.length){ resEl.style.display = 'none'; resEl.innerHTML = ''; return; }
   const answered = TRIAGE_QUESTIONS.filter(q => triageAnswers[q.id]);
-  if (!answered.length){ resEl.style.display = 'none'; return; }
+  // NIEUW (§6.3 "vraag → waarom → praktische volgende stap"): elke gevlagde oorzaak krijgt nu
+  // drie regels i.p.v. één samengevoegde zin — nog steeds uitsluitend bestaande
+  // tekst/diagnosis, plus de nieuwe, generieke action-zin. Geen percentages (§14).
   const flagged = answered.filter(q => triageAnswers[q.id] === q.flagOn);
   resEl.style.display = 'block';
   if (!flagged.length){
-    resEl.innerHTML = `<p class="advice-secondary-title">Nog geen duidelijke boosdoener gevonden.</p><ul><li>Op basis van wat je tot nu toe hebt aangevinkt lijkt alles hetzelfde als je vorige goede brouwsel — beantwoord de resterende vragen, of het zit 'm mogelijk in iets wat deze lijst niet dekt (bijv. filterpapier, waterhardheid, of gewoon dag-tot-dag-variatie in smaakperceptie).</li></ul>`;
+    resEl.innerHTML = `<p class="advice-secondary-title">Nog geen duidelijke boosdoener gevonden.</p><ul><li>Op basis van wat je hebt aangevinkt lijkt alles hetzelfde als je vorige goede brouwsel — het zit mogelijk in iets wat deze lijst niet dekt (bijv. filterpapier, waterhardheid, of gewoon dag-tot-dag-variatie in smaakperceptie).</li></ul>${triageActionsHtml()}`;
   } else {
-    resEl.innerHTML = `<p class="advice-secondary-title">Meest waarschijnlijke oorza${flagged.length>1?'ken':'ak'}:</p><ul>${flagged.map(q=>`<li><strong>${escapeHtml(q.text)}</strong> — ${q.diagnosis}</li>`).join('')}</ul>`;
+    resEl.innerHTML = `<p class="advice-secondary-title">Meest waarschijnlijke oorza${flagged.length>1?'ken':'ak'}</p>${flagged.map(q=>`
+      <div class="triage-result-card">
+        <p class="triage-result-question">${escapeHtml(q.text)}</p>
+        <p class="triage-result-why">${escapeHtml(q.diagnosis)}</p>
+        <p class="triage-result-action">→ ${escapeHtml(q.action)}</p>
+      </div>`).join('')}${triageActionsHtml()}`;
   }
+  wireTriageActionButtons();
 }
 function openTriage(){
   Object.keys(triageAnswers).forEach(k=>delete triageAnswers[k]);
+  triageStep = 0;
   renderTriageQuestions();
   updateTriageResult();
   showScreen('triage');
