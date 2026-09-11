@@ -164,24 +164,54 @@
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0; background:var(--bg);}
   html{color-scheme:dark;}
+  /* NIEUW (Visual Design 2.0, §5 Atmospheric light — "Default: nearly black with barely
+     visible warm espresso radial light"): een vaste, zeer subtiele gloed rechtsboven de
+     viewport. z-index:-1 + pointer-events:none op een fixed pseudo-element van <body>, dus
+     geen enkele klikbare laag of stacking-context van bestaande content verandert. Alleen
+     voor het donkere thema — de spec geeft geen lichte-thema-variant en de bestaande
+     lichte-thema-kleuren zijn al WCAG-geverifieerd zonder deze laag (§6.2 in de conversatie:
+     "licht thema meeschalen met dezelfde tokens", niet met een nieuwe, ongeverifieerde gloed). */
+  body::before{
+    content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:radial-gradient(ellipse 70% 45% at 50% -8%, rgba(212,165,116,.06), transparent 65%);
+  }
+  html[data-theme="light"] body::before{ display:none; }
   /* FIX (teamreview v2 — Laag bevinding, Interaction Designer): in-thema confirm-modal,
      zie #confirm-modal hierboven in de body en showConfirmModal() in het script. */
+  /* NIEUW (Visual Design 2.0, §3.2 "Level 3 modal/overlay: stronger separation and blur
+     where useful", §6 "appropriate sheets/modals"): backdrop-filter blur op de overlay
+     zélf — wat erachter staat vervaagt, de modal-box blijft volledig ondoorzichtig (§6
+     "text remains fully opaque", en een confirm-dialoog is precies de plek waar leesbaarheid
+     zwaarder weegt dan glaseffect). @supports-fallback: zonder backdrop-filter blijft de
+     bestaande, altijd al voldoende contrastrijke rgba(10,7,5,.6)-overlay gewoon staan. */
   .modal-overlay{
     position:fixed; inset:0; background:rgba(10,7,5,.6);
     display:flex; align-items:center; justify-content:center; padding:20px;
     z-index:100;
   }
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)){
+    .modal-overlay{ -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+  }
   .modal-overlay[hidden]{display:none;}
+  /* NIEUW (§9 micro-interactions, "cards use subtle opacity/translate entrance"): de modal
+     was tot nu toe abrupt (display:none -> flex, geen overgang). [hidden] verwijderen laat
+     het element opnieuw layouten, dus de animatie speelt elke keer opnieuw af — standaard,
+     browser-onafhankelijk gedrag, geen JS nodig. Reduced-motion-override (regel ~939,
+     ongewijzigd) dekt dit automatisch mee. */
+  @keyframes modalIn{ from{ opacity:0; transform:scale(.97) translateY(4px); } to{ opacity:1; transform:scale(1) translateY(0); } }
   .modal-box{
-    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
     padding:20px; max-width:340px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,.45);
+    animation:modalIn var(--motion-standard) var(--ease-out) both;
   }
   .modal-box p{font-family:var(--font-body); font-size:14px; color:var(--text); line-height:1.5; margin:0 0 18px;}
   .modal-actions{display:flex; gap:10px;}
   .modal-btn{
-    flex:1; min-height:44px; border-radius:9px; border:1px solid var(--border);
+    flex:1; min-height:44px; border-radius:var(--radius-sm); border:1px solid var(--border);
     font-family:var(--font-body); font-size:13.5px; font-weight:600; cursor:pointer;
+    transition:transform var(--motion-micro) var(--ease-out), background var(--motion-standard) var(--ease-out);
   }
+  .modal-btn:active{transform:scale(.97);}
   .modal-btn-secondary{background:var(--surface-2); color:var(--text);}
   .modal-btn-danger{background:var(--danger); color:#fff; border-color:var(--danger);}
 
@@ -468,6 +498,18 @@
   .stats-grid{
     display:grid; grid-template-columns:1fr 1fr; gap:10px;
     margin-bottom:18px;
+  }
+  /* NIEUW (Visual Design 2.0, §5 "Recipe: slightly warmer focal glow around primary recipe
+     area"): alleen op #stats-grid (het dosis/maling/temperatuur/water-blok van het Recept-
+     scherm, §12) — niet op de gedeelde .stats-grid-class die renderInsightsScreen() ook
+     hergebruikt (Inzichten heeft geen "primaire receptwaarden" om te accentueren). Puur een
+     achtergrondgloed via ::before, z-index:-1 binnen de eigen stacking-context van het grid
+     (position:relative), dus de kaarten zelf en hun klik-doelen blijven ongewijzigd. */
+  #stats-grid{ position:relative; }
+  #stats-grid::before{
+    content:""; position:absolute; inset:-20px; z-index:-1; pointer-events:none;
+    background:radial-gradient(ellipse at 50% 35%, var(--accent-glow), transparent 70%);
+    opacity:.45;
   }
   /* NIEUW (Visual Design 2.0, §24 MetricCard): tactiele diepte (§3.2 Level 1 card) +
      tabular-nums op de primaire waarde (§4 "20.0→19.5 does not shift layout") — geen
@@ -1301,7 +1343,11 @@
         <div class="chip-row" id="advice-batch"></div>
       </div>
 
-      <div class="advice-result" id="advice-result" style="display:none;"></div>
+      <!-- NIEUW (Visual Design 2.0, §19 Subtle texture): dit is het enige advies-resultaatblok
+           van het hele scherm (kinderen zijn platte p/ul/div/button, geen enkele met
+           position:fixed/absolute/sticky) — een veilige, doelgerichte plek voor de
+           .texture-grain-utility i.p.v. hem overal toe te passen. -->
+      <div class="advice-result texture-grain" id="advice-result" style="display:none;"></div>
     </section>
 
     <!-- BEAN LIBRARY -->
@@ -1686,6 +1732,9 @@
         <p class="freshness-readout" id="bypass-fit-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
       </div>
 
+      <!-- NIEUW (Visual Design 2.0, §5 "Recipe: slightly warmer focal glow around primary
+           recipe area"): #stats-grid is precies het dosis/maling/temperatuur/water-blok uit
+           §12 ("three primary values ... are dominant") — zie #stats-grid::before hieronder. -->
       <div class="stats-grid" id="stats-grid"></div>
       <!-- NIEUW (vervolgplan v2.3, Bouwbesluit B4): tweedelige Evidence-badge, kernrecept
            vs. kernrecept + gietschema — woordkeus expres afgestemd op coreOnlyReason()
@@ -1789,7 +1838,9 @@
       <div class="brewlog-sliders" id="brewlog-sliders"></div>
       <!-- NIEUW (Bouwbesluit B2): eerlijke samenvatting i.p.v. het kale cijfer, ÓNDER de
            sliders — zie renderBrewLogHonestSummary(). Geen #score-ring-value meer in de DOM. -->
-      <div class="brewlog-honest-summary" id="brewlog-honest-summary"></div>
+      <!-- NIEUW (Visual Design 2.0, §19): zelfde redenering als #advice-result — platte
+           strong/div-kinderen zonder eigen position, dus veilig voor .texture-grain. -->
+      <div class="brewlog-honest-summary texture-grain" id="brewlog-honest-summary"></div>
 
       <!-- NIEUW (Implementatieplan Zetadvies v3.0, Fase 5): het fundament onder Fase 6/7 —
            zonder deze twee werkelijk-gemeten velden (i.p.v. het aanbevolen recept) is er
