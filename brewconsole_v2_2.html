@@ -1105,14 +1105,22 @@
     font-family:var(--font-mono); font-size:12px; color:var(--copper-light);
     margin:10px 0 0;
   }
-  .scan-status::before{
+  /* BEVINDING (Release-Candidate-audit): de ::before-spinner stond hier ongeconditioneerd
+     op .scan-status zelf en werd alleen voor de foutstaat uitgezet (data-error) — maar
+     dezelfde class wordt ook gebruikt voor (a) de altijd-zichtbare, statische OCR-
+     toelichtingsalinea op het Boon-toevoegen-scherm (nooit door JS aangeraakt) en (b) de
+     geslaagde-actie-meldingen van #backup-status ("Backup gedownload: …", "Samengevoegd:
+     …") — beide tonen daardoor een permanent draaiend "bezig"-icoontje naast een statische
+     of al-afgeronde melding, wat een lopend proces suggereert dat er niet is. Omgedraaid
+     naar opt-in: de spinner verschijnt nu alleen als JS expliciet data-busy="true" zet
+     (voor #scan-status tijdens een echte OCR-fase) — nergens anders. */
+  .scan-status[data-busy="true"]::before{
     content:""; width:9px; height:9px; border-radius:50%; flex-shrink:0;
     border:2px solid var(--copper-dim); border-top-color:var(--copper-light);
     animation:spin .8s linear infinite;
   }
   @keyframes spin{ to{ transform:rotate(360deg); } }
   .scan-status[data-error="true"]{ color:var(--danger); }
-  .scan-status[data-error="true"]::before{ display:none; }
   /* BEVINDING (Visual Design 2.0 QA — Bean Add-scherm): #scan-status had het `hidden`-
      attribuut, maar .scan-status{display:flex} is een author-regel en wint van de UA-regel
      [hidden]{display:none} ongeacht specificiteit — exact hetzelfde patroon als de al
@@ -7154,6 +7162,9 @@ function setBackupStatus(text, isError){
   if (!text){ el.hidden = true; return; }
   el.hidden = false; el.textContent = text;
   if (isError) el.setAttribute('data-error','true'); else el.removeAttribute('data-error');
+  // Backup-acties (export/import) zijn synchroon — er is nooit een echte "bezig"-fase om
+  // te tonen, dus deze meldingen krijgen nooit de .scan-status[data-busy]-spinner.
+  el.removeAttribute('data-busy');
 }
 function importBackupFile(file){
   const reader = new FileReader();
@@ -8812,10 +8823,14 @@ function preprocessCanvasForOCR(canvas){
 function setScanStatus(text, isError){
   const el = document.getElementById('scan-status');
   if (!el) return;
-  if (!text){ el.hidden = true; el.textContent = ''; el.removeAttribute('data-error'); return; }
+  if (!text){ el.hidden = true; el.textContent = ''; el.removeAttribute('data-error'); el.removeAttribute('data-busy'); return; }
   el.hidden = false;
   el.textContent = text;
-  if (isError) el.setAttribute('data-error','true'); else el.removeAttribute('data-error');
+  // Elke niet-foutmelding hier is een echte tussenstap van de lopende OCR-scan (nooit een
+  // afgeronde-actie-melding — die wist zichzelf via setScanStatus(null) vóór het resultaat
+  // getoond wordt), dus data-busy volgt hier 1-op-1 het bestaande isError-onderscheid.
+  if (isError){ el.setAttribute('data-error','true'); el.removeAttribute('data-busy'); }
+  else { el.removeAttribute('data-error'); el.setAttribute('data-busy','true'); }
 }
 
 function showScanResult(found){
