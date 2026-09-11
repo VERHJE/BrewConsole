@@ -813,10 +813,23 @@
   .brewlog-slider-row .brewlog-slider-label span:last-child{color:var(--copper-light); font-family:var(--font-mono);}
   .brewlog-slider-row input[type="range"]{width:100%; accent-color:var(--copper);}
   .brewlog-entry-card{
+    position:relative;
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
-    padding:12px 14px; margin-bottom:10px; font-size:13px;
+    padding:12px 40px 12px 14px; margin-bottom:10px; font-size:13px;
     box-shadow:var(--shadow-card);
   }
+  /* NIEUW (Visual Design 2.0 fase 2, detail-referentie scherm 10 "History"): favoriet-
+     toggle per logging — puur een nieuw boolean-veld (entry.favorite), zie
+     toggleBrewLogFavorite() hierboven het script. --berry (bestaande token) i.p.v. een
+     nieuwe kleur voor de actieve staat. */
+  .brewlog-entry-fav{
+    position:absolute; top:10px; right:10px; width:28px; height:28px;
+    display:flex; align-items:center; justify-content:center;
+    background:none; border:none; color:var(--text-faint); font-size:17px; line-height:1; cursor:pointer;
+    transition:color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
+  }
+  .brewlog-entry-fav[aria-pressed="true"]{ color:var(--berry); }
+  .brewlog-entry-fav:active{ transform:scale(.85); }
   .brewlog-entry-header{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;}
   .brewlog-entry-header .brewlog-entry-date{color:var(--text-faint); font-size:12px; font-family:var(--font-mono);}
   .brewlog-entry-meta{color:var(--text-dim); font-size:12px; margin-bottom:6px;}
@@ -2022,18 +2035,45 @@
     </section>
 
     <!-- BREW LOG HISTORY -->
+    <!-- NIEUW (Visual Design 2.0 fase 2, detail-referentie scherm 10 "History"): tabs
+         Alle/Favorieten/Statistieken. "Statistieken" hergebruikt renderInsightsScreen()
+         (nu met een targetId-parameter) — geen nieuwe telling-logica, puur een tweede
+         plek waar dezelfde functie naar rendert. "Favorieten" is een klein, nieuw,
+         zelfstandig boolean-veld per brewLog-entry (entry.favorite, via
+         toggleBrewLogFavorite() + de al bestaande saveBrewLogToStorage()) — geen ander
+         databronveld aangeraakt. -->
     <section class="screen" id="screen-brewlog-history" data-screen="brewlog-history">
       <button class="back-btn" data-back="beans">← Mijn bonen</button>
-      <h1 class="title">Geschiedenis</h1>
+      <h1 class="title" data-screen-heading tabindex="-1">Geschiedenis</h1>
       <p class="subtitle" id="brewlog-history-subtitle"></p>
-      <div id="brewlog-history-list"></div>
+
+      <div class="detail-tabs" id="history-tabs" role="tablist" aria-label="Geschiedenis-weergave">
+        <button type="button" class="detail-tab" data-tab="alle" role="tab" aria-selected="true">Alle</button>
+        <button type="button" class="detail-tab" data-tab="favorieten" role="tab" aria-selected="false">Favorieten</button>
+        <button type="button" class="detail-tab" data-tab="statistieken" role="tab" aria-selected="false">Statistieken</button>
+      </div>
+
+      <div class="detail-tab-panel" data-tab-panel="alle" id="history-panel-alle">
+        <div id="brewlog-history-list"></div>
+      </div>
+      <div class="detail-tab-panel" data-tab-panel="favorieten" id="history-panel-favorieten" hidden>
+        <div id="brewlog-history-list-fav"></div>
+      </div>
+      <div class="detail-tab-panel" data-tab-panel="statistieken" id="history-panel-statistieken" hidden>
+        <div id="history-stats-body"></div>
+      </div>
     </section>
 
     <!-- NIEUW (vervolgplan v2.3, Fase 5 — Inzichten). Ontworpen leeg-eerst (Data Scientist-
          bevinding §07/§26 in het vervolgplan): bij 0/1 loggings staat er een eerlijke lege
          staat, geen trendlijn onder een minimale n, en geen chart-bibliotheek deze ronde —
          puur tellingen + hergebruik van het bestaande personalHistoryInsight()-precedent
-         (dat n al expliciet noemt), nooit stilzwijgend geaggregeerd over waterhardheid heen. -->
+         (dat n al expliciet noemt), nooit stilzwijgend geaggregeerd over waterhardheid heen.
+         NIEUW (Visual Design 2.0 fase 2): dit standalone scherm + zijn navbar-item worden
+         verwijderd zodra de Instellingen-navbar-herstructurering (volgende taak) klaar is —
+         de "Statistieken"-tab hierboven is de nieuwe ingang. Tot dan blijft dit scherm
+         functioneel bereikbaar als tussenstap, puur om geen enkel moment een kapotte
+         "Inzichten"-navbar-knop te hebben tijdens de overgang. -->
     <section class="screen" id="screen-insights" data-screen="insights">
       <h1 class="title" data-screen-heading tabindex="-1">Inzichten</h1>
       <p class="subtitle">Eerlijke tellingen uit je eigen loggings — geen trend of voorspelling zolang daar te weinig data voor is.</p>
@@ -6253,8 +6293,12 @@ document.getElementById('home-start-brew-btn').addEventListener('click', ()=>{
    altijd per boon, nooit een cross-boon gemiddelde.
    ============================================================ */
 const MIN_TREND_N = 5;
-function renderInsightsScreen(){
-  const el = document.getElementById('insights-body');
+// NIEUW (Visual Design 2.0 fase 2, Geschiedenis-tabs): optionele targetId-parameter zodat
+// dezelfde functie/tellingen ook in de nieuwe "Statistieken"-tab (Geschiedenis-scherm)
+// kunnen renderen, i.p.v. een tweede kopie van deze functie te onderhouden. Standaard
+// (geen argument) ongewijzigd gedrag: #insights-body op het losse Inzichten-scherm.
+function renderInsightsScreen(targetId){
+  const el = document.getElementById(targetId || 'insights-body');
   if (!el) return;
   if (!brewLog.length){
     el.innerHTML = `<div class="insights-empty">Nog geen brouwsels gelogd. Zodra je een brouwsel afrondt en logt, verschijnen hier je eigen tellingen — geen trend of voorspelling zolang daar te weinig data voor is.</div>`;
@@ -6455,6 +6499,7 @@ document.getElementById('bean-detail-edit-btn').addEventListener('click', ()=>{ 
 document.getElementById('bean-detail-use-btn').addEventListener('click', ()=>{ if (beanDetailId) useBeanForAdvice(beanDetailId); });
 document.getElementById('bean-detail-history-btn').addEventListener('click', ()=>{ if (beanDetailId) renderBrewLogHistory(beanDetailId); });
 wireDetailTabs('bean-detail-tabs');
+wireDetailTabs('history-tabs');
 
 /* FIX (teamreview v2 — Midden bevinding, Backend/Database Engineer): individuele
    boon- en logboekrecords hadden geen eigen schemaversie, terwijl de backup-payload
@@ -6823,55 +6868,88 @@ function saveBrewLogEntry(){
   const savedMsg = document.getElementById('brewlog-saved-msg');
   if (savedMsg) savedMsg.hidden = false;
 }
+// NIEUW (Visual Design 2.0 fase 2, Geschiedenis-tabs): het per-entry-kaartje uit
+// renderBrewLogHistory() hieronder losgetrokken naar een eigen functie, zodat zowel de
+// "Alle"- als de "Favorieten"-lijst exact dezelfde kaart-opmaak delen i.p.v. gedupliceerde
+// HTML. Inhoud/velden 100% ongewijzigd t.o.v. de oorspronkelijke inline versie — alleen
+// een nieuwe hartje-toggle (data-fav-toggle) toegevoegd.
+function renderBrewLogEntryCard(e, beanId){
+  const d = new Date(e.timestamp);
+  const dateStr = d.toLocaleDateString('nl-NL', { day:'numeric', month:'short', year:'numeric' }) + ' ' + d.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+  const m = METHOD_INFO[e.method], p = PROFILE_INFO[e.profile], r = ROAST_INFO[e.roast];
+  const entryBean = !beanId && e.beanId ? beanLibrary.find(b=>b.id===e.beanId) : null;
+  const scoresHtml = CUPPING_AXES.map(axis => `<span>${CUPPING_AXIS_LABELS[axis]}: ${e.scores && e.scores[axis] != null ? e.scores[axis] : '–'}</span>`).join('');
+  // NIEUW (Implementatieplan Zetadvies v3.0, Fase 5): schemaVersion-2-velden, alleen
+  // getoond als ze er zijn — oudere (schemaVersion 1) loggingen missen deze simpelweg en
+  // laten deze regel dus helemaal weg, i.p.v. een "–" of 0 te tonen (ontbrekend blijft
+  // ontbrekend, zie RECORD_SCHEMA_VERSION-toelichting hierboven in het bestand).
+  const actualBits = [];
+  if (e.doseG != null || e.ratioText) actualBits.push(`recept ${e.doseG != null ? fmt(e.doseG,1) + ' g' : '?'}${e.ratioText ? ' · ' + e.ratioText : ''}`);
+  if (e.actualGrindClicks != null) actualBits.push(`werkelijke stand ${e.actualGrindClicks}`);
+  if (e.actualTimeSec != null) actualBits.push(`werkelijke tijd ${fmtTime(e.actualTimeSec)}`);
+  if (e.cupWeightG != null) actualBits.push(`kopgewicht ${e.cupWeightG} g`);
+  // NIEUW (Fase 7): alleen tonen als het veld bestaat (schemaVersion 3+) — geen "nee"
+  // verzinnen voor oudere loggingen die dit onderscheid nog niet konden maken.
+  if (e.approved === true) actualBits.push('✓ goedgekeurd (telt mee voor leercorrectie)');
+  const actualHtml = actualBits.length ? `<div class="brewlog-entry-meta">${actualBits.join(' · ')}</div>` : '';
+  // NIEUW (Implementatieplan Zetadvies v3.0, Fase 6): het bewaarde voorstel bij déze
+  // logging, altijd expliciet als "Hypothese" gelabeld (randvoorwaarde: nooit als
+  // bewezen correctie tonen) — ontbreekt gewoon als er geen patroon matchte.
+  const suggestionHtml = e.suggestion
+    ? `<div class="brewlog-entry-note">Hypothese (${escapeHtml(e.suggestion.pattern.replace(/_/g,' '))}): ${escapeHtml(e.suggestion.voorstel)}</div>`
+    : '';
+  return `<div class="brewlog-entry-card">
+    <button type="button" class="brewlog-entry-fav" data-fav-toggle="${e.id}" aria-pressed="${e.favorite ? 'true' : 'false'}" aria-label="${e.favorite ? 'Verwijderen uit favorieten' : 'Toevoegen aan favorieten'}">${e.favorite ? '♥' : '♡'}</button>
+    <div class="brewlog-entry-header"><strong>${entryBean ? escapeHtml(entryBean.name) + ' · ' : ''}${m ? m.name : e.method}${e.bypass ? ' · bypass' : ''}</strong><span class="brewlog-entry-date">${dateStr}</span></div>
+    <div class="brewlog-entry-meta">${r ? r.name : ''} · ${p ? p.name : ''} · ${e.waterMl || '?'} ml${e.grindMicron ? ' · ' + e.grindMicron + ' µm' : ''}${e.temp ? ' · ' + e.temp + '°C' : ''}</div>
+    ${actualHtml}
+    <div class="brewlog-entry-scores">${scoresHtml}</div>
+    ${e.note ? `<div class="brewlog-entry-note">"${escapeHtml(e.note)}"</div>` : ''}
+    ${suggestionHtml}
+  </div>`;
+}
+// NIEUW (Visual Design 2.0 fase 2): favoriet-status van één logging omschakelen — puur een
+// boolean op het bestaande entry-record, opgeslagen via de al bestaande
+// saveBrewLogToStorage(). Geen ander veld/geen andere logica aangeraakt.
+function toggleBrewLogFavorite(id){
+  const entry = brewLog.find(e=>e.id===id);
+  if (!entry) return;
+  entry.favorite = !entry.favorite;
+  saveBrewLogToStorage();
+  renderBrewLogHistory(historyBeanIdShown);
+}
+let historyBeanIdShown = null;
 function renderBrewLogHistory(beanId){
   // NIEUW (vervolgplan v2.3, Fase 5 — Historie als bestemming): tot nu toe werd deze
   // functie alleen met een concrete beanId aangeroepen (vanaf een boonkaart); een leeg/
   // undefined beanId toont voortaan ALLE loggings, zodat #screen-brewlog-history ook als
   // top-level "Historie"-tab in de navigatiebalk kan dienen — zonder de bestaande per-boon
   // aanroepen (vanaf de boonkaart/Bean Detail) op enige manier te wijzigen.
+  historyBeanIdShown = beanId || null;
   const bean = beanId ? beanLibrary.find(b=>b.id===beanId) : null;
-  const entries = (beanId ? brewLog.filter(e=>e.beanId===beanId) : brewLog.slice())
+  const allEntries = (beanId ? brewLog.filter(e=>e.beanId===beanId) : brewLog.slice())
     .slice().sort((a,b)=>b.timestamp-a.timestamp);
+  const favEntries = allEntries.filter(e=>e.favorite);
   document.getElementById('brewlog-history-subtitle').textContent = bean ? bean.name : 'Alle brouwsels';
+
   const el = document.getElementById('brewlog-history-list');
-  if (!entries.length){
-    el.innerHTML = `<p class="empty-hint">${beanId ? 'Nog geen loggings voor deze boon.' : 'Nog geen brouwsels gelogd — dat verschijnt hier zodra je een brouwsel afrondt en opslaat.'}</p>`;
-  } else {
-    el.innerHTML = entries.map(e=>{
-      const d = new Date(e.timestamp);
-      const dateStr = d.toLocaleDateString('nl-NL', { day:'numeric', month:'short', year:'numeric' }) + ' ' + d.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
-      const m = METHOD_INFO[e.method], p = PROFILE_INFO[e.profile], r = ROAST_INFO[e.roast];
-      const entryBean = !beanId && e.beanId ? beanLibrary.find(b=>b.id===e.beanId) : null;
-      const scoresHtml = CUPPING_AXES.map(axis => `<span>${CUPPING_AXIS_LABELS[axis]}: ${e.scores && e.scores[axis] != null ? e.scores[axis] : '–'}</span>`).join('');
-      // NIEUW (Implementatieplan Zetadvies v3.0, Fase 5): schemaVersion-2-velden, alleen
-      // getoond als ze er zijn — oudere (schemaVersion 1) loggingen missen deze simpelweg en
-      // laten deze regel dus helemaal weg, i.p.v. een "–" of 0 te tonen (ontbrekend blijft
-      // ontbrekend, zie RECORD_SCHEMA_VERSION-toelichting hierboven in het bestand).
-      const actualBits = [];
-      if (e.doseG != null || e.ratioText) actualBits.push(`recept ${e.doseG != null ? fmt(e.doseG,1) + ' g' : '?'}${e.ratioText ? ' · ' + e.ratioText : ''}`);
-      if (e.actualGrindClicks != null) actualBits.push(`werkelijke stand ${e.actualGrindClicks}`);
-      if (e.actualTimeSec != null) actualBits.push(`werkelijke tijd ${fmtTime(e.actualTimeSec)}`);
-      if (e.cupWeightG != null) actualBits.push(`kopgewicht ${e.cupWeightG} g`);
-      // NIEUW (Fase 7): alleen tonen als het veld bestaat (schemaVersion 3+) — geen "nee"
-      // verzinnen voor oudere loggingen die dit onderscheid nog niet konden maken.
-      if (e.approved === true) actualBits.push('✓ goedgekeurd (telt mee voor leercorrectie)');
-      const actualHtml = actualBits.length ? `<div class="brewlog-entry-meta">${actualBits.join(' · ')}</div>` : '';
-      // NIEUW (Implementatieplan Zetadvies v3.0, Fase 6): het bewaarde voorstel bij déze
-      // logging, altijd expliciet als "Hypothese" gelabeld (randvoorwaarde: nooit als
-      // bewezen correctie tonen) — ontbreekt gewoon als er geen patroon matchte.
-      const suggestionHtml = e.suggestion
-        ? `<div class="brewlog-entry-note">Hypothese (${escapeHtml(e.suggestion.pattern.replace(/_/g,' '))}): ${escapeHtml(e.suggestion.voorstel)}</div>`
-        : '';
-      return `<div class="brewlog-entry-card">
-        <div class="brewlog-entry-header"><strong>${entryBean ? escapeHtml(entryBean.name) + ' · ' : ''}${m ? m.name : e.method}${e.bypass ? ' · bypass' : ''}</strong><span class="brewlog-entry-date">${dateStr}</span></div>
-        <div class="brewlog-entry-meta">${r ? r.name : ''} · ${p ? p.name : ''} · ${e.waterMl || '?'} ml${e.grindMicron ? ' · ' + e.grindMicron + ' µm' : ''}${e.temp ? ' · ' + e.temp + '°C' : ''}</div>
-        ${actualHtml}
-        <div class="brewlog-entry-scores">${scoresHtml}</div>
-        ${e.note ? `<div class="brewlog-entry-note">"${escapeHtml(e.note)}"</div>` : ''}
-        ${suggestionHtml}
-      </div>`;
-    }).join('');
+  el.innerHTML = allEntries.length
+    ? allEntries.map(e=>renderBrewLogEntryCard(e, beanId)).join('')
+    : `<p class="empty-hint">${beanId ? 'Nog geen loggings voor deze boon.' : 'Nog geen brouwsels gelogd — dat verschijnt hier zodra je een brouwsel afrondt en opslaat.'}</p>`;
+
+  const elFav = document.getElementById('brewlog-history-list-fav');
+  if (elFav){
+    elFav.innerHTML = favEntries.length
+      ? favEntries.map(e=>renderBrewLogEntryCard(e, beanId)).join('')
+      : `<p class="empty-hint">Nog geen favorieten — tik op het hartje bij een logging om 'm hier terug te vinden.</p>`;
   }
+  document.querySelectorAll('[data-fav-toggle]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); toggleBrewLogFavorite(btn.getAttribute('data-fav-toggle')); });
+  });
+
+  const statsBody = document.getElementById('history-stats-body');
+  if (statsBody) renderInsightsScreen('history-stats-body');
+
   showScreen('brewlog-history');
 }
 
