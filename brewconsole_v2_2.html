@@ -907,11 +907,20 @@
   }
   .app-content{min-width:0;}
   .app{ padding-bottom:calc(max(40px, var(--safe-b)) + 78px); }
+  /* NIEUW (Visual Design 2.0, §16 BottomDock): "refined floating dock" — het referentie-
+     beeld toont een gewone vlakke tabbalk (geen losstaande pil), dus dit blijft de
+     bestaande, architectuur-compatibele fixed-bottom-balk (§16 "if compatible with
+     current architecture"), maar krijgt nu de donkere translucente glass-behandeling
+     (§6/§16: subtiele blur, dun laag-contrast randje) i.p.v. een vlakke ondoorzichtige
+     surface, plus een ingetogen Caramel-actieve-staat i.p.v. het platte streepje. */
   .navbar{
     position:fixed; left:0; right:0; bottom:0; z-index:20;
     display:flex; justify-content:space-around;
-    background:var(--surface); border-top:1px solid var(--border);
+    background:var(--surface-floating); border-top:1px solid var(--surface-floating-border);
     padding:6px max(8px, var(--safe-r)) max(6px, var(--safe-b)) max(8px, var(--safe-l));
+  }
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)){
+    .navbar{ backdrop-filter:blur(20px) saturate(1.4); -webkit-backdrop-filter:blur(20px) saturate(1.4); }
   }
   .navbar[hidden]{display:none;}
   .navbar-btn{
@@ -919,7 +928,8 @@
     background:none; border:none; cursor:pointer;
     min-width:56px; min-height:44px; padding:4px 6px;
     color:var(--text-faint); font-family:var(--font-mono); font-size:10px;
-    letter-spacing:.03em; border-radius:9px;
+    letter-spacing:.03em; border-radius:var(--radius-sm);
+    transition:color var(--motion-standard) var(--ease-out);
   }
   .navbar-btn svg{width:20px; height:20px;}
   /* "Nooit alleen kleur" (badge-principe, ook hier toegepast): de actieve tab is niet
@@ -930,6 +940,7 @@
     content:""; position:absolute; left:0; right:0; bottom:-4px; height:2px; background:var(--copper-light);
   }
   .navbar-btn:hover{color:var(--copper-light);}
+  .navbar-btn:active{transform:scale(.94); transition:transform var(--motion-micro) var(--ease-out);}
 
   /* Eén pil-badge-component (Bouwbesluit B5) — hergebruikt voor Evidence,
      versheid, voorraad en de Home-chip. Nooit alleen kleur: altijd een
@@ -1036,7 +1047,7 @@
       background:none; padding:0 14px 0 0;
     }
     .navbar-btn{flex-direction:row; justify-content:flex-start; gap:10px; min-width:0; min-height:44px; font-size:12.5px; padding:10px 10px;}
-    .navbar-btn[aria-current="page"]{background:var(--surface-2); border-radius:9px;}
+    .navbar-btn[aria-current="page"]{background:var(--surface-2); border-radius:var(--radius-sm);}
     /* "Split view" (Bouwbesluit): de twee lijstschermen (Bonen, Historie) tonen hun
        kaarten in twee kolommen i.p.v. één, zodat de zijbalk-breedte goed benut wordt. */
     .bean-list{display:grid; grid-template-columns:repeat(2,1fr); gap:12px;}
