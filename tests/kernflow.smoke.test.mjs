@@ -210,7 +210,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.goto(FILE_URL, { waitUntil: 'load' });
 
     // De vijf tabbalk-bestemmingen moeten elk hun scherm activeren.
-    const destinations = ['home', 'beans', 'method', 'insights', 'brewlog-history'];
+    const destinations = ['home', 'beans', 'method', 'settings', 'brewlog-history'];
     for (const dest of destinations){
       await page.click(`.navbar [data-nav="${dest}"]`);
       await assertBecomesActive(page, `#screen-${dest}`);
@@ -264,11 +264,14 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
   test('Focusbeheer: na navigeren staat de focus op de nieuwe schermkop, niet op de oude knop (Accessibility Expert, afwijking E)', async () => {
     const page = await newTrackedPage();
     await page.goto(FILE_URL, { waitUntil: 'load' });
-    await page.click('.navbar [data-nav="insights"]');
-    await assertBecomesActive(page, '#screen-insights');
+    // NIEUW (Visual Design 2.0 fase 2): Inzichten is vervangen door het Instellingen-
+    // scherm in de navbar (Inzichten leeft nu voort als "Statistieken"-tab op Geschiedenis) —
+    // dezelfde focusbeheer-assertie, alleen retarget naar het nieuwe scherm.
+    await page.click('.navbar [data-nav="settings"]');
+    await assertBecomesActive(page, '#screen-settings');
     const focusedIsHeading = await page.evaluate(() => {
       const active = document.activeElement;
-      const heading = document.querySelector('#screen-insights h1, #screen-insights [data-screen-heading]');
+      const heading = document.querySelector('#screen-settings h1, #screen-settings [data-screen-heading]');
       return !!active && !!heading && (active === heading);
     });
     assert.ok(focusedIsHeading, 'Na navigatie moet de focus op de kop van het nieuwe scherm staan');

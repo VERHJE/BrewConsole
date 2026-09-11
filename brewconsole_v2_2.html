@@ -855,6 +855,11 @@
   }
   .advisor-link:hover{border-color:var(--copper); color:var(--copper-light);}
   .advisor-link:active{transform:scale(.99);}
+  /* NIEUW (Visual Design 2.0 fase 2, Instellingen "Reset app"): destructieve variant van
+     dezelfde SecondaryButton-vorm — nooit gevuld/prominent zoals .start-btn, dat zou een
+     destructieve actie visueel laten concurreren met een primaire CTA (§27). */
+  .settings-danger-btn{ border-color:var(--danger); color:var(--danger); border-style:solid; }
+  .settings-danger-btn:hover{ border-color:var(--danger); color:var(--danger); background:rgba(194,68,92,.1); }
   /* NIEUW (Visual Design 2.0, §7/§24 SecondaryButton): zelfde tactiele press-diepte als
      .start-btn, maar bescheidener (secundaire actie) — nooit sterker ogen dan de primaire
      CTA (§27 "no secondary card competes with the primary action"). */
@@ -1363,9 +1368,9 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10h11v4a5.5 5.5 0 0 1-5.5 5.5H10A5.5 5.5 0 0 1 4.5 14v-4Z"/><path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5c-.6.8-.6 1.4 0 2.2M11.5 3.5c-.6.8-.6 1.4 0 2.2"/></svg>
       <span>Brouwen</span>
     </button>
-    <button type="button" class="navbar-btn" data-nav="insights">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M11 20V4M18 20v-7"/></svg>
-      <span>Inzichten</span>
+    <button type="button" class="navbar-btn" data-nav="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V19a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.98 17.3a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.62 13a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.7 6.98a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9.06 2.6a1.7 1.7 0 0 0 1.03-1.56V1a2 2 0 1 1 4 0v.09c0 .68.41 1.29 1.03 1.56.62.27 1.34.14 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87c.27.62.88 1.03 1.56 1.03H21a2 2 0 1 1 0 4h-.09c-.68 0-1.29.41-1.56 1.03Z"/></svg>
+      <span>Instellingen</span>
     </button>
     <button type="button" class="navbar-btn" data-nav="brewlog-history">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
@@ -1495,12 +1500,9 @@
       <div class="bean-list" id="bean-list"></div>
       <button class="advisor-link" id="bean-add-link">+ Nieuwe boon toevoegen</button>
       <button class="advisor-link" id="triage-open-btn" style="margin-top:4px;">🔍 Waarom smaakt dit anders dan normaal?</button>
-      <div class="backup-row">
-        <button class="advisor-link" id="backup-export-btn">⬇️ Backup exporteren</button>
-        <button class="advisor-link" id="backup-import-btn">⬆️ Backup importeren</button>
-        <input type="file" id="backup-import-file" accept="application/json" hidden>
-      </div>
-      <p class="scan-status" id="backup-status" hidden></p>
+      <!-- VERPLAATST (Visual Design 2.0 fase 2): backup-export/import + #backup-status
+           staan nu op het nieuwe Instellingen-scherm (Data-sectie) — zelfde ID's, dus
+           dezelfde luisteraars verderop in het script blijven ongewijzigd werken. -->
     </section>
 
     <!-- NIEUW (vervolgplan v2.3, Fase 5 — Bean Detail, Bouwbesluit "Bean Detail — ingang"):
@@ -2069,15 +2071,51 @@
          staat, geen trendlijn onder een minimale n, en geen chart-bibliotheek deze ronde —
          puur tellingen + hergebruik van het bestaande personalHistoryInsight()-precedent
          (dat n al expliciet noemt), nooit stilzwijgend geaggregeerd over waterhardheid heen.
-         NIEUW (Visual Design 2.0 fase 2): dit standalone scherm + zijn navbar-item worden
-         verwijderd zodra de Instellingen-navbar-herstructurering (volgende taak) klaar is —
-         de "Statistieken"-tab hierboven is de nieuwe ingang. Tot dan blijft dit scherm
-         functioneel bereikbaar als tussenstap, puur om geen enkel moment een kapotte
-         "Inzichten"-navbar-knop te hebben tijdens de overgang. -->
-    <section class="screen" id="screen-insights" data-screen="insights">
-      <h1 class="title" data-screen-heading tabindex="-1">Inzichten</h1>
-      <p class="subtitle">Eerlijke tellingen uit je eigen loggings — geen trend of voorspelling zolang daar te weinig data voor is.</p>
-      <div id="insights-body"></div>
+         VERVANGEN (Visual Design 2.0 fase 2): het standalone Inzichten-scherm + zijn
+         navbar-item zijn vervangen door de "Statistieken"-tab op het Geschiedenis-scherm
+         (renderInsightsScreen() rendert daar nu naartoe, zie #history-stats-body) en dit
+         navbar-slot door Instellingen hieronder — zie NAV_SCREEN_MAP/wizardless/de
+         navbar-click-handler verderop in het script, allemaal in dezelfde commit
+         bijgewerkt zodat er geen moment een kapotte "Inzichten"-knop bestaat. -->
+
+    <!-- NIEUW (Visual Design 2.0 fase 2, detail-referentie scherm 12 "Settings"): nieuw
+         scherm, nieuw navbar-slot. "Apparaat & Voorkeuren" toont uitsluitend WERKELIJK
+         vaste feiten (de engine is app-breed hardgecodeerd op Timemore C3S Pro / °C) als
+         niet-interactieve informatierijen — bewust GEEN tikbare/chevron-rijen die een
+         instelling suggereren die niet bestaat (geen "Standaardprofiel"/"Hoeveelheid"-rij:
+         die instellingen bestaan niet en zouden een illusie van functionaliteit zijn).
+         "Data" verplaatst de bestaande, ongewijzigde backup-export/import-knoppen
+         (zelfde ID's, dus dezelfde luisteraars verderop in het script blijven werken) van
+         het Bonen-scherm hierheen, plus een NIEUWE, echte Reset-knop (zie
+         resetAppData()/showConfirmModal() verderop). -->
+    <section class="screen" id="screen-settings" data-screen="settings">
+      <h1 class="title" data-screen-heading tabindex="-1">Instellingen</h1>
+      <p class="subtitle">Apparaat, data en over de app.</p>
+
+      <div class="bean-detail-section">
+        <p class="bean-detail-section-label">Apparaat &amp; voorkeuren</p>
+        <div class="bean-detail-fact-grid">
+          <div><div class="bean-detail-fact-label">Maalmolen</div><div class="bean-detail-fact-value">Timemore C3S Pro</div></div>
+          <div><div class="bean-detail-fact-label">Eenheden</div><div class="bean-detail-fact-value">Celsius (°C)</div></div>
+        </div>
+        <p class="empty-hint" style="margin:10px 0 0;">Vast ingesteld voor dit toestel — alle maal-/temperatuuradviezen in de app gaan hiervan uit. Molen- of eenheidkeuze is nog niet instelbaar.</p>
+      </div>
+
+      <div class="bean-detail-section">
+        <p class="bean-detail-section-label">Data</p>
+        <div class="backup-row">
+          <button class="advisor-link" id="backup-export-btn">⬇️ Backup exporteren</button>
+          <button class="advisor-link" id="backup-import-btn">⬆️ Backup importeren</button>
+          <input type="file" id="backup-import-file" accept="application/json" hidden>
+        </div>
+        <p class="scan-status" id="backup-status" hidden></p>
+        <button type="button" class="advisor-link settings-danger-btn" id="settings-reset-btn" style="margin-top:10px;">🗑️ Alles wissen en opnieuw beginnen</button>
+      </div>
+
+      <div class="bean-detail-section">
+        <p class="bean-detail-section-label">Over</p>
+        <p class="bean-detail-about">Brew Console 2.0 — een kleinere, fijnere, meer intentionele koffiewereld. Alle recept- en maaladviezen in deze app zijn gebaseerd op gedocumenteerde bronnen en je eigen loggings; waar dat niet kan, zegt de app dat expliciet i.p.v. een getal te verzinnen.</p>
+      </div>
     </section>
 
     <!-- TRIAGE (expertreview B2) -->
@@ -8553,7 +8591,7 @@ const NAV_SCREEN_MAP = {
   home:'home',
   beans:'beans', 'bean-add':'beans', 'bean-detail':'beans', triage:'beans',
   method:'method', advice:'method', roast:'method', profile:'method', prep:'method', brew:'method', brewlog:'method',
-  insights:'insights',
+  settings:'settings',
   'brewlog-history':'brewlog-history'
 };
 function showScreen(name){
@@ -8564,7 +8602,7 @@ function showScreen(name){
 
   const order = ['method','roast','profile','prep'];
   const idx = order.indexOf(name);
-  const wizardless = ['brew','advice','beans','bean-add','home','insights','brewlog-history','bean-detail','brewlog','triage'];
+  const wizardless = ['brew','advice','beans','bean-add','home','settings','brewlog-history','bean-detail','brewlog','triage'];
   document.querySelectorAll('.tracker-item').forEach(item=>{
     const step = item.getAttribute('data-step');
     const stepIdx = order.indexOf(step);
@@ -9375,6 +9413,29 @@ if (backupImportBtn && backupImportFile){
     e.target.value = '';
   });
 }
+// NIEUW (Visual Design 2.0 fase 2, Instellingen-scherm "Data"-sectie): een ECHTE reset-
+// functie — wist alleen de twee bestaande gebruikers-databronnen (bonen + brouwlogboek),
+// exact dezelfde localStorage-sleutels als loadBeans()/saveBrewLogToStorage() hierboven,
+// en herlaadt de pagina. Na het wissen valt de app terug op de bestaande, al-geteste
+// seed-bonen-fallback (zie de adversarial-robustness-tests voor corrupte/lege
+// localStorage) — geen nieuw "leeg"-pad nodig, hergebruikt puur wat er al is. Thema-
+// voorkeur (brewconsole_theme) blijft bewust ongemoeid: dat is geen "data" in de zin van
+// deze sectie, en onverwacht van thema wisselen bij een reset zou verrassend zijn.
+function resetAppData(){
+  showConfirmModal(
+    'Alle bonen, loggings en instellingen worden permanent gewist en kunnen niet worden hersteld. Weet je het zeker?',
+    { confirmLabel:'Ja, alles wissen', cancelLabel:'Nee, terug' }
+  ).then(ok=>{
+    if (!ok) return;
+    try{
+      localStorage.removeItem('brewconsole_beans');
+      localStorage.removeItem(BREW_LOG_KEY);
+    } catch(e){ /* storage niet beschikbaar — er is dan toch niets blijvends om te wissen */ }
+    location.reload();
+  });
+}
+const settingsResetBtn = document.getElementById('settings-reset-btn');
+if (settingsResetBtn) settingsResetBtn.addEventListener('click', resetAppData);
 const beanSearchInputEl = document.getElementById('bean-search-input');
 if (beanSearchInputEl) beanSearchInputEl.addEventListener('input', (e)=>{
   beanSearchQuery = e.target.value;
@@ -9398,7 +9459,7 @@ document.querySelectorAll('.navbar [data-nav]').forEach(btn=>{
     if (dest === 'home'){ renderHomeScreen(); showScreen('home'); }
     else if (dest === 'beans'){ renderBeanLibraryScreen(); showScreen('beans'); }
     else if (dest === 'method'){ renderMethodGrid(); showScreen('method'); }
-    else if (dest === 'insights'){ renderInsightsScreen(); showScreen('insights'); }
+    else if (dest === 'settings'){ showScreen('settings'); }
     else if (dest === 'brewlog-history'){ renderBrewLogHistory(); }
   });
 });
