@@ -110,7 +110,12 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     const honestSummary = (await page.locator('#brewlog-honest-summary').textContent()).trim();
     assert.ok(honestSummary.length > 0, 'De eerlijke brouwsamenvatting mag niet leeg zijn');
     const metaText = (await page.locator('#brewlog-complete-meta').textContent()).trim();
-    assert.ok(metaText.length > 0, 'brewlog-complete-meta (dosis · water · tijd · methode) mag niet leeg zijn');
+    // NIEUW (Visual Design 2.0 fase 2): #brewlog-complete-meta toont sinds de celebratory-
+    // restyling drie losse statchips (tijd/water/temperatuur) i.p.v. één platte mono-regel
+    // met dosis+methode — dosis staat nog steeds elders op dit scherm (in
+    // #brewlog-honest-summary). Alleen de tekst hieronder aangepast, de assertie zelf
+    // (niet-leeg) ongewijzigd.
+    assert.ok(metaText.length > 0, 'brewlog-complete-meta (tijd · water · temperatuur, als statchips) mag niet leeg zijn');
 
     // B2: de samenvatting staat ONDER de smaaksliders, niet erboven (anchoring-risico).
     const order = await page.evaluate(() => {
@@ -205,7 +210,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.goto(FILE_URL, { waitUntil: 'load' });
 
     // De vijf tabbalk-bestemmingen moeten elk hun scherm activeren.
-    const destinations = ['home', 'beans', 'method', 'insights', 'brewlog-history'];
+    const destinations = ['home', 'beans', 'method', 'settings', 'brewlog-history'];
     for (const dest of destinations){
       await page.click(`.navbar [data-nav="${dest}"]`);
       await assertBecomesActive(page, `#screen-${dest}`);
@@ -259,11 +264,14 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
   test('Focusbeheer: na navigeren staat de focus op de nieuwe schermkop, niet op de oude knop (Accessibility Expert, afwijking E)', async () => {
     const page = await newTrackedPage();
     await page.goto(FILE_URL, { waitUntil: 'load' });
-    await page.click('.navbar [data-nav="insights"]');
-    await assertBecomesActive(page, '#screen-insights');
+    // NIEUW (Visual Design 2.0 fase 2): Inzichten is vervangen door het Instellingen-
+    // scherm in de navbar (Inzichten leeft nu voort als "Statistieken"-tab op Geschiedenis) —
+    // dezelfde focusbeheer-assertie, alleen retarget naar het nieuwe scherm.
+    await page.click('.navbar [data-nav="settings"]');
+    await assertBecomesActive(page, '#screen-settings');
     const focusedIsHeading = await page.evaluate(() => {
       const active = document.activeElement;
-      const heading = document.querySelector('#screen-insights h1, #screen-insights [data-screen-heading]');
+      const heading = document.querySelector('#screen-settings h1, #screen-settings [data-screen-heading]');
       return !!active && !!heading && (active === heading);
     });
     assert.ok(focusedIsHeading, 'Na navigatie moet de focus op de kop van het nieuwe scherm staan');
@@ -341,6 +349,11 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#roast-grid [data-roast] >> nth=0');
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
+
+    // FIX (visuele afstemming referentiebeeld): de langere kalibratie-/range-toelichtingen
+    // staan sinds de Maalgraad-compactheidsslag achter een lokale "Meer over deze
+    // maalstand"-toggle (innerText() sluit verborgen tekst uit, anders dan textContent()).
+    await page.click('#grind-more-toggle');
 
     const grindBlockText = (await page.locator('#stats-grid .stat-block', { hasText: 'Maalgraad' }).innerText()).trim();
     assert.match(grindBlockText, /klik 15–17/, 'moet het nieuwe 15-17 startgebied tonen');
@@ -569,6 +582,12 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#roast-grid [data-roast] >> nth=0');
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
+
+    // FIX (visuele afstemming referentiebeeld "Aanvullende informatie"): het waterprofiel-
+    // invoerveld zit sinds de Prep-compactheidsslag in de collapsed-by-default "Verfijn dit
+    // recept"-accordion — open 'm expliciet vóór .fill()/.selectOption(), die (anders dan
+    // .inputValue()/.textContent() hierboven) wél zichtbaarheid vereisen.
+    await page.evaluate(() => { document.getElementById('refine-details').open = true; });
 
     // Vóór invullen: alkaliniteit moet eerlijk "niet ingevuld" tonen, geen "binnen de richtwaarde".
     const beforeAlk = (await page.locator('#alkalinity-readout').textContent()).trim();
