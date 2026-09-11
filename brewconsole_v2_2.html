@@ -573,6 +573,26 @@
     border-radius:8px; padding:8px 12px; margin:0 0 18px;
   }
   .profile-twin-banner[hidden]{display:none;}
+  /* NIEUW (visuele afstemming referentiebeeld: "Brew Intelligence"/"Jouw signaal"-kaarten):
+     icoon+titel+badge-kaartvorm, hergebruikt voor beide — inhoud/data blijft exact wat de
+     onderliggende functies al teruggaven, puur nieuwe omkadering. */
+  .prep-intel-card{
+    display:flex; align-items:flex-start; gap:12px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
+    padding:14px; margin:0 0 18px; box-shadow:var(--shadow-card);
+  }
+  /* FIX (zelfde klasse fout als eerder bij .bean-search-row/.advisor-link): display:flex
+     wint van de standaard [hidden]-UA-stijl. */
+  .prep-intel-card[hidden]{display:none;}
+  .prep-intel-icon{
+    width:34px; height:34px; border-radius:50%; flex-shrink:0;
+    background:var(--surface-2); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; color:var(--copper-light);
+  }
+  .prep-intel-icon svg{ width:17px; height:17px; }
+  .prep-intel-body{ flex:1; min-width:0; font-size:12.5px; color:var(--text); line-height:1.4; }
+  .prep-intel-header{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:5px; }
+  .prep-intel-title{ font-family:var(--font-display); font-weight:600; font-size:14px; color:var(--text); }
 
   /* NIEUW (Visual Design 2.0, §12 Recipe-scherm): serving-row en stepper-knoppen krijgen
      hetzelfde Level-1-kaartgewicht (shadow-card) en tactiele press-state als de andere
@@ -630,7 +650,12 @@
   .stat-label{
     font-family:var(--font-mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
     color:var(--text-muted); margin-bottom:6px;
+    display:flex; align-items:center; gap:5px;
   }
+  /* NIEUW (visuele afstemming referentiebeeld recept-scherm): klein line-icoon per primair
+     statblok (boon/druppel/thermometer) — puur decoratief bij het bestaande label, geen
+     nieuwe data. */
+  .stat-icon{ width:13px; height:13px; flex-shrink:0; opacity:.85; }
   .stat-value{font-family:var(--font-mono); font-size:19px; color:var(--copper-light); font-variant-numeric:tabular-nums;}
   .stat-sub{font-size:10.5px; color:var(--text-muted); margin-top:3px;}
   /* NIEUW (Visual Design 2.0 fase 2, spec §12 "ratio/grind/brew-time secondary" + §27
@@ -681,6 +706,11 @@
     color:var(--text); font-weight:500;
   }
   .recipe-table td.mono{font-family:var(--font-mono); color:var(--text);}
+  /* NIEUW (visuele afstemming referentiebeeld "pour step detail"): elke zetstap-rij is
+     tikbaar (opent #pourstep-modal) — subtiele hover/press-feedback, geen nieuwe kolom. */
+  .recipe-table tbody tr{ cursor:pointer; transition:background var(--motion-standard) var(--ease-out); }
+  .recipe-table tbody tr:hover, .recipe-table tbody tr:focus-visible{ background:var(--surface-2); }
+  .recipe-table tbody tr:active{ background:var(--copper-dim); }
   .recipe-table .step-note{display:block; font-size:11px; color:var(--text-faint); margin-top:1px;}
   .recipe-table .step-flow{display:block; font-size:11px; color:var(--copper-light); margin-top:1px; font-style:italic;}
   .recipe-table .step-rate{display:block; font-size:10.5px; color:var(--text-faint); margin-top:1px;}
@@ -929,6 +959,18 @@
      wordt sinds de Pagina-Polish-spec conditioneel verborgen (alleen lege-staat-CTA) — zonder
      deze regel bleef hij altijd zichtbaar. */
   .advisor-link[hidden]{display:none;}
+  /* NIEUW (visuele afstemming referentiebeeld Bonen-scherm "+ Nieuwe boon"-pil): gevulde,
+     rond-afgeronde primaire actieknop — zelfde taal als .start-btn maar pill-vormig, voor
+     plekken waar een volle-breedte primaire CTA past zonder de zwaardere .start-btn-hoogte. */
+  .pill-cta{
+    display:block; width:100%; text-align:center; box-sizing:border-box;
+    background:var(--copper); color:#1B1310; border:none; border-radius:var(--radius-pill);
+    font-family:var(--font-display); font-weight:600; font-size:14px;
+    padding:13px; margin-top:14px; cursor:pointer; box-shadow:var(--shadow-card);
+    transition:transform var(--motion-micro) var(--ease-out), background var(--motion-standard) var(--ease-out);
+  }
+  .pill-cta:hover{ background:var(--copper-light); }
+  .pill-cta:active{ transform:scale(.98); }
   /* NIEUW (Visual Design 2.0 fase 2, Instellingen "Reset app"): destructieve variant van
      dezelfde SecondaryButton-vorm — nooit gevuld/prominent zoals .start-btn, dat zou een
      destructieve actie visueel laten concurreren met een primaire CTA (§27). */
@@ -1370,6 +1412,25 @@
   .bean-detail-fact-label{font-size:11px; color:var(--text-faint);}
   .bean-detail-fact-value{font-size:13.5px; color:var(--text);}
 
+  /* NIEUW (visuele afstemming referentiebeeld Boon Detail "Boon details"): icoon+label+
+     waarde-rijen i.p.v. het 2-koloms grid — uitsluitend bestaande boonvelden, geen nieuwe
+     feiten (geen Oogst/Koffiebrander, die bestaan niet in het boonformulier). Het 2-koloms
+     .bean-detail-fact-grid hierboven blijft ongewijzigd voor Instellingen/pourstep-modal. */
+  .bean-detail-fact-rows{
+    background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:var(--radius-md);
+    box-shadow:var(--shadow-card); overflow:hidden;
+  }
+  .bean-detail-fact-row{ display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid var(--border-subtle); }
+  .bean-detail-fact-row:last-child{ border-bottom:none; }
+  .bean-detail-fact-row-icon{
+    width:26px; height:26px; border-radius:50%; flex-shrink:0;
+    background:var(--surface-2); color:var(--copper-light);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .bean-detail-fact-row-icon svg{ width:13px; height:13px; }
+  .bean-detail-fact-row-label{ flex:1; font-size:12.5px; color:var(--text-faint); }
+  .bean-detail-fact-row-value{ font-size:13px; color:var(--text); font-weight:500; text-align:right; }
+
   /* NIEUW (Visual Design 2.0 fase 2, detail-referentie scherm 04 + spec §11 "use tabs/
      segments for existing detail sections where appropriate"): een SegmentedControl-achtige
      tab-balk voor Bean Detail — zelfde "seated" selectie-taal als .chip[data-selected], maar
@@ -1393,6 +1454,21 @@
      stat-block-kaart eromheen (dit blok zit al binnen bean-detail-best-brew-block). */
   .bean-detail-best-brew-facts{ font-family:var(--font-mono); font-size:16px; color:var(--copper-light); margin:0 0 4px; font-variant-numeric:tabular-nums; }
   .bean-detail-best-brew-facts-sub{ font-size:12px; color:var(--text-faint); margin:0; }
+  /* NIEUW (visuele afstemming referentiebeeld "Jouw beste brew"): kaartomkadering met
+     lichte copper-accent + doel-icoon (startpunt, geen score/trofee-connotatie) — inhoud
+     blijft exact wat renderBeanDetailBestBrew() teruggeeft, geen cijfer toegevoegd. */
+  .best-brew-card{
+    background:var(--surface); border:1px solid var(--copper-dim); border-radius:var(--radius-md);
+    padding:14px; margin:16px 0; box-shadow:var(--shadow-card), 0 0 0 1px var(--accent-glow);
+  }
+  .best-brew-card[hidden]{ display:none; }
+  .best-brew-header{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .best-brew-icon{
+    width:30px; height:30px; border-radius:50%; flex-shrink:0;
+    background:var(--surface-2); border:1px solid var(--copper-dim); color:var(--copper-light);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .best-brew-icon svg{ width:15px; height:15px; }
 
   /* Inzichten */
   .insights-note{font-size:12.5px; color:var(--text-faint); margin:6px 0 18px; line-height:1.5;}
@@ -1473,6 +1549,20 @@
     <p style="font-size:11.5px; color:var(--text-faint); margin:0 0 18px;" id="water-modal-range-note"></p>
     <div class="modal-actions">
       <button type="button" class="modal-btn modal-btn-secondary" id="water-modal-close">Klaar</button>
+    </div>
+  </div>
+</div>
+<!-- NIEUW (visuele afstemming referentiebeeld recept-scherm "pour step detail"-modal): tik
+     op een zetstap-rij toont dezelfde tijd/water-erbij/totaal-waarden nog eens groter, plus
+     de bestaande giet-tip (s.flow/s.note) — geen nieuwe berekening, puur een detailweergave
+     van wat #recipe-body al toont. -->
+<div class="modal-overlay" id="pourstep-modal" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="pourstep-modal-title">
+    <p id="pourstep-modal-title" style="font-family:var(--font-display); font-weight:600; font-size:17px; color:var(--text); margin:0 0 14px;"></p>
+    <div class="bean-detail-fact-grid" id="pourstep-modal-facts" style="margin-bottom:14px;"></div>
+    <p style="font-size:13px; color:var(--text-dim); line-height:1.5; margin:0 0 18px;" id="pourstep-modal-tip"></p>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn modal-btn-secondary" id="pourstep-modal-close">Sluiten</button>
     </div>
   </div>
 </div>
@@ -1622,7 +1712,12 @@
           <h1 class="title" style="margin-bottom:2px;">Mijn bonen</h1>
           <p class="subtitle" style="margin-bottom:0;">Bewaar en ontdek je koffies.</p>
         </div>
-        <button type="button" class="header-icon-btn" id="bean-add-header-btn" aria-label="Nieuwe boon toevoegen">+</button>
+        <!-- HERZIEN (visuele afstemming referentiebeeld Bonen-scherm): camera-icoon i.p.v.
+             "+" — zelfde bestemming/actie (openBeanAddFromList, zie onderaan het script),
+             het boonformulier begint al met de bestaande scan-sectie bovenaan. -->
+        <button type="button" class="header-icon-btn" id="bean-add-header-btn" aria-label="Nieuwe boon toevoegen (scannen of handmatig)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" style="width:20px; height:20px;"><path d="M4 8h2.2l1.1-2h9.4l1.1 2H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="14" r="3.4"/></svg>
+        </button>
       </div>
       <div class="bean-search-row" id="bean-search-row" hidden>
         <input type="text" id="bean-search-input" class="form-input" placeholder="Zoek op naam, land, regio, smaak…">
@@ -1637,7 +1732,10 @@
            geen nieuwe filterlogica los van bestaande data/state, zie filterSortBeans(). -->
       <div class="chip-row" id="bean-filter-chip" style="margin-bottom:14px;" role="radiogroup" aria-label="Bonen filteren" hidden></div>
       <div class="bean-list" id="bean-list"></div>
-      <button class="advisor-link" id="bean-add-link">+ Nieuwe boon toevoegen</button>
+      <!-- HERZIEN (visuele afstemming referentiebeeld Bonen-scherm): gevulde pilknop,
+           voortaan ook zichtbaar bij een gevulde lijst (niet meer alleen lege-staat-CTA) —
+           zelfde element/ID/listener (openBeanAddFromList), puur stijl + zichtbaarheid. -->
+      <button class="pill-cta" id="bean-add-link">+ Nieuwe boon</button>
       <!-- .link-secondary is block-level (volle breedte) — de knop op een eigen regel
            houden i.p.v. inline tekst ernaast/erna te verwachten (leverde eerder een
            wees-lopend leesteken op een eigen regel op). -->
@@ -1693,8 +1791,11 @@
              sterrencijfer (Bouwbesluit B2 verwijderde eerder al zo'n composietscore) —
              getoond volgens de exacte regels uit de spec (0/1/meerdere-met-favoriet-logs),
              zie renderBeanDetailBestBrew(). -->
-        <div class="bean-detail-section" id="bean-detail-best-brew-block" style="margin:16px 0;" hidden>
-          <p class="bean-detail-section-label" id="bean-detail-best-brew-label"></p>
+        <div class="best-brew-card" id="bean-detail-best-brew-block" hidden>
+          <div class="best-brew-header">
+            <div class="best-brew-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg></div>
+            <p class="bean-detail-section-label" id="bean-detail-best-brew-label" style="margin:0;"></p>
+          </div>
           <div id="bean-detail-best-brew-body"></div>
         </div>
         <!-- NIEUW (Pagina-Polish-spec §5.5 "Personal signal"): hergebruikt de bestaande
@@ -1702,11 +1803,16 @@
              hier ongewijzigd) — puur een feit uit je eigen loggings voor déze boon, nooit
              een cross-boon-gemiddelde en nooit met engine-confidence-styling. Zie
              renderBeanDetailPersonalSignal(). -->
-        <div class="bean-detail-section" id="bean-detail-personal-signal-block" style="margin:16px 0;" hidden>
-          <p class="bean-detail-section-label">Uit je eigen logboek</p>
-          <p class="bean-detail-about" id="bean-detail-personal-signal-text"></p>
+        <!-- HERZIEN (visuele afstemming referentiebeeld "Jouw signaal"): zelfde
+             prep-intel-card-vorm als op het Recept-scherm — tekst/bron ongewijzigd. -->
+        <div class="prep-intel-card" id="bean-detail-personal-signal-block" hidden>
+          <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 18 L9 11 L13 14 L20 5"/><path d="M15 5h5v5"/></svg></div>
+          <div class="prep-intel-body">
+            <p class="prep-intel-title" style="margin-bottom:5px;">Uit je eigen logboek</p>
+            <p class="bean-detail-about" id="bean-detail-personal-signal-text" style="margin:0;"></p>
+          </div>
         </div>
-        <div class="bean-detail-fact-grid" id="bean-detail-facts"></div>
+        <div class="bean-detail-fact-rows" id="bean-detail-facts"></div>
       </div>
 
       <div class="detail-tab-panel" data-tab-panel="smaakprofiel" id="bean-detail-panel-smaakprofiel" hidden>
@@ -1973,10 +2079,21 @@
       <p class="technique-tasting" id="technique-tasting"></p>
       <p class="profile-twin-banner" id="prep-twin-note" hidden></p>
       <!-- FIX (teamreview v2 — Hoog bevinding, Data Scientist): lichte "vorige keer"-
-           vergelijking uit het Brouwlogboek, zie personalHistoryInsight(). -->
-      <div class="profile-twin-banner" id="prep-history-insight" hidden>
-        <span id="prep-history-insight-text"></span>
-        <button type="button" class="link-secondary" id="prep-history-triage-link" style="margin-top:4px; padding:4px 0;">Triage-checklist doorlopen →</button>
+           vergelijking uit het Brouwlogboek, zie personalHistoryInsight(). HERZIEN
+           (visuele afstemming referentiebeeld "Jouw signaal"-kaart): zelfde kaartvorm als
+           de Brew Intelligence-kaart hierboven, met een KORT, eerlijk richtingswoord
+           (Hoger/Lager) als badge i.p.v. een los precisiegetal dat de functie niet
+           teruggeeft — zie renderPrep() voor de badge-tekst. -->
+      <div class="prep-intel-card" id="prep-history-insight" hidden>
+        <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 18 L9 11 L13 14 L20 5"/><path d="M15 5h5v5"/></svg></div>
+        <div class="prep-intel-body">
+          <div class="prep-intel-header">
+            <span class="prep-intel-title">Jouw signaal</span>
+            <span class="badge" id="prep-signal-badge" data-tone="info"></span>
+          </div>
+          <span id="prep-history-insight-text"></span>
+          <button type="button" class="link-secondary" id="prep-history-triage-link" style="margin-top:4px; padding:4px 0;">Triage-checklist doorlopen →</button>
+        </div>
       </div>
       <!-- NIEUW (Implementatieplan Zetadvies v3.0, Fase 6): het voorstel voor de VOLGENDE
            kop, afgeleid uit de cupping-scores van je laatste logging met deze boon — zie
@@ -2062,11 +2179,20 @@
            recipe area"): #stats-grid is precies het dosis/maling/temperatuur/water-blok uit
            §12 ("three primary values ... are dominant") — zie #stats-grid::before hieronder. -->
       <div class="stats-grid" id="stats-grid"></div>
-      <!-- NIEUW (vervolgplan v2.3, Bouwbesluit B4): tweedelige Evidence-badge, kernrecept
-           vs. kernrecept + gietschema — woordkeus expres afgestemd op coreOnlyReason()
-           i.p.v. los geformuleerd (regressierisicotabel §5 vervolgplan). -->
-      <div id="evidence-badge-row" class="badge-row"></div>
-      <p class="style-note" id="style-note"></p>
+      <!-- NIEUW (visuele afstemming referentiebeeld "Brew Intelligence"-kaart): dezelfde
+           bestaande evidence-badge-row/style-note, nu in een kaart met icoon+titel i.p.v.
+           losse elementen — geen enkele tekst/badge-waarde gewijzigd, puur omkadering.
+           Zie Bouwbesluit B4 hierboven voor de badge-woordkeus zelf. -->
+      <div class="prep-intel-card">
+        <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.4M12 18.6V21M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M3 12h2.4M18.6 12H21M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg></div>
+        <div class="prep-intel-body">
+          <div class="prep-intel-header">
+            <span class="prep-intel-title">Brew Intelligence</span>
+            <div id="evidence-badge-row" class="badge-row" style="margin:0;"></div>
+          </div>
+          <p class="style-note" id="style-note" style="margin:0;"></p>
+        </div>
+      </div>
 <p class="freshness-readout" id="profile-scope-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
 
       <!-- FIX (teamreview v2 — Midden bevinding, UX Designer/Professional Brewer): tot v2
@@ -6362,7 +6488,15 @@ function renderBeanFilterChip(){
   if (!el) return;
   el.hidden = !beanLibrary.length;
   if (!beanLibrary.length) return;
-  const options = [ { v:'alle', label:'Alle' }, { v:'favorieten', label:'Favorieten' }, { v:'recent', label:'Recent' } ];
+  // NIEUW (visuele afstemming referentiebeeld Bonen-scherm "Alle (12) / Favorieten (4)"):
+  // aantallen bij de eerste twee chips — puur .length van bestaande arrays, geen nieuwe
+  // telling/logica. "Recent" blijft zonder aantal (het is een sortering, geen deelverzameling).
+  const favCount = beanLibrary.filter(b=>b.favorite).length;
+  const options = [
+    { v:'alle', label:`Alle (${beanLibrary.length})` },
+    { v:'favorieten', label:`Favorieten (${favCount})` },
+    { v:'recent', label:'Recent' }
+  ];
   el.innerHTML = options.map(o=>
     `<button type="button" class="chip" role="radio" aria-checked="${beanFilterMode===o.v}" data-bean-filter="${o.v}" data-selected="${beanFilterMode===o.v}">${o.label}</button>`
   ).join('');
@@ -6380,12 +6514,11 @@ function renderBeanLibraryScreen(){
   const searchRow = document.getElementById('bean-search-row');
   if (searchRow) searchRow.hidden = beanLibrary.length < 4;
   renderBeanFilterChip();
-  // NIEUW (Pagina-Polish-spec §4.3): de "+ Nieuwe boon toevoegen"-knop en de backup-hint
-  // zijn voortaan alleen de lege-staat-CTA — bij een gevulde bibliotheek doet de nieuwe
-  // header-plusknop (#bean-add-header-btn) dezelfde taak.
-  const addLinkEl = document.getElementById('bean-add-link');
+  // HERZIEN (visuele afstemming referentiebeeld Bonen-scherm): de "+ Nieuwe boon"-pil
+  // blijft nu ook zichtbaar bij een gevulde bibliotheek (naast de header-camera-knop) —
+  // alleen de backup-hint blijft lege-staat-only, die is alleen voor een gloednieuwe
+  // gebruiker relevant.
   const backupHintEl = document.getElementById('bean-empty-backup-hint');
-  if (addLinkEl) addLinkEl.hidden = beanLibrary.length > 0;
   if (backupHintEl) backupHintEl.hidden = beanLibrary.length > 0;
   if (!beanLibrary.length){
     el.innerHTML = '<p class="empty-hint">Nog geen bonen — voeg er een toe met de knop hieronder.</p>';
@@ -6651,6 +6784,22 @@ function openBeanDetail(id){
   renderBeanDetail(bean);
   showScreen('bean-detail');
 }
+// NIEUW (visuele afstemming referentiebeeld Boon Detail "Boon details"): één klein
+// line-icoon per bestaand feit-label — puur decoratief, geen nieuwe data. _default vangt
+// elk toekomstig fact-label op zonder dat de rij zonder icoon komt te staan.
+const FACT_ROW_ICONS = {
+  'Land': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 4 5.5 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.5-4-9s1.5-6.5 4-9Z"/></svg>',
+  'Regio': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.3"/></svg>',
+  'Hoogte': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m3 19 6.5-11L14 15l2-3 5 7Z"/></svg>',
+  'Proces': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 3h6M10 3v5.5L5.5 17a2 2 0 0 0 1.8 3h9.4a2 2 0 0 0 1.8-3L14 8.5V3"/></svg>',
+  'Variëteit': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21V9c0-3.5 2.5-6 6-6 .3 2.7-.7 8-6 8"/><path d="M12 13c0-2.5-1.8-4.3-5-4.5-.3 2 .5 4.7 5 4.7"/></svg>',
+  'Farm / washing station': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg>',
+  'Roast': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21c4 0 6-2.5 6-6 0-2.5-1.5-4-2.5-5.5.3 2-.5 3-1.5 3 .5-3-1-5-3-6.5.5 2.5-1 4-2.5 6C7.2 13.5 6 15 6 17c0 2.5 2.5 4 6 4Z"/></svg>',
+  'Smaakprofiel': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m12 3 2.6 5.9L21 9.6l-4.8 4.2L17.6 21 12 17.6 6.4 21l1.4-7.2L3 9.6l6.4-.7Z"/></svg>',
+  'Branddatum': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>',
+  'Zak geopend op': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3.5 9 12 5l8.5 4M4 9.5v9l8 3.5 8-3.5v-9"/><path d="M12 12.5V22"/></svg>',
+  _default: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/></svg>'
+};
 function renderBeanDetail(bean){
   const p = PROFILE_INFO[bean.profileKey] || PROFILE_INFO.fresh_clean;
   const r = ROAST_INFO[bean.roastLevel] || ROAST_INFO.medium;
@@ -6698,6 +6847,8 @@ function renderBeanDetail(bean){
   // op de Overzicht-tab (de losse Herkomst/Details-tabs zijn vervangen door Historie/
   // Recepten) — zelfde labels/waarden/volgorde als voorheen, alleen niet meer verdeeld
   // over twee tabs.
+  // NIEUW (visuele afstemming referentiebeeld): klein icoon per feit — puur decoratief,
+  // labels/waarden/volgorde ongewijzigd. FACT_ROW_ICONS staat hieronder in het script.
   const facts = [
     ['Land', bean.country || '—'],
     ['Regio', bean.region || '—'],
@@ -6711,7 +6862,11 @@ function renderBeanDetail(bean){
     ['Zak geopend op', fmtDate(bean.openedDate)]
   ];
   document.getElementById('bean-detail-facts').innerHTML = facts.map(([label,val])=>
-    `<div><div class="bean-detail-fact-label">${escapeHtml(label)}</div><div class="bean-detail-fact-value">${escapeHtml(String(val))}</div></div>`
+    `<div class="bean-detail-fact-row">
+      <div class="bean-detail-fact-row-icon" aria-hidden="true">${FACT_ROW_ICONS[label] || FACT_ROW_ICONS._default}</div>
+      <div class="bean-detail-fact-row-label">${escapeHtml(label)}</div>
+      <div class="bean-detail-fact-row-value">${escapeHtml(String(val))}</div>
+    </div>`
   ).join('');
 
   renderBeanDetailRadar(bean.id);
@@ -8747,6 +8902,15 @@ function renderPrep(){
       if (textEl){
         textEl.textContent = `Uit je eigen loggings voor deze boon: je nieuwste score voor ${label} (${insight.latestValue}/4) lag ${direction} dan je gemiddelde over de ${insight.priorCount} keer daarvoor (${insight.avg.toFixed(1)}/4). Geen aanbeveling — puur een feit uit je eigen data.`;
       }
+      // NIEUW (visuele afstemming referentiebeeld "Jouw signaal"-badge): een kort,
+      // waarheidsgetrouw richtingswoord (Hoger/Lager voor déze as) i.p.v. een los precisie-
+      // getal dat personalHistoryInsight() niet als apart, op zichzelf staand cijfer
+      // teruggeeft — de exacte waarden staan al voluit in de zin hierboven.
+      const badgeEl = document.getElementById('prep-signal-badge');
+      if (badgeEl){
+        badgeEl.textContent = `${label}: ${direction}`;
+        badgeEl.setAttribute('data-tone', 'info');
+      }
       historyEl.hidden = false;
     } else {
       historyEl.hidden = true;
@@ -8828,20 +8992,23 @@ function renderPrep(){
   else if (rec.grindPracticalRange) grindHeadline = `Klik ${rec.grindPracticalRange.clicksMin}–${rec.grindPracticalRange.clicksMax}`;
   else grindHeadline = rec.grindBandLabel || '—';
 
+  const statIconDose = `<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3c4 2 7 5.5 7 10a7 7 0 0 1-14 0c0-4.5 3-8 7-10Z"/></svg>`;
+  const statIconTemp = `<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 14.5V4a2 2 0 1 0-4 0v10.5a4 4 0 1 0 4 0Z"/></svg>`;
+  const statIconWater = `<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3c3 3.5 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7.5 6-11Z"/></svg>`;
   document.getElementById('stats-grid').innerHTML = `
     <div class="stat-block"${stockWarning ? ' style="border-color:var(--danger);"' : ''}>
-      <div class="stat-label">Gemalen koffie</div>
+      <div class="stat-label">${statIconDose}Gemalen koffie</div>
       <div class="stat-value">${fmt(rec.dose,1)} g</div>
       ${stockWarning}
     </div>
     <div class="stat-block">
-      <div class="stat-label">Watertemperatuur</div>
+      <div class="stat-label">${statIconTemp}Watertemperatuur</div>
       <div class="stat-value">${rec.tempBand.min}–${rec.tempBand.max} °C</div>
       <div class="stat-sub">${escapeHtml(rec.tempInstruction || '')} (${rec.temp}°C als middenwaarde van deze branddiepte-band)</div>
       <div class="stat-sub">Ankerpunt binnen de apparaatband van dit toestel (${rec.deviceTempBand.min}–${rec.deviceTempBand.max}°C) — positie, geen apart geteste claim; zie disclaimer onderaan. Ratio en dosis blijven voor elke branddiepte gelijk.</div>
     </div>
     <div class="stat-block" id="stats-water-block" role="button" tabindex="0" aria-label="Waterhoeveelheid aanpassen">
-      <div class="stat-label">${state.bypass ? 'Water dóór de koffie' : 'Waterhoeveelheid'}</div>
+      <div class="stat-label">${statIconWater}${state.bypass ? 'Water dóór de koffie' : 'Waterhoeveelheid'}</div>
       <div class="stat-value">${rec.pourWaterMl} ml</div>
       ${state.bypass ? `<div class="stat-sub">van ${rec.water} ml totaal</div>` : ''}
       <div class="stat-sub">Tik om aan te passen →</div>
@@ -8993,14 +9160,22 @@ function renderPrep(){
     refineCountEl.textContent = refineCount > 0 ? String(refineCount) : '';
   }
 
-  document.getElementById('recipe-body').innerHTML = rec.steps.map(s=>`
-    <tr>
+  const recipeBodyEl = document.getElementById('recipe-body');
+  recipeBodyEl.innerHTML = rec.steps.map((s,i)=>`
+    <tr data-pourstep="${i}" role="button" tabindex="0" aria-label="Details voor ${escapeHtml(s.label)}">
       <td>${s.label}${s.note?`<span class="step-note">${s.note}</span>`:''}${s.flow?`<span class="step-flow">${s.flow}</span>`:''}</td>
       <td class="mono">${fmtStepTime(s)}</td>
       <td class="mono">${s.add>0? '+'+s.add+' ml' : '—'}${s.add>0 ? `<span class="step-rate">${pourRateLabel(s)}</span>` : ''}</td>
       <td class="mono">${s.to} ml</td>
     </tr>
   `).join('');
+  // NIEUW (visuele afstemming referentiebeeld "pour step detail"-modal): elke zetstap-rij
+  // tikbaar, opent #pourstep-modal met dezelfde waarden groter + de bestaande giet-tip.
+  recipeBodyEl.querySelectorAll('[data-pourstep]').forEach(tr=>{
+    const open = ()=> openPourStepModal(Number(tr.getAttribute('data-pourstep')));
+    tr.addEventListener('click', open);
+    tr.addEventListener('keydown', (e)=>{ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(); } });
+  });
 
   document.getElementById('method-tips').textContent = m.tips;
   const windowEl = document.getElementById('target-window-note');
@@ -9070,6 +9245,31 @@ function syncWaterModal(){
 }
 document.getElementById('water-modal-close').addEventListener('click', ()=>{
   document.getElementById('water-modal').hidden = true;
+});
+// NIEUW (visuele afstemming referentiebeeld recept-scherm "pour step detail"-modal): puur
+// een grotere weergave van een al-gerenderde #recipe-body-rij — leest rechtstreeks uit
+// state.recipe.steps, geen nieuwe berekening.
+function openPourStepModal(stepIndex){
+  const rec = state.recipe;
+  if (!rec || !rec.steps || !rec.steps[stepIndex]) return;
+  const s = rec.steps[stepIndex];
+  document.getElementById('pourstep-modal-title').textContent = s.label;
+  const facts = [
+    ['Tijd', fmtStepTime(s)],
+    ['Water erbij', s.add > 0 ? `+${s.add} ml` : '—'],
+    ['Totaal', `${s.to} ml`]
+  ];
+  document.getElementById('pourstep-modal-facts').innerHTML = facts.map(([l,v])=>
+    `<div><div class="bean-detail-fact-label">${escapeHtml(l)}</div><div class="bean-detail-fact-value">${escapeHtml(String(v))}</div></div>`
+  ).join('');
+  const tipParts = [s.flow, s.note].filter(Boolean);
+  const tipEl = document.getElementById('pourstep-modal-tip');
+  tipEl.textContent = tipParts.join(' ');
+  tipEl.hidden = !tipParts.length;
+  document.getElementById('pourstep-modal').hidden = false;
+}
+document.getElementById('pourstep-modal-close').addEventListener('click', ()=>{
+  document.getElementById('pourstep-modal').hidden = true;
 });
 document.getElementById('water-modal-minus').addEventListener('click', ()=>{
   const range = engineValidVolumeRange(state.method, state.profile);
