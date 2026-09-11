@@ -1340,6 +1340,11 @@
   .detail-tab:active{ transform:scale(.97); }
   .detail-tab-panel[hidden]{ display:none; }
   .bean-detail-about{ font-size:13.5px; color:var(--text-dim); line-height:1.6; margin:0; }
+  /* NIEUW (Pagina-Polish-spec §5.4, Best Brew-kaart): zelfde mono/copper "receptgetal"-
+     taal als .stat-value/.stat-sub in het Recept-scherm, hier zonder de volledige
+     stat-block-kaart eromheen (dit blok zit al binnen bean-detail-best-brew-block). */
+  .bean-detail-best-brew-facts{ font-family:var(--font-mono); font-size:16px; color:var(--copper-light); margin:0 0 4px; font-variant-numeric:tabular-nums; }
+  .bean-detail-best-brew-facts-sub{ font-size:12px; color:var(--text-faint); margin:0; }
 
   /* Inzichten */
   .insights-note{font-size:12.5px; color:var(--text-faint); margin:6px 0 18px; line-height:1.5;}
@@ -1636,14 +1641,22 @@
 
       <div class="detail-tab-panel" data-tab-panel="overzicht" id="bean-detail-panel-overzicht">
         <p class="bean-detail-about" id="bean-detail-about"></p>
-        <!-- NIEUW (Visual Design 2.0 fase 3, "Jouw beste brew"-referentie): bewust GEEN
-             samengesteld/verzonnen sterrencijfer (Bouwbesluit B2 verwijderde eerder al zo'n
-             composietscore) — deze kaart toont in plaats daarvan een eerlijk feit uit je eigen
-             data: je favoriete logging (hartje), of anders je meest gebruikte methode +
-             laatste brouwdatum. Zie renderBeanDetailBestBrew(). -->
+        <!-- HERZIEN (Pagina-Polish-spec §5.4): bewust GEEN samengesteld/verzonnen
+             sterrencijfer (Bouwbesluit B2 verwijderde eerder al zo'n composietscore) —
+             getoond volgens de exacte regels uit de spec (0/1/meerdere-met-favoriet-logs),
+             zie renderBeanDetailBestBrew(). -->
         <div class="bean-detail-section" id="bean-detail-best-brew-block" style="margin:16px 0;" hidden>
           <p class="bean-detail-section-label" id="bean-detail-best-brew-label"></p>
           <div id="bean-detail-best-brew-body"></div>
+        </div>
+        <!-- NIEUW (Pagina-Polish-spec §5.5 "Personal signal"): hergebruikt de bestaande
+             personalHistoryInsight() (al gebruikt op het Recept-scherm en in Inzichten,
+             hier ongewijzigd) — puur een feit uit je eigen loggings voor déze boon, nooit
+             een cross-boon-gemiddelde en nooit met engine-confidence-styling. Zie
+             renderBeanDetailPersonalSignal(). -->
+        <div class="bean-detail-section" id="bean-detail-personal-signal-block" style="margin:16px 0;" hidden>
+          <p class="bean-detail-section-label">Uit je eigen logboek</p>
+          <p class="bean-detail-about" id="bean-detail-personal-signal-text"></p>
         </div>
         <div class="bean-detail-fact-grid" id="bean-detail-facts"></div>
       </div>
@@ -6650,44 +6663,81 @@ function renderBeanDetail(bean){
 
   renderBeanDetailRadar(bean.id);
   renderBeanDetailBestBrew(bean);
+  renderBeanDetailPersonalSignal(bean.id);
   renderBeanDetailHistoryTab(bean.id);
   renderBeanDetailRecipesTab(bean.id);
 }
-// NIEUW (Visual Design 2.0 fase 3, detail-referentie "Jouw beste brew"): bewust geen
-// samengesteld/verzonnen sterrencijfer (zie Bouwbesluit B2, die eerder al zo'n composietscore
-// verwijderde) — deze kaart toont in plaats daarvan één eerlijk feit uit brewLog: je
-// gemarkeerde favoriete logging voor deze boon, of anders (geen favoriet gezet) je meest
-// gebruikte methode + laatste brouwdatum. Geen enkel nieuw veld/geen enkele berekening die
-// een "beste" kwaliteit zou suggereren.
+// NIEUW (Pagina-Polish-spec §5.5 "Personal signal"): hergebruikt personalHistoryInsight()
+// (bestaand, ongewijzigd — al gebruikt op het Recept-scherm en in Inzichten) 1-op-1, inclusief
+// dezelfde formulering-stijl ("puur een feit uit je eigen data") als op het Recept-scherm.
+// Geen cross-boon-vergelijking (de functie is al beanId-scoped), geen "hoge/lage
+// betrouwbaarheid"-taal zoals bij de engine-adviezen — dit is nooit meer dan een simpel feit.
+function renderBeanDetailPersonalSignal(beanId){
+  const block = document.getElementById('bean-detail-personal-signal-block');
+  const textEl = document.getElementById('bean-detail-personal-signal-text');
+  if (!block || !textEl) return;
+  const insight = personalHistoryInsight(beanId);
+  if (!insight){ block.hidden = true; textEl.textContent = ''; return; }
+  const label = CUPPING_AXIS_LABELS[insight.axis];
+  const direction = insight.diff > 0 ? 'hoger' : 'lager';
+  textEl.textContent = `Je nieuwste score voor ${label} (${insight.latestValue}/4) lag ${direction} dan je gemiddelde over de ${insight.priorCount} keer daarvoor (${insight.avg.toFixed(1)}/4). Geen aanbeveling — puur een feit uit je eigen data.`;
+  block.hidden = false;
+}
+// HERZIEN (Pagina-Polish-spec §5.4 "Best Brew / Latest Brew"): vervangt de eerdere honest-
+// variant (favoriet-of-anders-statistieken) door de precieze regels uit de spec — nog steeds
+// bewust GEEN samengesteld/verzonnen sterrencijfer (Bouwbesluit B2), maar nu met exacte
+// labels per situatie i.p.v. een eigen tussenoplossing:
+//   0 relevante logs      → geen kaart.
+//   1 relevante log       → 'Laatste gelogde brouwsel'.
+//   meerdere, met favoriet→ 'Beste startpunt uit je brouwsels' — de ENIGE transparante
+//                           selectie zonder een score te verzinnen is de hartje-markering
+//                           die de gebruiker zelf al zette; zonder favoriet is er bij
+//                           meerdere logs geen eerlijke manier om er één te kiezen, dus dan
+//                           geen kaart (spec: "alleen wanneer een transparante selectie kan
+//                           worden gemaakt").
+// method/dose/water/temp/grind/time komen 1-op-1 uit het gekozen logging-record, nooit
+// herberekend. CTA's hergebruiken de bestaande brewAgain()/tab-navigatie, geen nieuwe flow.
 function renderBeanDetailBestBrew(bean){
   const block = document.getElementById('bean-detail-best-brew-block');
   const label = document.getElementById('bean-detail-best-brew-label');
   const body = document.getElementById('bean-detail-best-brew-body');
   if (!block || !body) return;
   const entries = brewLog.filter(e=>e.beanId===bean.id).slice().sort((a,b)=>b.timestamp-a.timestamp);
-  if (!entries.length){ block.hidden = true; body.innerHTML = ''; return; }
-  block.hidden = false;
-  const fav = entries.find(e=>e.favorite);
-  if (fav){
-    label.textContent = 'Jouw favoriete brouwsel';
-    body.innerHTML = renderBrewLogEntryCard(fav, bean.id);
-  } else {
-    label.textContent = 'Brouwstatistieken';
-    const counts = {};
-    entries.forEach(e=>{ counts[e.method] = (counts[e.method] || 0) + 1; });
-    const topMethod = Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0];
-    const m = METHOD_INFO[topMethod];
-    const lastDate = new Date(entries[0].timestamp).toLocaleDateString('nl-NL', { day:'numeric', month:'short', year:'numeric' });
-    const statFacts = [
-      ['Meest gebruikte methode', `${m ? m.name : topMethod} (${counts[topMethod]}×)`],
-      ['Laatste brouwsel', lastDate],
-      ['Totaal aantal loggings', String(entries.length)]
-    ];
-    body.innerHTML = `<div class="bean-detail-fact-grid">${statFacts.map(([l,v])=>
-      `<div><div class="bean-detail-fact-label">${escapeHtml(l)}</div><div class="bean-detail-fact-value">${escapeHtml(v)}</div></div>`
-    ).join('')}</div>`;
+  let chosen = null;
+  if (entries.length === 1){
+    label.textContent = 'Laatste gelogde brouwsel';
+    chosen = entries[0];
+  } else if (entries.length > 1){
+    const favs = entries.filter(e=>e.favorite);
+    if (favs.length === 1){
+      label.textContent = 'Beste startpunt uit je brouwsels';
+      chosen = favs[0];
+    }
   }
-  wireFavToggleButtons(body);
+  if (!chosen){ block.hidden = true; body.innerHTML = ''; return; }
+  block.hidden = false;
+  const m = METHOD_INFO[chosen.method];
+  const line1 = [
+    m ? m.name : chosen.method,
+    chosen.doseG != null ? `${fmt(chosen.doseG,1)} g` : null,
+    chosen.waterMl != null ? `${chosen.waterMl} ml` : null,
+    chosen.temp != null ? `${chosen.temp}°C` : null
+  ].filter(Boolean).join(' · ');
+  const grindText = chosen.actualGrindClicks != null ? `Stand ${chosen.actualGrindClicks}`
+    : (chosen.grindMicron != null ? `${chosen.grindMicron} µm` : null);
+  const timeText = chosen.actualTimeSec != null ? fmtTime(chosen.actualTimeSec) : null;
+  const line2 = [grindText, timeText].filter(Boolean).join(' · ');
+  body.innerHTML = `
+    ${line1 ? `<p class="bean-detail-best-brew-facts">${escapeHtml(line1)}</p>` : ''}
+    ${line2 ? `<p class="bean-detail-best-brew-facts-sub">${escapeHtml(line2)}</p>` : ''}
+    <div class="bean-card-btnrow" style="margin-top:10px;">
+      <button type="button" class="bean-use-btn bean-again-btn" id="bean-detail-best-brew-again">↻ Zet opnieuw</button>
+      <button type="button" class="bean-use-btn" id="bean-detail-best-brew-log">Bekijk logboek</button>
+    </div>`;
+  const againBtn = document.getElementById('bean-detail-best-brew-again');
+  if (againBtn) againBtn.addEventListener('click', ()=> brewAgain(bean.id));
+  const logBtn = document.getElementById('bean-detail-best-brew-log');
+  if (logBtn) logBtn.addEventListener('click', ()=> selectDetailTab('bean-detail-tabs', 'historie'));
 }
 // NIEUW (Visual Design 2.0 fase 3, Historie-tab): volledige brouwgeschiedenis van déze boon,
 // nu inline getoond i.p.v. via een losse knop naar #screen-brewlog-history — hergebruikt
