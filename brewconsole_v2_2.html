@@ -739,15 +739,30 @@
   .brew-step-bypass{border-color:var(--copper-light); background:var(--surface-2);}
   .brew-step-bypass .brew-step-time{color:var(--copper-light);}
 
-  .brew-controls{display:flex; gap:10px;}
+  /* NIEUW (Visual Design 2.0 fase 2, detail-referentie scherm 07 "Brew Timer (Active)"):
+     ronde iconknoppen i.p.v. rechthoekige tekstknoppen, Pauze nadrukkelijk groter/gevuld
+     (primaire actie tijdens het zetten) met Reset kleiner ernaast. Bewust GEEN derde
+     "skip step"-knop — die functionaliteit bestaat niet in de app en zou nieuwe
+     interactielogica zijn; ook geen swipe-gesture (evenmin bestaande logica). De
+     pauzeTimer()/runTimer()/resetTimer()-tekstwissel (Pauze/Hervat) via textContent blijft
+     volledig ongewijzigd — puur geometrie/kleur, geen enkele JS aangeraakt. */
+  .brew-controls{display:flex; gap:16px; justify-content:center; align-items:center; margin-top:4px;}
   .brew-controls button{
-    flex:1; padding:15px; min-height:50px; border-radius:var(--radius-sm); border:1px solid var(--border);
-    background:var(--surface); color:var(--text); font-size:15px; cursor:pointer;
+    width:60px; height:60px; border-radius:50%; border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    background:var(--surface); color:var(--text); font-size:11.5px; padding:4px; cursor:pointer;
     box-shadow:var(--shadow-card);
-    transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
+    transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
   .brew-controls button:hover{border-color:var(--copper);}
-  .brew-controls button:active{background:var(--surface-2); transform:translateY(1px) scale(.98);}
+  .brew-controls button:active{background:var(--surface-2); transform:translateY(1px) scale(.96);}
+  .brew-controls #pause-btn{
+    width:76px; height:76px; font-size:14px; font-weight:600; font-family:var(--font-display);
+    background:var(--copper); color:#1B1310; border:none;
+    box-shadow:0 1px 0 rgba(255,255,255,.16) inset, 0 4px 14px rgba(212,165,116,.18);
+  }
+  .brew-controls #pause-btn:hover{background:var(--copper-light);}
+  .brew-controls #pause-btn:active{background:var(--copper-light); transform:translateY(1px) scale(.96); box-shadow:0 1px 0 rgba(255,255,255,.1) inset, 0 2px 6px rgba(212,165,116,.14);}
   .finish-note{
     font-family:var(--font-display); font-size:17px; color:var(--copper-light);
     margin:-8px 0 20px;
