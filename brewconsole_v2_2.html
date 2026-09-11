@@ -1390,6 +1390,10 @@
       <h1 class="title" data-screen-heading tabindex="-1" id="bean-detail-name"></h1>
       <p class="bean-detail-meta" id="bean-detail-meta"></p>
       <div id="bean-detail-badges" class="badge-row"></div>
+      <!-- NIEUW (Visual Design 2.0 fase 2, detail-referentie scherm 04): individuele,
+           per-categorie gekleurde smaak-tags direct onder de titel, i.p.v. alleen onderin
+           als platte tekst — zie renderBeanDetail() en flavorTagChipsHtml() hierboven. -->
+      <div id="bean-detail-flavor-tags" class="bean-tags"></div>
 
       <div class="bean-detail-section">
         <p class="bean-detail-section-label">Kenmerken</p>
@@ -5194,6 +5198,24 @@ const CUPPING_ATTR_WEIGHTS = {
 };
 const TAG_TO_CATEGORY = {};
 SCA_FLAVOR_WHEEL.forEach(cat=>cat.subgroups.forEach(sg=>sg.tags.forEach(tg=>{ TAG_TO_CATEGORY[tg.t] = cat.key; })));
+/* NIEUW (Visual Design 2.0 fase 2 — detail-referentiebeelden): kleur per smaakcategorie
+   voor individuele smaak-tag-chips op boonkaarten/Bean Detail. Hergebruikt cat.color, dat
+   al bestond en al gebruikt werd voor de flavor-wheel-accordeon hierboven — geen nieuwe
+   kleurdata, geen classifyProfile-/advieslogica aangeraakt. Vrije tekst uit "Overige
+   notities" zit niet in TAG_TO_CATEGORY en krijgt dus terecht geen kleur (neutrale chip). */
+const CATEGORY_COLOR = {};
+SCA_FLAVOR_WHEEL.forEach(cat=>{ CATEGORY_COLOR[cat.key] = cat.color; });
+function flavorTagColor(tag){
+  const catKey = TAG_TO_CATEGORY[tag];
+  return catKey && CATEGORY_COLOR[catKey] ? CATEGORY_COLOR[catKey] : null;
+}
+function flavorTagChipsHtml(tags){
+  if (!tags || !tags.length) return '';
+  return tags.map(t=>{
+    const c = flavorTagColor(t);
+    return `<span class="bean-tag"${c ? ` style="border-color:${c}; color:${c};"` : ''}>${escapeHtml(t)}</span>`;
+  }).join('');
+}
 
 /* A2 (koffie-expertpanel, Amara/Rik): 'Overig' en 'Groen/plantaardig' zijn de twee
    categorieën die (bijna) volledig uit defect-smaken bestaan (verschaald, beschimmeld,
@@ -5965,7 +5987,7 @@ function renderBeanLibraryScreen(){
         ${procName ? `<span class="bean-tag">${procName}</span>` : ''}
         ${b.experimental ? `<span class="bean-tag">🧪 experimenteel</span>` : ''}
       </div>
-      ${b.flavorNotes && b.flavorNotes.length ? `<p class="bean-card-notes">${escapeHtml(b.flavorNotes.join(' · '))}</p>` : ''}
+      ${b.flavorNotes && b.flavorNotes.length ? `<div class="bean-tags" style="margin-top:2px;">${flavorTagChipsHtml(b.flavorNotes)}</div>` : ''}
       <div class="bean-card-btnrow">
         ${b.lastBrew ? `<button class="bean-use-btn bean-again-btn" data-again="${b.id}">↻ Brouw opnieuw (${METHOD_INFO[b.lastBrew.method] ? METHOD_INFO[b.lastBrew.method].name : b.lastBrew.method}${b.lastBrew.bypass ? ', bypass' : ''})</button>` : ''}
         <button class="bean-use-btn" data-use="${b.id}">Zet deze boon →</button>
@@ -6161,6 +6183,7 @@ function renderBeanDetail(bean){
     badges.push(`<span class="badge" data-tone="${low ? 'warn' : 'neutral'}">${remaining > 0 ? fmt(remaining,0) + ' g over' : 'Zak waarschijnlijk leeg'}</span>`);
   }
   document.getElementById('bean-detail-badges').innerHTML = badges.join('');
+  document.getElementById('bean-detail-flavor-tags').innerHTML = flavorTagChipsHtml(bean.flavorNotes);
 
   const fmtDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('nl-NL', { day:'numeric', month:'short', year:'numeric' }) : '—';
   const facts = [
