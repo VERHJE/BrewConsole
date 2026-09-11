@@ -110,7 +110,12 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     const honestSummary = (await page.locator('#brewlog-honest-summary').textContent()).trim();
     assert.ok(honestSummary.length > 0, 'De eerlijke brouwsamenvatting mag niet leeg zijn');
     const metaText = (await page.locator('#brewlog-complete-meta').textContent()).trim();
-    assert.ok(metaText.length > 0, 'brewlog-complete-meta (dosis · water · tijd · methode) mag niet leeg zijn');
+    // NIEUW (Visual Design 2.0 fase 2): #brewlog-complete-meta toont sinds de celebratory-
+    // restyling drie losse statchips (tijd/water/temperatuur) i.p.v. één platte mono-regel
+    // met dosis+methode — dosis staat nog steeds elders op dit scherm (in
+    // #brewlog-honest-summary). Alleen de tekst hieronder aangepast, de assertie zelf
+    // (niet-leeg) ongewijzigd.
+    assert.ok(metaText.length > 0, 'brewlog-complete-meta (tijd · water · temperatuur, als statchips) mag niet leeg zijn');
 
     // B2: de samenvatting staat ONDER de smaaksliders, niet erboven (anchoring-risico).
     const order = await page.evaluate(() => {
