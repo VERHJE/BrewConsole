@@ -816,10 +816,13 @@
   .bean-tag{font-size:11px; border:1px solid var(--border); border-radius:999px; padding:3px 10px; color:var(--text-dim);}
   .bean-card-notes{font-size:12px; color:var(--text-faint); font-style:italic; margin:0 0 12px;}
   .bean-use-btn{
-    width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:9px;
+    width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm);
     padding:10px; color:var(--copper-light); font-size:13px; cursor:pointer;
+    box-shadow:var(--shadow-card);
+    transition:border-color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
   .bean-use-btn:hover{border-color:var(--copper);}
+  .bean-use-btn:active{transform:translateY(1px) scale(.99); box-shadow:none;}
   .bean-card-btnrow{display:flex; gap:8px;}
   .bean-card-btnrow .bean-use-btn{width:auto; flex:1; font-size:12.5px;}
   .bean-again-btn{border-color:var(--copper-light);}
@@ -836,7 +839,14 @@
   .chip-check{display:none;}
 
   /* radar chart */
-  .radar-wrap{display:flex; justify-content:center; margin-bottom:18px;}
+  /* NIEUW (Visual Design 2.0, §11 Bean Detail — "Taste/process tags are compact and
+     tasteful"): radar-chart krijgt hetzelfde paneel-niveau (surface-1 + shadow-card) als
+     andere elevated content-blokken — alleen omkadering, de SVG/kleuren zelf ongewijzigd. */
+  .radar-wrap{
+    display:flex; justify-content:center; margin-bottom:18px;
+    background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:var(--radius-md);
+    padding:14px; box-shadow:var(--shadow-card);
+  }
   .radar-svg{width:100%; max-width:280px; height:auto;}
   .radar-grid{fill:none; stroke:var(--border); stroke-width:1;}
   .radar-axis{stroke:var(--border); stroke-width:1;}
@@ -947,7 +957,7 @@
      tekstlabel naast het gekleurde bolletje. */
   .badge{
     display:inline-flex; align-items:center; gap:6px;
-    padding:4px 10px; border-radius:999px;
+    padding:4px 10px; border-radius:var(--radius-pill);
     border:1px solid var(--border); background:var(--surface-2);
     font-family:var(--font-mono); font-size:10.5px; font-weight:600;
     text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim);
@@ -1026,7 +1036,13 @@
     font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
     color:var(--text-faint); margin:0 0 10px;
   }
-  .bean-detail-fact-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px 16px;}
+  /* NIEUW (Visual Design 2.0, §11): "Kenmerken"-feiten krijgen hetzelfde paneel-niveau
+     als de radar-wrap hierboven — puur presentatie, feit-labels/waarden ongewijzigd. */
+  .bean-detail-fact-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:10px 16px;
+    background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:var(--radius-md);
+    padding:14px; box-shadow:var(--shadow-card);
+  }
   .bean-detail-fact-label{font-size:11px; color:var(--text-faint);}
   .bean-detail-fact-value{font-size:13.5px; color:var(--text);}
 
