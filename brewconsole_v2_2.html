@@ -176,6 +176,46 @@
     background:radial-gradient(ellipse 70% 45% at 50% -8%, rgba(212,165,116,.06), transparent 65%);
   }
   html[data-theme="light"] body::before{ display:none; }
+
+  /* NIEUW (Visual Design 2.0 fase 2, detail-referentie scherm 01 "Splash/Launch"): een
+     puur decoratief, ÉÉNMALIG openingsmoment. pointer-events:none staat vanaf de eerste
+     frame vast — de splash onderschept dus NOOIT een klik, ook niet tijdens het zelf nog
+     zichtbaar zijn. Bestaande/automatische interactie (incl. de hele Playwright-testsuite,
+     die meteen na 'load' al klikt) is daarmee gegarandeerd ongewijzigd; dit is zuiver een
+     visuele laag bovenop, geen wachttijd of navigatie-wijziging. */
+  .splash-screen{
+    position:fixed; inset:0; z-index:200; pointer-events:none;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+    padding:0 0 max(56px, var(--safe-b));
+    overflow:hidden;
+    animation:splashOut .6s var(--ease-in) 1.6s both;
+  }
+  .splash-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .splash-scrim{
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(8,11,10,.35) 0%, rgba(8,11,10,.55) 55%, rgba(8,11,10,.94) 100%);
+  }
+  .splash-content{ position:relative; text-align:center; padding:0 24px 28px; }
+  .splash-title{
+    font-family:var(--font-display); font-weight:600; font-size:30px; color:var(--text);
+    margin:0 0 6px;
+  }
+  .splash-version{ color:var(--copper-light); }
+  .splash-tagline{
+    font-family:var(--font-mono); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--text-faint); margin:0;
+  }
+  .splash-loadbar{
+    position:relative; width:120px; height:2px; background:rgba(237,230,217,.15);
+    border-radius:var(--radius-pill); overflow:hidden; margin-top:26px;
+  }
+  .splash-loadbar-fill{
+    position:absolute; inset:0; width:40%; background:var(--copper-light); border-radius:var(--radius-pill);
+    animation:splashLoad 1.4s ease-in-out infinite;
+  }
+  @keyframes splashLoad{ 0%{transform:translateX(-100%);} 100%{transform:translateX(250%);} }
+  @keyframes splashOut{ from{opacity:1;} to{opacity:0; visibility:hidden;} }
+
   /* FIX (teamreview v2 — Laag bevinding, Interaction Designer): in-thema confirm-modal,
      zie #confirm-modal hierboven in de body en showConfirmModal() in het script. */
   /* NIEUW (Visual Design 2.0, §3.2 "Level 3 modal/overlay: stronger separation and blur
@@ -1001,6 +1041,11 @@
 
   @media (prefers-reduced-motion: reduce){
     *{animation:none !important; transition:none !important;}
+    /* NIEUW (Visual Design 2.0 fase 2, Splash-scherm): de animation:none hierboven zou de
+       splash anders voor altijd LATEN STAAN, want zijn verdwijnen is zelf een animatie
+       (splashOut) — reduced-motion moet 'm dus meteen verbergen i.p.v. nooit laten
+       verdwijnen. pointer-events was toch al none, dus dit is zuiver visueel. */
+    .splash-screen{ display:none; }
   }
 
   /* ============================================================
@@ -1222,6 +1267,17 @@
 </style>
 </head>
 <body>
+<!-- NIEUW (Visual Design 2.0 fase 2, detail-referentie scherm 01): puur decoratief
+     openingsmoment — zie .splash-screen hierboven voor de pointer-events:none-garantie. -->
+<div class="splash-screen" id="splash-screen" aria-hidden="true">
+  <img class="splash-bg" src="photos/bean-macro.jpg" alt="" loading="eager">
+  <div class="splash-scrim"></div>
+  <div class="splash-content">
+    <h1 class="splash-title">Brew Console <span class="splash-version">2.0</span></h1>
+    <p class="splash-tagline">Familiar. Refined. Extraordinary.</p>
+  </div>
+  <div class="splash-loadbar"><div class="splash-loadbar-fill"></div></div>
+</div>
 <!-- FIX (teamreview v2 — Laag bevinding, Interaction Designer): in-thema vervanging voor
      window.confirm() — zie showConfirmModal() en de stop-btn-handler onderaan het script.
      Generiek gehouden (labels via JS) zodat een toekomstige tweede bevestiging dit kan
