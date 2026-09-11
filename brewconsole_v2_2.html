@@ -30,11 +30,21 @@
        verschillen tussen bv. copper en copper-light behouden blijven (zie Brand_UI_Style_
        Guide_Addendum_v1.1 §2) — dat voorkomt dat deze omzetting de bestaande WCAG-audit
        hieronder stilzwijgend doorbreekt. --sage is nieuw (ontbrak in v1/v2 volledig). */
-    --bg:#0F0F10;
+    /* NIEUW (Visual Design 2.0 — Claude Code Implementation Spec, §3.1): --bg/--copper/
+       --text/--sage genudged naar de exacte Ink/Caramel/Cream/Sage-tokens uit de spec.
+       Herverifieerd tegen alle bestaande WCAG AA-eisen hierboven (nooit versoepeld, alleen
+       verbeterd — copper vs bg 6.21:1→8.88:1, copper vs surface-2 4.67:1→6.47:1, sage vs
+       surface-2 blijft >5:1, text-dim/text-faint blijven boven hun bestaande 4.5:1-marge
+       tegen zowel de nieuwe --bg als de ongewijzigde --surface-2). Extend, not replace:
+       --copper-light/--copper-dim/--danger/--berry/--text-dim/--text-faint/--surface/
+       --surface-2/--border blijven ongewijzigd (al audit-geverifieerd, honderden
+       toepassingen) — alleen --copper-light krijgt een evenredige nudge zodat hij
+       zichtbaar lichter blijft dan de nieuwe, al lichtere --copper. */
+    --bg:#080B0A;
     --surface:#1C1C1A;
     --surface-2:#2A2A26;
     --border:#3B2E24;
-    --text:#EEE6D9;
+    --text:#EDE6D9;
     --text-dim:#A5988A;
     /* FIX (teamreview v2 — Midden bevinding, Accessibility Expert), gecorrigeerd voor de
        nieuwe --surface-2 hierboven: #9A8C7F haalde 4.84:1 op de OUDE --surface-2 (#2A2119),
@@ -42,11 +52,11 @@
        WCAG AA-drempel van 4.5:1. #9C8F82 (kleinste bruikbare lichtheid-nudge) haalt 4.57:1 op
        --surface-2, met behoud van de lichtheid-volgorde tekst > text-dim > text-faint. */
     --text-faint:#9C8F82;
-    --copper:#B88A57;
-    --copper-light:#DAB27E;
+    --copper:#D4A574;
+    --copper-light:#E6C199;
     --copper-dim:#4E3E30;
     --danger:#C2445C;
-    --sage:#8B9C7A;
+    --sage:#8F9F8F;
     /* NIEUW (vervolgplan v2.3, Bouwbesluit B5/Fase 4): eigen token voor een attentie-
        signaal dat GEEN foutmelding is (bijv. "Bijna op" op een boonkaart) — de canvas
        gebruikt hiervoor #A24A5E naast --danger, zodat een voorraadwaarschuwing niet
@@ -61,6 +71,49 @@
     --font-display:ui-serif,'New York','Iowan Old Style',Georgia,'Fraunces',serif;
     --font-body:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI','IBM Plex Sans',sans-serif;
     --font-mono:ui-monospace,'SF Mono','SFMono-Regular',Menlo,'IBM Plex Mono',monospace;
+
+    /* NIEUW (Visual Design 2.0, §3-§9/§24): semantische laag bovenop de bestaande tokens
+       hierboven — alias, geen vervanging (zie toelichting bovenaan dit blok). Nieuwe
+       componenten (§24) gebruiken deze namen; bestaande, al-geverifieerde regels blijven
+       gewoon --bg/--surface/--copper/... rechtstreeks gebruiken. */
+    --surface-0:var(--bg);
+    --surface-1:var(--surface);
+    --surface-floating:rgba(28,28,26,.72); /* Level 2 glass: --surface met alpha, zie §6 */
+    --surface-floating-border:rgba(237,230,217,.08); /* zeer laag-contrast, §6 "avoid bright white glass borders" */
+    --text-primary:var(--text);
+    --text-secondary:var(--text-dim);
+    --text-muted:var(--text-faint);
+    --text-disabled:rgba(237,230,217,.38); /* op --text gebaseerd, nooit opacity als ENIGE disabled-marker (zie §25) — altijd samen met aria-disabled/cursor */
+    --accent-primary:var(--copper);
+    --accent-soft:var(--copper-dim);
+    --accent-glow:rgba(212,165,116,.28); /* --copper op lage alpha, voor §5 ambient/focus-gloed */
+    --border-subtle:var(--border);
+    --border-active:var(--copper-dim);
+    --success:var(--sage);
+    --success-soft:rgba(143,159,143,.16);
+    --warning:var(--berry);
+    --error:var(--danger);
+
+    /* Diepte (§3.2) — Level 3 modal bestond al via .modal-overlay hieronder; deze twee
+       zijn nieuw, voor kaarten (Level 1) en floating/glass-elementen (Level 2). */
+    --shadow-card:0 1px 2px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.12);
+    --shadow-floating:0 8px 24px rgba(0,0,0,.4), inset 0 1px 0 rgba(237,230,217,.05);
+
+    /* Geometrie (§3.3) — kleine, consistente schaal; pillen blijven voorbehouden aan
+       tags/status (bestaande --radius-pill-achtige 999px-waarden hieronder ongemoeid). */
+    --radius-sm:9px;
+    --radius-md:14px;
+    --radius-lg:20px;
+    --radius-pill:999px;
+    --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px;
+
+    /* Motion (§9) — timing-schaal; @media (prefers-reduced-motion: reduce) hieronder
+       (regel ~741, ongewijzigd) blijft de harde override voor alle transitions/animaties. */
+    --motion-micro:140ms;
+    --motion-standard:240ms;
+    --motion-emphasis:400ms;
+    --ease-out:cubic-bezier(.16,1,.3,1);
+    --ease-in:cubic-bezier(.7,0,.84,0);
   }
   html[data-theme="light"]{
     /* Zelfde Style Guide-omzetting als het donkere thema hierboven, HSL-herafgeleid
@@ -81,6 +134,32 @@
     --danger:#A82E44;
     --sage:#77905A;
     --berry:#873547;
+
+    /* NIEUW (Visual Design 2.0, §3-§9): zelfde semantische aliaslaag als het donkere
+       thema hierboven — gebruiker akkoord "licht thema meeschalen met dezelfde tokens".
+       De onderliggende kleurwaarden blijven de bestaande, al WCAG-geverifieerde lichte-
+       thema-tokens (geen nieuwe Caramel-berekening voor licht — de spec zelf is
+       donker-georiënteerd en geeft geen lichte-thema-waarden; hergebruik voorkomt een
+       ongeverifieerde contrastwijziging op een thema dat de spec niet beschrijft). */
+    --surface-0:var(--bg);
+    --surface-1:var(--surface);
+    --surface-floating:rgba(226,218,205,.78);
+    --surface-floating-border:rgba(43,24,16,.08);
+    --text-primary:var(--text);
+    --text-secondary:var(--text-dim);
+    --text-muted:var(--text-faint);
+    --text-disabled:rgba(43,24,16,.38);
+    --accent-primary:var(--copper);
+    --accent-soft:var(--copper-dim);
+    --accent-glow:rgba(170,112,57,.22);
+    --border-subtle:var(--border);
+    --border-active:var(--copper-dim);
+    --success:var(--sage);
+    --success-soft:rgba(119,144,90,.14);
+    --warning:var(--berry);
+    --error:var(--danger);
+    --shadow-card:0 1px 2px rgba(43,24,16,.12), 0 0 0 1px rgba(43,24,16,.06);
+    --shadow-floating:0 8px 24px rgba(43,24,16,.18), inset 0 1px 0 rgba(255,255,255,.4);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0; background:var(--bg);}
