@@ -1030,6 +1030,26 @@
   .bean-delete:hover{color:var(--danger);}
   .bean-delete:active{color:var(--danger);}
   .bean-edit:active, .bean-delete:active{transform:scale(.9);}
+  /* NIEUW (Visual Design 2.0 fase 3, boon-niveau favorieten): zelfde knop-geometrie als
+     .bean-edit/.bean-delete, kleurtaal van .brewlog-entry-fav (--berry als "aan"-status). */
+  .bean-fav{
+    background:none; border:none; color:var(--text-faint); font-size:18px; line-height:1; cursor:pointer;
+    width:44px; height:44px; display:flex; align-items:center; justify-content:center;
+    transition:color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
+  }
+  .bean-fav[aria-pressed="true"]{ color:var(--berry); }
+  .bean-fav:active{ transform:scale(.85); }
+  /* Overlay-hartje op de Bean Detail hero-foto — vaste positie rechtsboven op het beeld,
+     zodat het los van de scrim-gradient (onderin) altijd goed leesbaar blijft. */
+  .bean-detail-hero-fav{
+    position:absolute; top:10px; right:10px; z-index:1;
+    width:38px; height:38px; border-radius:50%; border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:19px; line-height:1;
+    background:rgba(20,16,14,.45); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    color:#fff; transition:color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
+  }
+  .bean-detail-hero-fav[aria-pressed="true"]{ color:var(--berry); }
+  .bean-detail-hero-fav:active{ transform:scale(.88); }
   .bean-card-meta{font-size:12px; color:var(--text-dim); margin:0 0 10px;}
   .bean-tags{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;}
   .bean-tag{font-size:11px; border:1px solid var(--border); border-radius:var(--radius-pill); padding:3px 10px; color:var(--text-dim);}
@@ -1046,6 +1066,11 @@
   .bean-card-btnrow .bean-use-btn{width:auto; flex:1; font-size:12.5px;}
   .bean-again-btn{border-color:var(--copper-light);}
   .bean-search-row{display:flex; gap:8px; margin-bottom:12px;}
+  /* FIX (self-caught tijdens screenshot-controle): een class-selector met display:flex
+     wint van de standaard [hidden]-UA-stijl (display:none) qua specificiteit, waardoor de
+     zoek/sorteer-balk altijd zichtbaar bleef, ook bij <4 bonen ondanks searchRow.hidden=true
+     in renderBeanLibraryScreen(). Puur een CSS-specificiteitsfix, geen JS aangeraakt. */
+  .bean-search-row[hidden]{display:none;}
   .bean-search-row #bean-search-input{flex:2;}
   .bean-search-row #bean-sort-select{flex:1;}
   .bean-card-stock{font-size:11.5px; color:var(--text-faint); margin:2px 0 8px;}
@@ -1513,10 +1538,14 @@
          smaakprofiel uit het brouwlogboek van déze boon. -->
     <section class="screen" id="screen-bean-detail" data-screen="bean-detail">
       <button class="back-btn" data-back="beans">← Mijn bonen</button>
-      <div class="photo-slot photo-slot--hero" data-has-photo="true" aria-hidden="true">
-        <img class="photo-slot-img" src="photos/bean-macro.jpg" alt="" loading="lazy">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3c4 2 7 5.5 7 10a7 7 0 0 1-14 0c0-4.5 3-8 7-10Z"/></svg>
-        <div class="photo-scrim"></div>
+      <div class="photo-slot photo-slot--hero">
+        <img class="photo-slot-img" src="photos/bean-macro.jpg" alt="" loading="lazy" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 3c4 2 7 5.5 7 10a7 7 0 0 1-14 0c0-4.5 3-8 7-10Z"/></svg>
+        <div class="photo-scrim" aria-hidden="true"></div>
+        <!-- NIEUW (Visual Design 2.0 fase 3, boon-niveau favorieten): overlay-hartje op de
+             hero-foto — losstaand van de bestaande brewlog-entry-favorieten (die zitten op
+             loggings, dit zit op de boon zelf). Zie bean.favorite / toggleBeanFavorite(). -->
+        <button type="button" class="bean-detail-hero-fav" id="bean-detail-fav-btn" aria-pressed="false" aria-label="Toevoegen aan favorieten">♡</button>
       </div>
       <h1 class="title" data-screen-heading tabindex="-1" id="bean-detail-name"></h1>
       <p class="bean-detail-meta" id="bean-detail-meta"></p>
@@ -1531,14 +1560,24 @@
            secties hieronder herschikt onder tabs i.p.v. gestapeld. Geen enkele onderliggende
            databron/functie gewijzigd — puur presentatie + welke container zichtbaar is. -->
       <div class="detail-tabs" id="bean-detail-tabs" role="tablist" aria-label="Boondetails">
-        <button type="button" class="detail-tab" data-tab="over" role="tab" aria-selected="true">Over</button>
+        <button type="button" class="detail-tab" data-tab="overzicht" role="tab" aria-selected="true">Overzicht</button>
         <button type="button" class="detail-tab" data-tab="smaakprofiel" role="tab" aria-selected="false">Smaakprofiel</button>
-        <button type="button" class="detail-tab" data-tab="herkomst" role="tab" aria-selected="false">Herkomst</button>
-        <button type="button" class="detail-tab" data-tab="details" role="tab" aria-selected="false">Details</button>
+        <button type="button" class="detail-tab" data-tab="historie" role="tab" aria-selected="false">Historie</button>
+        <button type="button" class="detail-tab" data-tab="recepten" role="tab" aria-selected="false">Recepten</button>
       </div>
 
-      <div class="detail-tab-panel" data-tab-panel="over" id="bean-detail-panel-over">
+      <div class="detail-tab-panel" data-tab-panel="overzicht" id="bean-detail-panel-overzicht">
         <p class="bean-detail-about" id="bean-detail-about"></p>
+        <!-- NIEUW (Visual Design 2.0 fase 3, "Jouw beste brew"-referentie): bewust GEEN
+             samengesteld/verzonnen sterrencijfer (Bouwbesluit B2 verwijderde eerder al zo'n
+             composietscore) — deze kaart toont in plaats daarvan een eerlijk feit uit je eigen
+             data: je favoriete logging (hartje), of anders je meest gebruikte methode +
+             laatste brouwdatum. Zie renderBeanDetailBestBrew(). -->
+        <div class="bean-detail-section" id="bean-detail-best-brew-block" style="margin:16px 0;" hidden>
+          <p class="bean-detail-section-label" id="bean-detail-best-brew-label"></p>
+          <div id="bean-detail-best-brew-body"></div>
+        </div>
+        <div class="bean-detail-fact-grid" id="bean-detail-facts"></div>
       </div>
 
       <div class="detail-tab-panel" data-tab-panel="smaakprofiel" id="bean-detail-panel-smaakprofiel" hidden>
@@ -1549,17 +1588,21 @@
         <p class="empty-hint" id="bean-detail-radar-empty">Nog geen loggings met een smaakscore voor deze boon — hier verschijnt je gemiddelde smaakprofiel zodra je er één hebt.</p>
       </div>
 
-      <div class="detail-tab-panel" data-tab-panel="herkomst" id="bean-detail-panel-herkomst" hidden>
-        <div class="bean-detail-fact-grid" id="bean-detail-facts-herkomst"></div>
+      <!-- NIEUW (Visual Design 2.0 fase 3, detail-referentie: tabs "Overzicht/Smaakprofiel/
+           Historie/Recepten"): Herkomst/Details-feiten zijn hierboven in Overzicht opgenomen;
+           deze tab toont voortaan de volledige brouwgeschiedenis van déze boon inline
+           (i.p.v. een losse knop die wegnavigeert), met dezelfde kaart/hartje als Historie. -->
+      <div class="detail-tab-panel" data-tab-panel="historie" id="bean-detail-panel-historie" hidden>
+        <div id="bean-detail-history-list"></div>
+        <p class="empty-hint" id="bean-detail-history-empty" hidden>Nog geen loggings voor deze boon.</p>
       </div>
 
-      <div class="detail-tab-panel" data-tab-panel="details" id="bean-detail-panel-details" hidden>
-        <div class="bean-detail-fact-grid" id="bean-detail-facts-details"></div>
-        <div class="bean-detail-section" style="margin-top:18px;">
-          <p class="bean-detail-section-label">Brouwgeschiedenis</p>
-          <p class="empty-hint" id="bean-detail-history-empty" hidden>Nog geen loggings voor deze boon.</p>
-          <button type="button" class="advisor-link" id="bean-detail-history-btn" hidden>📋 Volledige geschiedenis bekijken →</button>
-        </div>
+      <!-- NIEUW (Visual Design 2.0 fase 3): "Recepten" = de recepten die je met déze boon al
+           hebt gezet, één kaart per gebruikte methode met de laatst geloggede werkelijke
+           waarden — puur een groepering van bestaande brewLog-data, geen nieuwe berekening. -->
+      <div class="detail-tab-panel" data-tab-panel="recepten" id="bean-detail-panel-recepten" hidden>
+        <div id="bean-detail-recipes-list"></div>
+        <p class="empty-hint" id="bean-detail-recipes-empty" hidden>Nog geen recepten gelogd voor deze boon — gebruik "Zet deze boon →" hieronder om te starten.</p>
       </div>
 
       <div class="bean-card-btnrow" style="margin-top:4px;">
@@ -6212,6 +6255,7 @@ function renderBeanLibraryScreen(){
           <div class="bean-card-header">
             <span class="bean-card-name">${escapeHtml(b.name || 'Naamloze boon')}</span>
             <span class="bean-card-actions">
+              <button class="bean-fav" data-fav="${b.id}" aria-pressed="${b.favorite ? 'true' : 'false'}" aria-label="${b.favorite ? 'Verwijderen uit favorieten' : 'Toevoegen aan favorieten'}">${b.favorite ? '♥' : '♡'}</button>
               <button class="bean-edit" data-edit="${b.id}" aria-label="Bewerken">✎</button>
               <button class="bean-delete" data-del="${b.id}" aria-label="Verwijderen">×</button>
             </span>
@@ -6234,6 +6278,7 @@ function renderBeanLibraryScreen(){
       ${brewLog.some(e=>e.beanId===b.id) ? `<button class="advisor-link" style="margin-top:6px;" data-history="${b.id}">📋 Geschiedenis (${brewLog.filter(e=>e.beanId===b.id).length})</button>` : ''}
     </div>`;
   }).join('');
+  el.querySelectorAll('[data-fav]').forEach(btn=>btn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleBeanFavorite(btn.getAttribute('data-fav')); }));
   el.querySelectorAll('[data-del]').forEach(btn=>btn.addEventListener('click', (e)=>{ e.stopPropagation(); deleteBean(btn.getAttribute('data-del')); }));
   el.querySelectorAll('[data-use]').forEach(btn=>btn.addEventListener('click', (e)=>{ e.stopPropagation(); useBeanForAdvice(btn.getAttribute('data-use')); }));
   el.querySelectorAll('[data-again]').forEach(btn=>btn.addEventListener('click', (e)=>{ e.stopPropagation(); brewAgain(btn.getAttribute('data-again')); }));
@@ -6418,7 +6463,7 @@ function openBeanDetail(id){
   const bean = beanLibrary.find(b=>b.id===id);
   if (!bean) return;
   beanDetailId = id;
-  selectDetailTab('bean-detail-tabs', 'over');
+  selectDetailTab('bean-detail-tabs', 'overzicht');
   renderBeanDetail(bean);
   showScreen('bean-detail');
 }
@@ -6445,6 +6490,13 @@ function renderBeanDetail(bean){
   document.getElementById('bean-detail-badges').innerHTML = badges.join('');
   document.getElementById('bean-detail-flavor-tags').innerHTML = flavorTagChipsHtml(bean.flavorNotes);
 
+  const favBtn = document.getElementById('bean-detail-fav-btn');
+  if (favBtn){
+    favBtn.setAttribute('aria-pressed', bean.favorite ? 'true' : 'false');
+    favBtn.setAttribute('aria-label', bean.favorite ? 'Verwijderen uit favorieten' : 'Toevoegen aan favorieten');
+    favBtn.textContent = bean.favorite ? '♥' : '♡';
+  }
+
   const fmtDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('nl-NL', { day:'numeric', month:'short', year:'numeric' }) : '—';
   // NIEUW (Visual Design 2.0 fase 2, "Over"-tab): een samenvattende zin, volledig
   // opgebouwd uit al bestaande, door de gebruiker ingevulde velden — geen enkel nieuw
@@ -6458,41 +6510,121 @@ function renderBeanDetail(bean){
   if (bean.flavorNotes && bean.flavorNotes.length) aboutParts.push(`Smaaknotities: ${escapeHtml(bean.flavorNotes.join(', '))}.`);
   document.getElementById('bean-detail-about').innerHTML = aboutParts.join(' ');
 
-  const herkomstFacts = [
+  // NIEUW (Visual Design 2.0 fase 3): Herkomst- en Details-feiten samengevoegd in één grid
+  // op de Overzicht-tab (de losse Herkomst/Details-tabs zijn vervangen door Historie/
+  // Recepten) — zelfde labels/waarden/volgorde als voorheen, alleen niet meer verdeeld
+  // over twee tabs.
+  const facts = [
     ['Land', bean.country || '—'],
     ['Regio', bean.region || '—'],
     ['Hoogte', bean.altitude ? bean.altitude + ' m' : '—'],
     ['Proces', procName || '—'],
     ['Variëteit', bean.variety || '—'],
-    ['Farm / washing station', bean.farm || '—']
-  ];
-  document.getElementById('bean-detail-facts-herkomst').innerHTML = herkomstFacts.map(([label,val])=>
-    `<div><div class="bean-detail-fact-label">${escapeHtml(label)}</div><div class="bean-detail-fact-value">${escapeHtml(String(val))}</div></div>`
-  ).join('');
-
-  const detailFacts = [
+    ['Farm / washing station', bean.farm || '—'],
     ['Roast', r.name],
     ['Smaakprofiel', p.name],
     ['Branddatum', fmtDate(bean.roastDate)],
     ['Zak geopend op', fmtDate(bean.openedDate)]
   ];
-  document.getElementById('bean-detail-facts-details').innerHTML = detailFacts.map(([label,val])=>
+  document.getElementById('bean-detail-facts').innerHTML = facts.map(([label,val])=>
     `<div><div class="bean-detail-fact-label">${escapeHtml(label)}</div><div class="bean-detail-fact-value">${escapeHtml(String(val))}</div></div>`
   ).join('');
 
   renderBeanDetailRadar(bean.id);
-
-  const entries = brewLog.filter(e=>e.beanId===bean.id);
-  const historyBtn = document.getElementById('bean-detail-history-btn');
-  const historyEmpty = document.getElementById('bean-detail-history-empty');
-  if (entries.length){
-    historyBtn.hidden = false;
-    historyBtn.textContent = `📋 Volledige geschiedenis bekijken (${entries.length}) →`;
-    historyEmpty.hidden = true;
+  renderBeanDetailBestBrew(bean);
+  renderBeanDetailHistoryTab(bean.id);
+  renderBeanDetailRecipesTab(bean.id);
+}
+// NIEUW (Visual Design 2.0 fase 3, detail-referentie "Jouw beste brew"): bewust geen
+// samengesteld/verzonnen sterrencijfer (zie Bouwbesluit B2, die eerder al zo'n composietscore
+// verwijderde) — deze kaart toont in plaats daarvan één eerlijk feit uit brewLog: je
+// gemarkeerde favoriete logging voor deze boon, of anders (geen favoriet gezet) je meest
+// gebruikte methode + laatste brouwdatum. Geen enkel nieuw veld/geen enkele berekening die
+// een "beste" kwaliteit zou suggereren.
+function renderBeanDetailBestBrew(bean){
+  const block = document.getElementById('bean-detail-best-brew-block');
+  const label = document.getElementById('bean-detail-best-brew-label');
+  const body = document.getElementById('bean-detail-best-brew-body');
+  if (!block || !body) return;
+  const entries = brewLog.filter(e=>e.beanId===bean.id).slice().sort((a,b)=>b.timestamp-a.timestamp);
+  if (!entries.length){ block.hidden = true; body.innerHTML = ''; return; }
+  block.hidden = false;
+  const fav = entries.find(e=>e.favorite);
+  if (fav){
+    label.textContent = 'Jouw favoriete brouwsel';
+    body.innerHTML = renderBrewLogEntryCard(fav, bean.id);
   } else {
-    historyBtn.hidden = true;
-    historyEmpty.hidden = false;
+    label.textContent = 'Brouwstatistieken';
+    const counts = {};
+    entries.forEach(e=>{ counts[e.method] = (counts[e.method] || 0) + 1; });
+    const topMethod = Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0];
+    const m = METHOD_INFO[topMethod];
+    const lastDate = new Date(entries[0].timestamp).toLocaleDateString('nl-NL', { day:'numeric', month:'short', year:'numeric' });
+    const statFacts = [
+      ['Meest gebruikte methode', `${m ? m.name : topMethod} (${counts[topMethod]}×)`],
+      ['Laatste brouwsel', lastDate],
+      ['Totaal aantal loggings', String(entries.length)]
+    ];
+    body.innerHTML = `<div class="bean-detail-fact-grid">${statFacts.map(([l,v])=>
+      `<div><div class="bean-detail-fact-label">${escapeHtml(l)}</div><div class="bean-detail-fact-value">${escapeHtml(v)}</div></div>`
+    ).join('')}</div>`;
   }
+  wireFavToggleButtons(body);
+}
+// NIEUW (Visual Design 2.0 fase 3, Historie-tab): volledige brouwgeschiedenis van déze boon,
+// nu inline getoond i.p.v. via een losse knop naar #screen-brewlog-history — hergebruikt
+// dezelfde renderBrewLogEntryCard() als het Historie-scherm, dus identieke kaart/hartje.
+function renderBeanDetailHistoryTab(beanId){
+  const list = document.getElementById('bean-detail-history-list');
+  const empty = document.getElementById('bean-detail-history-empty');
+  if (!list) return;
+  const entries = brewLog.filter(e=>e.beanId===beanId).slice().sort((a,b)=>b.timestamp-a.timestamp);
+  if (!entries.length){
+    list.innerHTML = '';
+    if (empty) empty.hidden = false;
+    return;
+  }
+  if (empty) empty.hidden = true;
+  list.innerHTML = entries.map(e=>renderBrewLogEntryCard(e, beanId)).join('');
+  wireFavToggleButtons(list);
+}
+// NIEUW (Visual Design 2.0 fase 3, Recepten-tab): de recepten die je met déze boon al hebt
+// gezet — één kaart per gebruikte methode, met de meest recente werkelijke receptwaarden
+// voor die methode. Puur een groepering van bestaande brewLog-velden (geen nieuwe advies-
+// berekening, geen live aanroep van de advisor-engine).
+function renderBeanDetailRecipesTab(beanId){
+  const list = document.getElementById('bean-detail-recipes-list');
+  const empty = document.getElementById('bean-detail-recipes-empty');
+  if (!list) return;
+  const entries = brewLog.filter(e=>e.beanId===beanId).slice().sort((a,b)=>b.timestamp-a.timestamp);
+  if (!entries.length){
+    list.innerHTML = '';
+    if (empty) empty.hidden = false;
+    return;
+  }
+  if (empty) empty.hidden = true;
+  const latestByMethod = {};
+  const countByMethod = {};
+  entries.forEach(e=>{
+    countByMethod[e.method] = (countByMethod[e.method] || 0) + 1;
+    if (!latestByMethod[e.method]) latestByMethod[e.method] = e; // entries is al nieuw->oud gesorteerd
+  });
+  list.innerHTML = Object.keys(latestByMethod).map(methodKey=>{
+    const e = latestByMethod[methodKey];
+    const m = METHOD_INFO[methodKey];
+    const dateStr = new Date(e.timestamp).toLocaleDateString('nl-NL', { day:'numeric', month:'short', year:'numeric' });
+    const metaBits = [];
+    if (e.doseG != null) metaBits.push(`${fmt(e.doseG,1)} g`);
+    if (e.ratioText) metaBits.push(e.ratioText);
+    if (e.waterMl) metaBits.push(`${e.waterMl} ml`);
+    if (e.grindMicron) metaBits.push(`${e.grindMicron} µm`);
+    if (e.temp) metaBits.push(`${e.temp}°C`);
+    return `<div class="brewlog-entry-card">
+      <div class="brewlog-entry-header"><strong>${m ? m.name : methodKey}${e.bypass ? ' · bypass' : ''}</strong><span class="brewlog-entry-date">${countByMethod[methodKey]}× gezet</span></div>
+      <div class="brewlog-entry-meta">${metaBits.map(escapeHtml).join(' · ')}</div>
+      <div class="brewlog-entry-meta">Laatst gezet: ${dateStr}</div>
+    </div>`;
+  }).join('');
 }
 // Gemiddeld cupping-profiel van deze boon (per as het gemiddelde van alle loggings met een
 // score op die as) — zelfde assen/schaal/geometrie als het boonformulier, alleen een eigen
@@ -6535,7 +6667,7 @@ function renderBeanDetailRadar(beanId){
 }
 document.getElementById('bean-detail-edit-btn').addEventListener('click', ()=>{ if (beanDetailId) editBean(beanDetailId); });
 document.getElementById('bean-detail-use-btn').addEventListener('click', ()=>{ if (beanDetailId) useBeanForAdvice(beanDetailId); });
-document.getElementById('bean-detail-history-btn').addEventListener('click', ()=>{ if (beanDetailId) renderBrewLogHistory(beanDetailId); });
+document.getElementById('bean-detail-fav-btn').addEventListener('click', ()=>{ if (beanDetailId) toggleBeanFavorite(beanDetailId); });
 wireDetailTabs('bean-detail-tabs');
 wireDetailTabs('history-tabs');
 
@@ -6705,6 +6837,19 @@ function deleteBean(id){
   saveBeansToStorage();
   renderBeanLibraryScreen();
   renderBeanChipsInAdvice();
+}
+
+// NIEUW (Visual Design 2.0 fase 3, boon-niveau favorieten): losstaand van de bestaande
+// brewlog-entry-favorieten (toggleBrewLogFavorite) — dit is een boolean op de boon zelf,
+// zichtbaar als hartje op de boonkaart en op de Bean Detail hero-foto. Zelfde opslagpad als
+// elke andere boonwijziging (saveBeansToStorage()).
+function toggleBeanFavorite(id){
+  const bean = beanLibrary.find(b=>b.id===id);
+  if (!bean) return;
+  bean.favorite = !bean.favorite;
+  saveBeansToStorage();
+  renderBeanLibraryScreen();
+  if (beanDetailId === id) renderBeanDetail(bean);
 }
 
 /* ============================================================
@@ -6946,18 +7091,43 @@ function renderBrewLogEntryCard(e, beanId){
     ${suggestionHtml}
   </div>`;
 }
-// NIEUW (Visual Design 2.0 fase 2): favoriet-status van één logging omschakelen — puur een
-// boolean op het bestaande entry-record, opgeslagen via de al bestaande
-// saveBrewLogToStorage(). Geen ander veld/geen andere logica aangeraakt.
+// NIEUW (Visual Design 2.0 fase 2/3): gedeelde hartje-bekabeling voor elke plek waar
+// renderBrewLogEntryCard() wordt gebruikt (Historie-scherm, Bean Detail Historie-tab,
+// Bean Detail beste-brew-kaart) — scoped op de container i.p.v. een globale
+// document.querySelectorAll, zodat herhaalde renders geen dubbele listeners op elkaars
+// kaarten stapelen.
+function wireFavToggleButtons(container){
+  if (!container) return;
+  container.querySelectorAll('[data-fav-toggle]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); toggleBrewLogFavorite(btn.getAttribute('data-fav-toggle')); });
+  });
+}
+// FIX (Visual Design 2.0 fase 3): deze functie riep voorheen altijd renderBrewLogHistory()
+// aan, die op zijn beurt altijd showScreen('brewlog-history') deed — dus een tik op het
+// hartje in de nieuwe Bean Detail-tabs navigeerde per ongeluk weg naar het Historie-scherm.
+// Ververst nu alleen de al-opgebouwde weergaven waarin deze logging kan voorkomen, zonder
+// een schermwissel te forceren.
 function toggleBrewLogFavorite(id){
   const entry = brewLog.find(e=>e.id===id);
   if (!entry) return;
   entry.favorite = !entry.favorite;
   saveBrewLogToStorage();
-  renderBrewLogHistory(historyBeanIdShown);
+  renderBrewLogHistoryLists(historyBeanIdShown);
+  if (beanDetailId){
+    const bean = beanLibrary.find(b=>b.id===beanDetailId);
+    if (bean){ renderBeanDetailBestBrew(bean); renderBeanDetailHistoryTab(beanDetailId); }
+  }
 }
 let historyBeanIdShown = null;
+// Opgesplitst (Visual Design 2.0 fase 3) in de lijst-opbouw (renderBrewLogHistoryLists,
+// hergebruikt door toggleBrewLogFavorite zonder te navigeren) en deze buitenste functie die
+// daarna showScreen() doet — elke bestaande aanroep van renderBrewLogHistory(beanId) blijft
+// exact hetzelfde gedrag vertonen (lijst opbouwen + naar het scherm navigeren).
 function renderBrewLogHistory(beanId){
+  renderBrewLogHistoryLists(beanId);
+  showScreen('brewlog-history');
+}
+function renderBrewLogHistoryLists(beanId){
   // NIEUW (vervolgplan v2.3, Fase 5 — Historie als bestemming): tot nu toe werd deze
   // functie alleen met een concrete beanId aangeroepen (vanaf een boonkaart); een leeg/
   // undefined beanId toont voortaan ALLE loggings, zodat #screen-brewlog-history ook als
@@ -6974,21 +7144,18 @@ function renderBrewLogHistory(beanId){
   el.innerHTML = allEntries.length
     ? allEntries.map(e=>renderBrewLogEntryCard(e, beanId)).join('')
     : `<p class="empty-hint">${beanId ? 'Nog geen loggings voor deze boon.' : 'Nog geen brouwsels gelogd — dat verschijnt hier zodra je een brouwsel afrondt en opslaat.'}</p>`;
+  wireFavToggleButtons(el);
 
   const elFav = document.getElementById('brewlog-history-list-fav');
   if (elFav){
     elFav.innerHTML = favEntries.length
       ? favEntries.map(e=>renderBrewLogEntryCard(e, beanId)).join('')
       : `<p class="empty-hint">Nog geen favorieten — tik op het hartje bij een logging om 'm hier terug te vinden.</p>`;
+    wireFavToggleButtons(elFav);
   }
-  document.querySelectorAll('[data-fav-toggle]').forEach(btn=>{
-    btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); toggleBrewLogFavorite(btn.getAttribute('data-fav-toggle')); });
-  });
 
   const statsBody = document.getElementById('history-stats-body');
   if (statsBody) renderInsightsScreen('history-stats-body');
-
-  showScreen('brewlog-history');
 }
 
 /* FIX (teamreview v2 — Hoog bevinding, Data Scientist/Software Architect: "verzamel-
