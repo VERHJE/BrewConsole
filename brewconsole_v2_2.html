@@ -958,7 +958,12 @@
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px;
     box-shadow:var(--shadow-card);
   }
-  .bean-card-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;}
+  .bean-card-top{display:flex; gap:12px; align-items:flex-start; margin-bottom:4px;}
+  .bean-card-top .photo-slot--strip{margin-bottom:0;}
+  .bean-card-top-text{flex:1; min-width:0;}
+  .bean-card-top-text .bean-card-header{margin-bottom:4px;}
+  .bean-card-top-text .bean-card-meta, .bean-card-top-text .badge-row{margin-bottom:0;}
+  .bean-card-header{display:flex; align-items:center; justify-content:space-between;}
   .bean-card-name{font-family:var(--font-display); font-weight:600; font-size:16px;}
   .bean-card-actions{display:flex; align-items:center; margin:-11px -11px -11px 0;}
   .bean-edit, .bean-delete{
@@ -6066,15 +6071,27 @@ function renderBeanLibraryScreen(){
       stockBadge = `<span class="badge" data-tone="${low ? 'warn' : 'neutral'}">${label}</span>`;
     }
     return `<div class="bean-card" data-open-detail="${b.id}" role="button" tabindex="0" aria-label="Bekijk ${escapeHtml(b.name || 'boon')}">
-      <div class="bean-card-header">
-        <span class="bean-card-name">${escapeHtml(b.name || 'Naamloze boon')}</span>
-        <span class="bean-card-actions">
-          <button class="bean-edit" data-edit="${b.id}" aria-label="Bewerken">✎</button>
-          <button class="bean-delete" data-del="${b.id}" aria-label="Verwijderen">×</button>
-        </span>
+      <div class="bean-card-top">
+        <!-- NIEUW (Visual Design 2.0 fase 2, detail-referentie schermen 03/11): een kleine
+             foto-thumbnail per boonkaart, zoals de referentie toont. Bewust de bestaande,
+             gedeelde placeholder-foto (geen per-boon-fotostorage — dat zou een nieuwe
+             feature zijn: fotografie-upload/opslag per boon, niet gevraagd) — hetzelfde
+             "neutraal vlak i.p.v. verzonnen specificiteit"-principe als elders (Bouwbesluit B6). -->
+        <div class="photo-slot photo-slot--strip" data-has-photo="true" aria-hidden="true">
+          <img class="photo-slot-img" src="photos/bean-macro.jpg" alt="" loading="lazy">
+        </div>
+        <div class="bean-card-top-text">
+          <div class="bean-card-header">
+            <span class="bean-card-name">${escapeHtml(b.name || 'Naamloze boon')}</span>
+            <span class="bean-card-actions">
+              <button class="bean-edit" data-edit="${b.id}" aria-label="Bewerken">✎</button>
+              <button class="bean-delete" data-del="${b.id}" aria-label="Verwijderen">×</button>
+            </span>
+          </div>
+          ${meta ? `<p class="bean-card-meta">${escapeHtml(meta)}</p>` : ''}
+          ${freshBadge || stockBadge ? `<div class="badge-row">${freshBadge}${stockBadge}</div>` : ''}
+        </div>
       </div>
-      ${meta ? `<p class="bean-card-meta">${escapeHtml(meta)}</p>` : ''}
-      ${freshBadge || stockBadge ? `<div class="badge-row">${freshBadge}${stockBadge}</div>` : ''}
       <div class="bean-tags">
         <span class="bean-tag" style="border-color:${p.color}; color:${p.color}">${p.name}</span>
         <span class="bean-tag">${r.name}</span>
