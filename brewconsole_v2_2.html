@@ -1167,6 +1167,25 @@
   .bean-detail-fact-label{font-size:11px; color:var(--text-faint);}
   .bean-detail-fact-value{font-size:13.5px; color:var(--text);}
 
+  /* NIEUW (Visual Design 2.0 fase 2, detail-referentie scherm 04 + spec §11 "use tabs/
+     segments for existing detail sections where appropriate"): een SegmentedControl-achtige
+     tab-balk voor Bean Detail — zelfde "seated" selectie-taal als .chip[data-selected], maar
+     gelijke-breedte segmenten i.p.v. wrappende pillen. */
+  .detail-tabs{
+    display:flex; gap:4px; background:var(--surface-2); border:1px solid var(--border-subtle);
+    border-radius:var(--radius-md); padding:4px; margin:14px 0 18px;
+  }
+  .detail-tab{
+    flex:1; text-align:center; padding:9px 4px; border-radius:var(--radius-sm); border:none;
+    background:none; color:var(--text-muted); font-family:var(--font-mono); font-size:10.5px;
+    letter-spacing:.02em; cursor:pointer;
+    transition:background var(--motion-standard) var(--ease-out), color var(--motion-standard) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
+  }
+  .detail-tab[aria-selected="true"]{ background:var(--surface); color:var(--copper-light); box-shadow:var(--shadow-card); }
+  .detail-tab:active{ transform:scale(.97); }
+  .detail-tab-panel[hidden]{ display:none; }
+  .bean-detail-about{ font-size:13.5px; color:var(--text-dim); line-height:1.6; margin:0; }
+
   /* Inzichten */
   .insights-note{font-size:12.5px; color:var(--text-faint); margin:6px 0 18px; line-height:1.5;}
   .insights-empty{
@@ -1395,21 +1414,40 @@
            als platte tekst — zie renderBeanDetail() en flavorTagChipsHtml() hierboven. -->
       <div id="bean-detail-flavor-tags" class="bean-tags"></div>
 
-      <div class="bean-detail-section">
-        <p class="bean-detail-section-label">Kenmerken</p>
-        <div class="bean-detail-fact-grid" id="bean-detail-facts"></div>
-        <p class="bean-card-notes" id="bean-detail-notes" style="margin-top:10px;"></p>
+      <!-- NIEUW (Visual Design 2.0 fase 2, detail-referentie scherm 04, spec §11 "Use
+           tabs/segments for existing detail sections where appropriate"): de bestaande
+           secties hieronder herschikt onder tabs i.p.v. gestapeld. Geen enkele onderliggende
+           databron/functie gewijzigd — puur presentatie + welke container zichtbaar is. -->
+      <div class="detail-tabs" id="bean-detail-tabs" role="tablist" aria-label="Boondetails">
+        <button type="button" class="detail-tab" data-tab="over" role="tab" aria-selected="true">Over</button>
+        <button type="button" class="detail-tab" data-tab="smaakprofiel" role="tab" aria-selected="false">Smaakprofiel</button>
+        <button type="button" class="detail-tab" data-tab="herkomst" role="tab" aria-selected="false">Herkomst</button>
+        <button type="button" class="detail-tab" data-tab="details" role="tab" aria-selected="false">Details</button>
       </div>
 
-      <div class="bean-detail-section" id="bean-detail-radar-block" hidden>
-        <p class="bean-detail-section-label">Gemiddeld smaakprofiel (uit je loggings)</p>
-        <div class="radar-wrap"><svg class="radar-svg" id="bean-detail-radar" viewBox="0 0 260 260"></svg></div>
+      <div class="detail-tab-panel" data-tab-panel="over" id="bean-detail-panel-over">
+        <p class="bean-detail-about" id="bean-detail-about"></p>
       </div>
 
-      <div class="bean-detail-section">
-        <p class="bean-detail-section-label">Brouwgeschiedenis</p>
-        <p class="empty-hint" id="bean-detail-history-empty" hidden>Nog geen loggings voor deze boon.</p>
-        <button type="button" class="advisor-link" id="bean-detail-history-btn" hidden>📋 Volledige geschiedenis bekijken →</button>
+      <div class="detail-tab-panel" data-tab-panel="smaakprofiel" id="bean-detail-panel-smaakprofiel" hidden>
+        <div class="bean-detail-section" id="bean-detail-radar-block" hidden>
+          <p class="bean-detail-section-label">Gemiddeld smaakprofiel (uit je loggings)</p>
+          <div class="radar-wrap"><svg class="radar-svg" id="bean-detail-radar" viewBox="0 0 260 260"></svg></div>
+        </div>
+        <p class="empty-hint" id="bean-detail-radar-empty">Nog geen loggings met een smaakscore voor deze boon — hier verschijnt je gemiddelde smaakprofiel zodra je er één hebt.</p>
+      </div>
+
+      <div class="detail-tab-panel" data-tab-panel="herkomst" id="bean-detail-panel-herkomst" hidden>
+        <div class="bean-detail-fact-grid" id="bean-detail-facts-herkomst"></div>
+      </div>
+
+      <div class="detail-tab-panel" data-tab-panel="details" id="bean-detail-panel-details" hidden>
+        <div class="bean-detail-fact-grid" id="bean-detail-facts-details"></div>
+        <div class="bean-detail-section" style="margin-top:18px;">
+          <p class="bean-detail-section-label">Brouwgeschiedenis</p>
+          <p class="empty-hint" id="bean-detail-history-empty" hidden>Nog geen loggings voor deze boon.</p>
+          <button type="button" class="advisor-link" id="bean-detail-history-btn" hidden>📋 Volledige geschiedenis bekijken →</button>
+        </div>
       </div>
 
       <div class="bean-card-btnrow" style="margin-top:4px;">
@@ -6155,10 +6193,27 @@ function renderInsightsScreen(){
    te passen (die blijft ongewijzigd voor het boonformulier).
    ============================================================ */
 let beanDetailId = null;
+// NIEUW (Visual Design 2.0 fase 2, Bean Detail-tabs): kleine, generieke tab-wissel-helper —
+// zoekt panelen als siblings van de tab-knoppenrij, dus herbruikbaar voor elke toekomstige
+// tabbed sectie zonder aanpassing. Puur zichtbaarheid, geen databron aangeraakt.
+function selectDetailTab(tabsId, key){
+  const tabsEl = document.getElementById(tabsId);
+  if (!tabsEl) return;
+  tabsEl.querySelectorAll('.detail-tab').forEach(t=>t.setAttribute('aria-selected', t.getAttribute('data-tab') === key ? 'true' : 'false'));
+  tabsEl.parentElement.querySelectorAll(':scope > .detail-tab-panel').forEach(p=>{ p.hidden = p.getAttribute('data-tab-panel') !== key; });
+}
+function wireDetailTabs(tabsId){
+  const tabsEl = document.getElementById(tabsId);
+  if (!tabsEl) return;
+  tabsEl.querySelectorAll('.detail-tab').forEach(tab=>{
+    tab.addEventListener('click', ()=> selectDetailTab(tabsId, tab.getAttribute('data-tab')));
+  });
+}
 function openBeanDetail(id){
   const bean = beanLibrary.find(b=>b.id===id);
   if (!bean) return;
   beanDetailId = id;
+  selectDetailTab('bean-detail-tabs', 'over');
   renderBeanDetail(bean);
   showScreen('bean-detail');
 }
@@ -6186,19 +6241,39 @@ function renderBeanDetail(bean){
   document.getElementById('bean-detail-flavor-tags').innerHTML = flavorTagChipsHtml(bean.flavorNotes);
 
   const fmtDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('nl-NL', { day:'numeric', month:'short', year:'numeric' }) : '—';
-  const facts = [
+  // NIEUW (Visual Design 2.0 fase 2, "Over"-tab): een samenvattende zin, volledig
+  // opgebouwd uit al bestaande, door de gebruiker ingevulde velden — geen enkel nieuw
+  // feit verzonnen (geen "Oogst"/"Brander" o.i.d. die niet in het boonformulier bestaan).
+  const aboutParts = [];
+  // 'overig' (PROCESS_INFO) is expliciet de "weet ik niet"-placeholder, geen echt proces —
+  // die hoort hier niet in een "..., X verwerkt"-zin (zou onzin-Nederlands opleveren).
+  const knownProcName = (procName && bean.process !== 'overig') ? procName : null;
+  aboutParts.push(`${escapeHtml(bean.name || 'Deze boon')} is een ${escapeHtml(r.name.toLowerCase())} roast met een ${escapeHtml(p.name.toLowerCase())}-profiel${knownProcName ? `, ${escapeHtml(knownProcName.toLowerCase())} verwerkt` : ''}.`);
+  if (meta) aboutParts.push(`Herkomst: ${escapeHtml(meta)}.`);
+  if (bean.flavorNotes && bean.flavorNotes.length) aboutParts.push(`Smaaknotities: ${escapeHtml(bean.flavorNotes.join(', '))}.`);
+  document.getElementById('bean-detail-about').innerHTML = aboutParts.join(' ');
+
+  const herkomstFacts = [
+    ['Land', bean.country || '—'],
+    ['Regio', bean.region || '—'],
+    ['Hoogte', bean.altitude ? bean.altitude + ' m' : '—'],
+    ['Proces', procName || '—'],
+    ['Variëteit', bean.variety || '—'],
+    ['Farm / washing station', bean.farm || '—']
+  ];
+  document.getElementById('bean-detail-facts-herkomst').innerHTML = herkomstFacts.map(([label,val])=>
+    `<div><div class="bean-detail-fact-label">${escapeHtml(label)}</div><div class="bean-detail-fact-value">${escapeHtml(String(val))}</div></div>`
+  ).join('');
+
+  const detailFacts = [
     ['Roast', r.name],
     ['Smaakprofiel', p.name],
-    ['Proces', procName || '—'],
-    ['Hoogte', bean.altitude ? bean.altitude + ' m' : '—'],
     ['Branddatum', fmtDate(bean.roastDate)],
     ['Zak geopend op', fmtDate(bean.openedDate)]
   ];
-  document.getElementById('bean-detail-facts').innerHTML = facts.map(([label,val])=>
+  document.getElementById('bean-detail-facts-details').innerHTML = detailFacts.map(([label,val])=>
     `<div><div class="bean-detail-fact-label">${escapeHtml(label)}</div><div class="bean-detail-fact-value">${escapeHtml(String(val))}</div></div>`
   ).join('');
-  const notesEl = document.getElementById('bean-detail-notes');
-  notesEl.textContent = (bean.flavorNotes && bean.flavorNotes.length) ? bean.flavorNotes.join(' · ') : '';
 
   renderBeanDetailRadar(bean.id);
 
@@ -6220,10 +6295,12 @@ function renderBeanDetail(bean){
 function renderBeanDetailRadar(beanId){
   const svg = document.getElementById('bean-detail-radar');
   const block = document.getElementById('bean-detail-radar-block');
+  const emptyHint = document.getElementById('bean-detail-radar-empty');
   if (!svg || !block) return;
   const entries = brewLog.filter(e=>e.beanId===beanId && e.scores);
-  if (!entries.length){ block.hidden = true; svg.innerHTML = ''; return; }
+  if (!entries.length){ block.hidden = true; svg.innerHTML = ''; if (emptyHint) emptyHint.hidden = false; return; }
   block.hidden = false;
+  if (emptyHint) emptyHint.hidden = true;
   const n = CUPPING_AXES.length;
   const values = CUPPING_AXES.map(axis=>{
     const vals = entries.map(e=>e.scores[axis]).filter(v=>v!=null && !isNaN(v));
@@ -6254,6 +6331,7 @@ function renderBeanDetailRadar(beanId){
 document.getElementById('bean-detail-edit-btn').addEventListener('click', ()=>{ if (beanDetailId) editBean(beanDetailId); });
 document.getElementById('bean-detail-use-btn').addEventListener('click', ()=>{ if (beanDetailId) useBeanForAdvice(beanDetailId); });
 document.getElementById('bean-detail-history-btn').addEventListener('click', ()=>{ if (beanDetailId) renderBrewLogHistory(beanDetailId); });
+wireDetailTabs('bean-detail-tabs');
 
 /* FIX (teamreview v2 — Midden bevinding, Backend/Database Engineer): individuele
    boon- en logboekrecords hadden geen eigen schemaversie, terwijl de backup-payload
