@@ -80,6 +80,9 @@
     --surface-1:var(--surface);
     --surface-floating:rgba(28,28,26,.72); /* Level 2 glass: --surface met alpha, zie §6 */
     --surface-floating-border:rgba(237,230,217,.08); /* zeer laag-contrast, §6 "avoid bright white glass borders" */
+    /* Cleanup: was 2x letterlijk herhaald (stop-btn, navbar) i.p.v. gedeeld — zelfde
+       waarde in beide theme's, dus hier één keer gedefinieerd i.p.v. per-theme. */
+    --glass-blur:blur(20px) saturate(1.4);
     --text-primary:var(--text);
     --text-secondary:var(--text-dim);
     --text-muted:var(--text-faint);
@@ -257,22 +260,6 @@
   .modal-btn:active{transform:scale(.97);}
   .modal-btn-secondary{background:var(--surface-2); color:var(--text);}
   .modal-btn-danger{background:var(--danger); color:#fff; border-color:var(--danger);}
-
-  /* NIEUW (Visual Design 2.0, §6 GlassSurface — selective glassmorphism): uitsluitend
-     voor floating navigatie, floating controls en status-panels (§6: "never blur the
-     whole page"). Dun, laag-contrast randje i.p.v. een heldere highlight (§6 "avoid
-     bright white glass borders"), tekst blijft altijd volledig opaak. backdrop-filter
-     heeft in alle relevante browsers (incl. mobiele Safari) een @supports-fallback naar
-     een gewone ondoorzichtige surface — geen enkel scherm hangt af van glas om leesbaar
-     te zijn. */
-  .glass-surface{
-    background:var(--surface-floating);
-    border:1px solid var(--surface-floating-border);
-    box-shadow:var(--shadow-floating);
-  }
-  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)){
-    .glass-surface{ backdrop-filter:blur(20px) saturate(1.4); -webkit-backdrop-filter:blur(20px) saturate(1.4); }
-  }
 
   /* NIEUW (Visual Design 2.0, §19 Subtle texture): microscopische monochrome grain,
      ~1-2% opacity, op geselecteerde grote donkere oppervlakken — CSS-only (geen
@@ -774,7 +761,7 @@
   @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)){
     .stop-btn{
       background:var(--surface-floating); border-color:var(--surface-floating-border);
-      -webkit-backdrop-filter:blur(20px) saturate(1.4); backdrop-filter:blur(20px) saturate(1.4);
+      -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
     }
   }
   .wake-indicator{
@@ -1180,7 +1167,6 @@
   .bean-card-meta{font-size:12px; color:var(--text-dim); margin:0 0 10px;}
   .bean-tags{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;}
   .bean-tag{font-size:11px; border:1px solid var(--border); border-radius:var(--radius-pill); padding:3px 10px; color:var(--text-dim);}
-  .bean-card-notes{font-size:12px; color:var(--text-faint); font-style:italic; margin:0 0 12px;}
   .bean-use-btn{
     width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm);
     padding:10px; color:var(--copper-light); font-size:13px; cursor:pointer;
@@ -1200,8 +1186,6 @@
   .bean-search-row[hidden]{display:none;}
   .bean-search-row #bean-search-input{flex:2;}
   .bean-search-row #bean-sort-select{flex:1;}
-  .bean-card-stock{font-size:11.5px; color:var(--text-faint); margin:2px 0 8px;}
-  .bean-card-stock[data-low="true"]{color:var(--danger);}
   .backup-row{display:flex; gap:8px; margin-top:12px;}
   .backup-row .advisor-link{flex:1; text-align:center; border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px;}
   .empty-hint{font-size:13px; color:var(--text-faint); margin-bottom:16px;}
@@ -1307,7 +1291,7 @@
     padding:6px max(8px, var(--safe-r)) max(6px, var(--safe-b)) max(8px, var(--safe-l));
   }
   @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)){
-    .navbar{ backdrop-filter:blur(20px) saturate(1.4); -webkit-backdrop-filter:blur(20px) saturate(1.4); }
+    .navbar{ backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); }
   }
   .navbar[hidden]{display:none;}
   .navbar-btn{
@@ -1384,7 +1368,6 @@
   /* Home-scherm — NIEUW (Visual Design 2.0, §10): tactiele diepte op de CTA-kaarten en
      een lichte hover/press-lift op de boon-strip-kaarten (al <button>-elementen, alleen
      presentatie toegevoegd — geen enkele klik-handler aangeraakt). */
-  .home-greeting{font-family:var(--font-display); font-size:22px; font-weight:600; margin:0 0 4px;}
   .home-cta{
     display:block; width:100%; text-align:left; background:var(--surface); border:1px solid var(--copper-dim);
     border-radius:var(--radius-md); padding:16px; margin-bottom:12px; cursor:pointer; color:var(--text);
