@@ -8373,6 +8373,17 @@ function renderPrep(){
   // een modifier-class. Bewust geen apart grid-element: de bestaande tests zoeken
   // "#stats-grid .stat-block" (incl. .first() voor de dosis) en die aanname blijft kloppen
   // zolang Dosis het eerste blok is en Maalgraad ergens in dezelfde grid staat.
+  // NIEUW (detail-referentie recept-scherm, gebruikersinstructie): toon bij Maalgraad niet
+  // alleen de kwalitatieve band ("Medium-fine") als er geen µm-waarde is, maar de echte
+  // klikrange (bijv. "Klik 15–17") — die data (grindStartingRange/grindPracticalRange)
+  // bestond al en werd al getoond als stat-sub-toelichting hieronder, nu ook als kopregel.
+  // Geen nieuw getal berekend — puur welk al-bestaand veld de hoofdwaarde wordt.
+  let grindHeadline;
+  if (rec.grindMicron != null) grindHeadline = `${rec.grindMicron} µm`;
+  else if (rec.grindStartingRange) grindHeadline = `Klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax}`;
+  else if (rec.grindPracticalRange) grindHeadline = `Klik ${rec.grindPracticalRange.clicksMin}–${rec.grindPracticalRange.clicksMax}`;
+  else grindHeadline = rec.grindBandLabel || '—';
+
   document.getElementById('stats-grid').innerHTML = `
     <div class="stat-block"${stockWarning ? ' style="border-color:var(--danger);"' : ''}>
       <div class="stat-label">Gemalen koffie</div>
@@ -8402,7 +8413,8 @@ function renderPrep(){
     </div>
     <div class="stat-block stat-block--secondary">
       <div class="stat-label">Maalgraad</div>
-      <div class="stat-value">${rec.grindMicron != null ? rec.grindMicron + ' µm' : (rec.grindBandLabel || '—')}</div>
+      <div class="stat-value">${escapeHtml(grindHeadline)}</div>
+      ${rec.grindMicron == null && rec.grindBandLabel ? `<div class="stat-sub">${escapeHtml(rec.grindBandLabel)}</div>` : ''}
       <div class="stat-sub">${rec.grindMicron != null ? `stand ${rec.grindStand} · Timemore C3S Pro` : `Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}`}</div>
       ${rec.grindMicron == null ? `<div class="stat-sub">Geen gevalideerde kalibratiecurve voor deze molen gevonden — relatieve instructie i.p.v. een verzonnen getal. Vertrek vanaf ${escapeHtml(rec.grindBandLabel || 'medium')} en stel bij op smaak.</div>` : ''}
       ${rec.grindStartingRange ? `<div class="stat-sub">Algemeen startgebied (Timemore C3S Pro — Technische Deep-Dive, technische consolidatie van fabrikantgegevens + onafhankelijke bronnen, niet per-toestel geverifieerd): klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} vanaf het nulpunt voor ${escapeHtml(rec.grindStartingRange.brewMethodLabel)}. Vermijd klik 0–6/7 (risico op beschadiging maalschijven). Zie dit als eigen kalibratie-vertrekpunt, geen gevalideerde instelling.</div>` : ''}
