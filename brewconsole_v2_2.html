@@ -695,8 +695,9 @@
   .brewlog-slider-row .brewlog-slider-label span:last-child{color:var(--copper-light); font-family:var(--font-mono);}
   .brewlog-slider-row input[type="range"]{width:100%; accent-color:var(--copper);}
   .brewlog-entry-card{
-    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
     padding:12px 14px; margin-bottom:10px; font-size:13px;
+    box-shadow:var(--shadow-card);
   }
   .brewlog-entry-header{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;}
   .brewlog-entry-header .brewlog-entry-date{color:var(--text-faint); font-size:12px; font-family:var(--font-mono);}
@@ -807,19 +808,25 @@
   .chip:active{background:var(--surface-2); transform:scale(.97);}
   .chip[data-selected="true"]{border-color:var(--copper); color:var(--copper-light); background:var(--surface-2); box-shadow:inset 0 1px 3px rgba(0,0,0,.3), 0 0 0 1px var(--accent-glow);}
   .advice-result{
-    background:var(--surface); border:1px solid var(--copper-dim); border-radius:14px;
+    background:var(--surface); border:1px solid var(--copper-dim); border-radius:var(--radius-md);
     padding:18px; margin-top:4px;
+    box-shadow:var(--shadow-card);
   }
   .advice-result-title{font-family:var(--font-display); font-weight:600; font-size:20px; color:var(--copper-light); margin:0 0 10px;}
   .advice-result ul{margin:0 0 16px; padding-left:18px; font-size:13px; color:var(--text-dim); line-height:1.6;}
   .advice-result li{margin-bottom:4px;}
+  /* NIEUW (Visual Design 2.0, §7 PrimaryButton): zelfde tactiele press-diepte als .start-btn
+     — .advice-cta is de primaire CTA binnen het advies-resultaat. */
   .advice-cta{
-    width:100%; background:var(--copper); color:#1B1310; border:none; border-radius:10px;
+    width:100%; background:var(--copper); color:#1B1310; border:none; border-radius:var(--radius-sm);
     padding:13px; font-family:var(--font-display); font-weight:600; font-size:15px; cursor:pointer;
+    box-shadow:0 1px 0 rgba(255,255,255,.16) inset, 0 4px 14px rgba(212,165,116,.18);
+    transition:background var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
   .advice-cta:hover{background:var(--copper-light);}
+  .advice-cta:active{transform:translateY(1px) scale(.98); box-shadow:0 1px 0 rgba(255,255,255,.1) inset, 0 2px 6px rgba(212,165,116,.14);}
   .advice-secondary-notes{
-    background:var(--bg-recessed, rgba(0,0,0,.12)); border-radius:10px; padding:12px 14px; margin:0 0 16px;
+    background:var(--bg-recessed, rgba(0,0,0,.12)); border-radius:var(--radius-sm); padding:12px 14px; margin:0 0 16px;
   }
   .advice-secondary-title{font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-faint); margin:0 0 6px;}
   .advice-secondary-notes ul{margin:0; padding-left:16px; font-size:12.5px; color:var(--text-dim); line-height:1.55;}
@@ -1121,7 +1128,7 @@
   /* Inzichten */
   .insights-note{font-size:12.5px; color:var(--text-faint); margin:6px 0 18px; line-height:1.5;}
   .insights-empty{
-    background:var(--surface); border:1px dashed var(--border); border-radius:14px;
+    background:var(--surface); border:1px dashed var(--border); border-radius:var(--radius-md);
     padding:24px 18px; text-align:center; color:var(--text-dim); font-size:13.5px; line-height:1.5;
   }
 
