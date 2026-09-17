@@ -365,11 +365,13 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
-  // NIEUW (Implementatieplan v3.0, §14/§22, P1 "Bypass method guard"): op een methode
-  // waarvoor de concentraat-methode geen gevalideerde basis heeft (Chemex), moet de knop
-  // uitgeschakeld staan i.p.v. de gebruiker een werkende toggle te tonen die de motor
-  // vervolgens stil negeert.
-  test('Bypass method guard: op Chemex is de concentraat-knop uitgeschakeld, op V60 werkt hij gewoon', async () => {
+  // FIX (Implementatieplan Bypass v1.0, Fase A, BP-9, besloten): op een methode waarvoor de
+  // concentraat-methode geen gevalideerde basis heeft (Chemex) werd de knop eerder
+  // uitgeschakeld getoond; nu wordt het hele blok verborgen (minder uitleg nodig voor iets
+  // dat toch niet kan) — de eigenlijke garantie tegen stille toepassing blijft de
+  // bypassMethodSupported-guard in computeRecipe(). Op V60 is bypass sinds Fase C een
+  // percentagekeuze (Uit/20%/30%/40%) i.p.v. één aan/uit-knop.
+  test('Bypass method guard: op Chemex is het concentraat-blok verborgen, op V60 werkt de percentagekeuze', async () => {
     const page = await newTrackedPage();
     await page.goto(FILE_URL, { waitUntil: 'load' });
     await page.click('.navbar [data-nav="method"]');
@@ -379,10 +381,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
 
-    const chemexBtn = page.locator('#bypass-btn');
-    await assert.ok(await chemexBtn.isDisabled(), 'op Chemex moet de concentraat-knop disabled zijn');
-    const chemexNote = (await page.locator('#bypass-fit-note').textContent()).trim();
-    assert.match(chemexNote, /Niet beschikbaar op Chemex/);
+    const chemexHidden = await page.evaluate(() => document.getElementById('bypass-advice-block').hidden);
+    assert.equal(chemexHidden, true, 'op Chemex moet het hele concentraat/bypass-blok verborgen zijn (BP-9)');
 
     await page.click('[data-back="profile"]');
     await assertBecomesActive(page, '#screen-profile');
@@ -395,8 +395,17 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
 
-    const v60Btn = page.locator('#bypass-btn');
-    await assert.ok(!(await v60Btn.isDisabled()), 'op V60 moet de concentraat-knop gewoon bruikbaar zijn');
+    const v60Hidden = await page.evaluate(() => document.getElementById('bypass-advice-block').hidden);
+    assert.equal(v60Hidden, false, 'op V60 moet het concentraat/bypass-blok zichtbaar zijn');
+
+    // Zit in de collapsed "Verfijn dit recept"-accordion — expliciet openen vóór klikken,
+    // zelfde patroon als elders in dit bestand (native <details> vereist actionability).
+    await page.evaluate(() => { document.getElementById('refine-details').open = true; });
+    await page.click('[data-bypass-pct="30"]');
+    const selected = await page.evaluate(() => document.querySelector('[data-bypass-pct="30"]').getAttribute('data-selected'));
+    assert.equal(selected, 'true', 'na klikken op 30% moet die chip geselecteerd zijn');
+    const bypassMlText = (await page.locator('#stats-grid').textContent());
+    assert.match(bypassMlText, /Toevoegen na het zetten/, 'stats-grid moet de bypass-kaart tonen zodra bypass actief is');
 
     await page.close();
   });

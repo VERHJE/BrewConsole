@@ -2215,10 +2215,24 @@
             <p class="freshness-readout" id="strength-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
           </div>
 
-          <div class="advice-q" style="margin:14px 0 18px;">
-            <p class="advice-q-label">Intensiteit <span style="text-transform:none; letter-spacing:0;">(optioneel, voor extra smaakexpressie)</span></p>
+          <div class="advice-q" style="margin:14px 0 18px;" id="bypass-advice-block">
+            <p class="advice-q-label">Concentraat + bypass <span style="text-transform:none; letter-spacing:0;">(optioneel, experimenteel — alleen op V60)</span></p>
             <div class="chip-row" id="bypass-chip"></div>
             <p class="freshness-readout" id="bypass-fit-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
+            <!-- NIEUW (Implementatieplan Bypass v1.0, Fase A, BP-8/PDR §27): experimenteel-
+                 kaart — de techniek krijgt hier expliciet hypothese/verwacht effect/mogelijk
+                 voordeel/risico/evidence-niveau/vertrouwen, i.p.v. alleen lopende tekst. Zie
+                 renderBypassToggle() voor de invultekst; leeg + hidden zolang bypass uit staat. -->
+            <div class="prep-intel-card" id="bypass-experiment-card" hidden style="margin-top:10px;">
+              <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 3h6M10 3v5.2L5.5 17a2 2 0 0 0 1.8 2.9h9.4a2 2 0 0 0 1.8-2.9L14 8.2V3"/></svg></div>
+              <div class="prep-intel-body">
+                <div class="prep-intel-header">
+                  <span class="prep-intel-title">Experimenteel</span>
+                  <span class="badge" data-tone="warn">Tier 3-5 · laag vertrouwen</span>
+                </div>
+                <span id="bypass-experiment-text"></span>
+              </div>
+            </div>
           </div>
 
           <p class="process-note" id="process-note" hidden></p>
@@ -4036,7 +4050,7 @@ const ICONS = {
   scale: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 5 V27"/><path d="M7 27 H25"/><path d="M16 8 L6 12 L16 12 Z" opacity=".7"/><path d="M16 8 L26 12 L16 12 Z" opacity=".7"/><path d="M3 12 L6 12 L4.5 17 A3 3 0 0 0 7.5 17 Z" opacity=".5"/><path d="M26 12 L29 12 L27.5 17 A3 3 0 0 0 30.5 17 Z" opacity=".5"/></svg>'
 };
 
-const state = { method:null, roast:null, profile:null, waterMl:null, recipe:null, process:null, experimental:false, roastDate:null, openedDate:null, intendedUse:null, altitude:null, bypass:false, strengthAdjust:0, flavorScores:null, fermentEvidence:false, beanId:null };
+const state = { method:null, roast:null, profile:null, waterMl:null, recipe:null, process:null, experimental:false, roastDate:null, openedDate:null, intendedUse:null, altitude:null, bypass:false, bypassPct:30, strengthAdjust:0, flavorScores:null, fermentEvidence:false, beanId:null };
 
 /* ============================================================
    VERSHEID/DEGASSING — op basis van een echte branddatum i.p.v. een
@@ -4332,37 +4346,28 @@ function escapeHtml(s){
    Verwijderd, geen vervanging nodig: de vier Kasuya-profielen hierboven gebruiken
    nu uitsluitend de overlay uit de engine, niet deze losse aanpassing. */
 
-/* Bypass-percentage automatisch aanraden op basis van de boon i.p.v. altijd
-   vast op 30%. Bron blijft hetzelfde als bij BYPASS_FACTOR hieronder (Drip
-   Roast's V60-gids "Bypass Brewing": brouw geconcentreerd op ~1:10 à 1:12,
-   d.w.z. 25–37,5% bypass), met de eigen constatering daar dat het technique
-   "met name aanbevolen is bij funky naturals, anaerobic fermentations, en
-   darker roasts". Dus: 25% als voorzichtige ondergrens voor washed/onbekend
-   (nog steeds binnen de gebronde range, maar zonder dat er een reden is om
-   verder te gaan), oplopend naar 37,5% (de bovengrens uit de bron) voor de
-   meest funky/experimentele lots. Blijft een vuistregel, geen exacte waarde
-   — zie bypassNote hieronder voor de disclaimer richting de gebruiker.
-
-   C5 (koffie-expertpanel, Amara — heroverwogen, bewust gehandhaafd): waarom nooit onder de
-   25%, ook bij een volledig neutrale washed/medium boon zonder enig fermentatiesignaal?
-   Overwogen alternatief was een vloer van 0% (dus effectief geen concentraat) in dat geval.
-   Besluit: 25% blijft de ondergrens, om twee redenen. (1) Bypass is een expliciete,
-   door de gebruiker zelf aangezette keuze (de toggle staat oorspronkelijk uit) — wie 'm
-   aanzet, kiest bewust voor een intensere kop, ook zonder fermentatiesignaal; een vloer van
-   0% zou die eigen keuze feitelijk negeren. (2) Onder ~25% concentraat wordt het verschil met
-   gewoon zonder bypass zetten in de praktijk verwaarloosbaar — de brontabel (Drip Roast) geeft
-   25-37,5% als de zinvolle bandbreedte van deze techniek, niet lager. Het bestaande `fit`-veld
-   ('zwak' bij washed/onbekend zonder verdere signalen) communiceert dat al expliciet naar de
-   gebruiker via bypassNote hieronder — wie op 'zwakke match' toch doorzet, doet dat bewust. */
+/* Bypass-percentage — BP-2 (Implementatieplan Bypass v1.0, Fase C, besloten): een door de
+   gebruiker zelf gekozen stap uit drie vaste opties, NOOIT afgeleid van boon/proces/
+   branding/water (dat was precies het H7-defect, zie de FIX hieronder — die blijft
+   volledig intact, alleen de bron van het getal wisselt van "altijd 30" naar "gekozen uit
+   20/30/40"). Onderbouwing van de drie opties (Research Brief Bypass v1.0 §5/§9): 20-40%
+   komt overeen met Ben Jones' 60-80% brouwwater (tier 3), en de bijbehorende brouwratio's
+   1:14,1 / 1:12,4 / 1:10,6 vallen binnen zowel het 9:1-14:1-gebied van US-patent 4.147.097
+   als Drip Roast's 1:10-1:12 (tier 5). Boven 40% is er geen V60-bron: Royal Coffee's "60%
+   bypass" (RB §6) was immersie op half volume, niet vergelijkbaar met een volledig
+   volume-herstelde V60-zetting. Een vrije schuifregelaar is bewust afgewezen (RB
+   Implementatieplan §2) — dat zou een precisie suggereren die er niet is. */
+const BYPASS_PCT_OPTIONS = [20, 30, 40];
+const BYPASS_DEFAULT_PCT = 30;
 /* FIX (project-brede audit, vinding H7/bypassAdvice): het bypass-percentage was
    voorheen proces-/roast-/experimenteel-afhankelijk — een FORBIDDEN edge (verwerkings-
    methode mag geen receptgetal meer sturen, ook niet indirect via een watersplitsing).
-   Vaste, expliciet als vuistregel gelabelde waarde nu, ongeacht boon-invoer. Signatuur
-   ongewijzigd gelaten zodat bestaande call-sites (renderBypassToggle(), computeRecipe())
-   niet hoeven te wijzigen. */
-function bypassAdvice(processKey, roastKey, experimentalFlag, flavorFermentEvidence){
-  const FIXED_BYPASS_PCT = 30; // vuistregel — Drip Roast's V60-bypassgids, ~25-37.5% bereik
-  return { pct: FIXED_BYPASS_PCT, factor: 1 - (FIXED_BYPASS_PCT / 100), fit:'algemeen', flavorNote:'' };
+   Dat blijft zo: bypassAdvice() accepteert alleen nog het door de gebruiker zelf gekozen
+   percentage (state.bypassPct, zie renderBypassToggle()) en klemt op de drie toegestane
+   waarden — geen enkel boon-/proces-/roastgegeven komt deze functie meer in. */
+function bypassAdvice(pct){
+  const chosen = BYPASS_PCT_OPTIONS.includes(pct) ? pct : BYPASS_DEFAULT_PCT;
+  return { pct: chosen, factor: 1 - (chosen / 100) };
 }
 
 /* FIX (teamreview v2, Frontend Architect — bevinding "dode code"): dit blok
@@ -4757,7 +4762,7 @@ function selectViaCanonicalPipeline(B, gen, preferredOverlayId, targetWindowValu
   return rec.top.value.candidate.genCandidate;
 }
 
-function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, experimentalFlag, roastDays, altitudeMasl, bypassEnabled, flavorFermentEvidence, waterHardnessMgLArg, strengthAdjust){
+function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, experimentalFlag, roastDays, altitudeMasl, bypassEnabled, flavorFermentEvidence, waterHardnessMgLArg, strengthAdjust, bypassPctArg){
   const B = window.BrewEngineBundle;
 
   // Veiligheidsnet, zelfde geest als de oude terugval-op-'klassiek': een onverwachte
@@ -4865,13 +4870,15 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     strengthNote = (strengthClamped ? `Begrensd: de gevraagde sterktestap zou de dosis buiten het gevalideerde bereik van dit toestel duwen (${brewer.doseCeiling.value.min}–${brewer.doseCeiling.value.max} g). De dosis staat daarom op ${fmt(dose,1)} g — de rand van wat hier onderbouwd is, niet de volle stap. Wil je verder, kies dan een ander watervolume. ` : '') + `Sterkte handmatig ${strengthStep > 0 ? 'verhoogd' : 'verlaagd'} (dosis ${strengthStep > 0 ? '+' : ''}${Math.round(strengthStep * STRENGTH_DOSE_STEP * 100)}%, ratio nu ${ratioText}) — watervolume blijft gelijk. Dit is een eigen handmatige voorkeur, geen evidence-claim. Los te combineren met de concentraat/bypass-methode hieronder.`;
   }
 
-  // Concentraat/bypass — vast percentage (zie bypassAdvice()), niet langer proces-
-  // conditioneel: verwerkingsmethode mag dit getal structureel niet meer sturen.
-  const bypassAdv = bypassAdvice();
+  // Concentraat/bypass — door de gebruiker gekozen percentage (zie bypassAdvice()/BP-2),
+  // niet proces-conditioneel: verwerkingsmethode mag dit getal structureel niet sturen.
+  // bypassPctArg ontbreekt bij oudere/interne call-sites (fingerprint-probe, tests) —
+  // bypassAdvice() valt dan terug op BYPASS_DEFAULT_PCT, exact het oude vaste gedrag.
+  const bypassAdv = bypassAdvice(bypassPctArg);
   // NIEUW (Implementatieplan v3.0, §14, P1 "Bypass method guard"): de concentraat-methode
   // is V60-georiënteerd — de brontechniek (Drip Roast's V60-bypassgids) en de bestaande
-  // 30%-vuistregel gelden niet aantoonbaar voor Chemex. renderBypassToggle() schakelt de
-  // knop hierop al uit, maar dit is de eigenlijke garantie: zelfs als bypassEnabled toch
+  // percentage-opties gelden niet aantoonbaar voor Chemex. renderBypassToggle() verbergt de
+  // knop hierop al (BP-9), maar dit is de eigenlijke garantie: zelfs als bypassEnabled toch
   // true binnenkomt op een niet-V60-methode (bv. handmatig aangepaste state), past de
   // motor het nooit stilzwijgend toe — net zo min als B-1's dosisklem een overschrijding
   // stilzwijgend liet passeren.
@@ -5024,10 +5031,18 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // heel andere ratio dan de kaart toont. Dat getal hoort erbij, en het voorbehoud
   // erachter ook: het doelvenster waaruit dosis/ratio zijn afgeleid, geldt niet meer.
   const brewerRatio = (bypassActuallyApplied && dose > 0) ? (pourWaterMl / dose) : null;
+  // FIX (Implementatieplan Bypass v1.0, Fase A, BP-1): "bypass is geen sterktehendel" —
+  // deze tekst zei voorheen dat bijschenken de kop terugbrengt op "de normale sterkte" en
+  // adviseerde "doorgaans iets fijner/warmer". Beide zijn onjuist/ongefundeerd gebleken
+  // (Research Brief Bypass v1.0 §4.4/E5/E6/E7): met volledig volumeherstel is de kop
+  // hooguit even sterk (bij gelijke extractie) en eerder iets zwakker (retentie/extractie-
+  // verlies in de geconcentreerde fase), nooit intenser. De maalrichting is bovendien
+  // CONTESTED (fijner: Coffee ad Astra/Drip Roast/Gagné — grover: Royal Coffee/Wang), dus
+  // geen eenzijdig advies meer.
   const bypassNote = bypassActuallyApplied
-    ? `In de brewer zet je feitelijk op 1:${fmt(brewerRatio, 1)} (${fmt(dose,1)} g op ${pourWaterMl} ml), niet op de ${ratioText} die hierboven staat — die geldt pas ná het bijschenken. Belangrijk voorbehoud: het sterkte-/extractievenster waaruit dosis en ratio zijn afgeleid, gaat ervan uit dat ál het water door het koffiebed gaat. Bij de concentraat-methode is dat niet zo, dus de werkelijke extractie ligt buiten dat venster en de app kan niet voorspellen hoever. Vergeet niet: na het zetten ${bypassMl} ml vers heet water toevoegen aan de kan/kop (zie stat-blok hierboven) — dat brengt ${pourWaterMl} ml geconcentreerde koffie terug op ${Math.round(water)} ml, de normale sterkte. Concentraat-methode actief op een vast ${bypassAdv.pct}% bypass (vuistregel, niet per boon afgestemd — zie renderBypassToggle()). Werkt volgens de brontechniek (Drip Roast's V60-bypassgids) doorgaans het meest overtuigend bij funky naturals, anaerobic/experimentele fermentaties en dark roasts. Maling en temperatuur hierboven zijn NIET aangepast voor de concentraat-methode — er is geen gevalideerd getal voor die aanpassing gevonden; proef bewust en stel zelf bij (doorgaans iets fijner/warmer) indien nodig.`
+    ? `In de brewer zet je feitelijk op 1:${fmt(brewerRatio, 1)} (${fmt(dose,1)} g op ${pourWaterMl} ml), niet op de ${ratioText} die hierboven staat — die geldt pas ná het bijschenken. Belangrijk voorbehoud: het sterkte-/extractievenster waaruit dosis en ratio zijn afgeleid, gaat ervan uit dat ál het water door het koffiebed gaat. Bij de concentraat-methode is dat niet zo, dus de werkelijke extractie ligt buiten dat venster en de app kan niet voorspellen hoever. Vergeet niet: na het zetten ${bypassMl} ml vers heet water toevoegen aan de kan/kop (zie stat-blok hierboven) — dat brengt het volume terug op ${Math.round(water)} ml, maar NIET gegarandeerd op dezelfde sterkte: dat klopt alleen als de extractie in de geconcentreerde fase gelijk blijft aan een normale zetting, en dat is niet gemeten (RESEARCH_GAP). Zonder maalcorrectie is de kop eerder iets zwakker dan sterker — bypass is geen sterktehendel (gebruik daarvoor Sterkte hierboven). Concentraat-methode actief op ${bypassAdv.pct}% bypass (zelf gekozen, niet per boon afgestemd — zie renderBypassToggle()). Werkt volgens de brontechniek (Drip Roast's V60-bypassgids) doorgaans het meest overtuigend bij funky naturals, anaerobic/experimentele fermentaties en dark roasts — maar er is geen bewijs dat andere koffies (bijv. lichte, gewassen bonen) er niet ook van profiteren. Maling en temperatuur hierboven zijn NIET aangepast voor de concentraat-methode: de bronnen spreken elkaar tegen over de richting (fijner: Coffee ad Astra/Drip Roast/Gagné; grover: Royal Coffee, vooral bij donkere brandingen) — proef bewust en houd zelf bij wat voor jou werkt.`
     : (bypassIgnoredForMethod
-        ? `Concentraat-methode NIET toegepast: deze methode is V60-georiënteerd (Drip Roast's V60-bypassgids) — er is geen gevalideerde basis gevonden om het vaste bypasspercentage op deze methode toe te passen, dus dit recept blijft op de normale ratio. Geen stille substitutie: dit wordt hier expliciet gemeld.`
+        ? `Concentraat-methode NIET toegepast: deze methode is V60-georiënteerd (Drip Roast's V60-bypassgids) — er is geen gevalideerde basis gevonden om het bypasspercentage op deze methode toe te passen, dus dit recept blijft op de normale ratio. Geen stille substitutie: dit wordt hier expliciet gemeld.`
         : '');
 
   return {
@@ -5393,7 +5408,8 @@ function applyAdvice(){
   state.altitude = adviceState.altitude != null ? adviceState.altitude : null;
   state.flavorScores = adviceState.flavorScores || null;
   state.fermentEvidence = !!adviceState.fermentEvidence;
-  state.bypass = false; // intensiteit is een keuze per keer zetten, niet per boon
+  state.bypass = false; // concentraat/bypass is een keuze per keer zetten, niet per boon
+  state.bypassPct = 30; // BP-2: terug naar de standaardoptie bij een nieuwe sessie
   state.strengthAdjust = 0; // C2: zelfde redenering — sterkte is ook een per-keer-keuze
   state.beanId = adviceState.beanId || null;
   const baseWater = defaultWaterMlFor(state.method, state.profile);
@@ -5443,6 +5459,9 @@ function brewAgain(id){
   state.fermentEvidence = adviceState.fermentEvidence;
   state.beanId = id;
   state.bypass = !!bean.lastBrew.bypass;
+  // BP-2 punt 6: een lastBrew van vóór deze wijziging heeft geen bypassPct — dan is 30%
+  // een UI-beginstand, nooit met terugwerkende kracht in bean.lastBrew geschreven.
+  state.bypassPct = BYPASS_PCT_OPTIONS.includes(bean.lastBrew.bypassPct) ? bean.lastBrew.bypassPct : 30;
   state.waterMl = bean.lastBrew.waterMl || defaultWaterMlFor(state.method, state.profile);
   updateServingBounds();
   renderMethodGrid();
@@ -8562,47 +8581,68 @@ function renderStrengthToggle(){
   if (noteEl){
     noteEl.textContent = state.strengthAdjust
       ? `Dosis ${state.strengthAdjust > 0 ? '+' : ''}${Math.round(state.strengthAdjust*STRENGTH_DOSE_STEP*100)}% t.o.v. het standaardrecept — watervolume blijft gelijk. Kan gecombineerd worden met de concentraat/bypass-methode hieronder.`
-      : 'Staat op standaard — verandert de dosis/ratio niet. Voor een concentraat-methode (andere aanpak, zie hieronder) gebruik je Intensiteit.';
+      : 'Staat op standaard — verandert de dosis/ratio niet. Voor een concentraat-methode (andere aanpak, zie hieronder) gebruik je Concentraat + bypass.';
   }
 }
 
-/* Concentraat/bypass-toggle op het prep-scherm — brew-methode-keuze, dus hier en niet in
-   het boon-formulier (je kiest 'm per keer zetten, niet per boon). Zie computeRecipe() voor
-   de bron en het mechanisme (Scott Rao's bypass-techniek). */
+/* Concentraat/bypass-percentagekeuze op het prep-scherm — brew-methode-keuze, dus hier en
+   niet in het boon-formulier (je kiest 'm per keer zetten, niet per boon). Bron/mechanisme:
+   Drip Roast's V60-bypassgids (tier 5, zie Research Brief Bypass v1.0 §5/§9). Scott Rao
+   publiceert hierover in de context van batchbrouwen/bed-diepte (RB §3) — dat is NIET
+   dezelfde claim als deze V60-smaaktechniek, dus geen Rao-attributie hier (FIX,
+   Implementatieplan Bypass v1.0 Fase A, BP-1 punt 6: attributie gecorrigeerd). */
 function renderBypassToggle(){
   const el = document.getElementById('bypass-chip');
-  if (!el) return;
-  // NIEUW (Implementatieplan v3.0, §14, P1 "Bypass method guard"): de concentraat-methode
-  // is V60-georiënteerd (Drip Roast's V60-bypassgids); buiten V60 wordt de knop
-  // uitgeschakeld getoond i.p.v. stil toegepast — nooit blocked/disabled-gedrag verzwijgen
-  // (plan §22 E2E-eis: "Bypass selected on unsupported brewer → blocked/disabled"). Zet
-  // hier ook zelf state.bypass terug, zodat een leftover bypass=true van een eerdere
-  // V60-sessie nooit onopgemerkt blijft hangen na een methodewissel.
+  const blockEl = document.getElementById('bypass-advice-block');
+  if (!el || !blockEl) return;
+  // BP-9 (Implementatieplan Bypass v1.0, besloten): geen gevalideerde V60-bron draagt deze
+  // techniek op Chemex — in plaats van een uitgeschakelde knop met uitleg (die zelf weer
+  // een extra regel tekst vergde) wordt het hele blok hier verborgen. Zet ook zelf
+  // state.bypass terug, zodat een leftover bypass=true van een eerdere V60-sessie nooit
+  // onopgemerkt blijft hangen na een methodewissel — de eigenlijke garantie tegen stille
+  // toepassing blijft de bypassMethodSupported-guard in computeRecipe().
   if (state.method !== 'v60'){
     if (state.bypass) state.bypass = false;
-    el.innerHTML = `<button type="button" class="chip" id="bypass-btn" data-selected="false" disabled title="Concentraat-methode is V60-georiënteerd — er is geen gevalideerde basis gevonden om dit op deze methode toe te passen.">🌊 Concentraat-methode (alleen op V60)</button>`;
-    const fitEl = document.getElementById('bypass-fit-note');
-    if (fitEl){
-      const mInfo = METHOD_INFO[state.method];
-      fitEl.textContent = `Niet beschikbaar op ${mInfo ? mInfo.name : state.method}: de concentraat-methode en het vaste bypasspercentage zijn afgeleid van een V60-specifieke bron (Drip Roast's V60-bypassgids) — geen gevalideerde basis om dit op een andere methode toe te passen.`;
-    }
+    blockEl.hidden = true;
     return;
   }
-  const adv = bypassAdvice(state.process, state.roast, state.experimental, state.fermentEvidence);
-  el.innerHTML = `<button type="button" class="chip" id="bypass-btn" data-selected="${state.bypass}">🌊 Concentraat-methode (${adv.pct}% bypass)</button>`;
-  const btn = document.getElementById('bypass-btn');
-  if (btn) btn.addEventListener('click', ()=>{
-    state.bypass = !state.bypass;
-    renderPrep();
-  });
+  blockEl.hidden = false;
 
-  // FIX (project-brede audit): dit gaf voorheen een per-boon "aanbevolen/niet
-  // aanbevolen"-oordeel op basis van proces/roast/experimenteel — een FORBIDDEN edge
-  // (verwerkingsmethode mag geen receptbeslissing meer sturen). Altijd zichtbaar, maar
-  // nu een vast, niet-gepersonaliseerd percentage met eerlijke disclosure.
+  // BP-2 (besloten): drie vaste, zelf te kiezen percentages i.p.v. één vast getal — zie
+  // BYPASS_PCT_OPTIONS/bypassAdvice(). Elke optie toont zijn eigen brewer-ratio, want dat
+  // is het getal waarop de bronnen elkaar vergelijken (RB §5).
+  const dose = state.recipe ? state.recipe.dose : null;
+  const optionsHtml = BYPASS_PCT_OPTIONS.map(pct => {
+    const pourMl = state.waterMl ? Math.round(state.waterMl * (1 - pct / 100) / 5) * 5 : null;
+    const ratioHint = (dose && pourMl) ? `1:${fmt(pourMl / dose, 1)}` : '';
+    return `<button type="button" class="chip" data-bypass-pct="${pct}" data-selected="${state.bypass && state.bypassPct === pct}">${pct}%${ratioHint ? `<span style="display:block; font-size:10px; opacity:.75; font-weight:400;">${ratioHint}</span>` : ''}</button>`;
+  }).join('');
+  el.innerHTML = `<button type="button" class="chip" data-bypass-pct="0" data-selected="${!state.bypass}">Uit</button>${optionsHtml}`;
+  el.querySelectorAll('[data-bypass-pct]').forEach(btn=>btn.addEventListener('click', ()=>{
+    const v = Number(btn.getAttribute('data-bypass-pct'));
+    if (v === 0){ state.bypass = false; }
+    else { state.bypass = true; state.bypassPct = v; }
+    renderPrep();
+  }));
+
+  // FIX (project-brede audit, H7 — blijft intact): geen per-boon "aanbevolen/niet
+  // aanbevolen"-oordeel op basis van proces/roast/experimenteel (FORBIDDEN edge).
+  const adv = bypassAdvice(state.bypassPct);
   const fitEl = document.getElementById('bypass-fit-note');
   if (fitEl){
-    fitEl.textContent = `– Vast percentage (${adv.pct}% bypass), niet per boon afgestemd — er is geen gevalideerde manier gevonden om dit per proces/roast te personaliseren. Volgens de brontechniek (Drip Roast's V60-bypassgids) werkt concentraat-brewing doorgaans het meest overtuigend bij funky naturals, anaerobic/experimentele fermentaties en dark roasts — dat is algemene technieklogica, geen op déze boon afgestemde berekening.`;
+    fitEl.textContent = state.bypass
+      ? `${adv.pct}% bypass — zelf gekozen, niet per boon afgestemd (geen gevalideerde manier gevonden om dit per proces/roast te personaliseren). Volgens de brontechniek (Drip Roast's V60-bypassgids) werkt concentraat-brewing doorgaans het meest overtuigend bij funky naturals, anaerobic/experimentele fermentaties en dark roasts — maar er is geen bewijs dat andere koffies dit uitsluit.`
+      : 'Zet een deel van het water niet door het koffiebed, maar voegt dat er ná het zetten weer aan toe — zie de kaart hieronder voor wat daarbij wel en niet bekend is.';
+  }
+
+  // BP-8 (PDR §27 "Experimenteel"): hypothese/verwacht effect/mogelijk voordeel/risico/
+  // evidence-niveau/vertrouwen expliciet, i.p.v. alleen lopende tekst — altijd zichtbaar
+  // op V60 (aan of uit), zodat de context er al staat vóórdat iemand de knop aanzet.
+  const cardEl = document.getElementById('bypass-experiment-card');
+  const textEl = document.getElementById('bypass-experiment-text');
+  if (cardEl && textEl){
+    cardEl.hidden = false;
+    textEl.textContent = 'Hypothese: minder water door het bed geeft een ander extractieverloop dan normaal zetten, wat de smaak kan veranderen. Verwacht effect: geen sterkere kop — bij volledig volumeherstel hooguit gelijke sterkte, en zonder maalcorrectie eerder iets zwakker. Mogelijk voordeel: door sommige competitiebrouwers gerapporteerd bij lastige koffies (funky naturals, donkere brandingen), maar niet in een gecontroleerde smaaktest bevestigd. Risico: zonder precieze weegdiscipline (zie Brew Mode) wordt de kop merkbaar slapper dan bedoeld. Evidence-niveau: tier 3-5 (professionele praktijk/blogs) — geen peer-reviewed test gevonden voor pourover-bypass specifiek. Vertrouwen: laag.';
   }
 }
 
@@ -8878,7 +8918,7 @@ async function runBeanPhotoScan(file){
    ============================================================ */
 function renderPrep(){
   const m = METHOD_INFO[state.method], r = ROAST_INFO[state.roast], p = PROFILE_INFO[state.profile];
-  state.recipe = computeRecipe(state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL, state.strengthAdjust);
+  state.recipe = computeRecipe(state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL, state.strengthAdjust, state.bypassPct);
   const rec = state.recipe;
 
   renderRoastDateInput();
@@ -9061,7 +9101,7 @@ function renderPrep(){
     <div class="stat-block" style="border-color:var(--copper-light);">
       <div class="stat-label">+ Toevoegen na het zetten</div>
       <div class="stat-value" style="color:var(--copper-light);">+${rec.bypassMl} ml</div>
-      <div class="stat-sub">vers heet water, voor ${rec.water} ml op normale sterkte</div>
+      <div class="stat-sub">vers heet water — brengt het volume terug op ${rec.water} ml (niet gegarandeerd dezelfde sterkte, zie toelichting)</div>
     </div>` : ''}
     <div class="stat-block stat-block--secondary">
       <div class="stat-label">Ratio</div>
@@ -9418,6 +9458,7 @@ function selectMethod(key){
   state.flavorScores = null;
   state.fermentEvidence = false;
   state.bypass = false;
+  state.bypassPct = 30;
   state.strengthAdjust = 0;
   renderMethodGrid();
   showScreen('roast');
@@ -9699,7 +9740,7 @@ function startBrew(){
   if (state.beanId){
     const bean = beanLibrary.find(b=>b.id===state.beanId);
     if (bean){
-      bean.lastBrew = { method: state.method, waterMl: state.waterMl, bypass: !!state.bypass };
+      bean.lastBrew = { method: state.method, waterMl: state.waterMl, bypass: !!state.bypass, bypassPct: state.bypass ? state.bypassPct : null };
       /* Voorraadtracking (expertreview B6, Sanne): tel de daadwerkelijk gebruikte
          dosis (state.recipe.dose, al inclusief bypass/batch-schaling) op bij het
          verbruik tot nu toe. Alleen zinvol als er een zakgrootte is opgegeven —
