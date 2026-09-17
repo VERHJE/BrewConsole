@@ -2219,6 +2219,13 @@
             <p class="advice-q-label">Concentraat + bypass <span style="text-transform:none; letter-spacing:0;">(optioneel, experimenteel — alleen op V60)</span></p>
             <div class="chip-row" id="bypass-chip"></div>
             <p class="freshness-readout" id="bypass-fit-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
+            <!-- NIEUW (Implementatieplan Bypass v1.0, Fase C, "proef-en-vul"): moment van
+                 toevoegen — bepaalt de weeginstructie in Brew Mode (zie renderBrewStepsList()).
+                 Alleen zichtbaar/zinvol zolang bypass aan staat. -->
+            <div id="bypass-moment-block" hidden style="margin-top:10px;">
+              <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:0 0 6px;">Wanneer voeg je het bypass-water toe?</p>
+              <div class="chip-row" id="bypass-moment-chip"></div>
+            </div>
             <!-- NIEUW (Implementatieplan Bypass v1.0, Fase A, BP-8/PDR §27): experimenteel-
                  kaart — de techniek krijgt hier expliciet hypothese/verwacht effect/mogelijk
                  voordeel/risico/evidence-niveau/vertrouwen, i.p.v. alleen lopende tekst. Zie
@@ -2341,8 +2348,17 @@
       <label for="brewlog-actual-grind" style="font-size:12px; color:var(--text-faint); display:block; margin:14px 0 4px;">Werkelijk gebruikte maalstand <span style="text-transform:none; letter-spacing:0;">(optioneel — klikken, Timemore C3S Pro; alleen invullen als je van het advies bent afgeweken)</span></label>
       <input type="number" id="brewlog-actual-grind" class="form-input" placeholder="bijv. 22" min="0" max="60" step="1" style="max-width:220px;">
 
-      <label for="brewlog-cup-weight" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Kopgewicht na afloop <span style="text-transform:none; letter-spacing:0;">(optioneel, gram — hiermee berekent de app je werkelijke retentie: (water − kopgewicht) / dosis. Vanaf 5 bruikbare metingen verschijnt je eigen gemiddelde op het Recept-scherm, náást de vaste aanname van 2,0 g/g. Het vervangt die aanname niet automatisch)</span></label>
+      <label for="brewlog-cup-weight" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Kopgewicht na afloop <span style="text-transform:none; letter-spacing:0;">(optioneel, gram — hiermee berekent de app je werkelijke retentie: (water − kopgewicht) / dosis. Vanaf 5 bruikbare metingen verschijnt je eigen gemiddelde op het Recept-scherm, náást de vaste aanname van 2,0 g/g. Het vervangt die aanname niet automatisch. Bij bypass: weeg pas NÁ het toevoegen van het bypass-water — anders klopt deze berekening niet)</span></label>
       <input type="number" id="brewlog-cup-weight" class="form-input" placeholder="bijv. 268" min="0" max="2000" step="1" style="max-width:220px;">
+
+      <!-- NIEUW (Implementatieplan Bypass v1.0, Fase B/C, BP-5/"proef-en-vul"): wat er
+           écht is toegevoegd, voor de vergelijking met het geplande bedrag (rec.bypassMl)
+           — alleen zichtbaar als deze logging daadwerkelijk met bypass gezet is, zie
+           renderBrewLogHonestSummary()/openBrewlogScreen() voor de hidden-toggle. -->
+      <div id="brewlog-bypass-actual-block" hidden>
+        <label for="brewlog-bypass-actual" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Werkelijk toegevoegd bypass-water <span style="text-transform:none; letter-spacing:0;" id="brewlog-bypass-actual-hint">(optioneel, gram)</span></label>
+        <input type="number" id="brewlog-bypass-actual" class="form-input" min="0" max="2000" step="1" style="max-width:220px;">
+      </div>
 
       <!-- NIEUW (Implementatieplan Zetadvies v3.0, Fase 7, vervuilingsregel 1): bewust
            standaard UIT — alleen brouwsels die je hier expliciet aanvinkt tellen mee voor je
@@ -4050,7 +4066,7 @@ const ICONS = {
   scale: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 5 V27"/><path d="M7 27 H25"/><path d="M16 8 L6 12 L16 12 Z" opacity=".7"/><path d="M16 8 L26 12 L16 12 Z" opacity=".7"/><path d="M3 12 L6 12 L4.5 17 A3 3 0 0 0 7.5 17 Z" opacity=".5"/><path d="M26 12 L29 12 L27.5 17 A3 3 0 0 0 30.5 17 Z" opacity=".5"/></svg>'
 };
 
-const state = { method:null, roast:null, profile:null, waterMl:null, recipe:null, process:null, experimental:false, roastDate:null, openedDate:null, intendedUse:null, altitude:null, bypass:false, bypassPct:30, strengthAdjust:0, flavorScores:null, fermentEvidence:false, beanId:null };
+const state = { method:null, roast:null, profile:null, waterMl:null, recipe:null, process:null, experimental:false, roastDate:null, openedDate:null, intendedUse:null, altitude:null, bypass:false, bypassPct:30, bypassMoment:'achteraf', strengthAdjust:0, flavorScores:null, fermentEvidence:false, beanId:null };
 
 /* ============================================================
    VERSHEID/DEGASSING — op basis van een echte branddatum i.p.v. een
@@ -5410,6 +5426,7 @@ function applyAdvice(){
   state.fermentEvidence = !!adviceState.fermentEvidence;
   state.bypass = false; // concentraat/bypass is een keuze per keer zetten, niet per boon
   state.bypassPct = 30; // BP-2: terug naar de standaardoptie bij een nieuwe sessie
+  state.bypassMoment = 'achteraf';
   state.strengthAdjust = 0; // C2: zelfde redenering — sterkte is ook een per-keer-keuze
   state.beanId = adviceState.beanId || null;
   const baseWater = defaultWaterMlFor(state.method, state.profile);
@@ -5462,6 +5479,7 @@ function brewAgain(id){
   // BP-2 punt 6: een lastBrew van vóór deze wijziging heeft geen bypassPct — dan is 30%
   // een UI-beginstand, nooit met terugwerkende kracht in bean.lastBrew geschreven.
   state.bypassPct = BYPASS_PCT_OPTIONS.includes(bean.lastBrew.bypassPct) ? bean.lastBrew.bypassPct : 30;
+  state.bypassMoment = 'achteraf'; // niet onthouden per boon, altijd de standaard-weeginstructie
   state.waterMl = bean.lastBrew.waterMl || defaultWaterMlFor(state.method, state.profile);
   updateServingBounds();
   renderMethodGrid();
@@ -7111,7 +7129,11 @@ wireDetailTabs('history-tabs');
    de waterProfileSnapshot uit Fase 5 al voorkomt voor water. Additief: records van
    versie 1-3 blijven ongewijzigd leesbaar en vallen terug op de live opzoeking, exact
    zoals ze zich vandaag gedragen (geen stille gedragswijziging op bestaande data). */
-const RECORD_SCHEMA_VERSION = 4;
+// BIJGEWERKT (Implementatieplan Bypass v1.0, Fase B, BP-5): 4→5 — nieuwe, additieve
+// bypass-velden op elke logging (zie saveBrewLogEntry()). Zelfde discipline als elke
+// eerdere schemaversie-ophoging: ontbrekende velden op oudere records blijven gewoon
+// null, niets wordt met terugwerkende kracht aangevuld of geraden.
+const RECORD_SCHEMA_VERSION = 5;
 
 /* ============================================================
    BACKUP EXPORT/IMPORT (expertreview B4, Owen/Sanne) — de bonenbibliotheek
@@ -7297,6 +7319,18 @@ function openBrewLogEntry(){
   if (actualGrindEl) actualGrindEl.value = '';
   const cupWeightEl = document.getElementById('brewlog-cup-weight');
   if (cupWeightEl) cupWeightEl.value = '';
+  // NIEUW (Implementatieplan Bypass v1.0, Fase B/C, BP-5/"proef-en-vul"): alleen zichtbaar
+  // als dít brouwsel met bypass gezet is; voorgevuld met het geplande bedrag (rec.bypassMl)
+  // zodat "niets aanpassen" betekent "precies volgens plan", niet "leeg/onbekend".
+  const bypassActualBlock = document.getElementById('brewlog-bypass-actual-block');
+  const bypassActualEl = document.getElementById('brewlog-bypass-actual');
+  const bypassActualHint = document.getElementById('brewlog-bypass-actual-hint');
+  if (bypassActualBlock && bypassActualEl){
+    const wasBypass = !!(state.bypass && state.recipe && state.recipe.bypassMl != null);
+    bypassActualBlock.hidden = !wasBypass;
+    bypassActualEl.value = wasBypass ? state.recipe.bypassMl : '';
+    if (bypassActualHint) bypassActualHint.textContent = wasBypass ? `(optioneel, gram — gepland was ${state.recipe.bypassMl} g)` : '(optioneel, gram)';
+  }
   const approvedEl = document.getElementById('brewlog-approved');
   if (approvedEl) approvedEl.checked = false;
   const savedMsg = document.getElementById('brewlog-saved-msg');
@@ -7342,6 +7376,12 @@ function renderBrewLogHonestSummary(){
     }
   }
   const ratioLine = `Kernrecept-ratio ${rec.ratioText} (${fmt(rec.dose,1)} g op ${state.waterMl} ml).`;
+  // NIEUW (Implementatieplan Bypass v1.0, Fase B, BP-5 punt 5): bij bypass klopt de
+  // kernrecept-ratio hierboven pas ná het bijschenken — het Klaar-scherm toonde tot nu toe
+  // geen enkel getal over de daadwerkelijke brewer-ratio (Gate-0-bevinding "Klaar-scherm").
+  const bypassRatioLine = (state.bypass && rec.pourWaterMl != null && rec.bypassMl != null && rec.dose > 0)
+    ? `Door het bed: ${rec.pourWaterMl} g (brouwratio 1:${fmt(rec.pourWaterMl / rec.dose, 1)}) + ${rec.bypassMl} g bypass.`
+    : '';
   const tempLine = rec.tempBand ? `Temperatuurdoel ${rec.tempBand.min}–${rec.tempBand.max} °C — niet automatisch gemeten, ga af op wat je zelf hebt gebruikt.` : '';
   // NIEUW (Implementatieplan Zetadvies v3.0, Fase 3c/D-4): de controle-achteraf die
   // contactTimeGuidance altijd al bedoelde te zijn ("Monitored diagnostic, never a
@@ -7355,7 +7395,13 @@ function renderBrewLogHonestSummary(){
   // noemt — een monitored diagnostic — maar wordt alleen nog als controle gebruikt wanneer
   // hij voor dit schema uberhaupt een zinvolle controle IS.
   let diagnosticLine = '';
-  if (rec.contactTimeDiagnosticBand && actualTime != null){
+  // FIX (Implementatieplan Bypass v1.0, Fase B, BP-5 punt 5): de diagnostische band is
+  // afgeleid voor een zetting met het volledige watervolume door het bed — bij bypass gaat
+  // er minder water door het bed dan die band veronderstelt, dus een in/buiten-oordeel zou
+  // hier iets beweren dat niet onderbouwd is. Kanttekening in plaats van een oordeel.
+  if (state.bypass){
+    diagnosticLine = 'De diagnostische contacttijd-band hierboven is afgeleid voor een zetting met het volledige watervolume door het bed — bij de concentraat-methode gaat er minder water door het bed dan die band veronderstelt, dus geen in/buiten-oordeel hier.';
+  } else if (rec.contactTimeDiagnosticBand && actualTime != null){
     const { min, max } = rec.contactTimeDiagnosticBand;
     const scheduleWithinBand = rec.totalTime >= min && rec.totalTime <= max;
     if (!scheduleWithinBand){
@@ -7368,7 +7414,7 @@ function renderBrewLogHonestSummary(){
     }
   }
   el.innerHTML = `<strong>Wat we écht weten</strong>` +
-    [timeLine, ratioLine, tempLine, diagnosticLine].filter(Boolean).map(l => `<div>${escapeHtml(l)}</div>`).join('');
+    [timeLine, ratioLine, bypassRatioLine, tempLine, diagnosticLine].filter(Boolean).map(l => `<div>${escapeHtml(l)}</div>`).join('');
 }
 function renderBrewLogSliders(){
   const el = document.getElementById('brewlog-sliders');
@@ -7412,6 +7458,16 @@ function saveBrewLogEntry(){
     beanId: state.beanId || null,
     method: state.method, profile: state.profile, roast: state.roast,
     waterMl: state.waterMl, bypass: !!state.bypass,
+    // NIEUW (Implementatieplan Bypass v1.0, Fase B, BP-5): tot nu toe sloeg de app alleen
+    // een boolean op — geen percentage, geen grammen, geen werkelijk toegevoegde hoeveelheid,
+    // dus was geen enkel bypass-brouwsel achteraf toetsbaar. Alle velden null wanneer deze
+    // logging geen bypass was (readOptionalNumberInput leest ook null bij een leeg/verborgen
+    // veld — nooit 0 voor "niet van toepassing").
+    bypassPct: state.bypass ? state.bypassPct : null,
+    pourWaterG: (state.bypass && typeof rec.pourWaterMl === 'number') ? rec.pourWaterMl : null,
+    bypassPlannedG: (state.bypass && typeof rec.bypassMl === 'number') ? rec.bypassMl : null,
+    bypassActualG: state.bypass ? readOptionalNumberInput('brewlog-bypass-actual') : null,
+    bypassMoment: state.bypass ? state.bypassMoment : null,
     grindMicron: rec.grindMicron || null, grindStand: rec.grindStand || null, temp: rec.temp || null,
     scores: Object.assign({}, brewLogDraft),
     note: noteEl ? noteEl.value.trim() : '',
@@ -7841,9 +7897,17 @@ function entryProcessBucket(entry){
   return bean ? processBucketFor(bean.process) : null;
 }
 
+// FIX (Implementatieplan Bypass v1.0, Fase B, BP-4, besloten): vervuilingsregel 4 — een
+// bypass-brouwsel gebruikt bewust minder water door het bed dan de normale zetting waar
+// deze correctie voor bedoeld is (zie de bypassNote-toelichting in computeRecipe()); mee
+// laten tellen zou de normale maalcorrectie ongemerkt laten meebewegen met een heel andere
+// techniek. Geldt voor ELK bypass-record, ook oude bypass:true-loggingen van vóór deze
+// wijziging (die hadden vóór audit H7 zelfs een procesafhankelijk percentage, 25-37,5%,
+// niet meer te reconstrueren) — net zo min mag daarvan meegeteld worden.
 function learningEligibleEntries(method, currentProfile, currentVolumeMl){
   return brewLog.filter(e =>
     e.method === method &&
+    e.bypass !== true &&
     (currentVolumeMl == null || e.waterMl == null ||
       Math.abs(e.waterMl - currentVolumeMl) / Math.max(e.waterMl, currentVolumeMl) <= LEARNING_VOLUME_TOLERANCE) &&
     e.approved === true &&
@@ -7896,7 +7960,10 @@ function learningCorrectionFor(bean, method, currentProfile, currentVolumeMl){
 function learningCorrectionText(correction){
   if (!correction) return '';
   if (correction.level === 'onvoldoende'){
-    return `Nog geen leercorrectie voor dit boontype + methode — pas ${correction.n} goedgekeurde, vergelijkbare logging${correction.n===1?'':'s'} met bruikbare klikgegevens binnen je huidige waterprofiel (minimaal ${LEARNING_MIN_N} nodig).`;
+    // NIEUW (Implementatieplan Bypass v1.0, Fase B, BP-4): expliciet genoemd zodat een
+    // lager n dan verwacht verklaarbaar is — bypass-brouwsels tellen structureel niet mee
+    // (zie learningEligibleEntries()), ook niet als ze verder aan alle eisen voldoen.
+    return `Nog geen leercorrectie voor dit boontype + methode — pas ${correction.n} goedgekeurde, vergelijkbare logging${correction.n===1?'':'s'} met bruikbare klikgegevens binnen je huidige waterprofiel (minimaal ${LEARNING_MIN_N} nodig). Concentraat/bypass-brouwsels tellen hier nooit in mee — die zijn een andere techniek dan waar deze correctie voor gemeten wordt.`;
   }
   const dir = correction.avgClicks > 0 ? 'grover' : (correction.avgClicks < 0 ? 'fijner' : 'gelijk aan');
   const amount = Math.round(Math.abs(correction.avgClicks) * 10) / 10;
@@ -8032,7 +8099,11 @@ const TRIAGE_QUESTIONS = [
     action:'Zet de molenstand voor de volgende kop terug naar dezelfde stand als je vorige goede brouwsel, en noteer die dit keer zodat je kunt vergelijken.' },
   { id:'bypass', category:'Bypass / concentraat', text:'Gebruikte je de concentraat/bypass-methode — en zo ja, precies de aanbevolen hoeveelheid water achteraf toegevoegd?',
     options:['Ja, precies goed','Nee, andere hoeveelheid','Geen bypass gebruikt'], flagOn:'Nee, andere hoeveelheid',
-    diagnosis:'Te veel bypass-water verdunt verder dan bedoeld — dat proeft precies als "wateriger, minder intens". Te weinig geeft juist een overdreven sterke kop.',
+    // UITGEBREID (Implementatieplan Bypass v1.0, Fase B, punt 7): tweede mogelijke oorzaak
+    // toegevoegd — ook bij precies de juiste hoeveelheid bijgeschonken water kan de kop
+    // afwijken, omdat de geconcentreerde brouwfase zelf een andere extractie kan geven dan
+    // een normale zetting (RB §4.2, RESEARCH_GAP voor percolatie). Eerste zin ongewijzigd.
+    diagnosis:'Te veel bypass-water verdunt verder dan bedoeld — dat proeft precies als "wateriger, minder intens". Te weinig geeft juist een overdreven sterke kop. Ook bij precies de juiste hoeveelheid kan de smaak afwijken: de geconcentreerde brouwfase zelf geeft mogelijk een andere extractie dan een normale zetting met dezelfde maling — dat is niet gemeten (RESEARCH_GAP), geen weegfout.',
     action:'Volg de aanbevolen bypass-hoeveelheid uit het recept exact, of laat bypass weg als je die niet precies kunt afmeten.' },
   { id:'age', category:'Versheid', text:'Is deze boon sinds je vorige goede brouwsel duidelijk ouder geworden, of de zak al langer open?',
     options:['Ja, merkbaar ouder','Nee, vergelijkbaar'], flagOn:'Ja, merkbaar ouder',
@@ -8633,6 +8704,23 @@ function renderBypassToggle(){
     fitEl.textContent = state.bypass
       ? `${adv.pct}% bypass — zelf gekozen, niet per boon afgestemd (geen gevalideerde manier gevonden om dit per proces/roast te personaliseren). Volgens de brontechniek (Drip Roast's V60-bypassgids) werkt concentraat-brewing doorgaans het meest overtuigend bij funky naturals, anaerobic/experimentele fermentaties en dark roasts — maar er is geen bewijs dat andere koffies dit uitsluit.`
       : 'Zet een deel van het water niet door het koffiebed, maar voegt dat er ná het zetten weer aan toe — zie de kaart hieronder voor wat daarbij wel en niet bekend is.';
+  }
+
+  // Fase C ("proef-en-vul", besloten): moment van toevoegen — achteraf (op de weegschaal,
+  // ná het zetten) is de standaard; vooraf (in de kan, vóór het zetten) is optioneel. Puur
+  // een weeginstructie-keuze (zie renderBrewStepsList()), stuurt geen receptgetal.
+  const momentBlock = document.getElementById('bypass-moment-block');
+  const momentEl = document.getElementById('bypass-moment-chip');
+  if (momentBlock && momentEl){
+    momentBlock.hidden = !state.bypass;
+    if (state.bypass){
+      const moments = [ { v:'achteraf', label:'Achteraf (op de weegschaal)' }, { v:'vooraf', label:'Vooraf (in de kan)' } ];
+      momentEl.innerHTML = moments.map(m => `<button type="button" class="chip" data-bypass-moment="${m.v}" data-selected="${state.bypassMoment===m.v}">${m.label}</button>`).join('');
+      momentEl.querySelectorAll('[data-bypass-moment]').forEach(btn=>btn.addEventListener('click', ()=>{
+        state.bypassMoment = btn.getAttribute('data-bypass-moment');
+        renderPrep();
+      }));
+    }
   }
 
   // BP-8 (PDR §27 "Experimenteel"): hypothese/verwacht effect/mogelijk voordeel/risico/
@@ -9459,6 +9547,7 @@ function selectMethod(key){
   state.fermentEvidence = false;
   state.bypass = false;
   state.bypassPct = 30;
+  state.bypassMoment = 'achteraf';
   state.strengthAdjust = 0;
   renderMethodGrid();
   showScreen('roast');
@@ -9671,7 +9760,7 @@ function renderDialTicks(){
 function renderBrewStepsList(){
   const el = document.getElementById('brew-steps');
   const rec = state.recipe;
-  el.innerHTML = rec.steps.map((s,i)=>`
+  const mainStepsHtml = rec.steps.map((s,i)=>`
     <div class="brew-step" data-idx="${i}">
       <div class="brew-step-main">
         <span>${s.label}</span>
@@ -9679,15 +9768,35 @@ function renderBrewStepsList(){
       </div>
       ${s.flow ? `<span class="brew-step-flow">${s.flow}</span>` : ''}
     </div>
-  `).join('') + (state.bypass ? `
-    <div class="brew-step brew-step-bypass">
-      <div class="brew-step-main">
-        <span>+ Bypass-water toevoegen</span>
-        <span class="brew-step-time mono">+${rec.bypassMl} g · ${rec.temp} °C</span>
-      </div>
-      <span class="brew-step-flow">Vers water op dezelfde zettemperatuur, aanvullen tot ${rec.water} g totaal — zo koelt de kop niet ongelijk af.</span>
-    </div>
-  ` : '');
+  `).join('');
+
+  if (!state.bypass){ el.innerHTML = mainStepsHtml; return; }
+
+  // FIX (Implementatieplan Bypass v1.0, Fase B, BP-6): "aanvullen tot X g totaal" was
+  // dubbelzinnig — alleen juist als de dripper nog op de weegschaal stond; zonder dripper
+  // erbij voeg je feitelijk het volle waterMl-getal toe i.p.v. alleen bypassMl, en wordt de
+  // kop veel te slap. Nu een expliciete weeginstructie per gekozen moment
+  // (state.bypassMoment, zie renderBypassToggle()), plus "proef-en-vul" (Fase C): bij
+  // achteraf eerst een deel toevoegen en proeven, dan pas aanvullen — in plaats van in één
+  // keer blind het hele bedrag erbij te gieten.
+  const tasteFirstG = Math.min(60, rec.bypassMl);
+  const restG = Math.max(0, rec.bypassMl - tasteFirstG);
+  const bypassStepHtml = state.bypassMoment === 'vooraf'
+    ? `<div class="brew-step brew-step-bypass">
+        <div class="brew-step-main">
+          <span>Bypass-water vooraf in de kan</span>
+          <span class="brew-step-time mono">${rec.bypassMl} g · ${rec.temp} °C</span>
+        </div>
+        <span class="brew-step-flow">Vóór je begint: zet de lege kan/kop op de weegschaal, tarreer (0 g), en giet ${rec.bypassMl} g vers heet water (${rec.temp} °C) erin. Zet de dripper er daarna op en brouw het schema hierboven er gewoon overheen — geen weeginstructie meer nodig ná het zetten.</span>
+      </div>`
+    : `<div class="brew-step brew-step-bypass">
+        <div class="brew-step-main">
+          <span>+ Bypass-water toevoegen</span>
+          <span class="brew-step-time mono">+${rec.bypassMl} g · ${rec.temp} °C</span>
+        </div>
+        <span class="brew-step-flow">Ná het zetten: haal de dripper eraf, zet de kop/kan zelf op de weegschaal en tarreer (0 g) — dit cijfer gaat over wat je nú toevoegt, niet over een eindgewicht. Proef-en-vul: voeg eerst ${tasteFirstG} g vers heet water (${rec.temp} °C) toe, roer en proef${restG > 0 ? `, vul dan aan tot in totaal ${rec.bypassMl} g (nog +${restG} g) als je dat wilt` : ''}. Zonder de dripper eraf en zonder te tarreren voeg je per ongeluk te veel toe.</span>
+      </div>`;
+  el.innerHTML = mainStepsHtml + bypassStepHtml;
 }
 
 /* ------------------------------------------------------------

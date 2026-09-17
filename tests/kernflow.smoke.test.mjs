@@ -410,6 +410,65 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
+  // NIEUW (Implementatieplan Bypass v1.0, Fase B/C — testplan §"Smoke: chipkeuze → stat-
+  // blok en Brew Mode-stap lopen mee; logging bewaart het gekozen percentage"): volledige
+  // rondgang met 40% bypass — percentagekeuze, proef-en-vul-instructie in Brew Mode, de
+  // brouwratio-regel op het Klaar-scherm, en de nieuwe logvelden na opslaan.
+  test('Bypass volledige rondgang (40%): stat-blok, Brew Mode "proef-en-vul", Klaar-scherm brouwratio, en de nieuwe logvelden worden bewaard', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="method"]');
+    await assertBecomesActive(page, '#screen-method');
+    await page.click('[data-method="v60"]');
+    await page.click('#roast-grid [data-roast] >> nth=0');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await assertBecomesActive(page, '#screen-prep');
+
+    await page.evaluate(() => { document.getElementById('refine-details').open = true; });
+    await page.click('[data-bypass-pct="40"]');
+    const recAfterPick = await page.evaluate(() => ({ pourWaterMl: state.recipe.pourWaterMl, bypassMl: state.recipe.bypassMl, dose: state.recipe.dose }));
+    assert.equal(recAfterPick.pourWaterMl, 180, '40% bypass op 300 ml: 60% door het bed');
+    assert.equal(recAfterPick.bypassMl, 120);
+
+    // Standaard staat het moment op "achteraf" — Brew Mode moet de proef-en-vul-instructie
+    // tonen, niet de oude dubbelzinnige "aanvullen tot X g totaal".
+    await page.click('#start-btn');
+    await assertBecomesActive(page, '#screen-brew');
+    const bypassStepText = (await page.locator('.brew-step-bypass').innerText()).trim();
+    assert.match(bypassStepText, /Proef-en-vul/, 'moet de proef-en-vul-instructie tonen');
+    assert.match(bypassStepText, /tarreer/, 'moet expliciet instrueren te tarreren (BP-6: dubbelzinnigheid weg)');
+    assert.doesNotMatch(bypassStepText, /aanvullen tot \d+ g totaal/, 'de oude dubbelzinnige formulering mag niet meer voorkomen');
+
+    await page.clock.fastForward(FAST_FORWARD);
+    await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
+    await page.click('#brewlog-open-btn');
+    await assertBecomesActive(page, '#screen-brewlog');
+
+    // Klaar-scherm: de honest-summary moet de brouwratio (los van de kernrecept-ratio) tonen.
+    const summaryText = (await page.locator('#brewlog-honest-summary').innerText()).trim();
+    assert.match(summaryText, /Door het bed: 180 g \(brouwratio 1:/, 'moet de werkelijke brewer-ratio bij bypass tonen (BP-5 punt 5)');
+
+    // Het bypass-actual-veld moet zichtbaar en voorgevuld zijn met het geplande bedrag.
+    const actualVisible = await page.evaluate(() => !document.getElementById('brewlog-bypass-actual-block').hidden);
+    assert.equal(actualVisible, true);
+    assert.equal(await page.locator('#brewlog-bypass-actual').inputValue(), '120');
+    await page.fill('#brewlog-bypass-actual', '115'); // simuleert "iets minder toegevoegd dan gepland"
+
+    await page.click('#brewlog-save-btn');
+    await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
+
+    const savedEntry = await page.evaluate(() => brewLog[brewLog.length - 1]);
+    assert.equal(savedEntry.bypass, true);
+    assert.equal(savedEntry.bypassPct, 40);
+    assert.equal(savedEntry.pourWaterG, 180);
+    assert.equal(savedEntry.bypassPlannedG, 120);
+    assert.equal(savedEntry.bypassActualG, 115, 'het aangepaste, werkelijk ingevulde bedrag moet bewaard worden, niet het geplande');
+    assert.equal(savedEntry.bypassMoment, 'achteraf');
+    assert.equal(savedEntry.schemaVersion, 5);
+
+    await page.close();
+  });
+
   // NIEUW (Implementatieplan Zetadvies v3.0, §5 — Fase 1 testplan): de schuifregelaar
   // moet klemmen op het engine-geldige bereik, niet op het fysieke apparaatbereik van
   // METHOD_INFO — anders zou de gebruiker via de +/- knoppen een volume kunnen kiezen
