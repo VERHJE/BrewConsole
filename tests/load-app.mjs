@@ -107,6 +107,7 @@ export function loadApp(){
       CUPPING_PRIMARY_AXES,
       roastBucketFor, processBucketFor, ROAST_BUCKET_LABELS, PROCESS_BUCKET_LABELS,
       recipeGrindBaseline, matchesWaterProfile, learningCorrectionFor, learningCorrectionText,
+      learningEligibleEntries, bypassAdvice, BYPASS_PCT_OPTIONS,
       LEARNING_MIN_N, brewLog, beanLibrary,
       measuredRetention, measuredRetentionText, RETENTION_MIN_N, RETENTION_PLAUSIBLE,
       personalCalibrationFor, personalCalibrationText, PERSONAL_CALIBRATION_MIN_N

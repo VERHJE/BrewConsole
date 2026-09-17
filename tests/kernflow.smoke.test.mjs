@@ -110,7 +110,12 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     const honestSummary = (await page.locator('#brewlog-honest-summary').textContent()).trim();
     assert.ok(honestSummary.length > 0, 'De eerlijke brouwsamenvatting mag niet leeg zijn');
     const metaText = (await page.locator('#brewlog-complete-meta').textContent()).trim();
-    assert.ok(metaText.length > 0, 'brewlog-complete-meta (dosis · water · tijd · methode) mag niet leeg zijn');
+    // NIEUW (Visual Design 2.0 fase 2): #brewlog-complete-meta toont sinds de celebratory-
+    // restyling drie losse statchips (tijd/water/temperatuur) i.p.v. één platte mono-regel
+    // met dosis+methode — dosis staat nog steeds elders op dit scherm (in
+    // #brewlog-honest-summary). Alleen de tekst hieronder aangepast, de assertie zelf
+    // (niet-leeg) ongewijzigd.
+    assert.ok(metaText.length > 0, 'brewlog-complete-meta (tijd · water · temperatuur, als statchips) mag niet leeg zijn');
 
     // B2: de samenvatting staat ONDER de smaaksliders, niet erboven (anchoring-risico).
     const order = await page.evaluate(() => {
@@ -205,7 +210,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.goto(FILE_URL, { waitUntil: 'load' });
 
     // De vijf tabbalk-bestemmingen moeten elk hun scherm activeren.
-    const destinations = ['home', 'beans', 'method', 'insights', 'brewlog-history'];
+    const destinations = ['home', 'beans', 'method', 'settings', 'brewlog-history'];
     for (const dest of destinations){
       await page.click(`.navbar [data-nav="${dest}"]`);
       await assertBecomesActive(page, `#screen-${dest}`);
@@ -259,11 +264,14 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
   test('Focusbeheer: na navigeren staat de focus op de nieuwe schermkop, niet op de oude knop (Accessibility Expert, afwijking E)', async () => {
     const page = await newTrackedPage();
     await page.goto(FILE_URL, { waitUntil: 'load' });
-    await page.click('.navbar [data-nav="insights"]');
-    await assertBecomesActive(page, '#screen-insights');
+    // NIEUW (Visual Design 2.0 fase 2): Inzichten is vervangen door het Instellingen-
+    // scherm in de navbar (Inzichten leeft nu voort als "Statistieken"-tab op Geschiedenis) —
+    // dezelfde focusbeheer-assertie, alleen retarget naar het nieuwe scherm.
+    await page.click('.navbar [data-nav="settings"]');
+    await assertBecomesActive(page, '#screen-settings');
     const focusedIsHeading = await page.evaluate(() => {
       const active = document.activeElement;
-      const heading = document.querySelector('#screen-insights h1, #screen-insights [data-screen-heading]');
+      const heading = document.querySelector('#screen-settings h1, #screen-settings [data-screen-heading]');
       return !!active && !!heading && (active === heading);
     });
     assert.ok(focusedIsHeading, 'Na navigatie moet de focus op de kop van het nieuwe scherm staan');
@@ -342,6 +350,11 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
 
+    // FIX (visuele afstemming referentiebeeld): de langere kalibratie-/range-toelichtingen
+    // staan sinds de Maalgraad-compactheidsslag achter een lokale "Meer over deze
+    // maalstand"-toggle (innerText() sluit verborgen tekst uit, anders dan textContent()).
+    await page.click('#grind-more-toggle');
+
     const grindBlockText = (await page.locator('#stats-grid .stat-block', { hasText: 'Maalgraad' }).innerText()).trim();
     assert.match(grindBlockText, /klik 15–17/, 'moet het nieuwe 15-17 startgebied tonen');
     assert.match(grindBlockText, /Practical V60 range: klik 13–18/, 'moet de aparte, bredere practical range tonen');
@@ -352,11 +365,13 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
-  // NIEUW (Implementatieplan v3.0, §14/§22, P1 "Bypass method guard"): op een methode
-  // waarvoor de concentraat-methode geen gevalideerde basis heeft (Chemex), moet de knop
-  // uitgeschakeld staan i.p.v. de gebruiker een werkende toggle te tonen die de motor
-  // vervolgens stil negeert.
-  test('Bypass method guard: op Chemex is de concentraat-knop uitgeschakeld, op V60 werkt hij gewoon', async () => {
+  // FIX (Implementatieplan Bypass v1.0, Fase A, BP-9, besloten): op een methode waarvoor de
+  // concentraat-methode geen gevalideerde basis heeft (Chemex) werd de knop eerder
+  // uitgeschakeld getoond; nu wordt het hele blok verborgen (minder uitleg nodig voor iets
+  // dat toch niet kan) — de eigenlijke garantie tegen stille toepassing blijft de
+  // bypassMethodSupported-guard in computeRecipe(). Op V60 is bypass sinds Fase C een
+  // percentagekeuze (Uit/20%/30%/40%) i.p.v. één aan/uit-knop.
+  test('Bypass method guard: op Chemex is het concentraat-blok verborgen, op V60 werkt de percentagekeuze', async () => {
     const page = await newTrackedPage();
     await page.goto(FILE_URL, { waitUntil: 'load' });
     await page.click('.navbar [data-nav="method"]');
@@ -366,10 +381,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
 
-    const chemexBtn = page.locator('#bypass-btn');
-    await assert.ok(await chemexBtn.isDisabled(), 'op Chemex moet de concentraat-knop disabled zijn');
-    const chemexNote = (await page.locator('#bypass-fit-note').textContent()).trim();
-    assert.match(chemexNote, /Niet beschikbaar op Chemex/);
+    const chemexHidden = await page.evaluate(() => document.getElementById('bypass-advice-block').hidden);
+    assert.equal(chemexHidden, true, 'op Chemex moet het hele concentraat/bypass-blok verborgen zijn (BP-9)');
 
     await page.click('[data-back="profile"]');
     await assertBecomesActive(page, '#screen-profile');
@@ -382,8 +395,76 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
 
-    const v60Btn = page.locator('#bypass-btn');
-    await assert.ok(!(await v60Btn.isDisabled()), 'op V60 moet de concentraat-knop gewoon bruikbaar zijn');
+    const v60Hidden = await page.evaluate(() => document.getElementById('bypass-advice-block').hidden);
+    assert.equal(v60Hidden, false, 'op V60 moet het concentraat/bypass-blok zichtbaar zijn');
+
+    // Zit in de collapsed "Verfijn dit recept"-accordion — expliciet openen vóór klikken,
+    // zelfde patroon als elders in dit bestand (native <details> vereist actionability).
+    await page.evaluate(() => { document.getElementById('refine-details').open = true; });
+    await page.click('[data-bypass-pct="30"]');
+    const selected = await page.evaluate(() => document.querySelector('[data-bypass-pct="30"]').getAttribute('data-selected'));
+    assert.equal(selected, 'true', 'na klikken op 30% moet die chip geselecteerd zijn');
+    const bypassMlText = (await page.locator('#stats-grid').textContent());
+    assert.match(bypassMlText, /Toevoegen na het zetten/, 'stats-grid moet de bypass-kaart tonen zodra bypass actief is');
+
+    await page.close();
+  });
+
+  // NIEUW (Implementatieplan Bypass v1.0, Fase B/C — testplan §"Smoke: chipkeuze → stat-
+  // blok en Brew Mode-stap lopen mee; logging bewaart het gekozen percentage"): volledige
+  // rondgang met 40% bypass — percentagekeuze, proef-en-vul-instructie in Brew Mode, de
+  // brouwratio-regel op het Klaar-scherm, en de nieuwe logvelden na opslaan.
+  test('Bypass volledige rondgang (40%): stat-blok, Brew Mode "proef-en-vul", Klaar-scherm brouwratio, en de nieuwe logvelden worden bewaard', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="method"]');
+    await assertBecomesActive(page, '#screen-method');
+    await page.click('[data-method="v60"]');
+    await page.click('#roast-grid [data-roast] >> nth=0');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await assertBecomesActive(page, '#screen-prep');
+
+    await page.evaluate(() => { document.getElementById('refine-details').open = true; });
+    await page.click('[data-bypass-pct="40"]');
+    const recAfterPick = await page.evaluate(() => ({ pourWaterMl: state.recipe.pourWaterMl, bypassMl: state.recipe.bypassMl, dose: state.recipe.dose }));
+    assert.equal(recAfterPick.pourWaterMl, 180, '40% bypass op 300 ml: 60% door het bed');
+    assert.equal(recAfterPick.bypassMl, 120);
+
+    // Standaard staat het moment op "achteraf" — Brew Mode moet de proef-en-vul-instructie
+    // tonen, niet de oude dubbelzinnige "aanvullen tot X g totaal".
+    await page.click('#start-btn');
+    await assertBecomesActive(page, '#screen-brew');
+    const bypassStepText = (await page.locator('.brew-step-bypass').innerText()).trim();
+    assert.match(bypassStepText, /Proef-en-vul/, 'moet de proef-en-vul-instructie tonen');
+    assert.match(bypassStepText, /tarreer/, 'moet expliciet instrueren te tarreren (BP-6: dubbelzinnigheid weg)');
+    assert.doesNotMatch(bypassStepText, /aanvullen tot \d+ g totaal/, 'de oude dubbelzinnige formulering mag niet meer voorkomen');
+
+    await page.clock.fastForward(FAST_FORWARD);
+    await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
+    await page.click('#brewlog-open-btn');
+    await assertBecomesActive(page, '#screen-brewlog');
+
+    // Klaar-scherm: de honest-summary moet de brouwratio (los van de kernrecept-ratio) tonen.
+    const summaryText = (await page.locator('#brewlog-honest-summary').innerText()).trim();
+    assert.match(summaryText, /Door het bed: 180 g \(brouwratio 1:/, 'moet de werkelijke brewer-ratio bij bypass tonen (BP-5 punt 5)');
+
+    // Het bypass-actual-veld moet zichtbaar en voorgevuld zijn met het geplande bedrag.
+    const actualVisible = await page.evaluate(() => !document.getElementById('brewlog-bypass-actual-block').hidden);
+    assert.equal(actualVisible, true);
+    assert.equal(await page.locator('#brewlog-bypass-actual').inputValue(), '120');
+    await page.fill('#brewlog-bypass-actual', '115'); // simuleert "iets minder toegevoegd dan gepland"
+
+    await page.click('#brewlog-save-btn');
+    await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
+
+    const savedEntry = await page.evaluate(() => brewLog[brewLog.length - 1]);
+    assert.equal(savedEntry.bypass, true);
+    assert.equal(savedEntry.bypassPct, 40);
+    assert.equal(savedEntry.pourWaterG, 180);
+    assert.equal(savedEntry.bypassPlannedG, 120);
+    assert.equal(savedEntry.bypassActualG, 115, 'het aangepaste, werkelijk ingevulde bedrag moet bewaard worden, niet het geplande');
+    assert.equal(savedEntry.bypassMoment, 'achteraf');
+    assert.equal(savedEntry.schemaVersion, 5);
 
     await page.close();
   });
@@ -569,6 +650,12 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#roast-grid [data-roast] >> nth=0');
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
+
+    // FIX (visuele afstemming referentiebeeld "Aanvullende informatie"): het waterprofiel-
+    // invoerveld zit sinds de Prep-compactheidsslag in de collapsed-by-default "Verfijn dit
+    // recept"-accordion — open 'm expliciet vóór .fill()/.selectOption(), die (anders dan
+    // .inputValue()/.textContent() hierboven) wél zichtbaarheid vereisen.
+    await page.evaluate(() => { document.getElementById('refine-details').open = true; });
 
     // Vóór invullen: alkaliniteit moet eerlijk "niet ingevuld" tonen, geen "binnen de richtwaarde".
     const beforeAlk = (await page.locator('#alkalinity-readout').textContent()).trim();

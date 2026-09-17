@@ -54,3 +54,35 @@ Ongewijzigd, zoals §0.3 (non-negotiables) en de regressiematrix (§9) van het r
 ## Testresultaten
 
 131/131 tests groen (`node --test tests/*.test.mjs`), over vier bestanden — zie `implementatierapport_v4.0.md` voor de volledige uitsplitsing per taak.
+
+---
+
+# Bouwbesluiten — Implementatieplan Bypass v1.0
+
+Vastgelegd bij de implementatie van `Implementatieplan Bypass v1.0` (`claude_Implementatieplan_Bypass_v1.md`), onderbouwd door `claude_Research_Brief_Bypass_v1.md`. Bindend zodra hier vastgelegd, zoals het plan zelf aangeeft (§0). Fase A + B + C gebouwd; Fase D (persoonlijk bypass-model, bypasswater-type als segmentsleutel) en Fase E (doel-TDS) zijn bewust niet gebouwd — zie "Niet gebouwd" hieronder.
+
+## Besluiten (§5 van het plan — vooraf voorgelegd aan Jelle, akkoord gekregen)
+
+| # | Besluit | Genomen keuze | Motivering |
+| --- | --- | --- | --- |
+| **Bouwscope** | Alleen Fase A, A+B, A+B+C, of nog niet bouwen? | **Fase A + B + C.** | Repareert zowel de onjuistheden/het datagat (A+B) als voegt de instelbare keuze toe (C) — de gebruiker wil niet alleen eerlijkheid, ook de zelf-te-kiezen 20/30/40%-stap en proef-en-vul. |
+| **Oude bypass-loggingen** | Uit de normale leercorrectie halen, of laten meetellen zoals nu? | **Eruit halen.** | Vóór audit H7 was het percentage procesafhankelijk (25–37,5%) en niet meer te reconstrueren; sowieso is bypass een andere techniek dan waar de normale maalcorrectie voor gemeten wordt (vervuilingsregel 4). Kanttekening: dit kan `n` onder `LEARNING_MIN_N` laten zakken — `learningCorrectionText()` benoemt dat nu expliciet. |
+| **Chemex-scope** | De concentraat/bypass-knop bij Chemex verbergen, of laten staan met een experimenteel-label? | **Verbergen (BP-9).** | Geen enkele gevonden bron (Drip Roast's V60-bypassgids, de patenten, de competitieroutines) gaat over Chemex — een label zou nog steeds een knop tonen voor een niet-onderbouwde combinatie. `bypassMethodSupported`-guard in `computeRecipe()` blijft de eigenlijke garantie tegen stille toepassing. |
+
+## Wat is gebouwd
+
+**Fase A — eerlijkheid.** Label "Intensiteit" → "Concentraat + bypass (optioneel, experimenteel — alleen op V60)"; de "...normale sterkte"-claim geschrapt (met volledig volumeherstel is de kop hooguit even sterk bij gelijke extractie, RB §4.4) en vervangen door een expliciete RESEARCH_GAP-toelichting; het eenzijdige "doorgaans iets fijner/warmer"-advies vervangen door een neutrale weergave van de tegenstrijdige bronnen (RB E6/E7, beide CONTESTED); de interne toeschrijving aan "Scott Rao's bypass-techniek" gecorrigeerd (Rao publiceert over batchbrouwen/bed-diepte, niet over deze V60-smaaktechniek — RB §3); een experimenteel-kaart toegevoegd (PDR §27: hypothese/verwacht effect/mogelijk voordeel/risico/evidence-niveau/vertrouwen), hergebruikt de bestaande `.prep-intel-card`-vorm.
+
+**Fase B — data-integriteit.** `RECORD_SCHEMA_VERSION` 4→5: nieuwe, additieve velden `bypassPct`/`pourWaterG`/`bypassPlannedG`/`bypassActualG`/`bypassMoment` op elke logging (oude records blijven `null`, niets met terugwerkende kracht aangevuld). `learningEligibleEntries()` sluit elk bypass-record uit (vervuilingsregel 4). Brew Mode's dubbelzinnige "aanvullen tot X g totaal" vervangen door een expliciete weeginstructie (dripper eraf, tarreren) plus "proef-en-vul". Klaar-scherm toont nu de werkelijke brewer-ratio bij bypass (`renderBrewLogHonestSummary()`) en onderdrukt het in/buiten-oordeel op de contacttijdband (die is afgeleid voor vol volume). Triage-diagnose bij de bypass-vraag uitgebreid met de tweede mogelijke oorzaak (extractieverlies in de geconcentreerde fase), eerste zin ongewijzigd.
+
+**Fase C — instelbaar percentage + proef-en-vul.** `BYPASS_PCT_OPTIONS = [20, 30, 40]`, chiprij Uit/20%/30%/40% (elke optie toont zijn eigen brouwratio), vervangt het vaste 30%. `bypassAdvice(pct)` klemt op deze drie waarden; `computeRecipe()` kreeg het percentage als 13e, optioneel parameter (default 30, dus alle ±85 bestaande testaanroepen met 12 argumenten blijven ongewijzigd correct). Moment-keuze (achteraf/vooraf) stuurt welke weeginstructie Brew Mode toont. `bean.lastBrew` onthoudt het gekozen percentage (oude records zonder percentage: 30% als UI-beginstand, nooit teruggeschreven).
+
+**Niet gebouwd (Fase D/E, buiten deze bouwronde):** het persoonlijke bypass-leermodel (eigen "emmertjes" per percentage, met dezelfde terugvalladder als het boontype-model) en het bypasswater-type als segmentsleutel (BP-7) — vereist een eigen UI-veld en leerlus-uitbreiding die niet is meegenomen in Fase A+B+C. Doel-TDS-modus (Fase E) is uitgesteld zolang er geen refractometer-workflow is (PDR §23: de normale gebruiker heeft geen TDS-meting nodig).
+
+## Wat hierdoor niet verandert
+
+`computeRecipe()`-uitvoer bij `bypassEnabled=false` blijft op elk gouden-snapshot-volume/profiel/branddiepte-combinatie byte-identiek (baseline-diff leeg na elke commit). Dosis, ratio, temperatuur en maalstand blijven volledig onafhankelijk van bypass en van het gekozen percentage. De FORBIDDEN-edge-garantie uit audit H7 blijft volledig intact: proces, branding, experimenteel-vlag en waterchemie sturen het bypasspercentage nooit — alleen het expliciete, door de gebruiker gekozen percentage doet dat.
+
+## Testresultaten
+
+383/383 tests groen (`npm run qa`), inclusief 5 nieuwe tests specifiek voor dit plan (`bypassAdvice()`-klemgedrag, `computeRecipe()`'s 13e argument, vervuilingsregel 4, de Chemex-hide-guard, en een volledige rondgang met 40% bypass van percentagekeuze tot opgeslagen logvelden).

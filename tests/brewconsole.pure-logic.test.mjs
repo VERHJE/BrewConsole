@@ -604,14 +604,15 @@ describe('Waterprofiel — alkaliniteit, verdunning, per-parameter oordeel (Impl
   });
 });
 
-describe('RECORD_SCHEMA_VERSION — schema v2 t/m v4 (Implementatieplan Zetadvies v3.0 Fase 5/7, Reparatieplan v4.0 C-2)', () => {
-  // BIJGEWERKT (Reparatieplan v4.0, C-2 / bevinding E-11): 4 (v4: beanSnapshot, additief).
-  test('RECORD_SCHEMA_VERSION staat op 4 (v2: Fase 5-logboekvelden, v3: Fase 7 approved/grindStartingPoint, v4: C-2 beanSnapshot)', () => {
+describe('RECORD_SCHEMA_VERSION — schema v2 t/m v5 (Implementatieplan Zetadvies v3.0 Fase 5/7, Reparatieplan v4.0 C-2, Implementatieplan Bypass v1.0 Fase B)', () => {
+  // BIJGEWERKT (Implementatieplan Bypass v1.0, Fase B, BP-5): 5 (v5: bypassPct/pourWaterG/
+  // bypassPlannedG/bypassActualG/bypassMoment/bypassWaterType, additief).
+  test('RECORD_SCHEMA_VERSION staat op 5 (v2: Fase 5-logboekvelden, v3: Fase 7 approved/grindStartingPoint, v4: C-2 beanSnapshot, v5: bypass-velden)', () => {
     // De daadwerkelijke opslag- en weergavelogica (saveBrewLogEntry(), de Historie-kaart,
     // en de migratie-/back-up-rondgangtests) draait via de echte DOM en staat daarom in
     // tests/kernflow.smoke.test.mjs — deze pure-logic-check bewaakt alleen het versiegetal
     // zelf, zodat een toekomstige per-ongeluk-terugdraai meteen opvalt.
-    assert.equal(api.RECORD_SCHEMA_VERSION, 4);
+    assert.equal(api.RECORD_SCHEMA_VERSION, 5);
   });
 });
 
@@ -757,6 +758,25 @@ describe('Boontype-model — buckets, terugvalladder, vervuilingsregels (Impleme
     assert.equal(result.n, 3);
     assert.ok(Math.abs(result.avgClicks - (-4/3)) < 1e-9, `verwacht gemiddelde -4/3, kreeg ${result.avgClicks}`);
     assert.match(api2.learningCorrectionText(result), /fijner/, 'negatief gemiddelde (lager klikgetal) is fijner');
+  });
+
+  // NIEUW (Implementatieplan Bypass v1.0, Fase B, BP-4, besloten): vervuilingsregel 4 —
+  // een bypass-brouwsel gebruikt een andere techniek (minder water door het bed) dan de
+  // normale zetting waar deze correctie voor gemeten wordt, en telt daarom nooit mee, ook
+  // niet als hij verder aan alle eisen voldoet (goedgekeurd, zelfde emmertje, klikgegevens).
+  test('Vervuilingsregel 4: een bypass-brouwsel telt nooit mee in de normale leercorrectie, ook niet als het verder aan alle eisen voldoet', () => {
+    resetStores();
+    const bean = addBean({ roastLevel: 'light', process: 'washed' });
+    addEntry({ beanId: bean.id, roast: 'light', actualGrindClicks: 18 }); // -2, normaal
+    addEntry({ beanId: bean.id, roast: 'light', actualGrindClicks: 18 }); // -2, normaal
+    addEntry({ beanId: bean.id, roast: 'light', actualGrindClicks: 18, bypass: true }); // zou -2 zijn, maar bypass
+    const eligible = api2.learningEligibleEntries('v60', WATER_A, null);
+    assert.equal(eligible.length, 2, 'de bypass-logging mag niet meetellen, ook al voldoet hij verder aan alle eisen');
+    const result = api2.learningCorrectionFor(bean, 'v60', WATER_A);
+    assert.ok(result);
+    assert.equal(result.level, 'onvoldoende', 'met maar 2 bruikbare (niet-bypass) loggings is dat nog onder LEARNING_MIN_N');
+    assert.equal(result.n, 2);
+    assert.match(api2.learningCorrectionText(result), /Concentraat\/bypass-brouwsels tellen hier nooit in mee/);
   });
 
   test('Terugvalladder: te weinig in het exacte emmertje verbreedt eerst naar "verwerking laten vallen" (roast_only)', () => {
@@ -1018,6 +1038,44 @@ describe('B-5 — brewer-ratio zichtbaar bij bypass (bevinding E-08)', () => {
     assert.ok(brewerRatio < 13, `brewer-ratio hoort rond 1:12 te liggen, kreeg 1:${brewerRatio.toFixed(1)}`);
     assert.match(rec.bypassNote, /In de brewer zet je feitelijk op 1:/);
     assert.match(rec.bypassNote, /buiten dat venster/);
+  });
+});
+
+describe('BP-2 — instelbaar bypass-percentage (Implementatieplan Bypass v1.0, Fase C)', () => {
+  test('bypassAdvice(): klemt op de drie toegestane waarden, valt terug op 30 bij een ongeldige/ontbrekende invoer', () => {
+    assert.equal(api.bypassAdvice(20).pct, 20);
+    assert.equal(api.bypassAdvice(30).pct, 30);
+    assert.equal(api.bypassAdvice(40).pct, 40);
+    assert.equal(api.bypassAdvice(25).pct, 30, 'een niet-toegestane waarde valt terug op de standaard');
+    assert.equal(api.bypassAdvice(undefined).pct, 30);
+    assert.equal(api.bypassAdvice(null).pct, 30);
+    // BYPASS_PCT_OPTIONS komt uit de vm-sandbox (andere Array-realm dan dit testbestand) —
+    // element-voor-element vergelijken i.p.v. assert.deepEqual, dat over de realm-grens
+    // struikelt (zelfde patroon als elders in dit bestand voor sandbox-afkomstige waarden).
+    assert.equal(api.BYPASS_PCT_OPTIONS.length, 3);
+    assert.equal(api.BYPASS_PCT_OPTIONS[0], 20);
+    assert.equal(api.BYPASS_PCT_OPTIONS[1], 30);
+    assert.equal(api.BYPASS_PCT_OPTIONS[2], 40);
+  });
+
+  test('computeRecipe(): het 13e argument (bypassPct) stuurt pourWaterMl/bypassMl, en ontbreken ervan gedraagt zich exact als 30 (bestaande call-sites/tests blijven kloppen)', () => {
+    const rec20 = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,true,null,null,0,20);
+    const rec30 = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,true,null,null,0,30);
+    const rec40 = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,true,null,null,0,40);
+    const recDefault = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,true,null,null,0); // geen 13e argument
+    assert.equal(rec20.pourWaterMl, 240, '20% bypass: 80% van 300ml door het bed');
+    assert.equal(rec30.pourWaterMl, 210, '30% bypass: 70% van 300ml door het bed');
+    assert.equal(rec40.pourWaterMl, 180, '40% bypass: 60% van 300ml door het bed');
+    assert.equal(rec20.bypassMl, 60);
+    assert.equal(rec30.bypassMl, 90);
+    assert.equal(rec40.bypassMl, 120);
+    assert.equal(recDefault.pourWaterMl, rec30.pourWaterMl, 'zonder 13e argument identiek aan expliciet 30%');
+    assert.equal(recDefault.bypassMl, rec30.bypassMl);
+    assert.match(recDefault.bypassNote, /30% bypass/);
+    // FORBIDDEN-edge-regressie (audit H7 blijft intact): proces/roast/experimenteel/water
+    // mogen het percentage nooit sturen — alleen het expliciete 13e argument doet dat.
+    const recProcess = api.computeRecipe('v60','medium','klassiek',300,'natural',true,null,null,true,true,null,0,30);
+    assert.equal(recProcess.pourWaterMl, rec30.pourWaterMl, 'proces/experimenteel/fermentatie-evidentie mogen het percentage niet beïnvloeden');
   });
 });
 
