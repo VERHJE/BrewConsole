@@ -3012,7 +3012,7 @@
     attribution: resolved(
       {
         practitioner: "Lance Hedrick",
-        sourceTrace: "Five independently-operated third-party recipe databases (Gota.cafe, Lamose, TMRW, Coffee Calculator, Cup-Timer), all reconstructing unverified video content; NO two of the four numeric renderings agree on dose, water, ratio, temperature, bloom, pour structure, or total time. audit-established-recipes-v60-chemex.md \xA76, gap G-RECIPE-07.",
+        sourceTrace: "Five independently-operated third-party recipe databases (Gota.cafe, Lamose, TMRW, Coffee Calculator, Cup-Timer), all reconstructing unverified video content; NO two of the four numeric renderings agree on dose, water, ratio, temperature, bloom, pour structure, or total time. audit-established-recipes-v60-chemex.md \xA76, gap G-RECIPE-07. RE-AUDITED 2026-09-18 (task P1 \xA74, controlled re-evaluation): an independent fresh search corroborates this finding rather than resolving it — additional third-party aggregators (incl. beanbook.app, timer.coffee) were checked and likewise disagree on both numeric parameters (dose 18-20g, ratio 1:15-1:17, temp 93-100\xB0C) and pour STRUCTURE itself (three incremental pours to thirds vs. a single continuous pour after a 2-minute bloom, both labeled \"1-2-1\" by different aggregators). No V60 batch ceiling was found by this re-audit either. Verdict unchanged: gap remains open, overlay remains non-generatable.",
         verified: false
       },
       "ESTIMATED",
@@ -3732,7 +3732,13 @@ const PROFILE_INFO = {
   bloemig_delicaat: { name:'Bloemig & delicaat', desc:'Jasmijn, thee, Geisha — helderheid en scheiding', color:'#B98FC7', icon:'flower', methodOnly:'v60' },
   sirooprig_vol: { name:'Sirooprig & rond', desc:'Kissaten-stijl, minimale agitatie — zwaarste body', color:'#6B4A2E', icon:'drip', methodOnly:'v60' },
   robuust:       { name:'Robuust & vol',   desc:'April-stijl — stevige agitatie elke pour, vol uitgesponnen', color:'#A6543C', icon:'spiral' },
-  evenwichtig_flex: { name:'Evenwichtig & flexibel', desc:'Hedrick\'s workhorse — drie simpele pours, betrouwbaar bij wisselende bonen', color:'#6E7F91', icon:'scale' }
+  // FIX (P1 §4, gecontroleerde herbeoordeling): "drie simpele pours" beschreef een
+  // specifiek giet-aantal als vaststaand feit — dat spreekt de eigen onzekerheid van de
+  // engine tegen (HEDRICK_1_2_1.pulseCount is een researchGap, juist omdát het aantal
+  // giet-momenten tussen bronnen verschilt) en werd tegengesproken door onafhankelijk
+  // heronderzoek (zie coreOnlyReason() hierboven voor de volledige toelichting die al
+  // elders op hetzelfde scherm stond). Karakterclaim behouden, structuurclaim verwijderd.
+  evenwichtig_flex: { name:'Evenwichtig & flexibel', desc:'Naar Hedrick\'s aanpak — flexibel, betrouwbaar bij wisselende bonen', color:'#6E7F91', icon:'scale' }
 };
 
 /* ============================================================
