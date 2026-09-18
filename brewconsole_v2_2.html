@@ -746,10 +746,49 @@
 
   /* brew screen */
   #screen-brew{text-align:center;}
-  /* NIEUW (Visual Design 2.0, §13 Brew Timer hero mode): stop-btn zweeft over de kale
-     achtergrond zonder eigen paneel eronder — krijgt daarom hetzelfde selectieve-glas-
-     effect als de navbar/andere floating controls (§9), met een ondoorzichtige fallback
-     via @supports. Positie/tekst/click-handler ongewijzigd. */
+  /* NIEUW (focus-ervaring herontwerp, referentiebeeld "Brew Timer — Een focus ervaring"):
+     volle-breedte fotoband die de .app-padding ontwijkt via negatieve marges die exact
+     de padding van .app compenseren (zelfde max(Npx, --safe-*)-waarden, dus geen dubbele
+     of ontbrekende safe-area-ruimte) — i.p.v. position:fixed, zodat de band gewoon het
+     bestaande --app-max-breakpointgedrag (540/760/920px) volgt. .brew-hero krijgt zijn
+     eigen padding terug (dezelfde waarden) zodat de kinderen (titel/stop/wake/dial) weer
+     normaal binnen de safe area vallen. extra 42px bovenaan de padding is puur ruimte om
+     de titel niet onder de stop/wake-rij te laten vallen (beide starten op dezelfde
+     max(18px,--safe-t)-hoogte, absoluut gepositioneerd binnen deze band). */
+  .brew-hero{
+    position:relative;
+    margin:calc(-1 * max(18px, var(--safe-t))) calc(-1 * max(20px, var(--safe-r))) 22px calc(-1 * max(20px, var(--safe-l)));
+    padding:calc(max(18px, var(--safe-t)) + 42px) max(20px, var(--safe-r)) 26px max(20px, var(--safe-l));
+    display:flex; flex-direction:column; align-items:center; justify-content:space-between;
+    min-height:380px;
+    overflow:hidden;
+    border-radius:0 0 var(--radius-lg) var(--radius-lg);
+    text-align:center;
+  }
+  .brew-hero-img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+  /* Zelfde donker-gradient-principe als .photo-scrim elders (bewust hardcoded zwart,
+     onafhankelijk van het licht/donker-thema — een foto-overlay is altijd donker, net als
+     .photo-scrim al deed), alleen over de volle band i.p.v. enkel de onderrand, zodat
+     zowel de titel bovenaan als de dial onderaan voldoende contrast houden (WCAG-eis)
+     ongeacht de helderheid van de onderliggende foto. */
+  .brew-hero-scrim{
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(0,0,0,.42) 0%, rgba(0,0,0,.16) 30%, rgba(0,0,0,.48) 64%, rgba(0,0,0,.82) 100%);
+  }
+  .brew-hero-header{position:relative;}
+  .brew-hero-title{
+    font-family:var(--font-display); font-size:18px; font-weight:600;
+    color:#F5F0E6; text-shadow:0 1px 4px rgba(0,0,0,.6);
+  }
+  .brew-hero-subtitle{
+    font-size:11px; color:rgba(245,240,230,.78); margin-top:3px;
+    text-transform:uppercase; letter-spacing:.07em; text-shadow:0 1px 3px rgba(0,0,0,.6);
+  }
+  /* NIEUW (Visual Design 2.0, §13 Brew Timer hero mode): stop-btn zweeft over de foto-
+     band zonder eigen paneel eronder — krijgt daarom hetzelfde selectieve-glas-effect als
+     de navbar/andere floating controls (§9), met een ondoorzichtige fallback via
+     @supports. Positie/tekst/click-handler ongewijzigd — puur nu relatief t.o.v.
+     .brew-hero i.p.v. .app (zelfde max(18px,--safe-*)-inzet, dus visueel identiek). */
   .stop-btn{
     position:absolute; top:max(18px, var(--safe-t)); right:max(20px, var(--safe-r));
     background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm);
@@ -768,7 +807,7 @@
     position:absolute; top:max(18px, var(--safe-t)); left:max(20px, var(--safe-l));
     display:flex; align-items:center; gap:5px;
     font-family:var(--font-mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase;
-    color:var(--text-faint); padding:10px 4px; opacity:0; transition:opacity .3s ease;
+    color:rgba(245,240,230,.85); padding:10px 4px; opacity:0; transition:opacity .3s ease;
   }
   .wake-indicator[data-active="true"]{opacity:1;}
   .wake-indicator .dot{width:6px; height:6px; border-radius:50%; background:var(--copper-light); box-shadow:0 0 0 0 rgba(224,168,104,.6); animation:wakePulse 2s infinite;}
@@ -779,9 +818,11 @@
   }
   /* NIEUW (Visual Design 2.0, §13 "ambient light" op het hero-moment van de brouwtimer):
      zachte gloed achter de dial — puur een box-shadow op de bestaande wrapper, geen enkel
-     SVG-attribuut (r=83/90 waar de JS stroke-dasharray-berekening op leunt) aangeraakt. */
+     SVG-attribuut (r=83/90 waar de JS stroke-dasharray-berekening op leunt) aangeraakt.
+     margin (was 56px auto 20px) vereenvoudigd naar 0 auto: de verticale plaatsing komt nu
+     van .brew-hero's justify-content:space-between i.p.v. een vaste top-marge. */
   .dial-wrap{
-    position:relative; width:240px; height:240px; margin:56px auto 20px;
+    position:relative; width:240px; height:240px; margin:0 auto;
     border-radius:50%;
     box-shadow:0 0 60px 10px var(--accent-glow);
   }
@@ -805,10 +846,38 @@
      garandeert dat ook in eventuele fallback-fonts en volgt de "brew numerals"-eis uit
      de Style Guide expliciet, i.p.v. impliciet te leunen op het toeval van monospace. */
   .dial-time{font-size:40px; color:var(--text); letter-spacing:.01em; font-weight:600; font-variant-numeric:tabular-nums;}
-  .dial-live-grams{font-size:15px; color:var(--copper); font-weight:700; margin-top:2px; letter-spacing:.02em;}
-  .dial-live-grams[hidden]{display:none;}
+  /* NIEUW: "van {totaal}" naast de verstreken tijd (dial-center staat op de ondoorzichtige
+     .dial-backdrop-schijf, dus gewoon thema-tokens — geen hardcoded kleur zoals de titel
+     hierboven die wél op de rauwe foto staat). */
+  .dial-total{font-size:12px; color:var(--text-faint); margin-top:-3px; font-weight:500;}
+  /* HERZIEN (focus-herontwerp): deze twee uitlezingen zijn vervangen door de duidelijkere
+     #brew-pour-badge/#brew-cumulative hieronder de dial (giet-telling + lopend totaal in
+     plaats van losse getallen in de dial zelf) — de JS die ze vult blijft ongewijzigd
+     (geen functionaliteit verwijderd, puur visueel overbodig geworden dubbele info). */
+  .dial-live-grams, .dial-water{display:none;}
   .dial-step{font-family:var(--font-display); font-size:15px; color:var(--copper-light); margin-top:4px;}
-  .dial-water{font-size:14px; color:var(--text); margin-top:3px; font-weight:600;}
+  /* NIEUW: giet-voortgang (welke stap, hoeveelste giet van hoeveel) + lopend totaal —
+     zie renderBrewFocusInfo() in de JS. */
+  .brew-focus-info{margin:0 0 4px;}
+  .brew-pour-badge{
+    display:inline-block; background:var(--copper); color:#1B1310;
+    font-family:var(--font-display); font-weight:700; font-size:12.5px;
+    padding:6px 14px; border-radius:var(--radius-pill); margin-bottom:10px; letter-spacing:.01em;
+  }
+  .brew-pour-badge:empty{display:none;}
+  .brew-pour-progress{
+    width:150px; height:4px; margin:0 auto 12px;
+    background:var(--surface-2); border-radius:var(--radius-pill); overflow:hidden;
+  }
+  .brew-pour-progress-fill{
+    height:100%; width:0%; background:var(--copper);
+    border-radius:var(--radius-pill); transition:width .5s ease;
+  }
+  .brew-cumulative{
+    font-family:var(--font-mono); font-variant-numeric:tabular-nums;
+    font-size:13px; color:var(--text-dim); margin:0 0 12px; font-weight:500;
+  }
+  .brew-cumulative:empty{display:none;}
   .next-info{
     font-size:13px; color:var(--text); font-weight:500; margin:0 0 26px; min-height:16px;
     display:inline-block; background:var(--surface); border:1px solid var(--border);
@@ -840,9 +909,13 @@
      ronde iconknoppen i.p.v. rechthoekige tekstknoppen, Pauze nadrukkelijk groter/gevuld
      (primaire actie tijdens het zetten) met Reset kleiner ernaast. Bewust GEEN derde
      "skip step"-knop — die functionaliteit bestaat niet in de app en zou nieuwe
-     interactielogica zijn; ook geen swipe-gesture (evenmin bestaande logica). De
-     pauzeTimer()/runTimer()/resetTimer()-tekstwissel (Pauze/Hervat) via textContent blijft
-     volledig ongewijzigd — puur geometrie/kleur, geen enkele JS aangeraakt. */
+     interactielogica zijn; ook geen swipe-gesture (evenmin bestaande logica).
+     HERZIEN (focus-herontwerp): de vroegere Pauze/Hervat-tekstwissel via textContent is
+     vervangen door setPauseBtnLabel() (pauzeTimer()/runTimer()/resetTimer() roepen die nu
+     aan i.p.v. rechtstreeks textContent te zetten) — toont nu een ⏸/▶-icoon met een
+     sr-only tekstlabel i.p.v. zichtbare tekst. De knopstaat/timing/click-handler zelf
+     (welke functie wanneer welke staat zet) is ongewijzigd, alleen hóe die staat visueel
+     wordt getoond. */
   .brew-controls{display:flex; gap:16px; justify-content:center; align-items:center; margin-top:4px;}
   .brew-controls button{
     width:60px; height:60px; border-radius:50%; border:1px solid var(--border);
@@ -1262,7 +1335,8 @@
     .app{ --app-max:760px; }
     .choice-grid--4{ grid-template-columns:repeat(5,1fr); }
     .stats-grid{ grid-template-columns:repeat(4,1fr); }
-    .dial-wrap{ width:300px; height:300px; margin-top:44px; }
+    .brew-hero{ min-height:440px; }
+    .dial-wrap{ width:300px; height:300px; }
     .dial-time{ font-size:48px; }
     .radar-svg{ max-width:320px; }
     .title{ font-size:30px; }
@@ -2281,37 +2355,81 @@
 
     <!-- STEP 5: BREW / TIMER -->
     <section class="screen" id="screen-brew" data-screen="brew">
-      <button class="stop-btn" id="stop-btn">× Stop</button>
-      <div class="wake-indicator" id="wake-indicator"><span class="dot"></span>Scherm blijft aan</div>
-      <div class="dial-wrap" id="dial-wrap">
-        <svg class="dial" viewBox="0 0 200 200">
-          <circle class="dial-backdrop" cx="100" cy="100" r="83"></circle>
-          <circle class="dial-track" cx="100" cy="100" r="90"></circle>
-          <circle class="dial-fill" id="dial-fill" cx="100" cy="100" r="90" transform="rotate(-90 100 100)"></circle>
-          <g id="dial-ticks"></g>
-        </svg>
-        <div class="dial-center">
-          <div class="dial-time mono" id="dial-time">0:00</div>
-          <div class="dial-live-grams mono" id="dial-live-grams" hidden></div>
-          <!-- FIX (teamreview v2 — Midden bevinding, Accessibility Expert): geen enkel
-               timer-element had een aria-live-regio, dus een screenreader-gebruiker kreeg
-               geen aankondiging bij een stapwissel of aankomende pour — alleen wie de beep
-               kon horen. aria-live="polite" op alleen dial-step/next-info (niet dial-time,
-               dat elke seconde verandert en constante aankondigingen zou geven). -->
-          <div class="dial-step" id="dial-step" aria-live="polite">Klaar om te starten</div>
-          <div class="dial-water mono" id="dial-water"></div>
+      <!-- NIEUW (focus-ervaring herontwerp, referentiebeeld "Brew Timer — Een focus
+           ervaring"): hero-band met methode-foto (dezelfde METHOD_PHOTO-mapping als het
+           methodescherm, geen nieuwe per-brouwsel fotografie) + eerlijke boon/methode-
+           kop, i.p.v. de kale achtergrond uit de vorige hero-mode-ronde. Escaped de
+           .app-padding via negatieve marges (zie CSS) i.p.v. position:fixed, om exact
+           hetzelfde responsieve --app-max-gedrag te volgen als de rest van de shell op
+           tablet/desktop-breedte. -->
+      <div class="brew-hero" id="brew-hero">
+        <img class="brew-hero-img" id="brew-hero-img" src="" alt="" loading="lazy">
+        <div class="brew-hero-scrim"></div>
+        <div class="brew-hero-header">
+          <div class="brew-hero-title" id="brew-hero-title"></div>
+          <div class="brew-hero-subtitle">Pour-over</div>
+        </div>
+        <div class="wake-indicator" id="wake-indicator"><span class="dot"></span>Scherm blijft aan</div>
+        <button class="stop-btn" id="stop-btn">× Stop</button>
+        <div class="dial-wrap" id="dial-wrap">
+          <svg class="dial" viewBox="0 0 200 200">
+            <circle class="dial-backdrop" cx="100" cy="100" r="83"></circle>
+            <circle class="dial-track" cx="100" cy="100" r="90"></circle>
+            <circle class="dial-fill" id="dial-fill" cx="100" cy="100" r="90" transform="rotate(-90 100 100)"></circle>
+            <g id="dial-ticks"></g>
+          </svg>
+          <div class="dial-center">
+            <div class="dial-time mono" id="dial-time">0:00</div>
+            <!-- NIEUW: "van {totaal}" naast de verstreken tijd — puur afgeleid van
+                 state.recipe.totalTime, niets nieuws berekend. -->
+            <div class="dial-total mono" id="dial-total"></div>
+            <div class="dial-live-grams mono" id="dial-live-grams" hidden></div>
+            <!-- FIX (teamreview v2 — Midden bevinding, Accessibility Expert): geen enkel
+                 timer-element had een aria-live-regio, dus een screenreader-gebruiker kreeg
+                 geen aankondiging bij een stapwissel of aankomende pour — alleen wie de beep
+                 kon horen. aria-live="polite" op alleen dial-step/next-info (niet dial-time,
+                 dat elke seconde verandert en constante aankondigingen zou geven).
+                 HERZIEN (focus-herontwerp): visueel vervangen door #brew-pour-badge
+                 hieronder (duidelijker, met giet-telling) — dit element blijft de
+                 aria-live-aankondiging dragen, nu sr-only i.p.v. zichtbaar, zodat er geen
+                 dubbele aankondiging ontstaat en de screenreader-tekst ongewijzigd blijft. -->
+            <div class="dial-step sr-only" id="dial-step" aria-live="polite">Klaar om te starten</div>
+            <div class="dial-water mono" id="dial-water"></div>
+          </div>
         </div>
       </div>
+
+      <!-- NIEUW: giet-voortgang (stap-gebaseerd, los van de tijd-gebaseerde ring hierboven)
+           + de twee-regelige "tot nu toe/volgende"-samenvatting. Vervangt geen bestaande
+           functionaliteit — #next-info is hetzelfde element als voorheen (zelfde aria-live),
+           alleen herplaatst en met een toegevoegde resultaattotaal-zin. -->
+      <div class="brew-focus-info">
+        <div class="brew-pour-badge" id="brew-pour-badge"></div>
+        <div class="brew-pour-progress"><div class="brew-pour-progress-fill" id="brew-pour-progress-fill"></div></div>
+        <p class="brew-cumulative" id="brew-cumulative"></p>
+        <p class="next-info" id="next-info" aria-live="polite"></p>
+      </div>
+
       <p class="dial-flow" id="dial-flow"></p>
-      <p class="next-info" id="next-info" aria-live="polite"></p>
       <p class="finish-note" id="finish-note" style="display:none;">☕ Klaar — laat volledig doorlopen.</p>
       <button class="advisor-link" id="brewlog-open-btn" style="display:none;">📋 Dit brouwsel loggen →</button>
 
-      <div class="brew-steps" id="brew-steps"></div>
+      <!-- HERZIEN (focus-herontwerp): de volledige stappenlijst blijft 100% aanwezig
+           (inclusief de proef-en-vul-/weeginstructies bij bypass) maar staat nu achter een
+           inklapbare sectie i.p.v. altijd volledig uitgeklapt — zelfde <details>-patroon als
+           "Verfijn dit recept" op het Recept-scherm. Geen enkele stap-tekst/instructie
+           gewijzigd, puur waar hij standaard staat. -->
+      <details class="flavor-category" id="brew-steps-details">
+        <summary style="color:var(--copper-light)">
+          <span>Volledig schema</span>
+          <span class="flavor-category-arrow">+</span>
+        </summary>
+        <div class="brew-steps" id="brew-steps" style="margin-top:14px;"></div>
+      </details>
 
       <div class="brew-controls">
-        <button id="pause-btn">Pauze</button>
-        <button id="reset-btn">Reset</button>
+        <button id="pause-btn"></button>
+        <button id="reset-btn" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 1 2.6 6.4"/><path d="M3 20v-5h5"/></svg></button>
       </div>
     </section>
 
@@ -9844,6 +9962,18 @@ document.addEventListener('visibilitychange', ()=>{
   }
 });
 
+// NIEUW (focus-herontwerp): icoon i.p.v. tekst op de grote pauzeknop — zelfde Pauze/
+// Hervat-toestand als voorheen (nog steeds via timer.running gestuurd), alleen de
+// weergave verandert. sr-only-tekst behoudt de toegankelijke naam van de knop exact
+// zoals die was (screenreaders lezen nog steeds "Pauze"/"Hervat" voor, niets verwijderd).
+const PAUSE_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
+const PLAY_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5Z"/></svg>';
+function setPauseBtnLabel(running){
+  const btn = document.getElementById('pause-btn');
+  if (!btn) return;
+  btn.innerHTML = (running ? PAUSE_ICON : PLAY_ICON) + `<span class="sr-only">${running ? 'Pauze' : 'Hervat'}</span>`;
+}
+
 function startBrew(){
   timer.elapsed = 0; timer.running = false; timer.lastStepIndex = -1; timer.preAlertedFor = -1; timer.startTs = 0;
   unlockAudioForIOS(); // binnen deze user-gesture, zodat latere beeps op iOS altijd geluid geven
@@ -9869,7 +9999,18 @@ function startBrew(){
   document.getElementById('finish-note').style.display = 'none';
   const logBtnStart = document.getElementById('brewlog-open-btn');
   if (logBtnStart) logBtnStart.style.display = 'none';
-  document.getElementById('pause-btn').textContent = 'Pauze';
+  setPauseBtnLabel(true);
+  // NIEUW (focus-herontwerp): hero-foto + kop bij het starten van een brouw — zelfde
+  // METHOD_PHOTO-mapping als het methodescherm (geen nieuwe fotografie), boonnaam alleen
+  // als er daadwerkelijk een boon aan deze sessie hangt (state.beanId).
+  const heroImg = document.getElementById('brew-hero-img');
+  if (heroImg) heroImg.src = METHOD_PHOTO[state.method] || '';
+  const heroTitle = document.getElementById('brew-hero-title');
+  if (heroTitle){
+    const mInfo = METHOD_INFO[state.method];
+    const bean = state.beanId ? beanLibrary.find(b=>b.id===state.beanId) : null;
+    heroTitle.textContent = `${mInfo ? mInfo.name : state.method}${bean ? ' · ' + bean.name : ''}`;
+  }
   showScreen('brew');
   updateDial();
   runTimer();
@@ -9879,7 +10020,7 @@ function runTimer(){
   if (timer.running) return;
   timer.running = true;
   timer.startTs = Date.now() - timer.elapsed * 1000;
-  document.getElementById('pause-btn').textContent = 'Pauze';
+  setPauseBtnLabel(true);
   requestWakeLock();
   timer.intervalId = setInterval(tick, 1000);
   tick();
@@ -9887,13 +10028,18 @@ function runTimer(){
 function pauseTimer(){
   timer.running = false;
   clearInterval(timer.intervalId);
-  document.getElementById('pause-btn').textContent = 'Hervat';
+  setPauseBtnLabel(false);
   releaseWakeLock();
 }
 function resetTimer(){
   clearInterval(timer.intervalId);
   timer.elapsed = 0; timer.running = false; timer.lastStepIndex = -1; timer.preAlertedFor = -1; timer.startTs = 0;
-  document.getElementById('pause-btn').textContent = 'Pauze';
+  // FIX (bestaand gedrag gecorrigeerd tijdens icoon-omzetting): na reset staat de timer
+  // stil (running=false) — de knop start 'm dus weer op, net als runTimer(). De oude
+  // tekstversie zei hier nog "Pauze" (leek te impliceren dat de knop iets zou pauzeren),
+  // wat als icoon (⏸ i.p.v. ▶) een écht misleidend beeld zou geven — als tekstlabel viel
+  // dat niet op, als icoon wel.
+  setPauseBtnLabel(false);
   document.getElementById('finish-note').style.display = 'none';
   const logBtnReset = document.getElementById('brewlog-open-btn');
   if (logBtnReset) logBtnReset.style.display = 'none';
@@ -9939,6 +10085,9 @@ function updateDial(){
   const fraction = clamp(timer.elapsed/total, 0, 1);
   document.getElementById('dial-fill').style.strokeDashoffset = (CIRC*(1-fraction)).toFixed(2);
   document.getElementById('dial-time').textContent = fmtTime(timer.elapsed);
+  // NIEUW: "van {totaal}" — puur state.recipe.totalTime, niets nieuws berekend.
+  const totalEl = document.getElementById('dial-total');
+  if (totalEl) totalEl.textContent = `van ${fmtTime(total)}`;
 
   const idx = currentStepIndex();
   const steps = state.recipe.steps;
@@ -9964,16 +10113,22 @@ function updateDial(){
      visualiseert de bedoelde giet-snelheid: loopt je eigen schaal duidelijk voor of
      achter op dit getal, dan giet je sneller/langzamer dan het recept bedoelt. Alleen
      zichtbaar tijdens een actieve pour (add > 0 én binnen de pour-window) — daarbuiten
-     (bloom-wachttijd, na de laatste pour) voegt een meelopend getal niets toe. */
+     (bloom-wachttijd, na de laatste pour) voegt een meelopend getal niets toe.
+     HERZIEN (focus-herontwerp): dial-live-grams zelf is nu via CSS verborgen (vervangen
+     door #brew-cumulative hieronder), maar prevTo/duration/pourEnd/progress worden ook
+     door #brew-cumulative/#brew-pour-progress-fill hergebruikt — vandaar dat deze
+     berekening hier blijft staan i.p.v. verwijderd. */
   const liveEl = document.getElementById('dial-live-grams');
+  const prevTo = idx > 0 ? steps[idx-1].to : 0;
+  const duration = current.endT != null ? Math.max(1, current.endT - current.t) : ASSUMED_SINGLE_POUR_SEC;
+  const pourEnd = current.t + duration;
+  const inActivePour = timer.elapsed < total && current.add > 0 && timer.elapsed >= current.t && timer.elapsed < pourEnd;
+  const cumulativeNow = inActivePour
+    ? prevTo + clamp((timer.elapsed - current.t) / duration, 0, 1) * current.add
+    : current.to;
   if (liveEl){
-    const prevTo = idx > 0 ? steps[idx-1].to : 0;
-    const duration = current.endT != null ? Math.max(1, current.endT - current.t) : ASSUMED_SINGLE_POUR_SEC;
-    const pourEnd = current.t + duration;
-    if (timer.elapsed < total && current.add > 0 && timer.elapsed >= current.t && timer.elapsed < pourEnd){
-      const progress = clamp((timer.elapsed - current.t) / duration, 0, 1);
-      const liveGrams = prevTo + progress * current.add;
-      liveEl.textContent = `↗ ${fmt(liveGrams,0)} g`;
+    if (inActivePour){
+      liveEl.textContent = `↗ ${fmt(cumulativeNow,0)} g`;
       liveEl.hidden = false;
     } else {
       liveEl.textContent = '';
@@ -9981,12 +10136,44 @@ function updateDial(){
     }
   }
 
+  /* NIEUW: giet-badge (welke stap, hoeveelste giet van hoeveel) + voortgangsbalk +
+     lopend totaal — telt alleen stappen met add > 0 mee als "giet", zodat een
+     tussenliggende wacht-/laatste-druppelstap niet als eigen giet meetelt. Puur afgeleid
+     van state.recipe.steps, niets nieuws berekend of geschat. */
+  const pourSteps = steps.filter(s=>s.add>0);
+  const badgeEl = document.getElementById('brew-pour-badge');
+  if (badgeEl){
+    if (timer.elapsed >= total){
+      badgeEl.textContent = '';
+    } else if (current.add > 0 && pourSteps.length){
+      const pourPos = pourSteps.indexOf(current) + 1;
+      badgeEl.textContent = `${current.label} · giet ${pourPos}/${pourSteps.length}`;
+    } else {
+      badgeEl.textContent = current.label;
+    }
+  }
+  const targetTotalG = steps.length ? steps[steps.length-1].to : 0;
+  const fillEl = document.getElementById('brew-pour-progress-fill');
+  if (fillEl){
+    const pourFraction = targetTotalG > 0 ? clamp((timer.elapsed >= total ? targetTotalG : cumulativeNow) / targetTotalG, 0, 1) : 0;
+    fillEl.style.width = (pourFraction*100).toFixed(1) + '%';
+  }
+  const cumEl = document.getElementById('brew-cumulative');
+  if (cumEl){
+    cumEl.textContent = timer.elapsed >= total
+      ? (targetTotalG > 0 ? `${targetTotalG} g totaal toegevoegd` : '')
+      : `${fmt(cumulativeNow,0)} g toegevoegd`;
+  }
+
   const next = steps[idx+1];
   const nextInfo = document.getElementById('next-info');
   if (timer.elapsed >= total){
     nextInfo.textContent = 'Klaar met schenken — laat volledig doorlopen.';
   } else if (next){
-    const nextWater = next.add > 0 ? ` · +${next.add} g` : '';
+    // UITGEBREID (expliciet gevraagd): naast de toe te voegen hoeveelheid ook het
+    // resulterende totaal na die volgende giet — was voorheen alleen "+40 g", nu ook
+    // duidelijk "tot hoeveel gram bijgevuld wordt".
+    const nextWater = next.add > 0 ? ` · +${next.add} g → ${next.to} g totaal` : '';
     nextInfo.textContent = `Volgende: ${next.label} over ${fmtTime(next.t - timer.elapsed)}${nextWater}`;
   } else {
     nextInfo.textContent = '';

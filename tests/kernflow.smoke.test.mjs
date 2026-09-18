@@ -434,6 +434,9 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     // tonen, niet de oude dubbelzinnige "aanvullen tot X g totaal".
     await page.click('#start-btn');
     await assertBecomesActive(page, '#screen-brew');
+    // Zit in de collapsed "Volledig schema"-accordion (focus-herontwerp) — expliciet
+    // openen vóór lezen, zelfde patroon als refine-details hierboven.
+    await page.evaluate(() => { document.getElementById('brew-steps-details').open = true; });
     const bypassStepText = (await page.locator('.brew-step-bypass').innerText()).trim();
     assert.match(bypassStepText, /Proef-en-vul/, 'moet de proef-en-vul-instructie tonen');
     assert.match(bypassStepText, /tarreer/, 'moet expliciet instrueren te tarreren (BP-6: dubbelzinnigheid weg)');
