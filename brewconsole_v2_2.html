@@ -862,6 +862,19 @@
     border-radius:50%;
     box-shadow:0 0 60px 10px var(--accent-glow);
   }
+  /* NIEUW (op verzoek, referentiebeeld): zachte ademende gloed zolang de timer daadwerkelijk
+     loopt — puur een box-shadow-animatie op de bestaande ambient-glow (zelfde
+     --accent-glow-token, geen nieuwe kleur), losstaand van .flash (dat blijft de
+     eenmalige pre-alert-puls). data-running wordt gezet in runTimer()/pauseTimer()/
+     resetTimer() — dezelfde plekken die ook setPauseBtnLabel() al aanroepen. Rustig tempo
+     (3.2s) i.p.v. een knipperend effect; @media (prefers-reduced-motion:reduce) hierboven
+     zet alle animaties al globaal uit (animation:none !important), dus geen aparte regel
+     nodig. */
+  .dial-wrap[data-running="true"]{animation:dialGlowPulse 3.2s ease-in-out infinite;}
+  @keyframes dialGlowPulse{
+    0%, 100%{box-shadow:0 0 60px 10px var(--accent-glow);}
+    50%{box-shadow:0 0 84px 18px var(--accent-glow);}
+  }
   .dial-wrap.flash::before{
     content:""; position:absolute; inset:-14px; border-radius:50%;
     background:var(--copper-light); opacity:0; pointer-events:none;
@@ -10044,6 +10057,12 @@ function setPauseBtnLabel(running){
   if (!btn) return;
   btn.innerHTML = (running ? PAUSE_ICON : PLAY_ICON) + `<span class="sr-only">${running ? 'Pauze' : 'Hervat'}</span>`;
 }
+// NIEUW (ademende gloed op de dial tijdens het lopen, zie .dial-wrap[data-running] in de
+// CSS): puur een presentatie-attribuut, geen enkele timer-berekening aangeraakt.
+function setDialRunning(running){
+  const wrap = document.getElementById('dial-wrap');
+  if (wrap) wrap.setAttribute('data-running', running ? 'true' : 'false');
+}
 
 function startBrew(){
   timer.elapsed = 0; timer.running = false; timer.lastStepIndex = -1; timer.preAlertedFor = -1; timer.startTs = 0;
@@ -10092,6 +10111,7 @@ function runTimer(){
   timer.running = true;
   timer.startTs = Date.now() - timer.elapsed * 1000;
   setPauseBtnLabel(true);
+  setDialRunning(true);
   requestWakeLock();
   timer.intervalId = setInterval(tick, 1000);
   tick();
@@ -10100,6 +10120,7 @@ function pauseTimer(){
   timer.running = false;
   clearInterval(timer.intervalId);
   setPauseBtnLabel(false);
+  setDialRunning(false);
   releaseWakeLock();
 }
 function resetTimer(){
@@ -10111,6 +10132,7 @@ function resetTimer(){
   // wat als icoon (⏸ i.p.v. ▶) een écht misleidend beeld zou geven — als tekstlabel viel
   // dat niet op, als icoon wel.
   setPauseBtnLabel(false);
+  setDialRunning(false);
   document.getElementById('finish-note').style.display = 'none';
   const logBtnReset = document.getElementById('brewlog-open-btn');
   if (logBtnReset) logBtnReset.style.display = 'none';
@@ -10133,6 +10155,7 @@ function tick(){
     if (timer.running){
       clearInterval(timer.intervalId);
       timer.running = false;
+      setDialRunning(false);
       document.getElementById('finish-note').style.display = 'block';
       const logBtn = document.getElementById('brewlog-open-btn');
       if (logBtn) logBtn.style.display = 'block';
