@@ -745,37 +745,56 @@
   .disclaimer{font-size:11px; color:var(--text-faint); margin-top:10px; line-height:1.4;}
 
   /* brew screen */
-  #screen-brew{text-align:center;}
-  /* NIEUW (focus-ervaring herontwerp, referentiebeeld "Brew Timer — Een focus ervaring"):
-     volle-breedte fotoband die de .app-padding ontwijkt via negatieve marges die exact
-     de padding van .app compenseren (zelfde max(Npx, --safe-*)-waarden, dus geen dubbele
-     of ontbrekende safe-area-ruimte) — i.p.v. position:fixed, zodat de band gewoon het
-     bestaande --app-max-breakpointgedrag (540/760/920px) volgt. .brew-hero krijgt zijn
-     eigen padding terug (dezelfde waarden) zodat de kinderen (titel/stop/wake/dial) weer
-     normaal binnen de safe area vallen. extra 42px bovenaan de padding is puur ruimte om
-     de titel niet onder de stop/wake-rij te laten vallen (beide starten op dezelfde
-     max(18px,--safe-t)-hoogte, absoluut gepositioneerd binnen deze band). */
-  .brew-hero{
-    position:relative;
-    margin:calc(-1 * max(18px, var(--safe-t))) calc(-1 * max(20px, var(--safe-r))) 22px calc(-1 * max(20px, var(--safe-l)));
-    padding:calc(max(18px, var(--safe-t)) + 42px) max(20px, var(--safe-r)) 26px max(20px, var(--safe-l));
-    display:flex; flex-direction:column; align-items:center; justify-content:space-between;
-    min-height:380px;
+  /* HERZIEN (op verzoek, na screenshot-feedback "foto liep door over de hele pagina, de
+     knoppen/balken onderin voelen los/zwevend"): de foto zat eerder geclipt in een korte
+     band (.brew-hero zelf had overflow:hidden + een vaste min-height), waardoor alles
+     eronder (giet-badge, voortgang, "Volledig schema", knoppen) op vlak zwart stond —
+     vandaar het "zwevende" gevoel. .brew-bg is nu een aparte laag die de VOLLE hoogte van
+     #screen-brew beslaat (dus meegroeit met bv. een opengeklapt "Volledig schema"), met
+     dezelfde negatieve-marge-truc als voorheen voor de horizontale bleed. #screen-brew
+     krijgt position:relative als ankerpunt voor .brew-bg se top/bottom:0; .brew-fg draagt
+     de eigenlijke inhoud en stapelt er via position:relative + normale DOM-volgorde
+     bovenop (geen z-index-trucs nodig: niet-gepositioneerde elementen zouden vóór een
+     position:absolute achtergrond geschilderd worden, dus moet .brew-fg zelf ook
+     "gepositioneerd" zijn om na .brew-bg — en dus erboven — te tekenen). */
+  #screen-brew{position:relative; text-align:center;}
+  .brew-bg{
+    position:absolute;
+    top:calc(-1 * max(18px, var(--safe-t))); bottom:0;
+    left:calc(-1 * max(20px, var(--safe-l))); right:calc(-1 * max(20px, var(--safe-r)));
     overflow:hidden;
     border-radius:0 0 var(--radius-lg) var(--radius-lg);
-    text-align:center;
   }
-  .brew-hero-img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+  .brew-fg{position:relative;}
+  /* .brew-hero is nu een gewone, niet-uitgebleede container binnen .brew-fg (zit normaal
+     binnen .app's padding, dus al automatisch binnen de safe area) — draagt alleen nog de
+     titel/stop/wake/dial-inhoud; de foto/scrim/bleed zitten voortaan in .brew-bg
+     hierboven. padding-top geeft ruimte voor stop-btn/wake-indicator, die er als vanouds
+     los overheen zweven (position:absolute t.o.v. deze .brew-hero). */
+  .brew-hero{position:relative; padding-top:40px;}
+  /* CROP (op verzoek): de bronfoto's (photos/method-*.jpg) zijn vierkant (400×400) met het
+     gietmoment zelf — waar "wat er gebeurt" te zien is — in de ONDERSTE helft (koffie die
+     in de karaf/kan druipt). object-fit:cover op een brede/korte band sneed dat er vroeger
+     grotendeels af; nu de laag de volle schermhoogte beslaat is de crop van nature al veel
+     minder agressief, en duwt object-position de resterende marge iets naar boven zodat er
+     verhoudingsgewijs meer van het onderste (drup-)deel in beeld blijft dan bij center. */
+  .brew-hero-img{
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:cover; object-position:center 38%;
+  }
   /* Zelfde donker-gradient-principe als .photo-scrim elders (bewust hardcoded zwart,
      onafhankelijk van het licht/donker-thema — een foto-overlay is altijd donker, net als
-     .photo-scrim al deed), alleen over de volle band i.p.v. enkel de onderrand, zodat
-     zowel de titel bovenaan als de dial onderaan voldoende contrast houden (WCAG-eis)
-     ongeacht de helderheid van de onderliggende foto. */
+     .photo-scrim al deed). HERZIEN: stops herijkt voor de veel langere laag (liep voorheen
+     tot de onderkant van de dial-band, nu tot de onderkant van de knoppenrij) — blijft
+     boven relatief licht (titel leesbaar, foto herkenbaar), wordt rond de dial/giet-info al
+     grotendeels donker (WCAG-contrast voor die tekst), en blijft daarna bijna (niet
+     helemaal) zwart — een vleugje textuur i.p.v. een harde overgang naar vlak zwart, zodat
+     "Volledig schema"/de knoppen niet meer los op een zwart vlak lijken te zweven. */
   .brew-hero-scrim{
     position:absolute; inset:0;
-    background:linear-gradient(180deg, rgba(0,0,0,.42) 0%, rgba(0,0,0,.16) 30%, rgba(0,0,0,.48) 64%, rgba(0,0,0,.82) 100%);
+    background:linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,.14) 18%, rgba(0,0,0,.56) 42%, rgba(0,0,0,.86) 62%, rgba(0,0,0,.94) 100%);
   }
-  .brew-hero-header{position:relative;}
+  .brew-hero-header{position:relative; margin-bottom:18px;}
   .brew-hero-title{
     font-family:var(--font-display); font-size:18px; font-weight:600;
     color:#F5F0E6; text-shadow:0 1px 4px rgba(0,0,0,.6);
@@ -787,10 +806,13 @@
   /* NIEUW (Visual Design 2.0, §13 Brew Timer hero mode): stop-btn zweeft over de foto-
      band zonder eigen paneel eronder — krijgt daarom hetzelfde selectieve-glas-effect als
      de navbar/andere floating controls (§9), met een ondoorzichtige fallback via
-     @supports. Positie/tekst/click-handler ongewijzigd — puur nu relatief t.o.v.
-     .brew-hero i.p.v. .app (zelfde max(18px,--safe-*)-inzet, dus visueel identiek). */
+     @supports. Positie/tekst/click-handler ongewijzigd.
+     HERZIEN (foto-over-hele-pagina-ronde): top/right vereenvoudigd naar 0 — .brew-hero zit
+     nu gewoon normaal binnen .app se padding (die de safe area al regelt), dus de eerdere
+     max(18px,--safe-*)-optelling zou hier onnodig extra ruimte toevoegen bovenop wat .app
+     al geeft. */
   .stop-btn{
-    position:absolute; top:max(18px, var(--safe-t)); right:max(20px, var(--safe-r));
+    position:absolute; top:0; right:0;
     background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm);
     color:var(--text-dim); font-family:var(--font-mono); font-size:12px;
     padding:10px 12px; cursor:pointer; min-height:40px;
@@ -804,7 +826,7 @@
     }
   }
   .wake-indicator{
-    position:absolute; top:max(18px, var(--safe-t)); left:max(20px, var(--safe-l));
+    position:absolute; top:0; left:0;
     display:flex; align-items:center; gap:5px;
     font-family:var(--font-mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase;
     color:rgba(245,240,230,.85); padding:10px 4px; opacity:0; transition:opacity .3s ease;
@@ -1348,7 +1370,6 @@
     .app{ --app-max:760px; }
     .choice-grid--4{ grid-template-columns:repeat(5,1fr); }
     .stats-grid{ grid-template-columns:repeat(4,1fr); }
-    .brew-hero{ min-height:440px; }
     .dial-wrap{ width:300px; height:300px; }
     .dial-time{ font-size:48px; }
     .radar-svg{ max-width:320px; }
@@ -2368,64 +2389,67 @@
 
     <!-- STEP 5: BREW / TIMER -->
     <section class="screen" id="screen-brew" data-screen="brew">
-      <!-- NIEUW (focus-ervaring herontwerp, referentiebeeld "Brew Timer — Een focus
-           ervaring"): hero-band met methode-foto (dezelfde METHOD_PHOTO-mapping als het
-           methodescherm, geen nieuwe per-brouwsel fotografie) + eerlijke boon/methode-
-           kop, i.p.v. de kale achtergrond uit de vorige hero-mode-ronde. Escaped de
-           .app-padding via negatieve marges (zie CSS) i.p.v. position:fixed, om exact
-           hetzelfde responsieve --app-max-gedrag te volgen als de rest van de shell op
-           tablet/desktop-breedte. -->
-      <div class="brew-hero" id="brew-hero">
+      <!-- HERZIEN (op verzoek, na screenshot-feedback): in de eerdere ronde zat de foto
+           geclipt in een korte band bovenaan (.brew-hero), waardoor alles eronder op vlak
+           zwart "zweefde" — in het referentiebeeld liep de foto door over de hele pagina.
+           .brew-bg is nu een losse laag die de VOLLE hoogte van #screen-brew beslaat (top
+           t/m onderkant knoppen, meegroeiend met bv. een opengeklapt "Volledig schema"),
+           terwijl .brew-fg (hieronder) de eigenlijke inhoud draagt en er via de normale
+           DOM-volgorde + position:relative bovenop stapelt (geen z-index-trucs nodig). -->
+      <div class="brew-bg" aria-hidden="true">
         <img class="brew-hero-img" id="brew-hero-img" src="" alt="" loading="lazy">
         <div class="brew-hero-scrim"></div>
-        <div class="brew-hero-header">
-          <div class="brew-hero-title" id="brew-hero-title"></div>
-          <div class="brew-hero-subtitle">Pour-over</div>
-        </div>
-        <div class="wake-indicator" id="wake-indicator"><span class="dot"></span>Scherm blijft aan</div>
-        <button class="stop-btn" id="stop-btn">× Stop</button>
-        <div class="dial-wrap" id="dial-wrap">
-          <svg class="dial" viewBox="0 0 200 200">
-            <circle class="dial-backdrop" cx="100" cy="100" r="83"></circle>
-            <circle class="dial-track" cx="100" cy="100" r="90"></circle>
-            <circle class="dial-fill" id="dial-fill" cx="100" cy="100" r="90" transform="rotate(-90 100 100)"></circle>
-            <g id="dial-ticks"></g>
-          </svg>
-          <div class="dial-center">
-            <div class="dial-time mono" id="dial-time">0:00</div>
-            <!-- NIEUW: "van {totaal}" naast de verstreken tijd — puur afgeleid van
-                 state.recipe.totalTime, niets nieuws berekend. -->
-            <div class="dial-total mono" id="dial-total"></div>
-            <div class="dial-live-grams mono" id="dial-live-grams" hidden></div>
-            <!-- FIX (teamreview v2 — Midden bevinding, Accessibility Expert): geen enkel
-                 timer-element had een aria-live-regio, dus een screenreader-gebruiker kreeg
-                 geen aankondiging bij een stapwissel of aankomende pour — alleen wie de beep
-                 kon horen. aria-live="polite" op alleen dial-step/next-info (niet dial-time,
-                 dat elke seconde verandert en constante aankondigingen zou geven).
-                 HERZIEN (focus-herontwerp): visueel vervangen door #brew-pour-badge
-                 hieronder (duidelijker, met giet-telling) — dit element blijft de
-                 aria-live-aankondiging dragen, nu sr-only i.p.v. zichtbaar, zodat er geen
-                 dubbele aankondiging ontstaat en de screenreader-tekst ongewijzigd blijft. -->
-            <div class="dial-step sr-only" id="dial-step" aria-live="polite">Klaar om te starten</div>
-            <div class="dial-water mono" id="dial-water"></div>
+      </div>
+      <div class="brew-fg">
+        <div class="brew-hero" id="brew-hero">
+          <div class="brew-hero-header">
+            <div class="brew-hero-title" id="brew-hero-title"></div>
+            <div class="brew-hero-subtitle">Pour-over</div>
+          </div>
+          <div class="wake-indicator" id="wake-indicator"><span class="dot"></span>Scherm blijft aan</div>
+          <button class="stop-btn" id="stop-btn">× Stop</button>
+          <div class="dial-wrap" id="dial-wrap">
+            <svg class="dial" viewBox="0 0 200 200">
+              <circle class="dial-backdrop" cx="100" cy="100" r="83"></circle>
+              <circle class="dial-track" cx="100" cy="100" r="90"></circle>
+              <circle class="dial-fill" id="dial-fill" cx="100" cy="100" r="90" transform="rotate(-90 100 100)"></circle>
+              <g id="dial-ticks"></g>
+            </svg>
+            <div class="dial-center">
+              <div class="dial-time mono" id="dial-time">0:00</div>
+              <!-- NIEUW: "van {totaal}" naast de verstreken tijd — puur afgeleid van
+                   state.recipe.totalTime, niets nieuws berekend. -->
+              <div class="dial-total mono" id="dial-total"></div>
+              <div class="dial-live-grams mono" id="dial-live-grams" hidden></div>
+              <!-- FIX (teamreview v2 — Midden bevinding, Accessibility Expert): geen enkel
+                   timer-element had een aria-live-regio, dus een screenreader-gebruiker kreeg
+                   geen aankondiging bij een stapwissel of aankomende pour — alleen wie de beep
+                   kon horen. aria-live="polite" op alleen dial-step/next-info (niet dial-time,
+                   dat elke seconde verandert en constante aankondigingen zou geven).
+                   HERZIEN (focus-herontwerp): visueel vervangen door #brew-pour-badge
+                   hieronder (duidelijker, met giet-telling) — dit element blijft de
+                   aria-live-aankondiging dragen, nu sr-only i.p.v. zichtbaar, zodat er geen
+                   dubbele aankondiging ontstaat en de screenreader-tekst ongewijzigd blijft. -->
+              <div class="dial-step sr-only" id="dial-step" aria-live="polite">Klaar om te starten</div>
+              <div class="dial-water mono" id="dial-water"></div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- NIEUW: giet-voortgang (stap-gebaseerd, los van de tijd-gebaseerde ring hierboven)
-           + de twee-regelige "tot nu toe/volgende"-samenvatting. Vervangt geen bestaande
-           functionaliteit — #next-info is hetzelfde element als voorheen (zelfde aria-live),
-           alleen herplaatst en met een toegevoegde resultaattotaal-zin. -->
-      <div class="brew-focus-info">
-        <div class="brew-pour-badge" id="brew-pour-badge"></div>
-        <div class="brew-pour-progress"><div class="brew-pour-progress-fill" id="brew-pour-progress-fill"></div></div>
-        <p class="brew-cumulative" id="brew-cumulative"></p>
-        <p class="next-info" id="next-info" aria-live="polite"></p>
-      </div>
+        <!-- NIEUW: giet-voortgang (stap-gebaseerd, los van de tijd-gebaseerde ring hierboven)
+             + de twee-regelige "tot nu toe/volgende"-samenvatting. Vervangt geen bestaande
+             functionaliteit — #next-info is hetzelfde element als voorheen (zelfde aria-live),
+             alleen herplaatst en met een toegevoegde resultaattotaal-zin. -->
+        <div class="brew-focus-info">
+          <div class="brew-pour-badge" id="brew-pour-badge"></div>
+          <div class="brew-pour-progress"><div class="brew-pour-progress-fill" id="brew-pour-progress-fill"></div></div>
+          <p class="brew-cumulative" id="brew-cumulative"></p>
+          <p class="next-info" id="next-info" aria-live="polite"></p>
+        </div>
 
-      <p class="dial-flow" id="dial-flow"></p>
-      <p class="finish-note" id="finish-note" style="display:none;">☕ Klaar — laat volledig doorlopen.</p>
-      <button class="advisor-link" id="brewlog-open-btn" style="display:none;">📋 Dit brouwsel loggen →</button>
+        <p class="dial-flow" id="dial-flow"></p>
+        <p class="finish-note" id="finish-note" style="display:none;">☕ Klaar — laat volledig doorlopen.</p>
+        <button class="advisor-link" id="brewlog-open-btn" style="display:none;">📋 Dit brouwsel loggen →</button>
 
       <!-- HERZIEN (focus-herontwerp): de volledige stappenlijst blijft 100% aanwezig
            (inclusief de proef-en-vul-/weeginstructies bij bypass) maar staat nu achter een
@@ -2458,6 +2482,7 @@
              dit browser-onafhankelijk op; puur een maat-attribuut, geen visuele wijziging
              bedoeld op Chromium. Zelfde fix toegepast op PAUSE_ICON/PLAY_ICON in de JS. -->
         <button id="reset-btn" aria-label="Reset"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 1 2.6 6.4"/><path d="M3 20v-5h5"/></svg></button>
+      </div>
       </div>
     </section>
 
