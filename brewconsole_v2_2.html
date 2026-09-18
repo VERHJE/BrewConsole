@@ -712,7 +712,10 @@
   .recipe-table .step-note{display:block; font-size:11px; color:var(--text-faint); margin-top:1px;}
   .recipe-table .step-flow{display:block; font-size:11px; color:var(--copper-light); margin-top:1px; font-style:italic;}
   .recipe-table .step-rate{display:block; font-size:10.5px; color:var(--text-faint); margin-top:1px;}
-  .dial-flow{font-size:12.5px; color:var(--copper-light); font-style:italic; margin-top:2px; max-width:220px; margin-left:auto; margin-right:auto;}
+  /* text-shadow (op verzoek, lichtere scrim-ronde): dit is kale tekst zonder eigen
+     ondoorzichtig vlak, rechtstreeks over de doorlopende foto — dezelfde bescherming als
+     .brew-hero-title al had, nu ook hier i.p.v. op een zware scrim te leunen. */
+  .dial-flow{font-size:12.5px; color:var(--copper-light); font-style:italic; margin-top:2px; max-width:220px; margin-left:auto; margin-right:auto; text-shadow:0 1px 3px rgba(0,0,0,.75);}
 
   .method-tips{
     font-size:11.5px; color:var(--text-faint); line-height:1.5;
@@ -790,9 +793,19 @@
      grotendeels donker (WCAG-contrast voor die tekst), en blijft daarna bijna (niet
      helemaal) zwart — een vleugje textuur i.p.v. een harde overgang naar vlak zwart, zodat
      "Volledig schema"/de knoppen niet meer los op een zwart vlak lijken te zweven. */
+  /* HERZIEN (op verzoek — "foto mag nog meer te zien zijn, zwart mag niet te vroeg/te laag
+     beginnen"): lichter en later verdonkeren dan de vorige ronde. Dit kán, want de meeste
+     elementen die over de foto heen staan (giet-badge, next-info-pil, "Volledig schema",
+     de ronde knoppen) hebben AL hun eigen ondoorzichtige achtergrond (var(--surface)/
+     var(--copper)) en zijn dus niet van deze scrim afhankelijk voor leesbaarheid — alleen
+     kale tekst zonder eigen vlak (titel/subtitel, wake-indicator, dial-flow, finish-note,
+     brew-cumulative) heeft bescherming nodig, nu via een eigen text-shadow (zelfde patroon
+     als de titel al had) i.p.v. een zware scrim over het hele scherm. Onderin (vanaf ~72%,
+     achter accordion/knoppen) blijft het wél decisief donker — geen zwak/gewassen effect —
+     zodat het "zwevende" gevoel daar goed wordt opgelost. */
   .brew-hero-scrim{
     position:absolute; inset:0;
-    background:linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,.14) 18%, rgba(0,0,0,.56) 42%, rgba(0,0,0,.86) 62%, rgba(0,0,0,.94) 100%);
+    background:linear-gradient(180deg, rgba(0,0,0,.22) 0%, rgba(0,0,0,.06) 26%, rgba(0,0,0,.20) 50%, rgba(0,0,0,.62) 72%, rgba(0,0,0,.90) 100%);
   }
   .brew-hero-header{position:relative; margin-bottom:18px;}
   .brew-hero-title{
@@ -830,6 +843,7 @@
     display:flex; align-items:center; gap:5px;
     font-family:var(--font-mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase;
     color:rgba(245,240,230,.85); padding:10px 4px; opacity:0; transition:opacity .3s ease;
+    text-shadow:0 1px 3px rgba(0,0,0,.6);
   }
   .wake-indicator[data-active="true"]{opacity:1;}
   .wake-indicator .dot{width:6px; height:6px; border-radius:50%; background:var(--copper-light); box-shadow:0 0 0 0 rgba(224,168,104,.6); animation:wakePulse 2s infinite;}
@@ -898,6 +912,7 @@
   .brew-cumulative{
     font-family:var(--font-mono); font-variant-numeric:tabular-nums;
     font-size:13px; color:var(--text-dim); margin:0 0 12px; font-weight:500;
+    text-shadow:0 1px 3px rgba(0,0,0,.75);
   }
   .brew-cumulative:empty{display:none;}
   .next-info{
@@ -970,7 +985,7 @@
   .brew-controls #pause-btn:active{background:var(--copper-light); transform:translateY(1px) scale(.96); box-shadow:0 1px 0 rgba(255,255,255,.1) inset, 0 2px 6px rgba(212,165,116,.14);}
   .finish-note{
     font-family:var(--font-display); font-size:17px; color:var(--copper-light);
-    margin:-8px 0 20px;
+    margin:-8px 0 20px; text-shadow:0 1px 3px rgba(0,0,0,.75);
   }
   /* FIX (v2.2 kernflow, oorspronkelijk) — VERVANGEN in vervolgplan v2.3, Bouwbesluit B2:
      de 88-scorering + ring uit BrewComplete.dc.html was EXPLICIET een voorbeeldcijfer
