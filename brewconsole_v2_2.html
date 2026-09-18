@@ -907,15 +907,21 @@
 
   /* NIEUW (Visual Design 2.0 fase 2, detail-referentie scherm 07 "Brew Timer (Active)"):
      ronde iconknoppen i.p.v. rechthoekige tekstknoppen, Pauze nadrukkelijk groter/gevuld
-     (primaire actie tijdens het zetten) met Reset kleiner ernaast. Bewust GEEN derde
-     "skip step"-knop — die functionaliteit bestaat niet in de app en zou nieuwe
-     interactielogica zijn; ook geen swipe-gesture (evenmin bestaande logica).
+     (primaire actie tijdens het zetten) met Reset kleiner ernaast. Bewust GEEN "skip
+     step"-knop — die functionaliteit bestaat niet in de app en zou nieuwe interactielogica
+     zijn; ook geen swipe-gesture (evenmin bestaande logica).
      HERZIEN (focus-herontwerp): de vroegere Pauze/Hervat-tekstwissel via textContent is
      vervangen door setPauseBtnLabel() (pauzeTimer()/runTimer()/resetTimer() roepen die nu
      aan i.p.v. rechtstreeks textContent te zetten) — toont nu een ⏸/▶-icoon met een
      sr-only tekstlabel i.p.v. zichtbare tekst. De knopstaat/timing/click-handler zelf
      (welke functie wanneer welke staat zet) is ongewijzigd, alleen hóe die staat visueel
-     wordt getoond. */
+     wordt getoond.
+     UITGEBREID (op verzoek): een kleine Home-knop links van Pauze — dit is GEEN nieuwe
+     interactielogica zoals de skip-step-knop hierboven die bewust werd afgewezen, want hij
+     hergebruikt letterlijk de bestaande stop-bevestigingsflow (zie stopBrewTimer() in de
+     JS) — alleen het navigatiedoel is nieuw (home i.p.v. prep), de veiligheidsgate
+     (bevestigen bij een lopende timer) blijft exact hetzelfde. Bewust kleiner dan Reset
+     (44px i.p.v. 60px) zodat hij zich niet aan Pauze/Reset opdringt. */
   .brew-controls{display:flex; gap:16px; justify-content:center; align-items:center; margin-top:4px;}
   .brew-controls button{
     width:60px; height:60px; border-radius:50%; border:1px solid var(--border);
@@ -926,6 +932,13 @@
   }
   .brew-controls button:hover{border-color:var(--copper);}
   .brew-controls button:active{background:var(--surface-2); transform:translateY(1px) scale(.96);}
+  /* FIX (Safari/WebKit — screenshot-feedback): expliciete afmeting bovenop de width/height-
+     attributen op de <svg>'s zelf (dubbele zekerheid, geen visuele wijziging op Chromium
+     waar het al goed ging). Zie de toelichting bij de svg-markup in de HTML/JS. */
+  .brew-controls button svg{width:24px; height:24px; display:block; flex-shrink:0;}
+  .brew-controls #home-btn{width:44px; height:44px; color:var(--text-faint);}
+  .brew-controls #home-btn svg{width:19px; height:19px;}
+  .brew-controls #home-btn:hover{color:var(--copper-light);}
   .brew-controls #pause-btn{
     width:76px; height:76px; font-size:14px; font-weight:600; font-family:var(--font-display);
     background:var(--copper); color:#1B1310; border:none;
@@ -2428,8 +2441,23 @@
       </details>
 
       <div class="brew-controls">
+        <!-- NIEUW (op verzoek, na screenshot-feedback): kleine Home-knop links van Pauze —
+             hergebruikt exact dezelfde stop-bevestigingslogica als de bestaande #stop-btn
+             (zelfde showConfirmModal-gate bij een lopende timer), alleen het navigatiedoel
+             verschilt (home i.p.v. prep). Geen nieuwe "stiekem wegnavigeren"-route: de
+             regressierisico-eis "weg-navigeren tijdens een lopende brouw is onmogelijk"
+             blijft intact, want ook hier moet je eerst bevestigen. Zie stopBrewTimer() in
+             de JS. -->
+        <button id="home-btn" aria-label="Naar home"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg></button>
         <button id="pause-btn"></button>
-        <button id="reset-btn" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 1 2.6 6.4"/><path d="M3 20v-5h5"/></svg></button>
+        <!-- FIX (Safari/WebKit — macOS/iPhone/iPad screenshot-feedback): deze <svg>'s
+             hadden geen expliciete width/height, alleen een viewBox. Chromium geeft zo'n
+             SVG een werkbare standaardgrootte, maar Safari/WebKit niet — daar valt hij terug
+             op zijn eigen (veel te grote, ongeclipte) default-object-size, waardoor er
+             binnen de knop niets zichtbaars overblijft. Expliciete width/height="24" lost
+             dit browser-onafhankelijk op; puur een maat-attribuut, geen visuele wijziging
+             bedoeld op Chromium. Zelfde fix toegepast op PAUSE_ICON/PLAY_ICON in de JS. -->
+        <button id="reset-btn" aria-label="Reset"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 1 2.6 6.4"/><path d="M3 20v-5h5"/></svg></button>
       </div>
     </section>
 
@@ -9966,8 +9994,11 @@ document.addEventListener('visibilitychange', ()=>{
 // Hervat-toestand als voorheen (nog steeds via timer.running gestuurd), alleen de
 // weergave verandert. sr-only-tekst behoudt de toegankelijke naam van de knop exact
 // zoals die was (screenreaders lezen nog steeds "Pauze"/"Hervat" voor, niets verwijderd).
-const PAUSE_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
-const PLAY_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5Z"/></svg>';
+// FIX (Safari/WebKit — screenshot-feedback macOS/iPhone/iPad): width/height="24" naast de
+// viewBox, anders valt Safari terug op een eigen (veel te grote) default-object-size en
+// blijft de knop leeg — zie dezelfde toelichting bij reset-btn/home-btn in de HTML.
+const PAUSE_ICON = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
+const PLAY_ICON = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M7 4.5v15l13-7.5Z"/></svg>';
 function setPauseBtnLabel(running){
   const btn = document.getElementById('pause-btn');
   if (!btn) return;
@@ -10347,20 +10378,38 @@ function showConfirmModal(message, opts){
   });
 }
 
-document.getElementById('start-btn').addEventListener('click', startBrew);
-document.getElementById('pause-btn').addEventListener('click', ()=>{ timer.running ? pauseTimer() : runTimer(); });
-document.getElementById('reset-btn').addEventListener('click', resetTimer);
-document.getElementById('stop-btn').addEventListener('click', async ()=>{
+/* NIEUW (Home-knop): gedeelde stop-bevestigingslogica, geëxtraheerd uit de bestaande
+   stop-btn-handler zodat #home-btn exact dezelfde veiligheidsgate gebruikt (bevestigen bij
+   een lopende timer) in plaats van een eigen kopie die uit de pas zou kunnen gaan lopen.
+   Gedrag/voorwaarde/labels ongewijzigd t.o.v. de oorspronkelijke stop-btn-handler — puur
+   verplaatst, plus een aanroeper-specifieke boodschap. Geeft true terug als de brew
+   daadwerkelijk gestopt is (of er nooit een liep), false bij annuleren. */
+async function stopBrewTimer(confirmMessage){
   const inProgress = state.recipe && timer.elapsed > 0 && timer.elapsed < state.recipe.totalTime;
   if (inProgress){
-    const ok = await showConfirmModal('Brew stoppen? De lopende timer wordt gereset.', { confirmLabel:'Ja, stoppen', cancelLabel:'Nee, doorgaan' });
-    if (!ok) return;
+    const ok = await showConfirmModal(confirmMessage, { confirmLabel:'Ja, stoppen', cancelLabel:'Nee, doorgaan' });
+    if (!ok) return false;
   }
   clearInterval(timer.intervalId);
   timer.running = false;
   releaseWakeLock();
+  return true;
+}
+
+document.getElementById('start-btn').addEventListener('click', startBrew);
+document.getElementById('pause-btn').addEventListener('click', ()=>{ timer.running ? pauseTimer() : runTimer(); });
+document.getElementById('reset-btn').addEventListener('click', resetTimer);
+document.getElementById('stop-btn').addEventListener('click', async ()=>{
+  const stopped = await stopBrewTimer('Brew stoppen? De lopende timer wordt gereset.');
+  if (!stopped) return;
   renderPrep();
   showScreen('prep');
+});
+document.getElementById('home-btn').addEventListener('click', async ()=>{
+  const stopped = await stopBrewTimer('Brew stoppen en naar home gaan? De lopende timer wordt gereset.');
+  if (!stopped) return;
+  renderHomeScreen();
+  showScreen('home');
 });
 
 /* voorkomt dat een per ongeluk geswipete tab/terug-gebaar een actieve
