@@ -994,10 +994,15 @@ describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () =
       assert.equal(rec.totalTime - ts[ts.length-1], 70, `${p}: staart moet 70s zijn`);
     }
   });
-  test('Kasuya 4:6: de staart na de laatste pour is KASUYA_POUR_CYCLE_SEC + KASUYA_DRAWDOWN_SEC = 75s', () => {
+  // BIJGEWERKT (heraudit, Kasuya-timing vervolgvraag): de staart is voor Kasuya bewust
+  // NIET "nog een extra 45-sec-cyclus + drawdown" (dat generieke patroon geldt voor de
+  // andere technieken, zie de test hierboven) — voor Kasuya specifiek is die extra cyclus
+  // weggelaten, zodat 5 pours à 45 sec + de eigen, afgeleide 30-sec-drawdownmarge exact op
+  // de in meerdere bronnen genoemde "niet meer dan 3:30" uitkomen (210s, niet 255s).
+  test('Kasuya 4:6: de staart na de laatste pour is uitsluitend KASUYA_DRAWDOWN_SEC = 30s (geen extra cyclus, i.t.t. andere technieken)', () => {
     const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
     const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
-    assert.equal(rec.totalTime - ts[ts.length-1], 75, 'klassiek: staart moet 75s zijn (45+30)');
+    assert.equal(rec.totalTime - ts[ts.length-1], 30, 'klassiek: staart moet 30s zijn (uitsluitend KASUYA_DRAWDOWN_SEC)');
   });
   test('N-6: totalTime is ONVERANDERD t.o.v. vóór deze fix (brouwtimer-regressie) — klassiek uitgezonderd (heraudit, Kasuya-timing, later bewust bijgesteld)', () => {
     const verwacht = { fresh_clean:130, robuust:220, snel_puur:100, sirooprig_vol:160 };
@@ -1005,9 +1010,11 @@ describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () =
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
       assert.equal(rec.totalTime, t, `${p}: totalTime mag door B-3 niet veranderen`);
     }
-    // klassiek (Kasuya): 255s sinds de 45-sec-cadans-fix (45 bloom + 4×45 cyclus + 30 drawdown).
+    // klassiek (Kasuya): 210s (3:30) sinds de Kasuya-timing-fix — 45 bloom + 3×45 cyclus
+    // (de extra fantoomcyclus is voor Kasuya specifiek weggelaten) + 30 drawdown, exact
+    // gelijk aan de in meerdere bronnen genoemde "niet meer dan 3:30".
     const kasuya = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
-    assert.equal(kasuya.totalTime, 255, 'klassiek: totalTime moet 255s zijn na de Kasuya-timing-fix');
+    assert.equal(kasuya.totalTime, 210, 'klassiek: totalTime moet 210s (3:30) zijn na de Kasuya-timing-fix');
   });
 });
 

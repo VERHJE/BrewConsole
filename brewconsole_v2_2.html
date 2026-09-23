@@ -4858,7 +4858,21 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
 
   const postBloomPulseCount = pulseCountIncludesBloom ? (pulseCount - 1) : pulseCount;
   const hasBloomStep = pulseCountIncludesBloom || !skipBloom;
-  const totalTime = Math.round((hasBloomStep ? bloomTime : 0) + postBloomPulseCount * cycleSec + drawdownSec);
+  // HERAUDIT (Kasuya-timing, vervolgvraag): de formule hieronder reserveert normaal
+  // bewust één volledige extra cyclus tussen de laatste pour en drawdownSec — dit is GEEN
+  // fout, maar een consistent, elders al getest patroon dat voor bv. fresh_clean/robuust/
+  // snel_puur via het generieke pad hieronder precies zo werkt ("B-3 — de staart is
+  // POUR_CYCLE_SEC + FINAL_DRAWDOWN_SEC", zie tests/brewconsole.pure-logic.test.mjs).
+  // Dat patroon dat voor ELKE techniek totalTime zou veranderen bewust NIET aangepast —
+  // dat is een veel groter besluit dan hier gevraagd. Voor Kasuya specifiek levert het,
+  // gecombineerd met de eigen 45-sec-cadans, wél een totaal (4:15) op dat boven de in
+  // meerdere bronnen genoemde "niet meer dan 3:30" uitkomt — daarom laat ALLEEN de
+  // Kasuya-tak hieronder die ene extra cyclus weg, zodat 5 pours à 45 sec + de eigen,
+  // afgeleide 30-sec-drawdownmarge exact op de gepubliceerde 3:30 uitkomen. Zie ook de
+  // pulse-positieformule verderop, die dezelfde effectieve pulse-count moet gebruiken om
+  // de 45-sec-cadans zelf niet te verstoren.
+  const kasuyaEffectivePulseCount = isKasuya ? Math.max(1, postBloomPulseCount - 1) : postBloomPulseCount;
+  const totalTime = Math.round((hasBloomStep ? bloomTime : 0) + kasuyaEffectivePulseCount * cycleSec + drawdownSec);
 
   const steps = [];
   let runningTo = 0;
@@ -4910,7 +4924,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
         addedInPhase += add;
         runningTo += add;
         const label = pulseIndex === 0 ? 'Bloom' : `Pour ${pulseIndex + 1}`;
-        const t = pulseIndex === 0 ? 0 : Math.round(bloomTime + (postBloomWindow * (pulseIndex - 1)) / Math.max(1, postBloomPulseCount));
+        const t = pulseIndex === 0 ? 0 : Math.round(bloomTime + (postBloomWindow * (pulseIndex - 1)) / Math.max(1, kasuyaEffectivePulseCount));
         steps.push({ label, t, add, to: runningTo, note:'', flow:'' });
         pulseIndex++;
       }
