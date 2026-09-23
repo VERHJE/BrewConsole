@@ -1773,3 +1773,36 @@ describe('Smaakwiel-heraudit — Kiwi + vrije-tekstveld matcht volledige wiel', 
     assert.equal(cls.scores.fruitig_clean, 0, 'floral mag niet meer tegenstrijdig ook fruitig_clean scoren');
   });
 });
+
+describe('Smaakwiel-scoring — percentages per profiel (profileScorePercentages)', () => {
+  // HERAUDIT (smaakwiel-scoring): percentages zijn puur informatief — dezelfde brontelling
+  // als de sterren (displayScoreFor/classifyProfile), nu ook als exact, herleidbaar getal.
+  // Verandert niets aan welk recept wordt gegenereerd.
+  test('zonder scores (null) of bij een total van 0 geeft dit null terug', () => {
+    assert.equal(api.profileScorePercentages(null), null);
+    assert.equal(api.profileScorePercentages({heel_fruitig:0, fruitig_clean:0, fresh_clean:0, vol_rond:0, zoet:0}), null);
+  });
+
+  test('een 2-tegen-1-verdeling geeft 67%/33%, som is exact 100', () => {
+    const cls = api.classifyProfile(['Bramen', 'Framboos', 'Anijs'], '', null, false); // heel_fruitig:2, zoet:1
+    const pct = api.profileScorePercentages(cls.scores);
+    assert.equal(pct.heel_fruitig, 67);
+    assert.equal(pct.zoet, 33);
+    assert.equal(pct.fruitig_clean, 0);
+    const sum = Object.values(pct).reduce((a, b) => a + b, 0);
+    assert.equal(sum, 100, `percentages moeten optellen tot 100, kregen ${sum}`);
+  });
+
+  test('een exacte 50/50-verdeling (o.a. het scenario uit de gebruikersvraag) geeft 50%/50%', () => {
+    const cls = api.classifyProfile(['Bramen', 'Chocolade'], '', null, false); // heel_fruitig:1, vol_rond:1 → klassiek
+    const pct = api.profileScorePercentages(cls.scores);
+    assert.equal(pct.heel_fruitig, 50);
+    assert.equal(pct.klassiek, 50, 'vol_rond-score moet via de klassiek-samenvoegknop als percentage verschijnen');
+  });
+
+  test('techniek-only profielen (bv. snel_puur) krijgen geen percentage, ook niet 0%', () => {
+    const cls = api.classifyProfile(['Bramen', 'Framboos'], '', null, false);
+    const pct = api.profileScorePercentages(cls.scores);
+    assert.equal(Object.prototype.hasOwnProperty.call(pct, 'snel_puur'), false);
+  });
+});

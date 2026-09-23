@@ -1186,6 +1186,10 @@
      --border in beide thema's, maar nog steeds duidelijk zwakker dan de --copper-vulling. */
   .star-bg{color:var(--text-faint);}
   .star-fill{color:var(--copper);}
+  /* NIEUW (smaakwiel-scoring): exact percentage naast de sterren — zie
+     profileScorePercentages(). Klein en zwak zoals andere secundaire chip-tekst, geen
+     eigen visueel gewicht t.o.v. de sterren zelf. */
+  .profile-match-pct{font-size:10.5px; color:var(--text-faint); line-height:1;}
   /* NIEUW (Visual Design 2.0, §7/§24 SegmentedControl/Tag): een geselecteerde chip
      "voelt seated/elevated" (§7) — subtiele inset-highlight i.p.v. alleen een kleur-
      wissel; press-state beweegt licht naar binnen. Radius blijft 999px (pillen zijn
@@ -5698,12 +5702,18 @@ function renderAdviceChips(){
   // krijgen — displayScoreFor() gaf ze altijd stilzwijgend 0 terug, wat een onzichtbare
   // 0/5-sterrenrij rendert die oogt als kapot i.p.v. "dit is geen smaakwiel-categorie".
   // Voor die knoppen expliciet geen sterrenrij i.p.v. een altijd-nul score te tonen.
+  // HERAUDIT (smaakwiel-scoring): percentages tonen naast de sterren — het exacte,
+  // herleidbare getal (bv. "62%") in plaats van alleen een visuele indicatie. Zie
+  // profileScorePercentages() voor de precieze berekening (puur informatief).
+  const profilePercentages = adviceState.flavorScores ? profileScorePercentages(adviceState.flavorScores) : null;
   document.getElementById('advice-profile').innerHTML = visibleProfileKeys().map(k=>{
     const isTechniqueOnly = PROFILE_TECHNIQUE_ONLY_KEYS.includes(k);
     const rawScore = (!isTechniqueOnly && adviceState.flavorScores) ? displayScoreFor(adviceState.flavorScores, k) : null;
     const stars = profileMatchStars(rawScore);
     const starsHtml = stars != null ? renderStarRow(stars) : '';
-    return `<button class="chip${starsHtml ? ' chip-with-stars' : ''}" data-adv-profile="${k}" data-selected="${canonicalProfileKey(adviceState.profile)===k}"><span>${PROFILE_INFO[k].name}</span>${starsHtml}</button>`;
+    const pctVal = (!isTechniqueOnly && profilePercentages) ? profilePercentages[k] : null;
+    const pctHtml = pctVal != null ? `<span class="profile-match-pct">${pctVal}%</span>` : '';
+    return `<button class="chip${starsHtml ? ' chip-with-stars' : ''}" data-adv-profile="${k}" data-selected="${canonicalProfileKey(adviceState.profile)===k}"><span>${PROFILE_INFO[k].name}</span>${starsHtml}${pctHtml}</button>`;
   }).join('');
   /* B1 (koffie-expertpanel, Amara/Youssef): bij een exacte gelijke stand tussen scores
      kiest classifyProfile() stilzwijgend de eerst-gedefinieerde sleutel — de sterren tonen
@@ -6826,6 +6836,25 @@ function profileMatchStars(score){
   if (score == null) return null;
   const raw = clamp((score / PROFILE_STAR_SCALE) * 5, 0, 5);
   return Math.round(raw * 2) / 2; // afgerond op halve sterren
+}
+/* HERAUDIT (smaakwiel-scoring): sterren geven een snel visueel gevoel, maar niet het
+   exacte "hoe dicht bij elkaar"-getal waar bv. een bijna-gelijke stand (twee profielen
+   allebei ~3,5 ster) om vraagt. Percentage = het aandeel van dit profiel (via
+   displayScoreFor(), dus mét de klassiek/vol_rond-samenvoeging) in de SOM van alle 5
+   classifyProfile()-scores — dezelfde brontelling als de sterren, nu ook als herleidbaar
+   getal. Puur informatief: verandert niets aan welk recept wordt gegenereerd, dat blijft
+   de hoogste-score-winnaar uit classifyProfile(). Bij total 0 (geen enkele match) geeft
+   dit null terug voor elk profiel, net als profileMatchStars(null). */
+function profileScorePercentages(scores){
+  if (!scores) return null;
+  const total = Object.values(scores).reduce((a,b)=>a+(b||0), 0);
+  if (total <= 0) return null;
+  const result = {};
+  visibleProfileKeys().forEach(k=>{
+    if (PROFILE_TECHNIQUE_ONLY_KEYS.includes(k)) return;
+    result[k] = Math.round((displayScoreFor(scores, k) / total) * 100);
+  });
+  return result;
 }
 const STAR_PATH = 'M8 1.1 L9.85 5.9 L15 6.35 L11.05 9.75 L12.25 14.8 L8 12.05 L3.75 14.8 L4.95 9.75 L1 6.35 L6.15 5.9 Z';
 function renderStarRow(value){
