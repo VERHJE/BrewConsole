@@ -966,8 +966,10 @@ describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () =
   // BIJGEWERKT (heraudit, Kasuya-timing): klassiek/heel_fruitig (Kasuya 4:6) volgen sinds
   // deze fix hun EIGEN, meervoudig onafhankelijk bevestigde 45-sec-cadans (zie
   // KASUYA_POUR_CYCLE_SEC) i.p.v. de generieke POUR_CYCLE_SEC (30s) — vandaar apart getest.
-  test('elk interval tussen twee waterbeurten is exact POUR_CYCLE_SEC, voor elk niet-Kasuya-profiel', () => {
-    for (const p of ['fresh_clean','robuust','snel_puur','sirooprig_vol']){
+  // BIJGEWERKT (heraudit, April-timing): robuust (April) uitgezonderd — zie het aparte
+  // "April huismethode"-testblok hieronder voor de eigen 40s/30s-cadans.
+  test('elk interval tussen twee waterbeurten is exact POUR_CYCLE_SEC, voor elk niet-Kasuya/niet-April-profiel', () => {
+    for (const p of ['fresh_clean','snel_puur','sirooprig_vol']){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
       if (rec.dose === 0) continue;
       const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
@@ -975,6 +977,19 @@ describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () =
         assert.equal(ts[i] - ts[i-1], 30,
           `${p}: interval ${i} is ${ts[i]-ts[i-1]}s, verwacht 30s (POUR_CYCLE_SEC)`);
       }
+    }
+  });
+  // HERAUDIT (April-timing): aprilcoffeeroasters.com geeft zes gelijke pours van 50 g op
+  // expliciete tijden 0:00, 0:40, 1:10, 1:40, 2:10, 2:40 (20 g dosis, 300 g water), totale
+  // zettijd 3:20-3:30 — onafhankelijk bevestigd via twee losse zoekopdrachten met identieke
+  // cijfers. Dat is 40s tussen pour 1 en 2, daarna telkens 30s (zie APRIL_FIRST_POUR_EXTRA_SEC
+  // in buildPourSchedule()).
+  test('April huismethode: interval 1→2 is 40s, alle volgende intervallen zijn 30s', () => {
+    const rec = api.computeRecipe('v60','medium','robuust',300,null,false,null,null,false,null,null,0);
+    const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
+    assert.equal(ts[1] - ts[0], 40, 'April: eerste interval (pour 1→2) moet 40s zijn');
+    for (let i = 2; i < ts.length; i++){
+      assert.equal(ts[i] - ts[i-1], 30, `April: interval ${i} is ${ts[i]-ts[i-1]}s, verwacht 30s`);
     }
   });
   test('Kasuya 4:6 (klassiek/heel_fruitig): elk interval is exact 45s (KASUYA_POUR_CYCLE_SEC)', () => {
@@ -1016,7 +1031,9 @@ describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () =
   // foutieve waarden. snel_puur (1 pulse) is ongewijzigd: bij één pulse was er al geen
   // fantoomcyclus om weg te halen (zie de aparte test hierboven).
   test('N-6: totalTime weerspiegelt de gegeneraliseerde fantoomcyclus-fix (elk ≥2-pulse-profiel 1 cyclus korter dan vóór deze fix)', () => {
-    const verwacht = { fresh_clean:100, robuust:190, snel_puur:100, sirooprig_vol:130 };
+    // robuust (April): 190 + APRIL_FIRST_POUR_EXTRA_SEC (10) = 200s sinds de latere,
+    // aparte April-timing-heraudit — zie het "April huismethode"-testblok hierboven.
+    const verwacht = { fresh_clean:100, robuust:200, snel_puur:100, sirooprig_vol:130 };
     for (const [p, t] of Object.entries(verwacht)){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
       assert.equal(rec.totalTime, t, `${p}: totalTime moet ${t}s zijn na de gegeneraliseerde fantoomcyclus-fix`);
@@ -1066,7 +1083,8 @@ describe('B-2b — brewer-specifieke cyclusconstanten (Bouwbesluit BB-1, akkoord
   // t.o.v. de waarden die hier golden ten tijde van BB-1 — zie het "N-6"-testblok hierboven
   // voor dezelfde, recentere cijfers en de volledige toelichting.
   test('V60 s totalTime per profiel weerspiegelt de gegeneraliseerde fantoomcyclus-fix (niet langer de BB-1-waarden)', () => {
-    const verwacht = { fresh_clean:100, robuust:190, snel_puur:100, sirooprig_vol:130 };
+    // robuust (April): 200s sinds de latere April-timing-heraudit (APRIL_FIRST_POUR_EXTRA_SEC).
+    const verwacht = { fresh_clean:100, robuust:200, snel_puur:100, sirooprig_vol:130 };
     for (const [p, t] of Object.entries(verwacht)){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
       assert.equal(rec.totalTime, t, `${p}: V60-totalTime moet ${t}s zijn na de gegeneraliseerde fantoomcyclus-fix`);

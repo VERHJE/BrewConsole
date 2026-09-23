@@ -4780,6 +4780,19 @@ var KASUYA_POUR_CYCLE_SEC = 45;
 var KASUYA_BLOOM_SEC = 45;
 var KASUYA_DRAWDOWN_SEC = 30;
 
+/* HERAUDIT (April-timing): April Coffee Roasters' eigen V60-huisrecept (aprilcoffeeroasters.com,
+   dezelfde bron als APRIL_HOUSE_METHOD.attribution hierboven) geeft zes gelijke pours van 50 g
+   op expliciete tijden: 0:00, 0:40, 1:10, 1:40, 2:10, 2:40 (20 g dosis, 300 g water), met een
+   totale zettijd van 3:20-3:30. Onafhankelijk bevestigd via twee losse zoekopdrachten, beide
+   met identieke tijden/gewichten — geen onderlinge tegenspraak. Dat is een 40-sec interval
+   tussen de EERSTE en TWEEDE pour, gevolgd door vier intervallen van 30 sec — de generieke
+   30-sec-cadans (POUR_CYCLE_SEC) klopt dus voor pour 2 t/m 6, alleen de allereerste pauze is
+   10 sec langer. Net als bij Kasuya een losse, techniek-specifieke waarde i.p.v. de gedeelde
+   POUR_CYCLE_SEC aan te passen — dat zou ook Hoffmann/Rao/Perger's schema's raken. Met deze
+   10 sec extra vóór pour 2, en overigens ongewijzigde cadans/drawdown, komt de laatste pour op
+   t=160s en de totale schemalengte op 200s (3:20) — binnen de gepubliceerde 3:20-3:30-marge. */
+var APRIL_FIRST_POUR_EXTRA_SEC = 10;
+
 /* NIEUW (Reparatieplan v4.0, B-2b / Bouwbesluit BB-1, akkoord gebruiker): B-2a maakte
    eerlijk dat op Chemex GEEN enkel schema in zijn eigen contacttijd-diagnostische band valt
    (100-175s tegen 240-300s) — dit lost het daadwerkelijk op, zonder D-4 (schemalengte volgt
@@ -4852,6 +4865,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
   // nooit voor Kasuya's enige brewer-scope V60_02 afwijkt van de referentie) worden hier
   // bewust genegeerd, om geen impact te hebben op Hoffmann/April/Rao/Perger.
   const isKasuya = overlayId === 'KASUYA_4_6';
+  const isApril = overlayId === 'APRIL_HOUSE_METHOD';
   const cycleSec = isKasuya ? KASUYA_POUR_CYCLE_SEC : (cycleSecArg != null ? cycleSecArg : POUR_CYCLE_SEC);
   const drawdownSec = isKasuya ? KASUYA_DRAWDOWN_SEC : (drawdownSecArg != null ? drawdownSecArg : FINAL_DRAWDOWN_SEC);
   const overlayResolvedPulseCount = overlayMeta.pulseCount != null ? overlayMeta.pulseCount : null;
@@ -4891,7 +4905,10 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
   // en 30-sec-drawdownmarge (KASUYA_POUR_CYCLE_SEC/KASUYA_DRAWDOWN_SEC hierboven) blijven
   // ongewijzigd, dit raakt alleen hoe de pulses over de resterende tijd verdeeld worden.
   const effectivePulseCount = Math.max(1, postBloomPulseCount - 1);
-  const totalTime = Math.round((hasBloomStep ? bloomTime : 0) + effectivePulseCount * cycleSec + drawdownSec);
+  // HERAUDIT (April-timing): zie APRIL_FIRST_POUR_EXTRA_SEC hierboven — de eerste pauze
+  // tussen pour 1 en pour 2 is voor April 10 sec langer dan de generieke cadans.
+  const firstPourExtraSec = (isApril && effectivePulseCount >= 1) ? APRIL_FIRST_POUR_EXTRA_SEC : 0;
+  const totalTime = Math.round((hasBloomStep ? bloomTime : 0) + effectivePulseCount * cycleSec + drawdownSec + firstPourExtraSec);
 
   const steps = [];
   let runningTo = 0;
@@ -4971,7 +4988,9 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
       const add = isLast ? Math.max(0, remainingWater - addedSoFar) : Math.min(perPulse, remainingWater - addedSoFar);
       addedSoFar += add;
       runningTo += add;
-      const t = Math.round(startTime + i * cycleSec);
+      // April: pour 2 en verder schuiven 10 sec op door firstPourExtraSec (zie
+      // APRIL_FIRST_POUR_EXTRA_SEC) — pour 1 (i===0) blijft op startTime.
+      const t = Math.round(startTime + i * cycleSec + (i >= 1 ? firstPourExtraSec : 0));
       steps.push({ label: pulseCount === 1 ? 'Hoofdpour' : `Pour ${i + 1}`, t, add, to: runningTo, note:'', flow:'' });
     }
   }
