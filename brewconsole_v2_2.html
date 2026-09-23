@@ -5968,6 +5968,11 @@ const SCA_FLAVOR_WHEEL = [
          Lakes-koffie ("tartly sweet berry (black or red currant)", Coffee Review) en
          komt ook expliciet terug in Keniaanse cupping-notes naast cassis. */
       {t:'Rode bes', h:'heel_fruitig'},
+      /* Rozenbottel (rosehip): terugkerend naast cassis/bessen-profielen — o.a. Elsewhere
+         Coffee's "Sunbeam" (Colombia): "rosehip, elderflower, brown sugar" — bevestigd
+         via WebSearch, geen eenmalige of verzonnen toevoeging. Tart/besachtig van aard,
+         vandaar dezelfde heel_fruitig-hint als de rest van deze subgroep. */
+      {t:'Rozenbottel', h:'heel_fruitig'},
       {t:'Bessen (algemeen)', h:'heel_fruitig'}
     ]},
     { label:'Gedroogd fruit', tags:[
@@ -5989,15 +5994,7 @@ const SCA_FLAVOR_WHEEL = [
     { label:'Overig fruit', tags:[
       {t:'Kokosnoot', h:'fruitig_clean'}, {t:'Kers', h:'fruitig_clean'}, {t:'Granaatappel', h:'fruitig_clean'},
       {t:'Ananas', h:'fruitig_clean'}, {t:'Druif', h:'fruitig_clean'}, {t:'Appel', h:'fresh_clean'},
-      {t:'Perzik', h:'fruitig_clean'}, {t:'Peer', h:'fresh_clean'},
-      /* Abrikoos en (verse) pruim: steenfruit-noten die in het officiële 2016-wiel
-         ontbreken (dat noemt alleen perzik en, als gedroogd fruit, pruimedant), maar
-         breed gedocumenteerd zijn — vooral bij Ethiopische/Jemenitische washed- en
-         natural-lots ("blueberry, strawberry, apricot or stone fruit"; "stone fruit
-         notes... from apricots to plums"). Los van Pruimedant (gedroogd/donker,
-         heel_fruitig) omdat verse pruim helderder/zuriger proeft, vandaar dezelfde
-         hint als perzik/kers i.p.v. de gedroogd-fruit-bucket. */
-      {t:'Abrikoos', h:'fruitig_clean'}, {t:'Pruim', h:'fruitig_clean'},
+      {t:'Peer', h:'fresh_clean'},
       /* Kiwi: ontbrak volledig, ook al is het een courante, actuele tasting-note-term —
          bevestigd via Brandywine Coffee Roasters' "Kiwi Co-Ferment" (Coffee Review/
          Unpacking Coffee, expliciete cupping-notes "kiwi (50%), plum (25%), passionfruit
@@ -6008,6 +6005,29 @@ const SCA_FLAVOR_WHEEL = [
          juist kiwi, geen dragonfruit) — zelfde helder/tart karakter als kers/abrikoos/
          pruim hierboven, vandaar dezelfde fruitig_clean-hint. */
       {t:'Kiwi', h:'fruitig_clean'}
+    ]},
+    /* HERAUDIT (smaakwiel-uitbreiding o.b.v. gebruikersaangeleverde tasting notes): Perzik/
+       Abrikoos/Pruim stonden voorheen los in "Overig fruit" — verplaatst naar een eigen
+       "Steenfruit"-subgroep (zelfde patroon als de al bestaande Tropisch fruit/Citrusfruit-
+       subgroepen), plus twee toevoegingen: Nectarine (dezelfde steenfruit-familie als
+       perzik, standaard in tasting notes) en "Steenfruit (algemeen)" als koepelterm — die
+       ontbrak, terwijl elke andere fruitcategorie in dit wiel er al een heeft (zie de
+       module-comment bovenaan dit wiel over "(algemeen)"-tags: "elke subgroep die
+       realistisch als koepelterm voorkomt... krijgt daarom een eigen generieke tag"). Puur
+       een herindeling van bestaande tags plus twee nieuwe — geen enkele wijziging aan
+       FLAVOR_TAG_HINTS-uitkomsten voor Perzik/Abrikoos/Pruim zelf. */
+    { label:'Steenfruit', tags:[
+      {t:'Perzik', h:'fruitig_clean'},
+      /* Abrikoos en (verse) pruim: steenfruit-noten die in het officiële 2016-wiel
+         ontbreken (dat noemt alleen perzik en, als gedroogd fruit, pruimedant), maar
+         breed gedocumenteerd zijn — vooral bij Ethiopische/Jemenitische washed- en
+         natural-lots ("blueberry, strawberry, apricot or stone fruit"; "stone fruit
+         notes... from apricots to plums"). Los van Pruimedant (gedroogd/donker,
+         heel_fruitig) omdat verse pruim helderder/zuriger proeft, vandaar dezelfde
+         hint als perzik/kers i.p.v. de gedroogd-fruit-bucket. */
+      {t:'Abrikoos', h:'fruitig_clean'}, {t:'Pruim', h:'fruitig_clean'},
+      {t:'Nectarine', h:'fruitig_clean'},
+      {t:'Steenfruit (algemeen)', h:'fruitig_clean'}
     ]},
     /* Tropisch fruit — bewuste uitbreiding op het officiële 2016 SCA/WCR-
        wiel. De WCR Sensory Lexicon (110 gekalibreerde termen) noemt op dit
@@ -6033,6 +6053,18 @@ const SCA_FLAVOR_WHEEL = [
          meegenomen in FERMENT_EVIDENCE_TAGS hieronder om de bypass-/split-adviezen
          ook op deze noot te laten reageren. */
       {t:'Watermeloen', h:'heel_fruitig'},
+      /* Meloen (los van watermeloen): cantaloupe/honingmeloen-achtige zoetheid, geen
+         onderdeel van hetzelfde anaerobic-fermentatie-signaal als watermeloen —
+         bevestigd via Intelligentsia Coffee's tasting notes ("sweet melons"/"melon-like
+         finish"). Eigen tag i.p.v. hergebruik van Watermeloen, want die laatste is bewust
+         gekoppeld aan FERMENT_EVIDENCE_TAGS (zie hieronder) en dat klopt niet voor gewone
+         meloen-noten. */
+      {t:'Meloen', h:'fruitig_clean'},
+      /* Jackfruit: bevestigd via My Liberica (Maleisische Liberica, "jackfruit juiciness,
+         lychee, blackberry, red date, hint of liquorice") en Obscura Coffee Roasters
+         (Japan, "jackfruit undertones alongside lychee and dark chocolate") — geen
+         eenmalige vondst, twee onafhankelijke roasters. */
+      {t:'Jackfruit', h:'fruitig_clean'},
       {t:'Tropisch fruit (algemeen)', h:'fruitig_clean'}
     ]},
     { label:'Citrusfruit', tags:[
@@ -6048,7 +6080,18 @@ const SCA_FLAVOR_WHEEL = [
       {t:'Isovaleriaanzuur', h:null}, {t:'Citroenzuur', h:'fruitig_clean'}, {t:'Appelzuur', h:'fruitig_clean'}
     ]},
     { label:'Alcohol / gefermenteerd', tags:[
-      {t:'Wijnachtig', h:'heel_fruitig'}, {t:'Whiskey-achtig', h:'heel_fruitig'}, {t:'Gefermenteerd', h:'heel_fruitig'}, {t:'Overrijp', h:'heel_fruitig'}
+      {t:'Wijnachtig', h:'heel_fruitig'}, {t:'Whiskey-achtig', h:'heel_fruitig'}, {t:'Gefermenteerd', h:'heel_fruitig'}, {t:'Overrijp', h:'heel_fruitig'},
+      /* Kombucha: stond al langer als los zoekwoord in FERMENT_EVIDENCE_KEYWORDS/
+         PROFILE_KEYWORDS (vrije tekst), maar was nooit een eigen, aanvinkbare wiel-tag —
+         zelfde soort gat als Kiwi eerder. Toegevoegd als volwaardige tag, hint en positie
+         ongewijzigd t.o.v. hoe het al werd behandeld. */
+      {t:'Kombucha', h:'heel_fruitig'},
+      /* Kauwgom (bubblegum): bevestigd signatuur-descriptor van de anaerobic-trend — o.a.
+         letterlijk als productnaam ("Bubble Gum Colombia Anaerobic Natural", Regent
+         Coffee/Pirates of Coffee) en beschreven in vakpers over anaerobic fermentatie
+         ("candied fruits like strawberry bubblegum"). Meegenomen in FERMENT_EVIDENCE_TAGS
+         hieronder, zelfde behandeling als Watermeloen. */
+      {t:'Kauwgom', h:'heel_fruitig'}
     ]},
     /* Lactic/melkzuur — geen onderdeel van het originele 2016-wiel, maar
        inmiddels een eigen, herkenbaar verwerkingsprofiel: "lactic
@@ -6073,7 +6116,13 @@ const SCA_FLAVOR_WHEEL = [
          Keniaanse SL28/SL34, vaak letterlijk als "tomato" in cupping-notes — savoury/umami
          van aard, niet fruit-zoet, vandaar h:null net als de andere plantaardige tags
          hierboven i.p.v. een fruitige bucket. */
-      {t:'Tomaat', h:null}
+      {t:'Tomaat', h:null},
+      /* Groene paprika: een van de officiële 110 termen van het SCA/WCR-wiel (2016) zelf,
+         onder Green/Vegetative — ontbrak hier nog volledig ondanks dat andere termen uit
+         diezelfde categorie (erwtenpeul, hooiachtig) al wel stonden. Chlorogeenzuren/
+         methoxypyrazines geven dit karakter, vooral bij hoogteligging — bevestigd via
+         meerdere SCA-wiel-uitleg-bronnen (Escondido Specialty Coffee, Steel Oak Coffee). */
+      {t:'Groene paprika', h:null}
     ]},
     { label:'Bonig', tags:[
       {t:'Bonig', h:null}
@@ -6098,7 +6147,12 @@ const SCA_FLAVOR_WHEEL = [
       {t:'Scherp / bijtend', h:null}, {t:'Askleurig', h:null}, {t:'Rokerig', h:'vol_rond'}, {t:'Donker geroosterd', h:'vol_rond'}, {t:'Geroosterd', h:'vol_rond'}
     ]},
     { label:'Graanachtig', tags:[
-      {t:'Graan', h:'vol_rond'}, {t:'Mout', h:'vol_rond'}
+      {t:'Graan', h:'vol_rond'}, {t:'Mout', h:'vol_rond'},
+      /* Koekjes/biscuit: veelgenoemde eigen descriptor naast graan/mout bij medium roasts
+         met een melkchocolade-/karamelprofiel — een gebakken-graan/Maillard-noot, vandaar
+         dezelfde plek en hint als Graan/Mout i.p.v. een eigen categorie. Gebruikersaangeleverd
+         (terugkerend op eigen koffiezakken naast stone fruit/chocolade-profielen). */
+      {t:'Koekjes / biscuit', h:'vol_rond'}
     ]}
   ]},
   { key:'specerijen', name:'Specerijen', short:'Specerijen', color:'#C08A3E', subgroups:[
@@ -6111,6 +6165,10 @@ const SCA_FLAVOR_WHEEL = [
          specerij-descriptoren bij Indonesische (Sumatra/Sulawesi),
          Guatemalteekse en Indiase koffies. */
       {t:'Gember', h:'zoet'}, {t:'Kardemom', h:'zoet'},
+      /* Zoethout/drop (liquorice): bevestigd via My Liberica's Maleisische Liberica-lot
+         ("jackfruit juiciness, lychee, blackberry, red date, hint of liquorice") — hoort
+         net als anijs/kaneel/kruidnagel bij de zoete kruiden-hoek, vandaar dezelfde hint. */
+      {t:'Zoethout / drop', h:'zoet'},
       {t:'Specerijen (algemeen)', h:null}
     ]}
   ]},
@@ -6126,6 +6184,14 @@ const SCA_FLAVOR_WHEEL = [
          chocolate, toast, and light fruit or floral notes") — industriebreed onder
          notig/cacao geschaard i.p.v. puur zoet, vandaar dezelfde hint als amandel. */
       {t:'Marsepein', h:'vol_rond'},
+      /* Macadamianoot: eigen, herkenbare notensoort naast pinda/hazelnoot/amandel/cashew —
+         gebruikersaangeleverd, geen aparte onafhankelijke bronbevestiging gevonden buiten
+         algemene "macadamia is a common tasting-note nut"-vermeldingen, maar wel een
+         reëel gebruikte, onopvallende toevoeging binnen dezelfde notig-hoek. */
+      {t:'Macadamianoot', h:'vol_rond'},
+      /* Praliné: notig-karameltoevoeging, vaak samen met chocolade/hazelnoot genoemd —
+         gebruikersaangeleverd, zelfde soort common-descriptor als marsepein hierboven. */
+      {t:'Praliné', h:'vol_rond'},
       {t:'Notig (algemeen)', h:'vol_rond'}
     ]},
     { label:'Cacao', tags:[
@@ -6133,7 +6199,18 @@ const SCA_FLAVOR_WHEEL = [
       /* Cacaonibs: expliciet genoemd als eigen, herkenbare descriptor naast "chocolade"
          in cupping-notes ("cocoa nibs, brown sugar, and cashew") — knapperiger/minder
          zoet dan verwerkte chocolade, dus een eigen tag i.p.v. samenvoegen. */
-      {t:'Cacaonibs', h:'vol_rond'}
+      {t:'Cacaonibs', h:'vol_rond'},
+      /* Melkchocolade: HERAUDIT — dit was het grootste gat in het hele wiel. Alleen de
+         generieke "Chocolade" en de donkere "Pure chocolade" bestonden, geen melkchocolade-
+         specifieke tag, terwijl onafhankelijk onderzoek (Beans with Beanie, data-analyse
+         van cupping-notes) caramel/chocolate/dark chocolate/milk chocolate expliciet
+         aanwijst als de VIER meest voorkomende smaaktermen in specialty coffee — vaker dan
+         welke losse fruit- of bloemnoot dan ook. Milk chocolate wordt specifiek beschreven
+         als de romige, minder bittere kant (medium roasts, "syrupy mouthfeel"), tegenover
+         Pure chocolade's bitterder/geroosterder karakter — vandaar toch dezelfde vol_rond-
+         hint (beide zijn evengoed body/cacao-gedreven), maar een eigen tag omdat de twee in
+         de praktijk bewust naast elkaar genoemd worden, nooit als synoniemen. */
+      {t:'Melkchocolade', h:'vol_rond'}
     ]}
   ]},
   { key:'zoet', name:'Zoet', short:'Zoet', color:'#C9A233', subgroups:[
@@ -6142,10 +6219,21 @@ const SCA_FLAVOR_WHEEL = [
       /* Toffee/botertoffee: veelgenoemde eigen descriptor naast "gekarameliseerd" bij
          medium/donkere roasts ("butterscotch, sticky toffee pudding, dark caramel") —
          boteriger en ronder dan pure gekarameliseerde suiker, vandaar een losse tag. */
-      {t:'Toffee / botertoffee', h:'zoet'}
+      {t:'Toffee / botertoffee', h:'zoet'},
+      /* Rietsuiker: terugkerend, ongeraffineerde-suiker-noot (rieten in tegenstelling tot
+         de al bestaande Gekarameliseerd/Honing/Melasse) — gebruikersaangeleverd, meerdere
+         keren op eigen koffiezakken naast rozenbottel/vlierbloesem/groene paprika. */
+      {t:'Rietsuiker', h:'zoet'}
     ]},
     { label:'Vanille & zoet', tags:[
-      {t:'Vanille', h:'zoet'}, {t:'Vanilline', h:'zoet'}, {t:'Algeheel zoet', h:'zoet'}, {t:'Zoete aromatiek', h:'zoet'}
+      {t:'Vanille', h:'zoet'}, {t:'Vanilline', h:'zoet'}, {t:'Algeheel zoet', h:'zoet'}, {t:'Zoete aromatiek', h:'zoet'},
+      /* Witte chocolade: bevestigd als erkende chocolade-gerelateerde smaaknoot naast
+         cacao/melkchocolade/pure chocolade, maar zelf vaker als gearomatiseerde blend dan
+         als "natuurlijk" gerapporteerd in single-origin-koffie — vandaar een bewust lagere
+         evidence-inschatting dan Melkchocolade (zie Notig/Cacao). Hier ondergebracht i.p.v.
+         bij Cacao: witte chocolade bevat geen cacaomassa, het is romig/vanille-zoet zonder
+         geroosterde cacao-body, dus hoort inhoudelijk (en qua hint) dichter bij Vanille. */
+      {t:'Witte chocolade', h:'zoet'}
     ]}
   ]},
   { key:'bloemig', name:'Bloemig', short:'Bloemig', color:'#B48FC4', subgroups:[
@@ -6166,6 +6254,23 @@ const SCA_FLAVOR_WHEEL = [
          brightness" — meerdere actuele origin-guides), waar citrus en bloemig
          letterlijk samenkomen. Zelfde fresh_clean-hint als de rest van deze subgroep. */
       {t:'Bergamot', h:'fresh_clean'},
+      /* Viooltje (violet): expliciet door de gebruiker gevraagd, en een herkende florale
+         term naast kamille/roos/jasmijn in coffee-tasting-vocabulaire — zelfde behandeling
+         als de rest van deze subgroep. */
+      {t:'Viooltje', h:'fresh_clean'},
+      /* Vlierbloesem (elderflower): bevestigd via JBC Coffee Roasters (Wush Wush: "tropical
+         fruit, green apple jolly rancher, lemongrass, tangerine, honey, and elderflower")
+         en Elsewhere Coffee's "Sunbeam" (Colombia: "rosehip, elderflower, brown sugar") —
+         twee onafhankelijke roasters, en specifiek genoemd als kenmerkend voor washed
+         Ethiopische/Gesha-lots. */
+      {t:'Vlierbloesem', h:'fresh_clean'},
+      /* Citroengras (lemongrass): bevestigd via dezelfde JBC-bron hierboven en Canyon
+         Coffee Roasters ("perfumy orange blossom and zingy lemongrass", Ethiopische
+         Danche Chelbesa) — twee onafhankelijke roasters. Kruidig-floraal-citrusachtig van
+         aard; hier bij Bloemig ondergebracht (net als Bergamot, waar citrus en bloemig ook
+         samenkomen) i.p.v. bij Citrusfruit, omdat het aromatische gras-karakter overheerst,
+         niet de vruchtvleessourheid van een citrusvrucht. */
+      {t:'Citroengras', h:'fresh_clean'},
       {t:'Bloemig (algemeen)', h:'fresh_clean'}
     ]}
   ]}
@@ -6467,7 +6572,10 @@ const FLAVOR_SCAN_SYNONYMS = {
   'pomegranate':'Granaatappel', 'pineapple':'Ananas', 'grape':'Druif', 'apple':'Appel',
   'peach':'Perzik', 'pear':'Peer',
   'apricot':'Abrikoos', 'abrikoos':'Abrikoos', 'plum':'Pruim', 'pruim':'Pruim',
+  'nectarine':'Nectarine', 'stone fruit':'Steenfruit (algemeen)', 'stonefruit':'Steenfruit (algemeen)',
+  'steenfruit':'Steenfruit (algemeen)',
   'kiwi':'Kiwi', 'kiwifruit':'Kiwi', 'kiwi fruit':'Kiwi',
+  'rosehip':'Rozenbottel', 'rose hip':'Rozenbottel', 'rozenbottel':'Rozenbottel',
   'grapefruit':'Grapefruit', 'orange':'Sinaasappel', 'lemon':'Citroen', 'lime':'Limoen',
   'mandarin':'Mandarijn', 'tangerine':'Mandarijn', 'mandarijn':'Mandarijn',
   'citrus':'Citrusfruit (algemeen)',
@@ -6477,26 +6585,40 @@ const FLAVOR_SCAN_SYNONYMS = {
   'tropical fruit':'Tropisch fruit (algemeen)', 'tropical':'Tropisch fruit (algemeen)',
   'tropisch fruit':'Tropisch fruit (algemeen)',
   'watermelon':'Watermeloen', 'watermeloen':'Watermeloen',
+  'melon':'Meloen', 'meloen':'Meloen', 'cantaloupe':'Meloen', 'honeydew':'Meloen',
+  'jackfruit':'Jackfruit',
   'winey':'Wijnachtig', 'wine-like':'Wijnachtig', 'whiskey':'Whiskey-achtig',
   'fermented':'Gefermenteerd', 'overripe':'Overrijp',
   'yogurt':'Yoghurt-achtig', 'yoghurt':'Yoghurt-achtig', 'lactic':'Yoghurt-achtig', 'melkzuur':'Yoghurt-achtig',
+  'kombucha':'Kombucha', 'bubblegum':'Kauwgom', 'bubble gum':'Kauwgom', 'kauwgom':'Kauwgom',
   'fresh':'Fris / vers',
   'floral':'Bloemig (algemeen)', 'bloemig':'Bloemig (algemeen)',
   'jasmine':'Jasmijn', 'rose':'Roos', 'chamomile':'Kamille', 'black tea':'Zwarte thee',
   'hibiscus':'Hibiscus', 'lavender':'Lavendel', 'lavendel':'Lavendel',
   'orange blossom':'Sinaasappelbloesem', 'sinaasappelbloesem':'Sinaasappelbloesem',
   'bergamot':'Bergamot', 'bergamotte':'Bergamot',
+  'violet':'Viooltje', 'viooltje':'Viooltje',
+  'elderflower':'Vlierbloesem', 'vlierbloesem':'Vlierbloesem',
+  'lemongrass':'Citroengras', 'lemon grass':'Citroengras', 'citroengras':'Citroengras',
   'honey':'Honing', 'caramel':'Gekarameliseerd', 'maple':'Ahornsiroop', 'molasses':'Melasse',
   'vanilla':'Vanille', 'brown sugar':'Gekarameliseerd', 'sweet':'Algeheel zoet',
+  'sugar cane':'Rietsuiker', 'sugarcane':'Rietsuiker', 'cane sugar':'Rietsuiker', 'rietsuiker':'Rietsuiker',
   'chocolate':'Chocolade', 'dark chocolate':'Pure chocolade', 'cocoa':'Chocolade',
   'cocoa nib':'Cacaonibs', 'cacao nib':'Cacaonibs', 'cacaonibs':'Cacaonibs',
+  'milk chocolate':'Melkchocolade', 'melkchocolade':'Melkchocolade',
+  'white chocolate':'Witte chocolade', 'witte chocolade':'Witte chocolade',
   'hazelnut':'Hazelnoot', 'almond':'Amandel', 'peanut':"Pinda's", 'nutty':'Notig (algemeen)',
   'cashew':'Cashewnoot', 'cashewnoot':'Cashewnoot', 'marzipan':'Marsepein', 'marsepein':'Marsepein',
+  'macadamia':'Macadamianoot', 'macadamianoot':'Macadamianoot',
+  'praline':'Praliné', 'pralines':'Praliné', 'praliné':'Praliné',
   'toffee':'Toffee / botertoffee', 'butterscotch':'Toffee / botertoffee',
+  'biscuit':'Koekjes / biscuit', 'cookie':'Koekjes / biscuit', 'koekjes':'Koekjes / biscuit',
   'tobacco':'Tabak', 'smoky':'Rokerig', 'malt':'Mout', 'roasted':'Geroosterd',
   'cinnamon':'Kaneel', 'clove':'Kruidnagel', 'nutmeg':'Nootmuskaat', 'anise':'Anijs',
   'ginger':'Gember', 'gember':'Gember', 'cardamom':'Kardemom', 'kardemom':'Kardemom',
-  'spicy':'Scherp / pikant', 'peppery':'Peper', 'spiced':'Specerijen (algemeen)'
+  'liquorice':'Zoethout / drop', 'licorice':'Zoethout / drop', 'zoethout':'Zoethout / drop', 'drop':'Zoethout / drop',
+  'spicy':'Scherp / pikant', 'peppery':'Peper', 'spiced':'Specerijen (algemeen)',
+  'green bell pepper':'Groene paprika', 'bell pepper':'Groene paprika', 'groene paprika':'Groene paprika'
 };
 
 /* Fuzzy-matching fallback voor OCR-tikfouten (bijv. "Aardbe1" i.p.v. "Aardbei", "Karamei"
@@ -6745,8 +6867,11 @@ const PROCESS_PROFILE_BOOST = { natural:'heel_fruitig', anaerobic:'heel_fruitig'
 /* Watermeloen toegevoegd: signatuur-noot van de anaerobic/co-fermentatie-trend
    (zie toelichting bij de tag in SCA_FLAVOR_WHEEL hierboven) — net zo'n sterke
    aanwijzing voor bewuste (co-)fermentatie als wijnachtig/whiskey-achtig/overrijp. */
-const FERMENT_EVIDENCE_TAGS = ['Wijnachtig','Whiskey-achtig','Gefermenteerd','Overrijp','Yoghurt-achtig','Zure aromatiek','Azijnzuur','Boterzuur','Isovaleriaanzuur','Watermeloen'];
-const FERMENT_EVIDENCE_KEYWORDS = ['wijnachtig','wine','gefermenteerd','fermented','funky','kombucha','whiskey','whisky','overrijp','yoghurt','boterzuur','azijnzuur','booze','boozy','watermeloen','watermelon'];
+/* Kauwgom (bubblegum) toegevoegd: net als Watermeloen hierboven een sterk signaal voor
+   bewuste (co-)fermentatie — bevestigd (zie SCA_FLAVOR_WHEEL-toelichting bij de tag) als
+   letterlijke productnaam-descriptor voor anaerobic naturals. */
+const FERMENT_EVIDENCE_TAGS = ['Wijnachtig','Whiskey-achtig','Gefermenteerd','Overrijp','Yoghurt-achtig','Zure aromatiek','Azijnzuur','Boterzuur','Isovaleriaanzuur','Watermeloen','Kauwgom'];
+const FERMENT_EVIDENCE_KEYWORDS = ['wijnachtig','wine','gefermenteerd','fermented','funky','kombucha','whiskey','whisky','overrijp','yoghurt','boterzuur','azijnzuur','booze','boozy','watermeloen','watermelon','kauwgom','bubblegum','bubble gum'];
 
 function classifyProfile(selectedTags, extraText, processValue, experimentalFlag){
   const scores = { heel_fruitig:0, fruitig_clean:0, fresh_clean:0, vol_rond:0, zoet:0 };

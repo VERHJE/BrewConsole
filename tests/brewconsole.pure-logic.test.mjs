@@ -1847,3 +1847,65 @@ describe('Bijna-gelijke-stand — profileNearTieCandidates (expliciete keuze i.p
     assert.equal(api.profileNearTieCandidates(cls.scores), null, 'winnaar met score 1 tegen vier 0-scores is geen tie');
   });
 });
+
+describe('Smaakwiel-uitbreiding — nieuwe tags o.b.v. echte, gebruikersaangeleverde tasting notes', () => {
+  // HERAUDIT: gebruiker leverde 33 echte tasting-note-regels van gekochte koffiezakken aan.
+  // Analyse tegen het toenmalige wiel wees op herhaaldelijk terugkerende gaten (Melkchocolade
+  // 7x, Cane sugar 3x, Lemongrass 2x) en canonieke SCA-2016-termen die volledig ontbraken
+  // (Groene paprika, Violet). Elke toevoeging hieronder heeft een broncitaat in
+  // SCA_FLAVOR_WHEEL zelf; deze tests bewaken alleen dat de tags echt bestaan en de juiste
+  // hint hebben — geen dubbele set aan bronvermelding hier.
+  const newTags = {
+    'Rozenbottel':'heel_fruitig', 'Nectarine':'fruitig_clean', 'Steenfruit (algemeen)':'fruitig_clean',
+    'Meloen':'fruitig_clean', 'Jackfruit':'fruitig_clean', 'Kombucha':'heel_fruitig', 'Kauwgom':'heel_fruitig',
+    'Groene paprika':null, 'Koekjes / biscuit':'vol_rond', 'Zoethout / drop':'zoet',
+    'Macadamianoot':'vol_rond', 'Praliné':'vol_rond', 'Melkchocolade':'vol_rond', 'Witte chocolade':'zoet',
+    'Rietsuiker':'zoet', 'Viooltje':'fresh_clean', 'Vlierbloesem':'fresh_clean', 'Citroengras':'fresh_clean',
+  };
+  test('elke nieuwe tag bestaat in FLAVOR_TAG_HINTS met de juiste hint', () => {
+    for (const [tag, hint] of Object.entries(newTags)){
+      assert.equal(api.FLAVOR_TAG_HINTS[tag], hint, `${tag}: verwachtte hint ${hint}`);
+    }
+  });
+
+  test('Perzik/Abrikoos/Pruim behouden hun hint na de Steenfruit-herindeling', () => {
+    // Verplaatst van "Overig fruit" naar een eigen "Steenfruit"-subgroep — puur een
+    // herindeling, FLAVOR_TAG_HINTS-uitkomst mag niet veranderen.
+    assert.equal(api.FLAVOR_TAG_HINTS['Perzik'], 'fruitig_clean');
+    assert.equal(api.FLAVOR_TAG_HINTS['Abrikoos'], 'fruitig_clean');
+    assert.equal(api.FLAVOR_TAG_HINTS['Pruim'], 'fruitig_clean');
+  });
+
+  // Directe steekproef op een paar van de 33 echte, door de gebruiker aangeleverde
+  // tasting-note-regels — bevestigt dat de nieuwe tags ook via het vrije-tekstveld
+  // (FLAVOR_SCAN_SYNONYMS, zie classifyProfile()) gevonden worden, niet alleen als
+  // losstaande FLAVOR_TAG_HINTS-invoer.
+  test('"Raspberry, Strawberry, Violet" (echte tasting note) matcht Viooltje via vrije tekst', () => {
+    const cls = api.classifyProfile([], 'Raspberry, Strawberry, Violet', null, false);
+    assert.equal(cls.scores.heel_fruitig, 3, 'Framboos + Aardbei + Zure aromatiek(?) — in elk geval Viooltje telt niet mee in heel_fruitig');
+    assert.equal(cls.scores.fresh_clean, 1, 'Violet → Viooltje → fresh_clean');
+  });
+
+  test('"Rosehip, Black current, Cane sugar" (echte tasting note) matcht Rozenbottel + Rietsuiker', () => {
+    const cls = api.classifyProfile([], 'Rosehip, Black current, Cane sugar', null, false);
+    assert.equal(cls.scores.heel_fruitig, 1, 'Rosehip → Rozenbottel (Black current met spatiefout matcht niet mee)');
+    assert.equal(cls.scores.zoet, 1, 'Cane sugar → Rietsuiker');
+  });
+
+  test('"Macadamia, orange, praline, butterscotch" (echte tasting note) matcht Macadamianoot + Praliné', () => {
+    const cls = api.classifyProfile([], 'Macadamia, orange, praline, butterscotch', null, false);
+    assert.equal(cls.scores.vol_rond, 2, 'Macadamia + praline → vol_rond (butterscotch aliast naar de bestaande Toffee/botertoffee-tag)');
+    assert.equal(cls.scores.fruitig_clean, 1, 'orange → Sinaasappel');
+  });
+
+  test('"Stone fruit, tea-like, biscuit, chocolate" (echte tasting note) matcht Steenfruit + Koekjes/biscuit', () => {
+    const cls = api.classifyProfile([], 'Stone fruit, tea-like, biscuit, chocolate', null, false);
+    assert.equal(cls.scores.fruitig_clean, 1, 'Stone fruit → Steenfruit (algemeen)');
+    assert.equal(cls.scores.vol_rond, 3, 'biscuit + chocolate + "tea-like" bevat geen directe match — vol_rond komt uit biscuit(1) + chocolate(1) + choco als PROFILE_KEYWORDS-woord(1)');
+  });
+
+  test('"Milk Chocolate" (7x terugkerend in de aangeleverde tasting notes) matcht Melkchocolade', () => {
+    const cls = api.classifyProfile([], 'Milk Chocolate, Caramel, Orange, Red Berries', null, false);
+    assert.ok(cls.scores.vol_rond >= 1, 'Milk Chocolate moet minstens 1x vol_rond scoren via Melkchocolade');
+  });
+});
