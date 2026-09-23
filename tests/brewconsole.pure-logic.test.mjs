@@ -1806,3 +1806,44 @@ describe('Smaakwiel-scoring — percentages per profiel (profileScorePercentages
     assert.equal(Object.prototype.hasOwnProperty.call(pct, 'snel_puur'), false);
   });
 });
+
+describe('Bijna-gelijke-stand — profileNearTieCandidates (expliciete keuze i.p.v. stilzwijgende winnaar)', () => {
+  // HERAUDIT (bijna-gelijke-stand): classifyProfile() koos voorheen altijd stilzwijgend de
+  // hoogste score, ook bij een marge van maar 1 tag. profileNearTieCandidates() maakt dat
+  // nu expliciet zichtbaar (renderAdviceChips() toont dan geen voorselectie meer).
+  test('een duidelijke winnaar (marge > PROFILE_NEAR_TIE_MARGIN) geeft geen kandidaten', () => {
+    const cls = api.classifyProfile(['Bramen', 'Framboos', 'Bosbes'], '', null, false); // heel_fruitig:3, rest:0
+    assert.equal(api.profileNearTieCandidates(cls.scores), null);
+  });
+
+  // NB: assert.deepEqual op arrays die uit de vm-sandbox komen (een ander realm dan dit
+  // testbestand) geeft valse negatieven ("not reference-equal") ondanks identieke waarden —
+  // vandaar element-voor-element vergelijken i.p.v. deepEqual (zelfde patroon als elders in
+  // dit testbestand, zie ENGINE_TARGET_WINDOWS-vergelijking hierboven).
+  test('een verschil van precies PROFILE_NEAR_TIE_MARGIN (1 tag) geeft wél kandidaten', () => {
+    const cls = api.classifyProfile(['Bramen', 'Framboos', 'Anijs'], '', null, false); // heel_fruitig:2, zoet:1
+    const candidates = api.profileNearTieCandidates(cls.scores);
+    const expected = ['heel_fruitig', 'zoet'];
+    assert.equal(candidates.length, expected.length, 'aflopend gesorteerd, winnaar eerst');
+    expected.forEach((k, i) => assert.equal(candidates[i], k));
+  });
+
+  test('een exacte gelijke stand (marge 0) geldt ook als bijna-gelijke stand', () => {
+    const cls = api.classifyProfile(['Bramen', 'Chocolade'], '', null, false); // heel_fruitig:1, vol_rond:1 → klassiek
+    const candidates = api.profileNearTieCandidates(cls.scores);
+    const expected = ['heel_fruitig', 'klassiek'];
+    assert.equal(candidates.length, expected.length);
+    expected.forEach((k, i) => assert.equal(candidates[i], k));
+  });
+
+  test('zonder scores of zonder enige match zijn er geen kandidaten', () => {
+    assert.equal(api.profileNearTieCandidates(null), null);
+    const cls = api.classifyProfile([], '', null, false);
+    assert.equal(api.profileNearTieCandidates(cls.scores), null);
+  });
+
+  test('een 0-score telt nooit mee als kandidaat, ook niet als de winnaar zelf laag scoort', () => {
+    const cls = api.classifyProfile(['Bramen'], '', null, false); // heel_fruitig:1, rest:0
+    assert.equal(api.profileNearTieCandidates(cls.scores), null, 'winnaar met score 1 tegen vier 0-scores is geen tie');
+  });
+});

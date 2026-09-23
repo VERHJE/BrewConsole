@@ -1190,6 +1190,17 @@
      profileScorePercentages(). Klein en zwak zoals andere secundaire chip-tekst, geen
      eigen visueel gewicht t.o.v. de sterren zelf. */
   .profile-match-pct{font-size:10.5px; color:var(--text-faint); line-height:1;}
+  /* NIEUW (bijna-gelijke-stand): default = de oude, passieve informatieve toon (kleine,
+     zwakke tekst — gebruikt wanneer een tie inmiddels is opgelost). [data-pending="true"]
+     is de actieve variant: geen chip is voorgeselecteerd, dus dit moet opvallen genoeg zijn
+     om niet als "kapot scherm" over te komen — accent-gekleurde linkerrand + achtergrondtint,
+     hergebruikt --accent-glow (bestaande "--copper op lage alpha"-token, zie hierboven bij
+     de theme-vars) i.p.v. een nieuwe kleurmix te verzinnen. */
+  .advice-tie-note{font-size:11.5px; color:var(--text-faint); margin:4px 0 0;}
+  .advice-tie-note[data-pending="true"]{
+    font-size:13px; color:var(--text); margin:8px 0 0; padding:8px 10px;
+    border-left:3px solid var(--copper); background:var(--accent-glow); border-radius:6px;
+  }
   /* NIEUW (Visual Design 2.0, §7/§24 SegmentedControl/Tag): een geselecteerde chip
      "voelt seated/elevated" (§7) — subtiele inset-highlight i.p.v. alleen een kleur-
      wissel; press-state beweegt licht naar binnen. Radius blijft 999px (pillen zijn
@@ -1828,7 +1839,7 @@
       <div class="advice-q">
         <p class="advice-q-label">Smaakkarakter</p>
         <div class="chip-row" id="advice-profile"></div>
-        <p id="advice-profile-tie-note" style="display:none; font-size:11.5px; color:var(--text-faint); margin:4px 0 0;"></p>
+        <p id="advice-profile-tie-note" class="advice-tie-note" style="display:none;"></p>
       </div>
       <div class="advice-q">
         <p class="advice-q-label">Proces <span style="text-transform:none; letter-spacing:0;">(optioneel, preciezer advies)</span></p>
@@ -4474,7 +4485,7 @@ function waterSCAVerdict(mgLCaCO3, low, high){
     : mgLCaCO3 < low ? `onder de SCA-richtwaarde (${low}–${high} mg/L)`
     : `binnen de SCA-richtwaarde (${low}–${high} mg/L)`;
 }
-const adviceState = { roast:null, profile:null, batch:'single', process:null, experimental:false, roastDate:null, openedDate:null, intendedUse:null, altitude:null, flavorScores:null, fermentEvidence:false, hardness:null, flavorTags:null, beanId:null };
+const adviceState = { roast:null, profile:null, batch:'single', process:null, experimental:false, roastDate:null, openedDate:null, intendedUse:null, altitude:null, flavorScores:null, fermentEvidence:false, hardness:null, flavorTags:null, beanId:null, tieResolved:false };
 const PROCESS_INFO = {
   washed:  { name:'Washed' },
   natural: { name:'Natural' },
@@ -5706,6 +5717,15 @@ function renderAdviceChips(){
   // herleidbare getal (bv. "62%") in plaats van alleen een visuele indicatie. Zie
   // profileScorePercentages() voor de precieze berekening (puur informatief).
   const profilePercentages = adviceState.flavorScores ? profileScorePercentages(adviceState.flavorScores) : null;
+  // HERAUDIT (bijna-gelijke-stand): bij een echte bijna-gelijke stand (zie
+  // profileNearTieCandidates()) wordt adviceState.profile hier bewust NIET vooringevuld
+  // vanuit bean.profileKey — er wordt geen keuze voor de gebruiker gemaakt. Zodra de
+  // gebruiker zelf op een profielchip klikt (zie de click-handler verderop) staat
+  // tieResolved op true en blijft die keuze bij volgende re-renders (bv. na een
+  // roast/batch-klik) gewoon staan, ook al is de score-marge zelf ongewijzigd.
+  const nearTieCandidates = adviceState.flavorScores ? profileNearTieCandidates(adviceState.flavorScores) : null;
+  const hasPendingTie = !!(nearTieCandidates && !adviceState.tieResolved);
+  if (hasPendingTie) adviceState.profile = null;
   document.getElementById('advice-profile').innerHTML = visibleProfileKeys().map(k=>{
     const isTechniqueOnly = PROFILE_TECHNIQUE_ONLY_KEYS.includes(k);
     const rawScore = (!isTechniqueOnly && adviceState.flavorScores) ? displayScoreFor(adviceState.flavorScores, k) : null;
@@ -5715,28 +5735,30 @@ function renderAdviceChips(){
     const pctHtml = pctVal != null ? `<span class="profile-match-pct">${pctVal}%</span>` : '';
     return `<button class="chip${starsHtml ? ' chip-with-stars' : ''}" data-adv-profile="${k}" data-selected="${canonicalProfileKey(adviceState.profile)===k}"><span>${PROFILE_INFO[k].name}</span>${starsHtml}${pctHtml}</button>`;
   }).join('');
-  /* B1 (koffie-expertpanel, Amara/Youssef): bij een exacte gelijke stand tussen scores
-     kiest classifyProfile() stilzwijgend de eerst-gedefinieerde sleutel — de sterren tonen
-     dat al gedeeltelijk (twee identieke sterrenrijen), maar niet WAAROM. Deze regel maakt
-     een gelijke stand met het gekozen profiel expliciet, berekend on-the-fly uit dezelfde
-     scores die de sterren al gebruiken — geen apart opgeslagen veld nodig. */
+  /* HERAUDIT (bijna-gelijke-stand): verving de oude, uitsluitend-passieve tie-note (B1,
+     koffie-expertpanel Amara/Youssef — alleen exacte gelijke standen, en zelfs dan alleen
+     een tekstje ONDER een al stilzwijgend voorgeselecteerde chip). Nu: zolang de tie niet is
+     opgelost (hasPendingTie) toont dit blok een actieve, opvallende prompt en is er BEWUST
+     geen chip voorgeselecteerd (zie hasPendingTie hierboven) — maybeShowAdviceResult() toont
+     dan ook nog geen recept, precies zoals bij een ontbrekende roast/batch-keuze. Zodra de
+     gebruiker een profiel aanklikt verdwijnt dit blok en gedraagt het scherm zich weer
+     helemaal normaal. */
   const tieNoteEl = document.getElementById('advice-profile-tie-note');
   if (tieNoteEl){
-    const scores = adviceState.flavorScores;
-    let tieMsg = '';
-    if (scores && adviceState.profile && scores[adviceState.profile] !== undefined && scores[adviceState.profile] > 0){
-      const currentScore = scores[adviceState.profile];
-      // FIX (v2.2): een tie met een profiel uit dezelfde samengevoegde groep (bv. adviceState.profile
-      // is 'vol_rond' en 'zoet' scoort gelijk) niet meer apart benoemen — beide klikken toch al
-      // op dezelfde zichtbare "Klassiek"-chip uit, dus "gelijke stand met Zoet" zou verwijzen naar
-      // een keuze die niet apart te maken is.
-      const tiedNames = Object.keys(scores)
-        .filter(k => k !== adviceState.profile && canonicalProfileKey(k) !== canonicalProfileKey(adviceState.profile) && scores[k] === currentScore)
-        .map(k => PROFILE_INFO[k] ? PROFILE_INFO[k].name : k);
-      if (tiedNames.length) tieMsg = `Gelijke stand met ${tiedNames.join(' en ')} — beide even goed onderbouwd, kies zelf welke je wilt volgen.`;
+    if (hasPendingTie){
+      const names = nearTieCandidates.map(k => {
+        const pct = profilePercentages ? profilePercentages[k] : null;
+        const name = PROFILE_INFO[k] ? PROFILE_INFO[k].name : k;
+        return pct != null ? `${name} (${pct}%)` : name;
+      });
+      tieNoteEl.textContent = `Deze boon past ongeveer even goed bij ${names.join(' en ')} — er wordt geen keuze voor je gemaakt, kies zelf hieronder welk profiel je wilt volgen.`;
+      tieNoteEl.dataset.pending = 'true';
+      tieNoteEl.style.display = 'block';
+    } else {
+      tieNoteEl.textContent = '';
+      tieNoteEl.style.display = 'none';
+      delete tieNoteEl.dataset.pending;
     }
-    tieNoteEl.textContent = tieMsg;
-    tieNoteEl.style.display = tieMsg ? 'block' : 'none';
   }
   document.getElementById('advice-batch').innerHTML = `
     <button class="chip" data-adv-batch="single" data-selected="${adviceState.batch==='single'}">1 kopje</button>
@@ -5760,6 +5782,10 @@ function renderAdviceChips(){
     // zie rawKeyForVisibleSelection() hierboven voor waarom dat secondaryFlavorNotes() zou
     // breken zodra iemand op "Klassiek" klikt terwijl zijn smaakscore naar vol_rond/zoet wijst.
     adviceState.profile = rawKeyForVisibleSelection(b.getAttribute('data-adv-profile'), adviceState.flavorScores);
+    // HERAUDIT (bijna-gelijke-stand): een klik is altijd een expliciete keuze — zet
+    // tieResolved zodat renderAdviceChips() deze keuze bij een volgende re-render niet
+    // opnieuw naar null terugzet, ook al blijft de onderliggende score-marge hetzelfde.
+    adviceState.tieResolved = true;
     renderAdviceChips(); renderBeanChipsInAdvice(); maybeShowAdviceResult();
   }));
   document.querySelectorAll('[data-adv-batch]').forEach(b=>b.addEventListener('click', ()=>{
@@ -6855,6 +6881,27 @@ function profileScorePercentages(scores){
     result[k] = Math.round((displayScoreFor(scores, k) / total) * 100);
   });
   return result;
+}
+/* HERAUDIT (bijna-gelijke-stand): classifyProfile() koos voorheen altijd stilzwijgend de
+   hoogste score als winnaar, ook wanneer een tweede profiel er vlak achteraan kwam (bv.
+   score 3 tegen 2) — zo'n verschil kan van één enkele smaaktag afhangen. PROFILE_NEAR_TIE_
+   MARGIN=1 (het effect van precies één tag) is de grens: bij een groter verschil is er een
+   duidelijke winnaar; bij een marge van 0 (exacte gelijke stand, de bestaande B1-situatie)
+   of 1 zijn beide kandidaten realistisch. Alleen kandidaten met score > 0 tellen mee — een
+   0-score is nooit een serieuze kandidaat, ook niet als de winnaar zelf laag scoort. Geeft
+   de kandidaten (aflopend gesorteerd) terug bij een echte bijna-gelijke stand (≥2 profielen
+   binnen de marge), anders null — dan is er gewoon een duidelijke winnaar zoals voorheen. */
+const PROFILE_NEAR_TIE_MARGIN = 1;
+function profileNearTieCandidates(scores){
+  if (!scores) return null;
+  const entries = visibleProfileKeys()
+    .filter(k => !PROFILE_TECHNIQUE_ONLY_KEYS.includes(k))
+    .map(k => ({ key:k, score: displayScoreFor(scores, k) }))
+    .filter(e => e.score > 0);
+  if (!entries.length) return null;
+  const maxScore = Math.max.apply(null, entries.map(e=>e.score));
+  const candidates = entries.filter(e => maxScore - e.score <= PROFILE_NEAR_TIE_MARGIN).sort((a,b)=>b.score-a.score);
+  return candidates.length >= 2 ? candidates.map(e=>e.key) : null;
 }
 const STAR_PATH = 'M8 1.1 L9.85 5.9 L15 6.35 L11.05 9.75 L12.25 14.8 L8 12.05 L3.75 14.8 L4.95 9.75 L1 6.35 L6.15 5.9 Z';
 function renderStarRow(value){
@@ -8761,6 +8808,10 @@ function useBeanForAdvice(id){
   adviceState.fermentEvidence = !!bean.fermentEvidence;
   adviceState.flavorTags = bean.flavorNotes || null;
   adviceState.beanId = id;
+  // HERAUDIT (bijna-gelijke-stand): elke nieuw geladen boon start opnieuw onopgelost —
+  // een eerder gemaakte keuze voor een ANDERE boon mag een tie hier niet stilzwijgend
+  // overslaan.
+  adviceState.tieResolved = false;
   showScreen('advice');
   renderAdviceChips();
   renderBeanChipsInAdvice();
@@ -8813,6 +8864,7 @@ function useBeanChipInline(id){
   adviceState.flavorScores = bean.flavorScores || null;
   adviceState.fermentEvidence = !!bean.fermentEvidence;
   adviceState.flavorTags = bean.flavorNotes || null;
+  adviceState.tieResolved = false; // HERAUDIT (bijna-gelijke-stand): nieuwe boon, opnieuw onopgelost
   renderAdviceChips();
   renderBeanChipsInAdvice();
   maybeShowAdviceResult();
@@ -10205,6 +10257,7 @@ document.getElementById('bean-form').addEventListener('submit', (e)=>{
     adviceState.altitude = bean.altitude != null ? bean.altitude : null;
     adviceState.flavorScores = bean.flavorScores || null;
     adviceState.fermentEvidence = !!bean.fermentEvidence;
+    adviceState.tieResolved = false; // HERAUDIT (bijna-gelijke-stand): nieuwe boon, opnieuw onopgelost
     showScreen('advice');
     renderAdviceChips();
     renderBeanChipsInAdvice();
