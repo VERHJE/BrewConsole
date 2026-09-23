@@ -4785,9 +4785,8 @@ var KASUYA_DRAWDOWN_SEC = 30;
    (100-175s tegen 240-300s) — dit lost het daadwerkelijk op, zonder D-4 (schemalengte volgt
    uit het aantal giet-momenten, niet uit contacttijd-als-doel) los te laten.
 
-   Methode: POUR_CYCLE_SEC/FINAL_DRAWDOWN_SEC hierboven zijn de V60-referentie (V60's eigen
-   Kernrecept-schema, 160s, valt al ruim binnen zijn band van 120-210s — voor V60 verandert
-   er dus NIETS). Voor elke andere brewer schalen beide constanten mee met de verhouding
+   Methode: POUR_CYCLE_SEC/FINAL_DRAWDOWN_SEC hierboven zijn de V60-referentie. Voor elke
+   andere brewer schaalt cycleSec (de tijd TUSSEN twee giet-momenten) mee met de verhouding
    tussen de middens van de al bestaande, klasse-B contactTimeGuidance-banden
    (BREWER_REGISTRY, ongewijzigd in de engine) — arithmetiek op een bestaand evidence-
    getagd getal, geen nieuw brouwgetal. De schemalengte blijft daarna nog steeds volledig
@@ -4799,6 +4798,24 @@ var KASUYA_DRAWDOWN_SEC = 30;
    verdedigbare interpretatie. Toetsbaar: elk Chemex-schema moet voortaan binnen zijn eigen
    band vallen (zie tests/brewconsole.pure-logic.test.mjs, "B-2b"). */
 var V60_REFERENCE_CONTACT_MID = (120 + 210) / 2; // BREWER_REGISTRY.V60_02.contactTimeGuidance
+/* HERAUDIT (Chemex-band-herijking, vervolg op de gegeneraliseerde fantoomcyclus-fix): de
+   drawdownSec hierboven schaalde vroeger simpelweg mee met dezelfde factor als cycleSec —
+   dat was geijkt tegen de OUDE, foutieve 3-cycli-formule (zie buildPourSchedule(), de
+   fantoomcyclus die daar is weggehaald). Het 3-pulse Kernrecept-schema landde toen net
+   binnen de Chemex-band; na de fix verliest datzelfde schema 1×cycleSec en valt het eronder.
+   cycleSec zelf blijft ongewijzigd geijkt op de contactTimeGuidance-verhouding — dat zegt
+   iets reëels over hoe snel je op dit toestel giet, los van hoeveel cycli er in het schema
+   zaten. drawdownSec (de marge NA de laatste pour, altijd al het minst evidence-vaste deel)
+   wordt nu zo gekozen dat het 3-pulse referentieschema (bloom + 2 cycli, na de fix)
+   dezelfde RELATIEVE positie inneemt in zijn eigen contactTimeGuidance-band als het
+   V60-referentieschema in zijn eigen band inneemt. Dat is zelfconsistent tussen toestellen
+   (geen los geraden getal per brewer) en reduceert voor V60 zelf, door constructie, exact
+   tot de ongewijzigde FINAL_DRAWDOWN_SEC — dus geen aparte V60-uitzondering nodig. Net als
+   BB-1 zelf: een eigen, verdedigbare herijking op Bouwbesluit-niveau, geen letterlijke
+   publicatie (er bestaat geen gepubliceerde uitsplitsing van Chemex' drawdown-marge). */
+var V60_REFERENCE_EFFECTIVE_CYCLES = 2; // 3-pulse Kernrecept, min 1 fantoomcyclus (buildPourSchedule())
+var V60_REFERENCE_SCHEDULE_SEC = 30 + V60_REFERENCE_EFFECTIVE_CYCLES * POUR_CYCLE_SEC + FINAL_DRAWDOWN_SEC;
+var V60_REFERENCE_RELATIVE_POSITION = (V60_REFERENCE_SCHEDULE_SEC - 120) / (210 - 120); // (schema - bandmin) / bandbreedte
 function brewerPourCycleConstants(brewerScopeKey){
   const B = window.BrewEngineBundle;
   const brewer = B.BREWER_REGISTRY[brewerScopeKey];
@@ -4807,10 +4824,10 @@ function brewerPourCycleConstants(brewerScopeKey){
   if (!guidance) return { cycleSec: POUR_CYCLE_SEC, drawdownSec: FINAL_DRAWDOWN_SEC };
   const mid = (guidance.typicalMin + guidance.typicalMax) / 2;
   const factor = mid / V60_REFERENCE_CONTACT_MID;
-  return {
-    cycleSec: Math.max(10, Math.round(POUR_CYCLE_SEC * factor)),
-    drawdownSec: Math.max(10, Math.round(FINAL_DRAWDOWN_SEC * factor))
-  };
+  const cycleSec = Math.max(10, Math.round(POUR_CYCLE_SEC * factor));
+  const target = guidance.typicalMin + V60_REFERENCE_RELATIVE_POSITION * (guidance.typicalMax - guidance.typicalMin);
+  const drawdownSec = Math.max(10, Math.round(target - 30 - V60_REFERENCE_EFFECTIVE_CYCLES * cycleSec));
+  return { cycleSec, drawdownSec };
 }
 
 /* Genereert een uitvoerbaar giet-schema (tijd/gewicht per stap) uit de eerlijke

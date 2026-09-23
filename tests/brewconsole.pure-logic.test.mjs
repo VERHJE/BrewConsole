@@ -1044,22 +1044,22 @@ describe('B-2a — de app geeft de gebruiker niet de schuld van zijn eigen schem
 });
 
 describe('B-2b — brewer-specifieke cyclusconstanten (Bouwbesluit BB-1, akkoord gebruiker)', () => {
-  // HERAUDIT (fantoomcyclus, gegeneraliseerd) — BEKENDE, NIEUW ONTDEKTE REGRESSIE: de
-  // per-brewer cyclusconstanten van BB-1 waren geijkt tegen de OUDE (foutieve) formule met
-  // de extra fantoomcyclus, en landden daarmee net binnen de Chemex-band (240-300s). Met de
-  // fantoomcyclus weggehaald verliest het 3-pulse Chemex-schema precies één cycleSec (49s
-  // op Chemex) en valt het nu op 193s, ONDER de band. Dit is een direct, verwacht gevolg
-  // van de gegeneraliseerde fix — geen losse nieuwe fout — maar het ONTDOET wel de eerdere
-  // BB-1-winst. Bewust NIET stilzwijgend "gefixt" door de band of de per-brewer-factor te
-  // herijken: dat vraagt een eigen besluit (en mogelijk nieuw bronnenonderzoek naar de
-  // juiste Chemex-cyclusconstante), dus hier alleen eerlijk vastgelegd als open punt i.p.v.
-  // een groen testresultaat te faken.
-  test('het 3-pulse Kernrecept-schema (klassiek/heel_fruitig) valt NA de fantoomcyclus-fix weer BUITEN de Chemex-diagnostische band (BB-1-winst tijdelijk ongedaan gemaakt — open punt)', () => {
+  // HERAUDIT (Chemex-band-herijking, vervolg op de gegeneraliseerde fantoomcyclus-fix): de
+  // per-brewer cyclusconstanten van BB-1 waren geijkt tegen de OUDE (foutieve) 3-cycli-
+  // formule en landden daarmee net binnen de Chemex-band. Na de fantoomcyclus-fix (elders in
+  // dit bestand) verloor het 3-pulse Chemex-schema 1×cycleSec en viel het eronder (193s) —
+  // opgelost door drawdownSec (de marge ná de laatste pour, altijd al het minst evidence-
+  // vaste deel) niet langer met dezelfde factor als cycleSec te schalen, maar zo te kiezen
+  // dat het referentieschema dezelfde RELATIEVE positie inneemt in zijn eigen
+  // contactTimeGuidance-band als het V60-referentieschema in zijn band (zie
+  // brewerPourCycleConstants() bij buildPourSchedule voor de volledige toelichting). cycleSec
+  // blijft ongewijzigd. V60 blijft door constructie exact ongewijzigd (zie de test hieronder).
+  test('het 3-pulse Kernrecept-schema (klassiek/heel_fruitig) valt na de Chemex-band-herijking weer BINNEN de Chemex-diagnostische band', () => {
     for (const p of ['klassiek','heel_fruitig']){
       const rec = api.computeRecipe('chemex','medium',p,600,null,false,null,null,false,null,null,0);
       const { min, max } = rec.contactTimeDiagnosticBand;
-      assert.ok(rec.totalTime < min || rec.totalTime > max,
-        `${p}: het 3-pulse Chemex-schema (${rec.totalTime}s, band ${min}-${max}s) valt na de fantoomcyclus-fix weer buiten de band — zie toelichting hierboven`);
+      assert.ok(rec.totalTime >= min && rec.totalTime <= max,
+        `${p}: het 3-pulse Chemex-schema (${rec.totalTime}s) hoort binnen ${min}-${max}s te vallen`);
     }
   });
   // HERAUDIT (fantoomcyclus, gegeneraliseerd): elk ≥2-pulse-profiel verliest nu 1 cyclus
