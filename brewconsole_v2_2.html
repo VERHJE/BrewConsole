@@ -4539,16 +4539,30 @@ function fmtStepTime(s){
    aanname. Voor stappen zonder endT (de korte, "in één beweging" pours van bijv. de
    originele Kasuya 4:6-vijfslag) bestaat geen vaste bron voor de exacte duur: meerdere
    beschrijvingen van Kasuya's eigen methode noemen uiteenlopend 5, 10 of 15 seconden per
-   pour. ASSUMED_SINGLE_POUR_SEC gebruikt het middelste, vaakst genoemde getal (10 sec)
-   als eigen, expliciet gemarkeerde aanname — vandaar het '~'-teken en de aparte melding
-   in de disclaimer, in plaats van dit als exacte waarde te presenteren. */
+   pour. ASSUMED_SINGLE_POUR_SEC gebruikt het middelste, vaakst genoemde getal (10 sec) —
+   dit blijft de tijdsbasis voor het gietschema zelf én voor de live-interpolatie tijdens
+   het brouwen (zie updateDial()), dus hier bewust ongewijzigd. */
 const ASSUMED_SINGLE_POUR_SEC = 10;
+/* FIX (expertaudit, bevinding 2): pourRateLabel() toonde voorheen één decimaal op basis
+   van uitsluitend het MIDDEN van de aanname (10 sec) — bv. "~9,0 g/sec" voor een 90g-pour.
+   Dat suggereert een precisie die de onderliggende aanname niet heeft: de bronnen noemen
+   5-15 sec, dus diezelfde 90g-pour is in werkelijkheid ergens tussen 6 en 18 g/sec. De
+   MIN/MAX hieronder zijn dezelfde 5/15-sec-uitersten uit de toelichting hierboven, nu ook
+   als getal — het label toont voortaan dat hele bereik i.p.v. een schijnbaar precies punt.
+   Alleen dit label verandert; ASSUMED_SINGLE_POUR_SEC (en dus het gietschema/de
+   live-interpolatie) blijft exact zoals het was. */
+const ASSUMED_SINGLE_POUR_SEC_MIN = 5;
+const ASSUMED_SINGLE_POUR_SEC_MAX = 15;
 function pourRateLabel(s){
   if (!s.add || s.add <= 0) return '';
   const exact = s.endT != null;
-  const duration = exact ? Math.max(1, s.endT - s.t) : ASSUMED_SINGLE_POUR_SEC;
-  const rate = s.add / duration;
-  return (exact ? '' : '~') + fmt(rate, 1) + ' g/sec';
+  if (exact){
+    const duration = Math.max(1, s.endT - s.t);
+    return fmt(s.add / duration, 1) + ' g/sec';
+  }
+  const rateMax = s.add / ASSUMED_SINGLE_POUR_SEC_MIN;
+  const rateMin = s.add / ASSUMED_SINGLE_POUR_SEC_MAX;
+  return `~${fmt(rateMin, 0)}–${fmt(rateMax, 0)} g/sec`;
 }
 function clamp(v, lo, hi){ return Math.min(hi, Math.max(lo, v)); }
 function escapeHtml(s){
