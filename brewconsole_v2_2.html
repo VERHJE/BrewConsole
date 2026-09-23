@@ -5961,7 +5961,17 @@ const SCA_FLAVOR_WHEEL = [
          notes... from apricots to plums"). Los van Pruimedant (gedroogd/donker,
          heel_fruitig) omdat verse pruim helderder/zuriger proeft, vandaar dezelfde
          hint als perzik/kers i.p.v. de gedroogd-fruit-bucket. */
-      {t:'Abrikoos', h:'fruitig_clean'}, {t:'Pruim', h:'fruitig_clean'}
+      {t:'Abrikoos', h:'fruitig_clean'}, {t:'Pruim', h:'fruitig_clean'},
+      /* Kiwi: ontbrak volledig, ook al is het een courante, actuele tasting-note-term —
+         bevestigd via Brandywine Coffee Roasters' "Kiwi Co-Ferment" (Coffee Review/
+         Unpacking Coffee, expliciete cupping-notes "kiwi (50%), plum (25%), passionfruit
+         (25%)") en Black & White Coffee Roasters' "New School — Dragonfruit"-blend
+         (tasting notes "hibiscus, strawberry-kiwi, cherry cola, chocolade"). Let op:
+         "Dragonfruit" zelf is bewust NIET toegevoegd — dat is bij Black & White de naam
+         van het co-ferment-ingrediënt, niet de gerapporteerde smaaknoot zelf (die noemt
+         juist kiwi, geen dragonfruit) — zelfde helder/tart karakter als kers/abrikoos/
+         pruim hierboven, vandaar dezelfde fruitig_clean-hint. */
+      {t:'Kiwi', h:'fruitig_clean'}
     ]},
     /* Tropisch fruit — bewuste uitbreiding op het officiële 2016 SCA/WCR-
        wiel. De WCR Sensory Lexicon (110 gekalibreerde termen) noemt op dit
@@ -6421,6 +6431,7 @@ const FLAVOR_SCAN_SYNONYMS = {
   'pomegranate':'Granaatappel', 'pineapple':'Ananas', 'grape':'Druif', 'apple':'Appel',
   'peach':'Perzik', 'pear':'Peer',
   'apricot':'Abrikoos', 'abrikoos':'Abrikoos', 'plum':'Pruim', 'pruim':'Pruim',
+  'kiwi':'Kiwi', 'kiwifruit':'Kiwi', 'kiwi fruit':'Kiwi',
   'grapefruit':'Grapefruit', 'orange':'Sinaasappel', 'lemon':'Citroen', 'lime':'Limoen',
   'mandarin':'Mandarijn', 'tangerine':'Mandarijn', 'mandarijn':'Mandarijn',
   'citrus':'Citrusfruit (algemeen)',
@@ -6670,9 +6681,17 @@ function summariseScan(found){
 /* Kleine restlijst voor het vrije "overige notities"-veld — voor
    creatieve etiketwoorden die niet op het officiële wiel staan
    (bijv. "kombucha", "hubba bubba"). */
+/* HERAUDIT (smaakwiel, vrije-tekstveld): 'bloemig'/'floral' stonden hier onder
+   fruitig_clean — dat sprak de wiel-hint van diezelfde woorden regelrecht tegen: elke
+   florale tag (Kamille/Roos/Jasmijn/Hibiscus/Lavendel/Sinaasappelbloesem/"Bloemig
+   (algemeen)") wijst in SCA_FLAVOR_WHEEL naar fresh_clean, niet fruitig_clean. Nu de
+   vrije tekst ook tegen de volledige wiel-tags/synoniemen matcht (zie classifyProfile()),
+   zou "bloemig"/"floral" typen zonder deze regel zowel fruitig_clean ALS fresh_clean laten
+   scoren — tegenstrijdig. Verwijderd i.p.v. het conflict te laten bestaan; het wiel-pad
+   dekt deze woorden nu correct af (via 'floral'/'bloemig' in FLAVOR_SCAN_SYNONYMS). */
 const PROFILE_KEYWORDS = {
   heel_fruitig: ['wijnachtig','wine','gefermenteerd','fermented','funky','jam','kombucha'],
-  fruitig_clean: ['citrus','bloemig','floral'],
+  fruitig_clean: ['citrus'],
   fresh_clean: ['delicaat','delicate','fris','fresh'],
   vol_rond: ['chocolade','chocolate','noten','nuts'],
   zoet: ['karamel','caramel','zoet','sweet']
@@ -6703,6 +6722,26 @@ function classifyProfile(selectedTags, extraText, processValue, experimentalFlag
   for (const key of Object.keys(PROFILE_KEYWORDS)){
     for (const w of PROFILE_KEYWORDS[key]){ if (lowerExtra.includes(w)) scores[key] += 1; }
   }
+  /* HERAUDIT (smaakwiel, vrije-tekstveld): PROFILE_KEYWORDS hierboven is een kleine (~20
+     woorden) lijst brede stemmingstermen — een specifieke smaak die iemand typt i.p.v. als
+     checkbox aanvinkt (bv. "proeft naar kiwi") telde hierdoor stilzwijgend voor NIETS mee,
+     ook al kent het wiel die tag allang. applyParsedTextToForm() (de OCR-scan) deed dit al
+     wél correct, tegen de volledige FLAVOR_TAG_HINTS + FLAVOR_SCAN_SYNONYMS (EN/NL) — dit
+     past hetzelfde patroon toe op de eigen vrije tekst van classifyProfile(). Tags die al
+     via selectedTags zijn aangevinkt tellen hier bewust niet nogmaals mee (voorkomt dubbel
+     tellen van hetzelfde signaal). */
+  const matchedFreeTextTags = new Set();
+  Object.keys(FLAVOR_TAG_HINTS).forEach(tag=>{
+    if (!(selectedTags || []).includes(tag) && lowerExtra.includes(tag.toLowerCase())) matchedFreeTextTags.add(tag);
+  });
+  Object.keys(FLAVOR_SCAN_SYNONYMS).forEach(syn=>{
+    const tag = FLAVOR_SCAN_SYNONYMS[syn];
+    if (!(selectedTags || []).includes(tag) && lowerExtra.includes(syn)) matchedFreeTextTags.add(tag);
+  });
+  matchedFreeTextTags.forEach(tag=>{
+    const hint = FLAVOR_TAG_HINTS[tag];
+    if (hint) scores[hint] += 1;
+  });
   /* B2 (koffie-expertpanel, Rik): dit blokje gaf altijd een vast +1, ongeacht hoe intens het
      fermentatieproces was — een subtiele anaerobic-lot en een dubbel-gefermenteerde
      experimentele lot scoorden identiek. experimentalFlag is dezelfde vlag die elders in de

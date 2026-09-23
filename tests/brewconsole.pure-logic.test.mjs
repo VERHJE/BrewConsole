@@ -1726,3 +1726,50 @@ describe('Nieuwe Reparaties v2.2 — §3: C3S Pro semantiek/ranges (13/15/17/18/
     assert.equal(rec.grindPracticalRange, null);
   });
 });
+
+describe('Smaakwiel-heraudit — Kiwi + vrije-tekstveld matcht volledige wiel', () => {
+  // HERAUDIT (smaakwiel): Kiwi ontbrak volledig (wiel, OCR-scansynoniemen, vrije tekst) —
+  // bevestigd courant via Brandywine Coffee Roasters' "Kiwi Co-Ferment" en Black & White's
+  // "New School — Dragonfruit" (tasting note "strawberry-kiwi"). Zie SCA_FLAVOR_WHEEL.
+  test('Kiwi bestaat als tag, wijst naar fruitig_clean, en heeft een OCR-scansynoniem', () => {
+    assert.equal(api.FLAVOR_TAG_HINTS['Kiwi'], 'fruitig_clean');
+    assert.equal(api.FLAVOR_SCAN_SYNONYMS['kiwi'], 'Kiwi');
+  });
+
+  // HERAUDIT (smaakwiel, vrije-tekstveld): classifyProfile()'s extraText-parameter matchte
+  // voorheen alleen tegen PROFILE_KEYWORDS (~20 losse stemmingswoorden) i.p.v. de volledige
+  // FLAVOR_TAG_HINTS/FLAVOR_SCAN_SYNONYMS die de checkbox-tags en de OCR-scan al lang
+  // gebruiken — een specifieke smaak typen i.p.v. aanvinken telde stilzwijgend voor niets.
+  test('vrije tekst met een specifieke, niet-checkbox-getypte smaak (Kiwi) telt nu mee', () => {
+    const cls = api.classifyProfile([], 'proeft naar kiwi', null, false);
+    assert.equal(cls.scores.fruitig_clean, 1);
+  });
+
+  test('vrije tekst matcht ook Engelse OCR-scansynoniemen (niet alleen letterlijke NL-tagnamen)', () => {
+    const cls = api.classifyProfile([], 'tropical fruit, mango', null, false);
+    assert.equal(cls.scores.fruitig_clean, 2, '"tropical fruit"→Tropisch fruit (algemeen) en "mango"→Mango tellen beide mee');
+  });
+
+  test('een al aangevinkte tag telt niet nogmaals mee als hij ook toevallig in de vrije tekst staat (geen dubbeltelling)', () => {
+    const withTagOnly = api.classifyProfile(['Kiwi'], '', null, false);
+    const withTagAndText = api.classifyProfile(['Kiwi'], 'proeft naar kiwi', null, false);
+    assert.equal(withTagOnly.scores.fruitig_clean, 1);
+    assert.equal(withTagAndText.scores.fruitig_clean, 1, 'Kiwi via tag+tekst moet nog steeds maar 1x tellen');
+  });
+
+  test('irrelevante vrije tekst zonder enige wiel-term geeft geen enkele score', () => {
+    const cls = api.classifyProfile([], 'very good coffee indeed', null, false);
+    assert.deepEqual(Object.values(cls.scores), [0, 0, 0, 0, 0]);
+  });
+
+  // HERAUDIT (smaakwiel, vrije-tekstveld): 'bloemig'/'floral' stonden voorheen in
+  // PROFILE_KEYWORDS.fruitig_clean, terwijl elke florale wiel-tag naar fresh_clean wijst —
+  // een tegenstrijdigheid die zichtbaar zou worden zodra de vrije tekst ook tegen het wiel
+  // matcht. Verwijderd; het wiel-pad (FLAVOR_SCAN_SYNONYMS) geeft nu het enige, consistente
+  // antwoord.
+  test('"bloemig"/"floral" in vrije tekst wijst uitsluitend naar fresh_clean, niet meer ook naar fruitig_clean', () => {
+    const cls = api.classifyProfile([], 'floral', null, false);
+    assert.equal(cls.scores.fresh_clean, 1);
+    assert.equal(cls.scores.fruitig_clean, 0, 'floral mag niet meer tegenstrijdig ook fruitig_clean scoren');
+  });
+});

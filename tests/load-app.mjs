@@ -110,7 +110,9 @@ export function loadApp(){
       learningEligibleEntries, bypassAdvice, BYPASS_PCT_OPTIONS,
       LEARNING_MIN_N, brewLog, beanLibrary,
       measuredRetention, measuredRetentionText, RETENTION_MIN_N, RETENTION_PLAUSIBLE,
-      personalCalibrationFor, personalCalibrationText, PERSONAL_CALIBRATION_MIN_N
+      personalCalibrationFor, personalCalibrationText, PERSONAL_CALIBRATION_MIN_N,
+      classifyProfile, profileMatchStars, PROFILE_STAR_SCALE, PROFILE_TECHNIQUE_ONLY_KEYS,
+      FLAVOR_TAG_HINTS, FLAVOR_SCAN_SYNONYMS, SCA_FLAVOR_WHEEL
     };`,
     sandbox,
     { filename: 'test-exports-shim.js' }
