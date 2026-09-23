@@ -4017,13 +4017,23 @@ const ENGINE_PROFILE_MAP = {
   evenwichtig_flex: { cluster:'FULLER_BODIED',                      overlay:'HEDRICK_1_2_1' }
 };
 
+/* UITGEBREID (expertaudit, bevinding 1 — "interne audit-documentatie lekt het scherm op"):
+   elke overlay kreeg een eigen korte, Nederlandse `mechanism`-zin. Dit is GEEN nieuwe
+   claim of vertaling van cijfers — het herformuleert alleen in gewoon Nederlands wát de
+   engine's eigen (Engelse) pourStructure-veld al zegt, zonder de interne bestandsnamen/
+   gap-codes (bv. "audit-established-recipes-v60-chemex.md §1, gap G-RECIPE-01") die daar
+   voorheen middenin stonden en rechtstreeks op het Prep-scherm belandden. De ruwe, volledige
+   Engelse pourStructure/sourceTrace-tekst uit de engine verdwijnt niet — die staat voortaan
+   ongewijzigd in de nieuwe "Methodiek & bronnen in detail"-sectie (zie computeRecipe() en
+   renderPrep()), voor wie de volledige brontrail wil zien. Puur presentatie, geen enkel
+   evidence-veld in de engine zelf aangeraakt. */
 const OVERLAY_DISPLAY = {
-  KASUYA_4_6:            { name:'Kasuya 4:6' },
-  HOFFMANN_ULTIMATE:     { name:'Hoffmann Ultimate' },
-  APRIL_HOUSE_METHOD:    { name:'April huismethode' },
-  RAO_V60_MINIMAL_POUR:  { name:'Rao — Minimal Pour' },
-  RAO_CHEMEX_DISCLOSED:  { name:'Rao Clarity' },
-  PERGER_80_20:          { name:'Perger 80/20' },
+  KASUYA_4_6:            { name:'Kasuya 4:6', mechanism:'Twee fasen: de eerste 40% van het water gaat in twee gietbeurten en bepaalt zoetheid/helderheid (Kasuya’s eigen ‘smaakknop’ — een grotere eerste pour geeft meer helderheid/zuur, een kleinere meer zoetheid), de resterende 60% bepaalt via het aantal beurten de sterkte.' },
+  HOFFMANN_ULTIMATE:     { name:'Hoffmann Ultimate', mechanism:'Ondiepe bloom, net genoeg geswirld om droge plekken weg te werken, gevolgd door een hoofdpour in twee spiraalbewegingen. Bewust zonder eigen temperatuurgetal — die komt hier uit het kernrecept.' },
+  APRIL_HOUSE_METHOD:    { name:'April huismethode', mechanism:'Zes gelijke gietbeurten, geen aparte bloom-fase; elke pour gebeurt in een stevige cirkelbeweging die zelf voor de agitatie zorgt.' },
+  RAO_V60_MINIMAL_POUR:  { name:'Rao — Minimal Pour', mechanism:'Zo min mogelijk losse gietbeurten om temperatuurverlies en turbulentie te beperken, afgesloten met de ‘Rao Spin’ — de dripper ronddraaien na de laatste pour om kanaalvorming tegen te gaan.' },
+  RAO_CHEMEX_DISCLOSED:  { name:'Rao Clarity', mechanism:'Snelle, hete gietstijl (derdehands toegeschreven, zie disclaimer): bloom, één hoofdpour tot volume, lichte agitatie.' },
+  PERGER_80_20:          { name:'Perger 80/20', mechanism:'Geen vaste gietstructuur — bewust een beslisregel, geen recept: te zwak → fijner malen en/of langer zetten en/of meer water, te sterk → het omgekeerde. Dosis blijft gelijk; toestel-onafhankelijk volgens Perger zelf.' },
   HEDRICK_1_2_1:         { name:'Hedrick' }
 };
 
@@ -5194,7 +5204,16 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     const att = overlay.attribution.state === 'RESOLVED' ? overlay.attribution.value : null;
     authorUnverified = !!(att && att.verified === false);
     author = att ? (att.practitioner + (authorUnverified ? ' (ongeverifieerd toegeschreven)' : '')) : 'Onbekend';
-    const structureNote = overlay.pourStructure || '';
+    // FIX (expertaudit, bevinding 1): dit was overlay.pourStructure — de engine's eigen,
+    // Engelse mechanisme-tekst, met interne bestandsverwijzingen (bv. "audit-established-
+    // recipes-v60-chemex.md §1, gap G-RECIPE-01") er middenin. Die tekst belandde ONGEWIJZIGD
+    // op het Prep-scherm: Engels in een verder Nederlandse app, en met interne project-
+    // documentatie zichtbaar voor de eindgebruiker. disp.mechanism (OVERLAY_DISPLAY
+    // hierboven) herformuleert hetzelfde mechanisme in het kort en in het Nederlands, zonder
+    // die interne verwijzingen. Geen enkel evidence-veld in de engine zelf gewijzigd of
+    // verwijderd — technique/author/evidence-badge (hieronder al zichtbaar) blijven de
+    // herkomst tonen; alleen deze mechanisme-uitleg is nu leesbaar voor een eindgebruiker.
+    const structureNote = disp.mechanism || '';
     // FIX (Implementatieplan Zetadvies v3.0, Fase 3): tekst geactualiseerd — de schemalengte
     // komt niet meer uit de apparaatbrede contacttijd-diagnostiek (die staat nu los, als
     // controle-achteraf op het Klaar-scherm), en de verdeling is niet meer overal simpelweg
@@ -9576,8 +9595,18 @@ function renderPrep(){
     calEl.textContent = txt;
     calEl.hidden = !txt;
   }
+  // FIX (expertaudit, bevinding 1): de tekst hieronder bevatte interne verwijzingen naar
+  // dit project se eigen planningsdocumenten ("Implementatieplan Zetadvies v3.0, Fase 2,
+  // Bouwbesluit B-1", "Reparatieplan v4.0, A-7", "research-brewing-variables.md §2.1/§4.2")
+  // — waardevol voor intern traceren, maar zonder enige betekenis voor een eindgebruiker,
+  // en op het hoofdscherm van elk recept zichtbaar. Verwijderd; alle onderliggende FEITEN
+  // (retentieaanname 2,0 g/g, de Batali/Ristenpart/Guinard-bevinding, het vertrekpunt-
+  // karakter van het temperatuur-ankerpunt) blijven woordelijk staan — puur de interne
+  // documentverwijzingen weg, geen inhoud. (De "G-CONTROL-CHART-01"-gapcode bij het
+  // doelvenster hieronder is bewust ongewijzigd gelaten: dat is een stabiele, toetsbare
+  // evidence-ID, geen intern planningsdocument — zie tests/kernflow.smoke.test.mjs "A-1".)
   document.getElementById('disclaimer').textContent =
-    '* Dosis/water/ratio komen algebraïsch uit een sterkte-/extractievenster (zie het doelvenster-blok hierboven — door de app aangeleverd, niet uit het eigen onderzoekscorpus) en het gevalideerde dosisbereik van dit toestel — nooit gekopieerd uit een naam-gebonden receptentabel. De ratio bevat een retentieaanname (LIQUID_RETAINED_RATIO = 2,0 g achtergebleven water per g droge koffie bij percolatie, tier 3-4/klasse C, gebaseerd op Rao en Coffee ad Astra) — zonder die aanname zou de ratio het achtergebleven water in het koffiebed negeren en te sterk lijken. Temperatuur is een ankerpunt + instructie binnen de apparaatband, gepositioneerd op branddiepte (Implementatieplan Zetadvies v3.0, Fase 2, Bouwbesluit B-1) — géén los geteste claim: de bevinding dat temperatuur weinig zelfstandig smaakeffect heeft (research-brewing-variables.md §2.1/§4.2; Batali, Ristenpart & Guinard, 2020) hield maling en zettijd bewust vast om TDS/extractie gelijk te houden en testte alleen 87/90/93°C, en die voorwaarde geldt hier niet. Eerlijk erbij (Reparatieplan v4.0, A-7): het ankerpunt voor lichte branding (94–96°C) ligt zélf boven dat geteste bereik — het steunt op gangbare praktijk voor lichte brandingen, niet op deze studie, en is dus een vertrekpunt, geen getest getal. Maling is de eerlijke (instelling, vertrouwensband, korrelgrootte-doel)-drieling van de Setting Translator — vandaag voor elke molen "Insufficient" (geen gevalideerde kalibratiecurve); waar een community-startklikrange wél bestaat, positioneert branddiepte alleen wáár je daarbinnen begint (fijner/lichter, grover/donkerder) — geen nieuw maalgetal. Branddiepte stuurt in beide gevallen nooit de ratio of dosis (die blijven voor elke branddiepte identiek). Een eventueel giet-schema hierboven is óf een gecorroboreerde, aan een naam gebonden pour-structuur (zie de recept-notitie), óf — als die er niet is — een eigen, gelijkmatige verdeling; giet-snelheid (g/sec) is altijd een generieke aanname, geen letterlijk gepubliceerd getal. De totale schemalengte (en dus de brouwtimer) volgt uit het aantal giet-momenten van dit schema, niet meer uit de apparaatbrede contacttijd-diagnostiek — die diagnostische band staat los, als plausibiliteitscontrole achteraf op het Klaar-scherm (Implementatieplan Zetadvies v3.0, Fase 3).';
+    '* Dosis/water/ratio komen algebraïsch uit een sterkte-/extractievenster (zie het doelvenster-blok hierboven — door de app aangeleverd, niet uit het eigen onderzoekscorpus) en het gevalideerde dosisbereik van dit toestel — nooit gekopieerd uit een naam-gebonden receptentabel. De ratio bevat een retentieaanname (LIQUID_RETAINED_RATIO = 2,0 g achtergebleven water per g droge koffie bij percolatie, tier 3-4/klasse C, gebaseerd op Rao en Coffee ad Astra) — zonder die aanname zou de ratio het achtergebleven water in het koffiebed negeren en te sterk lijken. Temperatuur is een ankerpunt + instructie binnen de apparaatband, gepositioneerd op branddiepte — géén los geteste claim: de bevinding dat temperatuur weinig zelfstandig smaakeffect heeft (Batali, Ristenpart & Guinard, 2020) hield maling en zettijd bewust vast om TDS/extractie gelijk te houden en testte alleen 87/90/93°C, en die voorwaarde geldt hier niet. Eerlijk erbij: het ankerpunt voor lichte branding (94–96°C) ligt zélf boven dat geteste bereik — het steunt op gangbare praktijk voor lichte brandingen, niet op deze studie, en is dus een vertrekpunt, geen getest getal. Maling is de eerlijke (instelling, vertrouwensband, korrelgrootte-doel)-drieling van de Setting Translator — vandaag voor elke molen "Insufficient" (geen gevalideerde kalibratiecurve); waar een community-startklikrange wél bestaat, positioneert branddiepte alleen wáár je daarbinnen begint (fijner/lichter, grover/donkerder) — geen nieuw maalgetal. Branddiepte stuurt in beide gevallen nooit de ratio of dosis (die blijven voor elke branddiepte identiek). Een eventueel giet-schema hierboven is óf een gecorroboreerde, aan een naam gebonden pour-structuur (zie de recept-notitie), óf — als die er niet is — een eigen, gelijkmatige verdeling; giet-snelheid (g/sec) is altijd een generieke aanname, geen letterlijk gepubliceerd getal. De totale schemalengte (en dus de brouwtimer) volgt uit het aantal giet-momenten van dit schema, niet meer uit de apparaatbrede contacttijd-diagnostiek — die diagnostische band staat los, als plausibiliteitscontrole achteraf op het Klaar-scherm.';
 
   // NIEUW (Visual Design 2.0 fase 3): het waterhoeveelheid-statblok hierboven opnieuw
   // tikbaar maken na elke render (het element wordt via innerHTML vervangen, dus oude
