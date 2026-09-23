@@ -4754,6 +4754,31 @@ function coreOnlyReason(profileKey, methodKey, gen){
 var PHASE1_FIRST_POUR_FRACTION = { helder: 0.60, neutraal: 0.50, zoet: 0.40 };
 var POUR_CYCLE_SEC = 30; // generieke tijd tussen het begin van twee opeenvolgende pours (V60-referentie).
 var FINAL_DRAWDOWN_SEC = 40; // generieke marge na de laatste pour tot het bed is doorgelopen (V60-referentie).
+/* NIEUW (heraudit, Kasuya-timing): de generieke 30 sec hierboven lag al binnen de eigen
+   gedocumenteerde "30-45 sec"-marge (zie de module-comment bij buildPourSchedule), maar
+   voor Kasuya's 4:6-methode specifiek noemen meerdere onafhankelijke, wederzijds
+   consistente bronnen (o.a. honestcoffeeguide.com, home-barista.com, japanesecoffeegear.com,
+   pullandpourcoffee.com, foursixcoffeeapp.com — geen onderlinge tegenspraak, in
+   tegenstelling tot bv. de Rao/Hedrick-bronnen elders in dit bestand) expliciet "45 seconden
+   tussen elke pour" als vast onderdeel van de methode zelf, niet als een generieke
+   pour-over-conventie. Vandaar een losse, Kasuya-specifieke waarde i.p.v. de gedeelde
+   POUR_CYCLE_SEC aan te passen — dat zou ook Hoffmann/April/Rao/Perger's schema's
+   veranderen, waarvoor deze specifieke 45-sec-claim niet is onderzocht.
+   KASUYA_DRAWDOWN_SEC is GEEN direct gepubliceerd getal — de bronnen noemen alleen een
+   totale zettijd "van niet meer dan 3:30". Bij vijf pours 45 sec uit elkaar begint de
+   laatste pour op t=3:00, dus impliceert die 3:30-grens een marge van ~30 sec ná de
+   laatste pour — een eigen, transparant afgeleide waarde (analoog aan hoe "helder"
+   elders al als eigen extrapolatie is gelabeld), geen letterlijk gepubliceerd cijfer.
+   Zelfs met deze marge komt de uiteindelijke schema-lengte door een bestaande,
+   voor alle fase-bewuste overlays gedeelde rekenkundige eigenschap van
+   buildPourSchedule() (één extra "fantoomcyclus" tussen de laatste pour en het einde
+   van het schema, los van drawdownSec) nog boven de 3:30 uit — zie de toelichting bij
+   de Kasuya-tak hieronder. Dat gedeelde rekenmechanisme raakt deze wijziging bewust niet
+   aan: dat is een groter, apart te beoordelen vraagstuk dat alle fase-bewuste overlays
+   raakt, niet alleen Kasuya. */
+var KASUYA_POUR_CYCLE_SEC = 45;
+var KASUYA_BLOOM_SEC = 45;
+var KASUYA_DRAWDOWN_SEC = 30;
 
 /* NIEUW (Reparatieplan v4.0, B-2b / Bouwbesluit BB-1, akkoord gebruiker): B-2a maakte
    eerlijk dat op Chemex GEEN enkel schema in zijn eigen contacttijd-diagnostische band valt
@@ -4802,8 +4827,16 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
   overlayMeta = overlayMeta || {};
   // B-2b: per-brewer cyclusconstanten (zie brewerPourCycleConstants()); default op de
   // V60-referentie zodat bestaande directe aanroepen (o.a. tests) ongewijzigd blijven.
-  const cycleSec = cycleSecArg != null ? cycleSecArg : POUR_CYCLE_SEC;
-  const drawdownSec = drawdownSecArg != null ? drawdownSecArg : FINAL_DRAWDOWN_SEC;
+  // HERAUDIT (Kasuya-timing): voor Kasuya specifiek wegen de eigen, meervoudig
+  // onafhankelijk bevestigde 45-sec-cadans en de daarvan afgeleide drawdown-marge zwaarder
+  // dan de generieke/per-brewer waarden — zie KASUYA_POUR_CYCLE_SEC/KASUYA_DRAWDOWN_SEC
+  // hierboven voor de volledige onderbouwing. Alleen voor deze ene overlay: de gedeelde
+  // cycleSecArg/drawdownSecArg (en dus ook een eventuele per-brewer-schaling, die toch
+  // nooit voor Kasuya's enige brewer-scope V60_02 afwijkt van de referentie) worden hier
+  // bewust genegeerd, om geen impact te hebben op Hoffmann/April/Rao/Perger.
+  const isKasuya = overlayId === 'KASUYA_4_6';
+  const cycleSec = isKasuya ? KASUYA_POUR_CYCLE_SEC : (cycleSecArg != null ? cycleSecArg : POUR_CYCLE_SEC);
+  const drawdownSec = isKasuya ? KASUYA_DRAWDOWN_SEC : (drawdownSecArg != null ? drawdownSecArg : FINAL_DRAWDOWN_SEC);
   const overlayResolvedPulseCount = overlayMeta.pulseCount != null ? overlayMeta.pulseCount : null;
   let skipBloom = false;
   let pulseCount = 3;
@@ -4814,7 +4847,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
     if (overlayId === 'APRIL_HOUSE_METHOD') skipBloom = true; // bron: "geen aparte bloom-fase".
   }
 
-  const bloomTime = 30 + (bloomExtraSec || 0);
+  const bloomTime = (isKasuya ? KASUYA_BLOOM_SEC : 30) + (bloomExtraSec || 0);
   // FIX (D-3, §3a): als de overlay's pulseCount de bloom al meetelt (bv. Kasuya: 5 pours
   // totaal, de eerste ís de bloom), dan is er GEEN aparte bloom-stap vóór deze pulseCount
   // — anders krijg je zes waterbeurten waar de bron er vijf bedoelt.

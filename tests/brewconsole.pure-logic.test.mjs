@@ -963,8 +963,11 @@ describe('B-1 — sterktehendel respecteert het harde dosisplafond (bevinding E-
 });
 
 describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () => {
-  test('elk interval tussen twee waterbeurten is exact POUR_CYCLE_SEC, voor elk profiel', () => {
-    for (const p of ['klassiek','heel_fruitig','fresh_clean','robuust','snel_puur','sirooprig_vol']){
+  // BIJGEWERKT (heraudit, Kasuya-timing): klassiek/heel_fruitig (Kasuya 4:6) volgen sinds
+  // deze fix hun EIGEN, meervoudig onafhankelijk bevestigde 45-sec-cadans (zie
+  // KASUYA_POUR_CYCLE_SEC) i.p.v. de generieke POUR_CYCLE_SEC (30s) — vandaar apart getest.
+  test('elk interval tussen twee waterbeurten is exact POUR_CYCLE_SEC, voor elk niet-Kasuya-profiel', () => {
+    for (const p of ['fresh_clean','robuust','snel_puur','sirooprig_vol']){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
       if (rec.dose === 0) continue;
       const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
@@ -974,19 +977,37 @@ describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () =
       }
     }
   });
-  test('de staart na de laatste pour is POUR_CYCLE_SEC + FINAL_DRAWDOWN_SEC = 70s', () => {
-    for (const p of ['klassiek','fresh_clean','robuust','snel_puur']){
+  test('Kasuya 4:6 (klassiek/heel_fruitig): elk interval is exact 45s (KASUYA_POUR_CYCLE_SEC)', () => {
+    for (const p of ['klassiek','heel_fruitig']){
+      const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
+      const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
+      for (let i = 1; i < ts.length; i++){
+        assert.equal(ts[i] - ts[i-1], 45,
+          `${p}: interval ${i} is ${ts[i]-ts[i-1]}s, verwacht 45s (KASUYA_POUR_CYCLE_SEC)`);
+      }
+    }
+  });
+  test('de staart na de laatste pour is POUR_CYCLE_SEC + FINAL_DRAWDOWN_SEC = 70s (niet-Kasuya-profielen)', () => {
+    for (const p of ['fresh_clean','robuust','snel_puur']){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
       const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
       assert.equal(rec.totalTime - ts[ts.length-1], 70, `${p}: staart moet 70s zijn`);
     }
   });
-  test('N-6: totalTime is ONVERANDERD t.o.v. vóór deze fix (brouwtimer-regressie)', () => {
-    const verwacht = { klassiek:190, fresh_clean:130, robuust:220, snel_puur:100, sirooprig_vol:160 };
+  test('Kasuya 4:6: de staart na de laatste pour is KASUYA_POUR_CYCLE_SEC + KASUYA_DRAWDOWN_SEC = 75s', () => {
+    const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
+    const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
+    assert.equal(rec.totalTime - ts[ts.length-1], 75, 'klassiek: staart moet 75s zijn (45+30)');
+  });
+  test('N-6: totalTime is ONVERANDERD t.o.v. vóór deze fix (brouwtimer-regressie) — klassiek uitgezonderd (heraudit, Kasuya-timing, later bewust bijgesteld)', () => {
+    const verwacht = { fresh_clean:130, robuust:220, snel_puur:100, sirooprig_vol:160 };
     for (const [p, t] of Object.entries(verwacht)){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
       assert.equal(rec.totalTime, t, `${p}: totalTime mag door B-3 niet veranderen`);
     }
+    // klassiek (Kasuya): 255s sinds de 45-sec-cadans-fix (45 bloom + 4×45 cyclus + 30 drawdown).
+    const kasuya = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
+    assert.equal(kasuya.totalTime, 255, 'klassiek: totalTime moet 255s zijn na de Kasuya-timing-fix');
   });
 });
 
@@ -1015,7 +1036,10 @@ describe('B-2b — brewer-specifieke cyclusconstanten (Bouwbesluit BB-1, akkoord
     }
   });
   test('V60 s totalTime per profiel is volledig ongewijzigd door B-2b (V60 is de referentie, factor 1)', () => {
-    const verwacht = { klassiek:190, fresh_clean:130, robuust:220, snel_puur:100, sirooprig_vol:160 };
+    // klassiek (Kasuya) uitgezonderd: 255s sinds de latere, aparte Kasuya-timing-heraudit
+    // (KASUYA_POUR_CYCLE_SEC/KASUYA_DRAWDOWN_SEC) — niets met B-2b te maken, zie het aparte
+    // "Kasuya 4:6"-testblok hierboven voor die waarde.
+    const verwacht = { fresh_clean:130, robuust:220, snel_puur:100, sirooprig_vol:160 };
     for (const [p, t] of Object.entries(verwacht)){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
       assert.equal(rec.totalTime, t, `${p}: V60-totalTime mag door B-2b niet veranderen`);
