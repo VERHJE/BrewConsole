@@ -4858,21 +4858,23 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
 
   const postBloomPulseCount = pulseCountIncludesBloom ? (pulseCount - 1) : pulseCount;
   const hasBloomStep = pulseCountIncludesBloom || !skipBloom;
-  // HERAUDIT (Kasuya-timing, vervolgvraag): de formule hieronder reserveert normaal
-  // bewust één volledige extra cyclus tussen de laatste pour en drawdownSec — dit is GEEN
-  // fout, maar een consistent, elders al getest patroon dat voor bv. fresh_clean/robuust/
-  // snel_puur via het generieke pad hieronder precies zo werkt ("B-3 — de staart is
-  // POUR_CYCLE_SEC + FINAL_DRAWDOWN_SEC", zie tests/brewconsole.pure-logic.test.mjs).
-  // Dat patroon dat voor ELKE techniek totalTime zou veranderen bewust NIET aangepast —
-  // dat is een veel groter besluit dan hier gevraagd. Voor Kasuya specifiek levert het,
-  // gecombineerd met de eigen 45-sec-cadans, wél een totaal (4:15) op dat boven de in
-  // meerdere bronnen genoemde "niet meer dan 3:30" uitkomt — daarom laat ALLEEN de
-  // Kasuya-tak hieronder die ene extra cyclus weg, zodat 5 pours à 45 sec + de eigen,
-  // afgeleide 30-sec-drawdownmarge exact op de gepubliceerde 3:30 uitkomen. Zie ook de
-  // pulse-positieformule verderop, die dezelfde effectieve pulse-count moet gebruiken om
-  // de 45-sec-cadans zelf niet te verstoren.
-  const kasuyaEffectivePulseCount = isKasuya ? Math.max(1, postBloomPulseCount - 1) : postBloomPulseCount;
-  const totalTime = Math.round((hasBloomStep ? bloomTime : 0) + kasuyaEffectivePulseCount * cycleSec + drawdownSec);
+  // HERAUDIT (fantoomcyclus, gegeneraliseerd): de formule reserveerde vroeger overal
+  // bewust één volledige extra cyclus tussen de laatste pour en drawdownSec, omdat
+  // pulse-posities werden berekend als breuken i/N van een venster ter grootte van N
+  // cycleSec — waardoor de láátste pulse pas (N-1)/N van dat venster bereikte en er dus
+  // een hele cyclus "over" bleef. Dat patroon was voorheen alleen zichtbaar via een
+  // zelf-consistente test (totalTime - laatstePulseT === cycleSec + drawdownSec), nooit
+  // getoetst aan echte gepubliceerde totaaltijden. Bij Kasuya (eerst) en onafhankelijk
+  // ook bij April (Coffee Roasters House Method) bleek de extra cyclus de gepubliceerde
+  // totaaltijd met precies één cycleSec te laten overschrijden — voor twee onafhankelijke
+  // technieken tegelijk, dus geen toeval maar een fout in de gedeelde formule. Fix: de
+  // laatste pour markeert het BEGIN van de laatste cyclus (niet het einde ervan) — er zijn
+  // dus effectief N-1 volledige cycli tussen bloom/start en drawdown, niet N. Geldt nu
+  // voor alle overlays/paden (niet langer Kasuya-specifiek); Kasuya's eigen 45-sec-cadans
+  // en 30-sec-drawdownmarge (KASUYA_POUR_CYCLE_SEC/KASUYA_DRAWDOWN_SEC hierboven) blijven
+  // ongewijzigd, dit raakt alleen hoe de pulses over de resterende tijd verdeeld worden.
+  const effectivePulseCount = Math.max(1, postBloomPulseCount - 1);
+  const totalTime = Math.round((hasBloomStep ? bloomTime : 0) + effectivePulseCount * cycleSec + drawdownSec);
 
   const steps = [];
   let runningTo = 0;
@@ -4924,7 +4926,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
         addedInPhase += add;
         runningTo += add;
         const label = pulseIndex === 0 ? 'Bloom' : `Pour ${pulseIndex + 1}`;
-        const t = pulseIndex === 0 ? 0 : Math.round(bloomTime + (postBloomWindow * (pulseIndex - 1)) / Math.max(1, kasuyaEffectivePulseCount));
+        const t = pulseIndex === 0 ? 0 : Math.round(bloomTime + (postBloomWindow * (pulseIndex - 1)) / Math.max(1, effectivePulseCount));
         steps.push({ label, t, add, to: runningTo, note:'', flow:'' });
         pulseIndex++;
       }
@@ -4939,10 +4941,12 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
     }
     const startTime = steps.length ? Math.min(bloomTime, Math.max(0, totalTime - 10)) : 0;
     const remainingWater = Math.max(0, Math.round(water) - runningTo);
-    // FIX (Reparatieplan v4.0, B-3 / bevinding E-04): zie de toelichting in het
-    // fase-bewuste pad hierboven — ook hier werd FINAL_DRAWDOWN_SEC dubbel geteld
-    // (43 s tussen pours bij een Kernrecept, 50 s bij Hoffmann).
-    const remainingTime = Math.max(10, totalTime - startTime - drawdownSec);
+    // HERAUDIT (fantoomcyclus, gegeneraliseerd): direct rekenkundige pulse-posities
+    // (startTime + i * cycleSec) i.p.v. de vroegere breuk over een te ruim venster — zie
+    // de toelichting bij effectivePulseCount hierboven. Bij pulseCount pulses zijn er
+    // effectivePulseCount (= pulseCount - 1) volledige cycli tussen de eerste pour en de
+    // start van de drawdown; de laatste pour (i = pulseCount - 1) valt dus precies op
+    // startTime + effectivePulseCount * cycleSec, wat exact aansluit op totalTime.
     const perPulse = Math.max(5, Math.round((remainingWater / pulseCount) / 5) * 5);
     let addedSoFar = 0;
     for (let i = 0; i < pulseCount; i++){
@@ -4950,7 +4954,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
       const add = isLast ? Math.max(0, remainingWater - addedSoFar) : Math.min(perPulse, remainingWater - addedSoFar);
       addedSoFar += add;
       runningTo += add;
-      const t = Math.round(startTime + (remainingTime * i) / pulseCount);
+      const t = Math.round(startTime + i * cycleSec);
       steps.push({ label: pulseCount === 1 ? 'Hoofdpour' : `Pour ${i + 1}`, t, add, to: runningTo, note:'', flow:'' });
     }
   }

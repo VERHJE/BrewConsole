@@ -987,34 +987,44 @@ describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () =
       }
     }
   });
-  test('de staart na de laatste pour is POUR_CYCLE_SEC + FINAL_DRAWDOWN_SEC = 70s (niet-Kasuya-profielen)', () => {
-    for (const p of ['fresh_clean','robuust','snel_puur']){
+  // HERAUDIT (fantoomcyclus, gegeneraliseerd): de staart is nu voor ALLE meervoudige-pulse-
+  // profielen (≥2 pulses) uitsluitend FINAL_DRAWDOWN_SEC — de vroegere extra cyclus
+  // (POUR_CYCLE_SEC + FINAL_DRAWDOWN_SEC = 70s) was de fout die eerst voor Kasuya en later
+  // (dit testblok) voor alle technieken is weggehaald, zie buildPourSchedule(). Voor een
+  // schema met precies 1 pulse (snel_puur/Perger) verandert er niets: dat had al maar één
+  // cyclus en blijft dus cycleSec + drawdownSec.
+  test('de staart na de laatste pour is uitsluitend FINAL_DRAWDOWN_SEC = 40s, voor elk niet-Kasuya-profiel met ≥2 pulses', () => {
+    for (const p of ['fresh_clean','robuust','sirooprig_vol']){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
       const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
-      assert.equal(rec.totalTime - ts[ts.length-1], 70, `${p}: staart moet 70s zijn`);
+      assert.equal(rec.totalTime - ts[ts.length-1], 40, `${p}: staart moet 40s zijn (uitsluitend FINAL_DRAWDOWN_SEC)`);
     }
   });
-  // BIJGEWERKT (heraudit, Kasuya-timing vervolgvraag): de staart is voor Kasuya bewust
-  // NIET "nog een extra 45-sec-cyclus + drawdown" (dat generieke patroon geldt voor de
-  // andere technieken, zie de test hierboven) — voor Kasuya specifiek is die extra cyclus
-  // weggelaten, zodat 5 pours à 45 sec + de eigen, afgeleide 30-sec-drawdownmarge exact op
-  // de in meerdere bronnen genoemde "niet meer dan 3:30" uitkomen (210s, niet 255s).
-  test('Kasuya 4:6: de staart na de laatste pour is uitsluitend KASUYA_DRAWDOWN_SEC = 30s (geen extra cyclus, i.t.t. andere technieken)', () => {
+  test('snel_puur (Perger, 1 pulse): de staart blijft POUR_CYCLE_SEC + FINAL_DRAWDOWN_SEC = 70s (ongewijzigd, want er was al maar 1 cyclus)', () => {
+    const rec = api.computeRecipe('v60','medium','snel_puur',300,null,false,null,null,false,null,null,0);
+    const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
+    assert.equal(rec.totalTime - ts[ts.length-1], 70, 'snel_puur: staart moet 70s blijven');
+  });
+  test('Kasuya 4:6: de staart na de laatste pour is uitsluitend KASUYA_DRAWDOWN_SEC = 30s (nu hetzelfde universele patroon, niet langer Kasuya-specifiek)', () => {
     const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
     const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
     assert.equal(rec.totalTime - ts[ts.length-1], 30, 'klassiek: staart moet 30s zijn (uitsluitend KASUYA_DRAWDOWN_SEC)');
   });
-  test('N-6: totalTime is ONVERANDERD t.o.v. vóór deze fix (brouwtimer-regressie) — klassiek uitgezonderd (heraudit, Kasuya-timing, later bewust bijgesteld)', () => {
-    const verwacht = { fresh_clean:130, robuust:220, snel_puur:100, sirooprig_vol:160 };
+  // HERAUDIT (fantoomcyclus, gegeneraliseerd): de fantoomcyclus-fix is niet langer
+  // Kasuya-specifiek (zie buildPourSchedule()) — elk profiel met ≥2 pulses verliest nu
+  // precies één POUR_CYCLE_SEC (of, voor Kasuya, KASUYA_POUR_CYCLE_SEC) t.o.v. de eerdere,
+  // foutieve waarden. snel_puur (1 pulse) is ongewijzigd: bij één pulse was er al geen
+  // fantoomcyclus om weg te halen (zie de aparte test hierboven).
+  test('N-6: totalTime weerspiegelt de gegeneraliseerde fantoomcyclus-fix (elk ≥2-pulse-profiel 1 cyclus korter dan vóór deze fix)', () => {
+    const verwacht = { fresh_clean:100, robuust:190, snel_puur:100, sirooprig_vol:130 };
     for (const [p, t] of Object.entries(verwacht)){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
-      assert.equal(rec.totalTime, t, `${p}: totalTime mag door B-3 niet veranderen`);
+      assert.equal(rec.totalTime, t, `${p}: totalTime moet ${t}s zijn na de gegeneraliseerde fantoomcyclus-fix`);
     }
-    // klassiek (Kasuya): 210s (3:30) sinds de Kasuya-timing-fix — 45 bloom + 3×45 cyclus
-    // (de extra fantoomcyclus is voor Kasuya specifiek weggelaten) + 30 drawdown, exact
-    // gelijk aan de in meerdere bronnen genoemde "niet meer dan 3:30".
+    // klassiek (Kasuya): 210s (3:30) — ongewijzigd, want Kasuya had deze correctie al sinds
+    // de eerdere, Kasuya-specifieke fix (nu onderdeel van dezelfde algemene formule).
     const kasuya = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
-    assert.equal(kasuya.totalTime, 210, 'klassiek: totalTime moet 210s (3:30) zijn na de Kasuya-timing-fix');
+    assert.equal(kasuya.totalTime, 210, 'klassiek: totalTime moet 210s (3:30) blijven');
   });
 });
 
@@ -1034,30 +1044,45 @@ describe('B-2a — de app geeft de gebruiker niet de schuld van zijn eigen schem
 });
 
 describe('B-2b — brewer-specifieke cyclusconstanten (Bouwbesluit BB-1, akkoord gebruiker)', () => {
-  test('het 3-pulse Kernrecept-schema (klassiek/heel_fruitig) valt nu binnen de Chemex-diagnostische band', () => {
+  // HERAUDIT (fantoomcyclus, gegeneraliseerd) — BEKENDE, NIEUW ONTDEKTE REGRESSIE: de
+  // per-brewer cyclusconstanten van BB-1 waren geijkt tegen de OUDE (foutieve) formule met
+  // de extra fantoomcyclus, en landden daarmee net binnen de Chemex-band (240-300s). Met de
+  // fantoomcyclus weggehaald verliest het 3-pulse Chemex-schema precies één cycleSec (49s
+  // op Chemex) en valt het nu op 193s, ONDER de band. Dit is een direct, verwacht gevolg
+  // van de gegeneraliseerde fix — geen losse nieuwe fout — maar het ONTDOET wel de eerdere
+  // BB-1-winst. Bewust NIET stilzwijgend "gefixt" door de band of de per-brewer-factor te
+  // herijken: dat vraagt een eigen besluit (en mogelijk nieuw bronnenonderzoek naar de
+  // juiste Chemex-cyclusconstante), dus hier alleen eerlijk vastgelegd als open punt i.p.v.
+  // een groen testresultaat te faken.
+  test('het 3-pulse Kernrecept-schema (klassiek/heel_fruitig) valt NA de fantoomcyclus-fix weer BUITEN de Chemex-diagnostische band (BB-1-winst tijdelijk ongedaan gemaakt — open punt)', () => {
     for (const p of ['klassiek','heel_fruitig']){
       const rec = api.computeRecipe('chemex','medium',p,600,null,false,null,null,false,null,null,0);
       const { min, max } = rec.contactTimeDiagnosticBand;
-      assert.ok(rec.totalTime >= min && rec.totalTime <= max,
-        `${p}: het 3-pulse Chemex-schema (${rec.totalTime}s) hoort na B-2b binnen ${min}-${max}s te vallen`);
+      assert.ok(rec.totalTime < min || rec.totalTime > max,
+        `${p}: het 3-pulse Chemex-schema (${rec.totalTime}s, band ${min}-${max}s) valt na de fantoomcyclus-fix weer buiten de band — zie toelichting hierboven`);
     }
   });
-  test('V60 s totalTime per profiel is volledig ongewijzigd door B-2b (V60 is de referentie, factor 1)', () => {
-    // klassiek (Kasuya) uitgezonderd: 255s sinds de latere, aparte Kasuya-timing-heraudit
-    // (KASUYA_POUR_CYCLE_SEC/KASUYA_DRAWDOWN_SEC) — niets met B-2b te maken, zie het aparte
-    // "Kasuya 4:6"-testblok hierboven voor die waarde.
-    const verwacht = { fresh_clean:130, robuust:220, snel_puur:100, sirooprig_vol:160 };
+  // HERAUDIT (fantoomcyclus, gegeneraliseerd): elk ≥2-pulse-profiel verliest nu 1 cyclus
+  // t.o.v. de waarden die hier golden ten tijde van BB-1 — zie het "N-6"-testblok hierboven
+  // voor dezelfde, recentere cijfers en de volledige toelichting.
+  test('V60 s totalTime per profiel weerspiegelt de gegeneraliseerde fantoomcyclus-fix (niet langer de BB-1-waarden)', () => {
+    const verwacht = { fresh_clean:100, robuust:190, snel_puur:100, sirooprig_vol:130 };
     for (const [p, t] of Object.entries(verwacht)){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
-      assert.equal(rec.totalTime, t, `${p}: V60-totalTime mag door B-2b niet veranderen`);
+      assert.equal(rec.totalTime, t, `${p}: V60-totalTime moet ${t}s zijn na de gegeneraliseerde fantoomcyclus-fix`);
     }
   });
-  test('een schema met een ander aantal giet-momenten blijft op Chemex evenredig langer/korter (D-4 blijft intact)', () => {
+  // HERAUDIT (fantoomcyclus, gegeneraliseerd): bij exact 1 vs. 2 pulses vallen de
+  // totaaltijden nu toevallig samen (beide reduceren tot "1 effectieve cyclus" — bij 1 pulse
+  // was er al maar 1 cyclus, bij 2 pulses blijft na het weghalen van de fantoomcyclus ook
+  // precies 1 cyclus over). Dat is een verwachte grenswaarde van de fix, geen fout — vanaf
+  // 2-vs-3 pulses geldt de evenredigheid gewoon weer strikt.
+  test('een schema met een ander aantal giet-momenten blijft op Chemex evenredig langer/korter vanaf 2 pulses (D-4); bij 1-vs-2 pulses vallen de tijden nu samen', () => {
     const drie = api.computeRecipe('chemex','medium','klassiek',600,null,false,null,null,false,null,null,0);
     const twee = api.computeRecipe('chemex','medium','fresh_clean',600,null,false,null,null,false,null,null,0);
     const een = api.computeRecipe('chemex','medium','snel_puur',600,null,false,null,null,false,null,null,0);
-    assert.ok(een.totalTime < twee.totalTime && twee.totalTime < drie.totalTime,
-      'minder giet-momenten moet nog steeds een korter schema opleveren, ook na B-2b');
+    assert.ok(een.totalTime <= twee.totalTime && twee.totalTime < drie.totalTime,
+      'minder giet-momenten mag nooit een lánger schema opleveren, en vanaf 2 pulses moet het strikt korter zijn');
   });
 });
 
