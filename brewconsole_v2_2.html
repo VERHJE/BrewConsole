@@ -1179,7 +1179,12 @@
   .star-row{display:inline-flex; gap:1px;}
   .star-wrap{position:relative; width:12px; height:12px;}
   .star-wrap svg{position:absolute; inset:0; width:100%; height:100%;}
-  .star-bg{color:var(--border);}
+  /* FIX (SMAAKKARAKTER-sterren, leesbaarheid): var(--border) was hetzelfde subtiele
+     lijntje-grijs als een dunne rand — een terechte "0 van de 5"-score (classifyProfile()
+     vond gewoon geen match voor dit profiel) oogde daardoor als een lege/kapotte knop
+     i.p.v. een zichtbaar berekend resultaat. var(--text-faint) is duidelijk feller dan
+     --border in beide thema's, maar nog steeds duidelijk zwakker dan de --copper-vulling. */
+  .star-bg{color:var(--text-faint);}
   .star-fill{color:var(--copper);}
   /* NIEUW (Visual Design 2.0, §7/§24 SegmentedControl/Tag): een geselecteerde chip
      "voelt seated/elevated" (§7) — subtiele inset-highlight i.p.v. alleen een kleur-
@@ -5688,8 +5693,14 @@ function renderAdviceChips(){
   // kale scores[k]-lookup — anders zou de samengevoegde "Klassiek"-chip altijd 0 sterren
   // tonen, ook wanneer de onderliggende vol_rond/zoet-scores wél sterk zijn (klassiek komt
   // zelf nooit voor als sleutel in classifyProfile()'s scores-object).
+  // FIX (SMAAKKARAKTER-sterren): PROFILE_TECHNIQUE_ONLY_KEYS (snel_puur/bloemig_delicaat/
+  // sirooprig_vol/robuust/evenwichtig_flex) kunnen sowieso nooit een classifyProfile()-score
+  // krijgen — displayScoreFor() gaf ze altijd stilzwijgend 0 terug, wat een onzichtbare
+  // 0/5-sterrenrij rendert die oogt als kapot i.p.v. "dit is geen smaakwiel-categorie".
+  // Voor die knoppen expliciet geen sterrenrij i.p.v. een altijd-nul score te tonen.
   document.getElementById('advice-profile').innerHTML = visibleProfileKeys().map(k=>{
-    const rawScore = adviceState.flavorScores ? displayScoreFor(adviceState.flavorScores, k) : null;
+    const isTechniqueOnly = PROFILE_TECHNIQUE_ONLY_KEYS.includes(k);
+    const rawScore = (!isTechniqueOnly && adviceState.flavorScores) ? displayScoreFor(adviceState.flavorScores, k) : null;
     const stars = profileMatchStars(rawScore);
     const starsHtml = stars != null ? renderStarRow(stars) : '';
     return `<button class="chip${starsHtml ? ' chip-with-stars' : ''}" data-adv-profile="${k}" data-selected="${canonicalProfileKey(adviceState.profile)===k}"><span>${PROFILE_INFO[k].name}</span>${starsHtml}</button>`;
@@ -6761,10 +6772,17 @@ function secondaryFlavorNotes(scores, winnerKey){
    een as volledig) zodat er in deze app maar één "hoeveel tags = volle score"-vuistregel
    bestaat, i.p.v. een aparte losstaande. Alleen zinvol voor de 5 profielen die
    classifyProfile() daadwerkelijk scoort (heel_fruitig/fruitig_clean/fresh_clean/
-   vol_rond/zoet) — de overige 6 profielen (klassiek, snel_puur, bloemig_delicaat,
-   sirooprig_vol, robuust, evenwichtig_flex) zijn technieken/structuren, geen
-   smaakwiel-buckets, en krijgen daarom bewust geen sterren i.p.v. een verzonnen score. */
+   vol_rond/zoet) plus 'klassiek' (de canonieke samenvoegknop van vol_rond, zie
+   PROFILE_MERGE_GROUPS — telt dus wél mee, in tegenstelling tot wat hier eerder stond).
+   De overige 5 profielen (snel_puur, bloemig_delicaat, sirooprig_vol, robuust,
+   evenwichtig_flex — zie PROFILE_TECHNIQUE_ONLY_KEYS) zijn technieken/structuren, geen
+   smaakwiel-buckets, en tonen daarom in renderAdviceChips() bewust GEEN sterrenrij
+   i.p.v. een altijd-0 score te renderen die als kapot oogt. */
 const PROFILE_STAR_SCALE = CUPPING_AXIS_SCALE; // = 3, zelfde vuistregel als de cupping-radar
+// HERAUDIT (SMAAKKARAKTER-sterren): expliciete lijst i.p.v. impliciet uit classifyProfile()
+// afgeleid, zodat renderAdviceChips() weet welke knoppen sowieso nooit een echte score
+// kunnen krijgen en dus geen (onzichtbare, want 0/5) sterrenrij moet tonen.
+const PROFILE_TECHNIQUE_ONLY_KEYS = ['snel_puur', 'bloemig_delicaat', 'sirooprig_vol', 'robuust', 'evenwichtig_flex'];
 function profileMatchStars(score){
   if (score == null) return null;
   const raw = clamp((score / PROFILE_STAR_SCALE) * 5, 0, 5);
