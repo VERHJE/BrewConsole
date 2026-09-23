@@ -4486,11 +4486,24 @@ function waterSCAVerdict(mgLCaCO3, low, high){
     : `binnen de SCA-richtwaarde (${low}–${high} mg/L)`;
 }
 const adviceState = { roast:null, profile:null, batch:'single', process:null, experimental:false, roastDate:null, openedDate:null, intendedUse:null, altitude:null, flavorScores:null, fermentEvidence:false, hardness:null, flavorTags:null, beanId:null, tieResolved:false };
+/* Wet-hulled (Giling Basah) toegevoegd (proces-heraudit): dé traditionele Indonesische
+   verwerkingsmethode (Sumatra Mandheling, Sulawesi Toraja, Flores e.a.) — pulpen, korte
+   fermentatie, gedeeltelijk drogen, dan de bast eraf malen terwijl de boon nog 35-40%
+   vocht bevat (i.p.v. de ~11% bij washed/natural), en pas dán verder drogen. Vóór deze
+   toevoeging viel dit hele — qua volume grote — deel van de specialty-markt door geen
+   enkele bestaande categorie te matchen (ook niet via tekstherkenning, zie
+   PROCESS_SCAN_KEYWORDS): geen van de 'washed'/'wet process'-woorden komt letterlijk voor
+   in "wet-hulled"/"giling basah". Onafhankelijk bevestigd door meerdere bronnen (Sweet
+   Maria's, Seattle Coffee Gear, PT's Coffee, Wikipedia): zwaarder van body, duidelijk lager
+   in zuur, en aardse/houtige/tabaksachtige complexiteit t.o.v. washed — het tegenovergestelde
+   profiel van fris/helder. Zie PROCESS_PROFILE_BOOST en computeMethodAdvice() hieronder
+   voor waar dat vervolgens (bewust begrensd) meeweegt. */
 const PROCESS_INFO = {
   washed:  { name:'Washed' },
   natural: { name:'Natural' },
   honey:   { name:'Honey' },
   anaerobic: { name:'Anaerobic' },
+  wet_hulled: { name:'Wet-hulled (Giling Basah)' },
   overig:  { name:'Weet ik niet' }
 };
 
@@ -5598,9 +5611,19 @@ function renderProfileGrid(){
    sneller fijnstof en lossen sneller op dan washed koffie. Dat is
    een mechanisch risico voor de dikke, makkelijk verstoppende
    Chemex-filter (bevestigd door meerdere onafhankelijke Chemex-
-   brewguides over "fines/stalling"), en een reden om iets kouder te
-   zetten. Vandaar: een lichte (niet-dominante) duw richting V60 bij
-   natural/anaerobic, plus een temperatuurnudge in computeRecipe().
+   brewguides over "fines/stalling"). Vandaar: een lichte (niet-
+   dominante) duw richting V60 bij natural/anaerobic.
+   FIX (proces-heraudit): deze toelichting beweerde er ook "een reden
+   om iets kouder te zetten" bij, en verwees naar "een temperatuurnudge
+   in computeRecipe()" — die nudge bestaat niet (meer). computeRecipe()
+   geeft zettemperatuur uitsluitend via ROAST_TEMP_ANCHOR (branddiepte),
+   processKey komt daar niet in voor — precies de FORBIDDEN edge die de
+   audit bij bypassAdvice() hierboven al expliciet dichtte, maar die in
+   deze reasoning-tekst nooit werd bijgewerkt. De tekst beloofde dus een
+   receptaanpassing die feitelijk niet gebeurde. Weggehaald i.p.v.
+   alsnog geïmplementeerd: er is geen gevalideerde, per-proces-specifieke
+   temperatuurwaarde gevonden, en het mechanische fijnstof-argument voor
+   de brewer-keuze zelf staat op eigen benen overeind.
    ============================================================ */
 /* FIX (teamreview v2 — Hoog bevinding, Software Architect/Senior Frontend Developer):
    computeMethodAdvice() en buildReasoningLines() waren tot v2 twee losse, handmatig
@@ -5652,8 +5675,18 @@ function computeMethodAdvice(roastKey, profileKey, batchKey, processKey, experim
   // Experimentele/meertraps-fermentatie (double honey, hydro-fermentatie, co-fermentatie e.d.)
   // is nóg extractiegevoeliger dan gewone natural/anaerobic — extra duw richting de precisere V60.
   if (experimentalFlag) v60 += 1;
+  /* Wet-hulled (proces-heraudit): zwaar body + laag zuur, het tegenovergestelde mechanisme
+     van natural/anaerobic hierboven (geen fijnstof-/fermentatierisico — juist een dichtere,
+     minder poreuze boon door de vroege bast-verwijdering). Zelfde, kleine, niet-dominante
+     gewicht als de andere proces-nudges: dit is een redenering-naar-analogie met de al
+     bestaande body-profiel-logica hierboven (vol_rond/zoet -> chemex += 2) — er is geen
+     bron gevonden die wet-hulled specifiek in een V60-vs-Chemex-context bespreekt (de bronnen
+     gaan over espresso/French press), dus bewust een enkel punt i.p.v. het volle profiel-
+     gewicht van 2, om niet meer zekerheid te suggereren dan er is. */
+  const isWetHulled = processKey === 'wet_hulled';
+  if (isWetHulled) chemex += 1;
 
-  const shared = { roastKey, profileKey, batchKey, processKey, experimentalFlag, profileBucket, isFerment };
+  const shared = { roastKey, profileKey, batchKey, processKey, experimentalFlag, profileBucket, isFerment, isWetHulled };
   if (methodOnly) return { ...shared, method: methodOnly, v60Score: methodOnly==='v60'?1:0, chemexScore: methodOnly==='chemex'?1:0, forced:true };
 
   const method = v60===chemex ? (batchKey==='single' ? 'v60' : 'chemex') : (v60>chemex ? 'v60' : 'chemex');
@@ -5688,7 +5721,10 @@ function buildReasoningLines(roastKey, profileKey, batchKey, processKey, experim
     : 'Meerdere kopjes: de Chemex is praktischer en blijft gelijkmatig bij een grotere batch.';
   const lines = [roastLines[roastKey], profileLine, batchLine];
   if (result.isFerment){
-    lines.push('Natural/anaerobic: minder dicht en sneller oplosbaar dan washed — meer fijnstof-risico voor de dikke Chemex-filter, en een reden om iets kouder te zetten (advies o.b.v. Elika Liftee, 2022 US Brewers Cup Champion).');
+    lines.push('Natural/anaerobic: minder dicht en sneller oplosbaar dan washed — meer fijnstof-risico voor de dikke Chemex-filter (advies o.b.v. Elika Liftee, 2022 US Brewers Cup Champion).');
+  }
+  if (result.isWetHulled){
+    lines.push('Wet-hulled (Giling Basah): zwaar body en laag zuur van nature — dezelfde kant van het spectrum als een vol/rond smaakkarakter, dus een lichte voorkeur voor de Chemex (bronnen: Sweet Maria\'s, Seattle Coffee Gear, PT\'s Coffee — geen bron specifiek over V60 vs. Chemex, dus bewust een kleine, niet-dominante duw).');
   }
   if (experimentalFlag){
     lines.push('Experimenteel/dubbele fermentatie (double honey, hydro-fermentatie, co-fermentatie e.d.): deze lots zijn nóg extractiegevoeliger en fermenteren onregelmatiger dan standaard natural/anaerobic — de V60 geeft meer controle, en precisie in temperatuur en giettechniek telt hier extra zwaar (o.a. Luis Marcelino/Aroma Nativo staat bekend om zulke double-fermentation lots; Perfect Daily Grind & Barista Hustle over co-fermentatie/carbonic maceration).');
@@ -6430,11 +6466,18 @@ const INTENDED_USE_SCAN_KEYWORDS = {
   filter:   ['filter roast','filter'],
   espresso: ['espresso roast','espresso']
 };
+/* NB (proces-heraudit): 'semi-washed' is BEWUST NIET als synoniem toegevoegd bij honey of
+   wet_hulled. Onafhankelijk onderzoek (o.a. Purity Coffee, Slurp Coffee) laat zien dat de
+   term in de vakwereld zelf niet eenduidig is — soms bedoelt men pulped natural/honey,
+   soms wordt het als koepelterm voor o.a. wet-hulled gebruikt. Een gok in beide richtingen
+   kan een boon fout classificeren; "Weet ik niet" (handmatig kiezen) is hier eerlijker dan
+   een geautomatiseerde misclassificatie. */
 const PROCESS_SCAN_KEYWORDS = {
   washed:    ['fully washed','washed','gewassen','wet process'],
   natural:   ['natural process','natural','naturel','dry process','sun-dried','sundried'],
   honey:     ['honey process','honey','miel','pulped natural'],
-  anaerobic: ['anaerobic natural','anaerobic washed','anaerobic','anaeroob','carbonic maceration','co2 maceration','thermal shock','cmn','cm natural']
+  anaerobic: ['anaerobic natural','anaerobic washed','anaerobic','anaeroob','carbonic maceration','co2 maceration','thermal shock','cmn','cm natural'],
+  wet_hulled: ['wet-hulled','wet hulled','wet-hull','giling basah']
 };
 /* Experimentele/meertraps-fermentatiemethodes (double honey, hydro-fermentatie, co-fermentatie, etc.).
    Deze lots zijn extractiegevoeliger dan klassieke washed/natural/honey — vandaar een losse vlag
@@ -6854,7 +6897,26 @@ const PROFILE_KEYWORDS = {
   vol_rond: ['chocolade','chocolate','noten','nuts'],
   zoet: ['karamel','caramel','zoet','sweet']
 };
-const PROCESS_PROFILE_BOOST = { natural:'heel_fruitig', anaerobic:'heel_fruitig', honey:'zoet', washed:'fresh_clean' };
+/* wet_hulled -> vol_rond (proces-heraudit): zwaar body + laag zuur is qua richting het
+   dichtst bij vol_rond ("Chocolade, noten, body") van de vijf bestaande wiel-profielen —
+   geen letterlijke smaakmatch (de bronnen noemen eerder aards/houtig/tabak dan chocolade/
+   noten), maar wel dezelfde kant van het spectrum (body-gedreven, niet fruitig/helder).
+   Zie de toelichting bij PROCESS_INFO.wet_hulled hierboven voor de bronnen. */
+const PROCESS_PROFILE_BOOST = { natural:'heel_fruitig', anaerobic:'heel_fruitig', honey:'zoet', washed:'fresh_clean', wet_hulled:'vol_rond' };
+/* Honey-subtype-verfijning (proces-heraudit): "Honey" is in PROCESS_INFO één keuze, maar
+   in de praktijk bestaat een breed erkend kleurenspectrum (white/yellow t/m red/black) dat
+   flink uiteenloopt qua hoeveelheid achtergebleven mucilago en dus fermentatie-intensiteit
+   (bronnen: Perfect Daily Grind, Big Island Coffee Roasters, Efico, Barista Magazine).
+   White/yellow: mucilago grotendeels afgewassen -> helder/schoon, dicht bij washed.
+   Red/black: lange droogtijd, meer suikerafbraak -> vol, fruit-voorwaarts, dicht bij natural.
+   Geen nieuw bean-veld of UI-knop hiervoor (dat zou de proceskeuze onnodig verzwaren) —
+   in plaats daarvan herkent classifyProfile() deze termen in de vrije tekst/OCR-scan en
+   verfijnt zo de vlakke honey->zoet boost hierboven, precies zoals FERMENT_EVIDENCE_TAGS/
+   -KEYWORDS al een vergelijkbare signaal-verrijking bovenop het officiële process-veld doen. */
+const HONEY_SUBTYPE_TEXT_HINTS = {
+  'white honey': 'fresh_clean', 'yellow honey': 'fresh_clean', 'gold honey': 'fresh_clean', 'golden honey': 'fresh_clean',
+  'red honey': 'heel_fruitig', 'black honey': 'heel_fruitig'
+};
 
 /* Smaaktags/tekst die wijzen op funky/gefermenteerd karakter — onafhankelijk van het
    officiële proces-veld. Bron van de mechaniek: dezelfde Drip Roast "Bypass Brewing"-
@@ -6910,6 +6972,15 @@ function classifyProfile(selectedTags, extraText, processValue, experimentalFlag
      signaal geldt (loopt door naar 37,5% bypass i.p.v. 30%) — hergebruikt hier voor dezelfde
      onderscheiding i.p.v. een nieuw, ongebrond wegingsmodel te verzinnen. */
   if (PROCESS_PROFILE_BOOST[processValue]) scores[PROCESS_PROFILE_BOOST[processValue]] += experimentalFlag ? 2 : 1;
+  // Honey-subtype-verfijning (proces-heraudit, zie HONEY_SUBTYPE_TEXT_HINTS hierboven):
+  // alleen relevant als het process-veld ook echt op honey staat — anders zou "black honey"
+  // in de smaaknotities van een washed-boon (bijv. als los sfeerwoord) een niet-bestaand
+  // subtype-signaal introduceren. Eerste treffer wint, geen dubbeltelling.
+  if (processValue === 'honey'){
+    for (const phrase of Object.keys(HONEY_SUBTYPE_TEXT_HINTS)){
+      if (lowerExtra.includes(phrase)){ scores[HONEY_SUBTYPE_TEXT_HINTS[phrase]] += 1; break; }
+    }
+  }
   const total = Object.values(scores).reduce((a,b)=>a+b, 0);
 
   const fermentEvidence = (selectedTags || []).some(tag => FERMENT_EVIDENCE_TAGS.includes(tag))
@@ -8480,9 +8551,10 @@ function processBucketFor(processKey){
   if (processKey === 'washed') return 'washed';
   if (processKey === 'natural' || processKey === 'anaerobic') return 'natural_anaerobic';
   if (processKey === 'honey') return 'honey';
+  if (processKey === 'wet_hulled') return 'wet_hulled'; // proces-heraudit: eigen emmertje, geen van de bestaande drie past mechanisch
   return null; // 'overig'/onbekend/ontbrekend: geen exact emmertje mogelijk voor deze boon
 }
-const PROCESS_BUCKET_LABELS = { washed: 'Washed', natural_anaerobic: 'Natural / Anaerobic', honey: 'Honey' };
+const PROCESS_BUCKET_LABELS = { washed: 'Washed', natural_anaerobic: 'Natural / Anaerobic', honey: 'Honey', wet_hulled: 'Wet-hulled' };
 
 const LEARNING_MIN_N = 3; // terugvalladder-drempel uit het plan
 

@@ -1909,3 +1909,66 @@ describe('Smaakwiel-uitbreiding — nieuwe tags o.b.v. echte, gebruikersaangelev
     assert.ok(cls.scores.vol_rond >= 1, 'Milk Chocolate moet minstens 1x vol_rond scoren via Melkchocolade');
   });
 });
+
+describe('Proces-heraudit — Wet-hulled toegevoegd + honey-subtype-tekstherkenning', () => {
+  test('PROCESS_INFO bevat wet_hulled met de juiste naam', () => {
+    assert.ok(api.PROCESS_INFO.wet_hulled, 'wet_hulled ontbreekt in PROCESS_INFO');
+    assert.equal(api.PROCESS_INFO.wet_hulled.name, 'Wet-hulled (Giling Basah)');
+  });
+
+  test('computeMethodAdvice: wet_hulled geeft +1 chemex t.o.v. washed bij verder identieke input', () => {
+    const wh = api.computeMethodAdvice('medium', 'klassiek', 'single', 'wet_hulled', false);
+    const wa = api.computeMethodAdvice('medium', 'klassiek', 'single', 'washed', false);
+    assert.equal(wh.isWetHulled, true);
+    assert.equal(wa.isWetHulled, false);
+    assert.equal(wh.chemexScore, wa.chemexScore + 1, 'wet_hulled moet precies 1 punt meer chemex-score geven dan washed');
+    assert.equal(wh.v60Score, wa.v60Score, 'v60-score mag niet meebewegen — het is een pure chemex-duw');
+  });
+
+  test('buildReasoningLines: wet_hulled krijgt een eigen, bronvermelde regel', () => {
+    const lines = api.buildReasoningLines('medium', 'klassiek', 'single', 'wet_hulled', false);
+    assert.ok(lines.some(l => l.includes('Wet-hulled') && l.includes('Chemex')), 'verwachtte een wet-hulled-regel met Chemex-duw');
+  });
+
+  test('buildReasoningLines: natural/anaerobic belooft niet langer "kouder zetten" (stale claim, geen echt recepteffect)', () => {
+    const lines = api.buildReasoningLines('medium', 'klassiek', 'single', 'natural', false);
+    const fermentLine = lines.find(l => l.startsWith('Natural/anaerobic'));
+    assert.ok(fermentLine, 'de natural/anaerobic-regel moet nog steeds bestaan');
+    assert.ok(!fermentLine.includes('kouder'), 'de regel mag geen temperatuureffect meer claimen — computeRecipe() past de temperatuur nooit aan op processKey');
+  });
+
+  test('classifyProfile: wet_hulled boost +1 vol_rond, verder niets', () => {
+    const scores = api.classifyProfile([], '', 'wet_hulled', false).scores;
+    assert.equal(scores.vol_rond, 1);
+    assert.equal(scores.heel_fruitig, 0);
+    assert.equal(scores.fruitig_clean, 0);
+    assert.equal(scores.fresh_clean, 0);
+    assert.equal(scores.zoet, 0);
+  });
+
+  test('classifyProfile: "black honey" in de tekst bij process=honey boost heel_fruitig extra (subtype-signaal)', () => {
+    const scores = api.classifyProfile([], 'notes: black honey, floral', 'honey', false).scores;
+    assert.equal(scores.heel_fruitig, 1, 'black honey → extra heel_fruitig-punt bovenop de vlakke honey-boost');
+  });
+
+  test('classifyProfile: "white honey" in de tekst bij process=honey boost fresh_clean extra (subtype-signaal)', () => {
+    const scores = api.classifyProfile([], 'white honey process', 'honey', false).scores;
+    assert.equal(scores.fresh_clean, 1, 'white honey → extra fresh_clean-punt bovenop de vlakke honey-boost');
+  });
+
+  test('classifyProfile: honey zonder subtype-woord in de tekst geeft geen heel_fruitig/fresh_clean-subtype-boost', () => {
+    const scores = api.classifyProfile([], 'caramel', 'honey', false).scores;
+    assert.equal(scores.heel_fruitig, 0);
+    assert.equal(scores.fresh_clean, 0, 'geen subtype-woord aanwezig, dus geen subtype-verfijning');
+  });
+
+  test('classifyProfile: "black honey" in de tekst telt NIET mee als proces onbekend/anders is (guard op processValue==="honey")', () => {
+    const scores = api.classifyProfile([], 'black honey', 'washed', false).scores;
+    assert.equal(scores.heel_fruitig, 0, 'de honey-subtype-boost mag alleen vuren als het process-veld zelf ook honey is');
+  });
+
+  test('processBucketFor/PROCESS_BUCKET_LABELS kennen wet_hulled een eigen emmertje toe (los van washed/natural_anaerobic/honey)', () => {
+    assert.equal(api.processBucketFor('wet_hulled'), 'wet_hulled');
+    assert.equal(api.PROCESS_BUCKET_LABELS.wet_hulled, 'Wet-hulled');
+  });
+});
