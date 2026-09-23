@@ -4533,15 +4533,17 @@ function fmtStepTime(s){
   return s.endT ? fmtTime(s.t) + '–' + fmtTime(s.endT) : fmtTime(s.t);
 }
 
-/* Giet-snelheid (g/sec) per stap. Voor stappen mét een expliciete endT (de meeste
-   Kasuya-'Bright'/'Body'-splits, de Hoffmann-hoofdpour en de sirooprig_vol-druppelpour)
-   is dit een exacte afgeleide uit de al aanwezige, gebronde stap-tijden — geen nieuwe
-   aanname. Voor stappen zonder endT (de korte, "in één beweging" pours van bijv. de
-   originele Kasuya 4:6-vijfslag) bestaat geen vaste bron voor de exacte duur: meerdere
-   beschrijvingen van Kasuya's eigen methode noemen uiteenlopend 5, 10 of 15 seconden per
-   pour. ASSUMED_SINGLE_POUR_SEC gebruikt het middelste, vaakst genoemde getal (10 sec) —
-   dit blijft de tijdsbasis voor het gietschema zelf én voor de live-interpolatie tijdens
-   het brouwen (zie updateDial()), dus hier bewust ongewijzigd. */
+/* Giet-snelheid (g/sec) per stap. Voor stappen mét een expliciete endT (sinds de
+   Hoffmann-timing-heraudit: Hoffmanns twee doorlopende hoofdpours, expliciet gepubliceerd
+   als giet-VENSTERS van 0:45-1:15 en 1:15-1:45 — zie HOFFMANN_POUR_WINDOW_SEC) is dit een
+   exacte afgeleide uit de al aanwezige, gebronde stap-tijden — geen nieuwe aanname. Voor
+   stappen zonder endT (elke andere pour, incl. Hoffmanns eigen bloom — dat is een
+   wachttijd, geen giet-duur, zie de toelichting bij buildPourSchedule()) bestaat geen
+   vaste bron voor de exacte duur: meerdere beschrijvingen van bv. Kasuya's eigen methode
+   noemen uiteenlopend 5, 10 of 15 seconden per pour. ASSUMED_SINGLE_POUR_SEC gebruikt het
+   middelste, vaakst genoemde getal (10 sec) — dit blijft de tijdsbasis voor het gietschema
+   zelf én voor de live-interpolatie tijdens het brouwen (zie updateDial()), dus hier
+   bewust ongewijzigd. */
 const ASSUMED_SINGLE_POUR_SEC = 10;
 /* FIX (expertaudit, bevinding 2): pourRateLabel() toonde voorheen één decimaal op basis
    van uitsluitend het MIDDEN van de aanname (10 sec) — bv. "~9,0 g/sec" voor een 90g-pour.
@@ -4793,6 +4795,25 @@ var KASUYA_DRAWDOWN_SEC = 30;
    t=160s en de totale schemalengte op 200s (3:20) — binnen de gepubliceerde 3:20-3:30-marge. */
 var APRIL_FIRST_POUR_EXTRA_SEC = 10;
 
+/* HERAUDIT (Hoffmann-timing): James Hoffmanns "Ultimate V60"-video (dezelfde bron als
+   HOFFMANN_ULTIMATE.attribution hierboven) geeft expliciete klokttijden, onafhankelijk
+   bevestigd via meerdere secundaire renderingen (unaniem, geen onderlinge tegenspraak):
+   bloom tot 0:45, dan een DOORLOPENDE spiraal-hoofdpour tot 60% van het watergewicht op
+   1:15, dan een tweede doorlopende pour tot 100% op 1:45, totale zettijd 3:30. Dit is
+   wezenlijk anders dan het generieke model (korte, losse "in één beweging"-pours op vaste
+   cadans): de twee hoofdpours zijn zelf giet-VENSTERS van 30 sec, geen momentopnames — dat
+   modelleert deze functie voortaan via het endT-veld (start/eind van de giet-actie), dat
+   voorheen alleen door fmtStepTime()/pourRateLabel()/updateDial() werd GELEZEN maar door
+   geen enkele overlay ooit werd GEZET (dode code). Bloomtijd was al 30 sec (generiek) en
+   is nu voor Hoffmann specifiek 45 sec, net als bij Kasuya/April een losse constante i.p.v.
+   de gedeelde default aan te passen. De 105 sec tussen het einde van pour 2 (1:45) en de
+   totale 3:30 is een aanzienlijk langere doorloopmarge dan de generieke FINAL_DRAWDOWN_SEC
+   (40 sec) — een eigen, expliciet gepubliceerd getal, geen aanname. */
+var HOFFMANN_BLOOM_SEC = 45;
+var HOFFMANN_POUR_WINDOW_SEC = 30; // duur van elke doorlopende hoofdpour (0:45-1:15, 1:15-1:45)
+var HOFFMANN_MAIN_POUR_CUMULATIVE_FRACTION = 0.6; // cumulatief aandeel van het totale water bij einde pour 1 (1:15)
+var HOFFMANN_TOTAL_SEC = 210; // 3:30, expliciet gepubliceerde totale zettijd
+
 /* NIEUW (Reparatieplan v4.0, B-2b / Bouwbesluit BB-1, akkoord gebruiker): B-2a maakte
    eerlijk dat op Chemex GEEN enkel schema in zijn eigen contacttijd-diagnostische band valt
    (100-175s tegen 240-300s) — dit lost het daadwerkelijk op, zonder D-4 (schemalengte volgt
@@ -4866,6 +4887,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
   // bewust genegeerd, om geen impact te hebben op Hoffmann/April/Rao/Perger.
   const isKasuya = overlayId === 'KASUYA_4_6';
   const isApril = overlayId === 'APRIL_HOUSE_METHOD';
+  const isHoffmann = overlayId === 'HOFFMANN_ULTIMATE';
   const cycleSec = isKasuya ? KASUYA_POUR_CYCLE_SEC : (cycleSecArg != null ? cycleSecArg : POUR_CYCLE_SEC);
   const drawdownSec = isKasuya ? KASUYA_DRAWDOWN_SEC : (drawdownSecArg != null ? drawdownSecArg : FINAL_DRAWDOWN_SEC);
   const overlayResolvedPulseCount = overlayMeta.pulseCount != null ? overlayMeta.pulseCount : null;
@@ -4878,7 +4900,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
     if (overlayId === 'APRIL_HOUSE_METHOD') skipBloom = true; // bron: "geen aparte bloom-fase".
   }
 
-  const bloomTime = (isKasuya ? KASUYA_BLOOM_SEC : 30) + (bloomExtraSec || 0);
+  const bloomTime = (isKasuya ? KASUYA_BLOOM_SEC : (isHoffmann ? HOFFMANN_BLOOM_SEC : 30)) + (bloomExtraSec || 0);
   // FIX (D-3, §3a): als de overlay's pulseCount de bloom al meetelt (bv. Kasuya: 5 pours
   // totaal, de eerste ís de bloom), dan is er GEEN aparte bloom-stap vóór deze pulseCount
   // — anders krijg je zes waterbeurten waar de bron er vijf bedoelt.
@@ -4908,12 +4930,41 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
   // HERAUDIT (April-timing): zie APRIL_FIRST_POUR_EXTRA_SEC hierboven — de eerste pauze
   // tussen pour 1 en pour 2 is voor April 10 sec langer dan de generieke cadans.
   const firstPourExtraSec = (isApril && effectivePulseCount >= 1) ? APRIL_FIRST_POUR_EXTRA_SEC : 0;
-  const totalTime = Math.round((hasBloomStep ? bloomTime : 0) + effectivePulseCount * cycleSec + drawdownSec + firstPourExtraSec);
+  // HERAUDIT (Hoffmann-timing): Hoffmanns schema is geen cyclus-gebaseerd model (zie
+  // HOFFMANN_TOTAL_SEC hierboven) — de gedeelde effectivePulseCount/cycleSec-formule slaat
+  // er niet op toe, vandaar een expliciete uitzondering i.p.v. de formule te verbuigen.
+  const totalTime = isHoffmann
+    ? HOFFMANN_TOTAL_SEC
+    : Math.round((hasBloomStep ? bloomTime : 0) + effectivePulseCount * cycleSec + drawdownSec + firstPourExtraSec);
 
   const steps = [];
   let runningTo = 0;
 
-  if (pulseCountIncludesBloom){
+  if (isHoffmann){
+    // HERAUDIT (Hoffmann-timing): bloomWater-formule ongewijzigd t.o.v. het generieke pad
+    // (±2x dosis, max 20% van het water) — dat klopt al met Hoffmanns eigen 60g/500g-
+    // voorbeeld (12%, exact 2x zijn eigen 30g-dosis). Alleen de TIJDEN en het cumulatieve
+    // aandeel bij pour 1 (60% i.p.v. een gelijke verdeling) zijn Hoffmann-specifiek.
+    // Geen endT op de bloomstap: de 45 sec is de totale wachttijd tot pour 1 (t hieronder),
+    // niet de duur van het ingieten van de bloom zelf — dat blijft, net als bij elke andere
+    // overlay, de generieke ASSUMED_SINGLE_POUR_SEC-aanname (5-15 sec) voor een korte pour.
+    const bloomWater = Math.max(0, Math.min(Math.round(dose * 2 / 5) * 5, Math.round(water * 0.2 / 5) * 5));
+    runningTo = bloomWater;
+    steps.push({ label:'Bloom', t:0, add:bloomWater, to:runningTo, note:'', flow:'' });
+
+    const cumulativeAtPour1End = Math.max(bloomWater, Math.round((water * HOFFMANN_MAIN_POUR_CUMULATIVE_FRACTION) / 5) * 5);
+    const pour1Add = Math.max(0, cumulativeAtPour1End - bloomWater);
+    runningTo += pour1Add;
+    const pour1Start = HOFFMANN_BLOOM_SEC;
+    const pour1End = pour1Start + HOFFMANN_POUR_WINDOW_SEC;
+    steps.push({ label:'Pour 1', t:pour1Start, endT:pour1End, add:pour1Add, to:runningTo, note:'', flow:'' });
+
+    const pour2Add = Math.max(0, Math.round(water) - runningTo);
+    runningTo += pour2Add;
+    const pour2Start = pour1End;
+    const pour2End = pour2Start + HOFFMANN_POUR_WINDOW_SEC;
+    steps.push({ label:'Pour 2', t:pour2Start, endT:pour2End, add:pour2Add, to:runningTo, note:'', flow:'' });
+  } else if (pulseCountIncludesBloom){
     // Fase-bewuste verdeling (§3a/3b): de bloom is pulse 1 van pulseCount. Zonder een
     // vastgesteld fase-mechanisme is er één fase (gelijke verdeling over alle pulseCount
     // pulses, bloom inbegrepen) — met een fase-mechanisme (Kasuya) verdeelt fase 1 zijn

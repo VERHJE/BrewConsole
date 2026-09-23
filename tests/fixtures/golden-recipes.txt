@@ -16,15 +16,15 @@ v60;fruitig_clean;medium;1;18.4;1:16,3;94;130;Rao — Minimal Pour;0:35|30:90|60
 v60;fruitig_clean;dark;-1;15.6;1:19,2;90;130;Rao — Minimal Pour;0:30|30:90|60:90|90:90|130:0;17;15-17
 v60;fruitig_clean;dark;0;17;1:17,6;90;130;Rao — Minimal Pour;0:35|30:90|60:90|90:85|130:0;17;15-17
 v60;fruitig_clean;dark;1;18.4;1:16,3;90;130;Rao — Minimal Pour;0:35|30:90|60:90|90:85|130:0;17;15-17
-v60;fresh_clean;light;-1;15.6;1:19,2;95;100;Hoffmann Ultimate;0:30|30:135|60:135|100:0;15;15-17
-v60;fresh_clean;light;0;17;1:17,6;95;100;Hoffmann Ultimate;0:35|30:135|60:130|100:0;15;15-17
-v60;fresh_clean;light;1;18.4;1:16,3;95;100;Hoffmann Ultimate;0:35|30:135|60:130|100:0;15;15-17
-v60;fresh_clean;medium;-1;15.6;1:19,2;94;100;Hoffmann Ultimate;0:30|30:135|60:135|100:0;16;15-17
-v60;fresh_clean;medium;0;17;1:17,6;94;100;Hoffmann Ultimate;0:35|30:135|60:130|100:0;16;15-17
-v60;fresh_clean;medium;1;18.4;1:16,3;94;100;Hoffmann Ultimate;0:35|30:135|60:130|100:0;16;15-17
-v60;fresh_clean;dark;-1;15.6;1:19,2;90;100;Hoffmann Ultimate;0:30|30:135|60:135|100:0;17;15-17
-v60;fresh_clean;dark;0;17;1:17,6;90;100;Hoffmann Ultimate;0:35|30:135|60:130|100:0;17;15-17
-v60;fresh_clean;dark;1;18.4;1:16,3;90;100;Hoffmann Ultimate;0:35|30:135|60:130|100:0;17;15-17
+v60;fresh_clean;light;-1;15.6;1:19,2;95;210;Hoffmann Ultimate;0:30|45:150|75:120|210:0;15;15-17
+v60;fresh_clean;light;0;17;1:17,6;95;210;Hoffmann Ultimate;0:35|45:145|75:120|210:0;15;15-17
+v60;fresh_clean;light;1;18.4;1:16,3;95;210;Hoffmann Ultimate;0:35|45:145|75:120|210:0;15;15-17
+v60;fresh_clean;medium;-1;15.6;1:19,2;94;210;Hoffmann Ultimate;0:30|45:150|75:120|210:0;16;15-17
+v60;fresh_clean;medium;0;17;1:17,6;94;210;Hoffmann Ultimate;0:35|45:145|75:120|210:0;16;15-17
+v60;fresh_clean;medium;1;18.4;1:16,3;94;210;Hoffmann Ultimate;0:35|45:145|75:120|210:0;16;15-17
+v60;fresh_clean;dark;-1;15.6;1:19,2;90;210;Hoffmann Ultimate;0:30|45:150|75:120|210:0;17;15-17
+v60;fresh_clean;dark;0;17;1:17,6;90;210;Hoffmann Ultimate;0:35|45:145|75:120|210:0;17;15-17
+v60;fresh_clean;dark;1;18.4;1:16,3;90;210;Hoffmann Ultimate;0:35|45:145|75:120|210:0;17;15-17
 v60;klassiek;light;-1;15.9;1:18,9;95;210;Kasuya 4:6;0:60|45:60|90:60|135:60|180:60|210:0;15;15-17
 v60;klassiek;light;0;17.3;1:17,4;95;210;Kasuya 4:6;0:60|45:60|90:60|135:60|180:60|210:0;15;15-17
 v60;klassiek;light;1;18.7;1:16,0;95;210;Kasuya 4:6;0:60|45:60|90:60|135:60|180:60|210:0;15;15-17
@@ -115,15 +115,15 @@ chemex;fruitig_clean;medium;1;36.8;1:16,3;94;247;Kernrecept;0:75|30:175|79:175|1
 chemex;fruitig_clean;dark;-1;31.4;1:19,1;90;247;Kernrecept;0:65|30:180|79:180|128:176|247:0;;
 chemex;fruitig_clean;dark;0;34.1;1:17,6;90;247;Kernrecept;0:70|30:175|79:175|128:181|247:0;;
 chemex;fruitig_clean;dark;1;36.8;1:16,3;90;247;Kernrecept;0:75|30:175|79:175|128:176|247:0;;
-chemex;fresh_clean;light;-1;31.4;1:19,1;95;198;Hoffmann Ultimate;0:65|30:270|79:266|198:0;;
-chemex;fresh_clean;light;0;34.1;1:17,6;95;198;Hoffmann Ultimate;0:70|30:265|79:266|198:0;;
-chemex;fresh_clean;light;1;36.8;1:16,3;95;198;Hoffmann Ultimate;0:75|30:265|79:261|198:0;;
-chemex;fresh_clean;medium;-1;31.4;1:19,1;94;198;Hoffmann Ultimate;0:65|30:270|79:266|198:0;;
-chemex;fresh_clean;medium;0;34.1;1:17,6;94;198;Hoffmann Ultimate;0:70|30:265|79:266|198:0;;
-chemex;fresh_clean;medium;1;36.8;1:16,3;94;198;Hoffmann Ultimate;0:75|30:265|79:261|198:0;;
-chemex;fresh_clean;dark;-1;31.4;1:19,1;90;198;Hoffmann Ultimate;0:65|30:270|79:266|198:0;;
-chemex;fresh_clean;dark;0;34.1;1:17,6;90;198;Hoffmann Ultimate;0:70|30:265|79:266|198:0;;
-chemex;fresh_clean;dark;1;36.8;1:16,3;90;198;Hoffmann Ultimate;0:75|30:265|79:261|198:0;;
+chemex;fresh_clean;light;-1;31.4;1:19,1;95;210;Hoffmann Ultimate;0:65|45:295|75:241|210:0;;
+chemex;fresh_clean;light;0;34.1;1:17,6;95;210;Hoffmann Ultimate;0:70|45:290|75:241|210:0;;
+chemex;fresh_clean;light;1;36.8;1:16,3;95;210;Hoffmann Ultimate;0:75|45:285|75:241|210:0;;
+chemex;fresh_clean;medium;-1;31.4;1:19,1;94;210;Hoffmann Ultimate;0:65|45:295|75:241|210:0;;
+chemex;fresh_clean;medium;0;34.1;1:17,6;94;210;Hoffmann Ultimate;0:70|45:290|75:241|210:0;;
+chemex;fresh_clean;medium;1;36.8;1:16,3;94;210;Hoffmann Ultimate;0:75|45:285|75:241|210:0;;
+chemex;fresh_clean;dark;-1;31.4;1:19,1;90;210;Hoffmann Ultimate;0:65|45:295|75:241|210:0;;
+chemex;fresh_clean;dark;0;34.1;1:17,6;90;210;Hoffmann Ultimate;0:70|45:290|75:241|210:0;;
+chemex;fresh_clean;dark;1;36.8;1:16,3;90;210;Hoffmann Ultimate;0:75|45:285|75:241|210:0;;
 chemex;klassiek;light;-1;31.8;1:18,9;95;247;Kernrecept;0:65|30:180|79:180|128:176|247:0;;
 chemex;klassiek;light;0;34.6;1:17,4;95;247;Kernrecept;0:70|30:175|79:175|128:181|247:0;;
 chemex;klassiek;light;1;37.4;1:16,1;95;247;Kernrecept;0:75|30:175|79:175|128:176|247:0;;

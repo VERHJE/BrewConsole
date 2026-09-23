@@ -517,13 +517,25 @@ describe('buildPourSchedule() via computeRecipe() — gietschema-fixes (Implemen
     assert.equal(steps[0].label, 'Bloom');
   });
 
-  test('D-4: totalTime volgt uit de giet-structuur, niet meer uit het vaste contactTimeGuidance-middelpunt — varieert mee met het aantal waterbeurten', () => {
-    const kasuya = api.computeRecipe('v60', 'medium', 'klassiek', 300, null, false, null, null, false, null, null, 0); // 5 beurten
-    const hoffmann = api.computeRecipe('v60', 'medium', 'fresh_clean', 300, null, false, null, null, false, null, null, 0); // 3 beurten
-    const april = api.computeRecipe('v60', 'medium', 'robuust', 300, null, false, null, null, false, null, null, 0); // 6 beurten
-    assert.notEqual(kasuya.totalTime, hoffmann.totalTime, 'Een ander aantal waterbeurten moet een andere schemalengte geven — anders is dit nog steeds het oude vaste middelpunt');
-    assert.ok(april.totalTime > hoffmann.totalTime, 'Meer waterbeurten (April, 6) moet een langer schema geven dan minder waterbeurten (Hoffmann, 3)');
-    assert.ok(kasuya.totalTime > hoffmann.totalTime, 'Meer waterbeurten (Kasuya, 5) moet een langer schema geven dan minder waterbeurten (Hoffmann, 3)');
+  // HERAUDIT (Hoffmann-timing): de oorspronkelijke aanname hier ("meer waterbeurten = langer
+  // schema") klopte toen alle overlays via hetzelfde generieke cyclusmodel liepen. Sinds
+  // Hoffmann zijn eigen, expliciet gepubliceerde tijden volgt (3 waterbeurten, 210s — zie
+  // HOFFMANN_TOTAL_SEC bij buildPourSchedule()) is dat niet langer waar: Hoffmann (3
+  // beurten) duurt inmiddels EVEN lang als Kasuya (5 beurten, ook 210s) en LANGER dan April
+  // (6 beurten, 200s). Dat is geen regressie — elke techniek met eigen gepubliceerde tijden
+  // volgt nu gewoon die eigen bron i.p.v. een aantal-waterbeurten-heuristiek. D-4 zelf
+  // (schemalengte volgt de giet-structuur, niet het oude vaste contactTimeGuidance-
+  // middelpunt) blijft wél overeind: elke techniek geeft nog steeds een eigen, van elkaar
+  // verschillende totalTime i.p.v. allemaal hetzelfde vaste getal.
+  test('D-4: totalTime volgt uit de giet-structuur (per techniek eigen tijden, niet meer het oude vaste contactTimeGuidance-middelpunt)', () => {
+    const kasuya = api.computeRecipe('v60', 'medium', 'klassiek', 300, null, false, null, null, false, null, null, 0); // 5 beurten, eigen 45-sec-cadans
+    const hoffmann = api.computeRecipe('v60', 'medium', 'fresh_clean', 300, null, false, null, null, false, null, null, 0); // 3 beurten, eigen klokttijden
+    const april = api.computeRecipe('v60', 'medium', 'robuust', 300, null, false, null, null, false, null, null, 0); // 6 beurten, eigen cadans
+    const perger = api.computeRecipe('v60', 'medium', 'snel_puur', 300, null, false, null, null, false, null, null, 0); // 1 beurt, generiek model
+    assert.equal(kasuya.totalTime, 210, 'Kasuya: 3:30, eigen gepubliceerde grens');
+    assert.equal(hoffmann.totalTime, 210, 'Hoffmann: 3:30, eigen gepubliceerde totale zettijd');
+    assert.equal(april.totalTime, 200, 'April: 3:20, eigen gepubliceerde pourtijden');
+    assert.ok(perger.totalTime < april.totalTime, 'Perger (generiek 1-pulse-model) blijft korter dan de technieken met eigen, langere gepubliceerde tijden');
   });
 
   test('non-negotiable "brew timer blijft betrouwbaar" (regressietest, Fase 3-risico): totalTime is altijd een eindig, positief getal en de laatste stap valt op totalTime', () => {
@@ -968,8 +980,11 @@ describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () =
   // KASUYA_POUR_CYCLE_SEC) i.p.v. de generieke POUR_CYCLE_SEC (30s) — vandaar apart getest.
   // BIJGEWERKT (heraudit, April-timing): robuust (April) uitgezonderd — zie het aparte
   // "April huismethode"-testblok hieronder voor de eigen 40s/30s-cadans.
-  test('elk interval tussen twee waterbeurten is exact POUR_CYCLE_SEC, voor elk niet-Kasuya/niet-April-profiel', () => {
-    for (const p of ['fresh_clean','snel_puur','sirooprig_vol']){
+  // BIJGEWERKT (heraudit, Hoffmann-timing): fresh_clean (Hoffmann) uitgezonderd — volgt
+  // sinds deze fix zijn eigen, expliciet gepubliceerde klokttijden (zie het aparte
+  // "Hoffmann Ultimate"-testblok hieronder), geen cyclusmodel meer.
+  test('elk interval tussen twee waterbeurten is exact POUR_CYCLE_SEC, voor elk niet-Kasuya/niet-April/niet-Hoffmann-profiel', () => {
+    for (const p of ['snel_puur','sirooprig_vol']){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
       if (rec.dose === 0) continue;
       const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
@@ -992,6 +1007,27 @@ describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () =
       assert.equal(ts[i] - ts[i-1], 30, `April: interval ${i} is ${ts[i]-ts[i-1]}s, verwacht 30s`);
     }
   });
+  // HERAUDIT (Hoffmann-timing): James Hoffmanns "Ultimate V60"-video geeft expliciete
+  // klokttijden, onafhankelijk bevestigd via meerdere secundaire renderingen (unaniem):
+  // bloom tot 0:45, doorlopende hoofdpour 1 tot 60% op 1:15, doorlopende hoofdpour 2 tot
+  // 100% op 1:45, totale zettijd 3:30. De pours zelf zijn giet-VENSTERS (endT), geen
+  // momentopnames — zie HOFFMANN_POUR_WINDOW_SEC in buildPourSchedule().
+  test('Hoffmann Ultimate: bloom tot 0:45, pour 1 als venster 0:45-1:15, pour 2 als venster 1:15-1:45, totaal 3:30', () => {
+    const rec = api.computeRecipe('v60','medium','fresh_clean',300,null,false,null,null,false,null,null,0);
+    const [bloom, pour1, pour2] = rec.steps.filter(s => s.add > 0);
+    assert.equal(bloom.t, 0);
+    assert.equal(bloom.endT, undefined, 'bloom heeft geen endT: 45s is wachttijd, geen giet-duur');
+    assert.equal(pour1.t, 45);
+    assert.equal(pour1.endT, 75);
+    assert.equal(pour2.t, 75);
+    assert.equal(pour2.endT, 105);
+    assert.equal(rec.totalTime, 210, 'Hoffmann: totale zettijd moet exact 3:30 (210s) zijn');
+    // Cumulatief 60% van het water bij het einde van pour 1 (1:15) — het gepubliceerde
+    // omslagpunt tussen de twee hoofdpours.
+    const cumulativeFraction = pour1.to / rec.water;
+    assert.ok(Math.abs(cumulativeFraction - 0.6) < 0.05,
+      `cumulatief aandeel bij pour 1 (${(cumulativeFraction*100).toFixed(1)}%) moet rond 60% liggen`);
+  });
   test('Kasuya 4:6 (klassiek/heel_fruitig): elk interval is exact 45s (KASUYA_POUR_CYCLE_SEC)', () => {
     for (const p of ['klassiek','heel_fruitig']){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
@@ -1007,9 +1043,11 @@ describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () =
   // (POUR_CYCLE_SEC + FINAL_DRAWDOWN_SEC = 70s) was de fout die eerst voor Kasuya en later
   // (dit testblok) voor alle technieken is weggehaald, zie buildPourSchedule(). Voor een
   // schema met precies 1 pulse (snel_puur/Perger) verandert er niets: dat had al maar één
-  // cyclus en blijft dus cycleSec + drawdownSec.
-  test('de staart na de laatste pour is uitsluitend FINAL_DRAWDOWN_SEC = 40s, voor elk niet-Kasuya-profiel met ≥2 pulses', () => {
-    for (const p of ['fresh_clean','robuust','sirooprig_vol']){
+  // cyclus en blijft dus cycleSec + drawdownSec. fresh_clean (Hoffmann) uitgezonderd: volgt
+  // sinds de Hoffmann-timing-fix zijn eigen, veel grotere gepubliceerde drawdownmarge (105s
+  // — zie het "Hoffmann Ultimate"-testblok hierboven), geen FINAL_DRAWDOWN_SEC meer.
+  test('de staart na de laatste pour is uitsluitend FINAL_DRAWDOWN_SEC = 40s, voor elk niet-Kasuya/niet-Hoffmann-profiel met ≥2 pulses', () => {
+    for (const p of ['robuust','sirooprig_vol']){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
       const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
       assert.equal(rec.totalTime - ts[ts.length-1], 40, `${p}: staart moet 40s zijn (uitsluitend FINAL_DRAWDOWN_SEC)`);
@@ -1030,10 +1068,13 @@ describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () =
   // precies één POUR_CYCLE_SEC (of, voor Kasuya, KASUYA_POUR_CYCLE_SEC) t.o.v. de eerdere,
   // foutieve waarden. snel_puur (1 pulse) is ongewijzigd: bij één pulse was er al geen
   // fantoomcyclus om weg te halen (zie de aparte test hierboven).
+  // fresh_clean (Hoffmann) uitgezonderd: volgt sinds de latere Hoffmann-timing-heraudit
+  // zijn eigen, expliciet gepubliceerde 210s (zie het "Hoffmann Ultimate"-testblok
+  // hierboven), niet langer deze generieke cyclusformule.
   test('N-6: totalTime weerspiegelt de gegeneraliseerde fantoomcyclus-fix (elk ≥2-pulse-profiel 1 cyclus korter dan vóór deze fix)', () => {
     // robuust (April): 190 + APRIL_FIRST_POUR_EXTRA_SEC (10) = 200s sinds de latere,
     // aparte April-timing-heraudit — zie het "April huismethode"-testblok hierboven.
-    const verwacht = { fresh_clean:100, robuust:200, snel_puur:100, sirooprig_vol:130 };
+    const verwacht = { robuust:200, snel_puur:100, sirooprig_vol:130 };
     for (const [p, t] of Object.entries(verwacht)){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
       assert.equal(rec.totalTime, t, `${p}: totalTime moet ${t}s zijn na de gegeneraliseerde fantoomcyclus-fix`);
@@ -1084,7 +1125,9 @@ describe('B-2b — brewer-specifieke cyclusconstanten (Bouwbesluit BB-1, akkoord
   // voor dezelfde, recentere cijfers en de volledige toelichting.
   test('V60 s totalTime per profiel weerspiegelt de gegeneraliseerde fantoomcyclus-fix (niet langer de BB-1-waarden)', () => {
     // robuust (April): 200s sinds de latere April-timing-heraudit (APRIL_FIRST_POUR_EXTRA_SEC).
-    const verwacht = { fresh_clean:100, robuust:200, snel_puur:100, sirooprig_vol:130 };
+    // fresh_clean (Hoffmann) uitgezonderd: eigen 210s sinds de Hoffmann-timing-heraudit,
+    // zie het "Hoffmann Ultimate"-testblok verderop in dit bestand.
+    const verwacht = { robuust:200, snel_puur:100, sirooprig_vol:130 };
     for (const [p, t] of Object.entries(verwacht)){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
       assert.equal(rec.totalTime, t, `${p}: V60-totalTime moet ${t}s zijn na de gegeneraliseerde fantoomcyclus-fix`);
