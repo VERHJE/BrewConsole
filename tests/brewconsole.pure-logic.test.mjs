@@ -1972,3 +1972,62 @@ describe('Proces-heraudit — Wet-hulled toegevoegd + honey-subtype-tekstherkenn
     assert.equal(api.PROCESS_BUCKET_LABELS.wet_hulled, 'Wet-hulled');
   });
 });
+
+describe('Proces-heraudit ronde 2 — Double Washed / Dubbele Anaerobe Fermentatie / Open Tank Pre-fermentatie / Double Honey / Hydro-Honey', () => {
+  function scanMatches(list, text){
+    const lower = text.toLowerCase();
+    const tokens = api.tokenizeForFuzzy(lower);
+    return list.some(kw => api.textOrFuzzyIncludes(lower, tokens, kw));
+  }
+  function processMatch(text){
+    const lower = text.toLowerCase();
+    const tokens = api.tokenizeForFuzzy(lower);
+    for (const key of Object.keys(api.PROCESS_SCAN_KEYWORDS)){
+      if (api.PROCESS_SCAN_KEYWORDS[key].some(kw => api.textOrFuzzyIncludes(lower, tokens, kw))) return key;
+    }
+    return null;
+  }
+
+  test('"Dubbele Anaerobe Fermentatie" herkent process=anaerobic (voorheen: geen enkel process-trefwoord matchte de Nederlandse bijvoeglijke vorm "anaerobe")', () => {
+    assert.equal(processMatch('Dubbele Anaerobe Fermentatie'), 'anaerobic');
+  });
+
+  test('"Dubbele Anaerobe Fermentatie" en "Double Anaerobic" triggeren allebei het experimentele-fermentatiesignaal (woordvolgorde-onafhankelijk)', () => {
+    assert.equal(scanMatches(api.EXPERIMENTAL_SCAN_KEYWORDS, 'Dubbele Anaerobe Fermentatie'), true);
+    assert.equal(scanMatches(api.EXPERIMENTAL_SCAN_KEYWORDS, 'Double Anaerobic'), true);
+  });
+
+  test('"Double Washed" herkent process=washed (via het bestaande kale "washed"-trefwoord) maar triggert NIET het experimentele-signaal', () => {
+    assert.equal(processMatch('Double Washed'), 'washed');
+    assert.equal(scanMatches(api.EXPERIMENTAL_SCAN_KEYWORDS, 'Double Washed'), false, 'double washed is een cleaner/hoger-zuur variant, geen extractiegevoelige experimentele lot');
+  });
+
+  test('classifyProfile: "double washed"/"dubbel gewassen" bij process=washed boost heel_fruitig extra (Cassis/zwarte bes-richting), bovenop de vlakke washed-boost', () => {
+    const en = api.classifyProfile([], 'double washed', 'washed', false).scores;
+    assert.equal(en.heel_fruitig, 1);
+    assert.equal(en.fresh_clean, 1, 'de vlakke washed->fresh_clean-boost blijft ook bestaan');
+    const nl = api.classifyProfile([], 'dubbel gewassen', 'washed', false).scores;
+    assert.equal(nl.heel_fruitig, 1);
+  });
+
+  test('classifyProfile: "double washed" telt niet mee als het process-veld niet washed is (guard)', () => {
+    const scores = api.classifyProfile([], 'double washed', null, false).scores;
+    assert.deepEqual(Object.values(scores), [0, 0, 0, 0, 0]);
+  });
+
+  test('"Pre-fermentatie met Open Tank" triggert het experimentele-fermentatiesignaal, maar herkent zelf geen basisproces', () => {
+    assert.equal(scanMatches(api.EXPERIMENTAL_SCAN_KEYWORDS, 'Pre-fermentatie met Open Tank'), true);
+    assert.equal(processMatch('Pre-fermentatie met Open Tank'), null);
+  });
+
+  test('gewone "Open Tank Fermentation" (zonder "pre-"/"voor-") triggert NIET het experimentele-signaal — dat is gewoon standaard washed-praktijk, geen bijzondere lot', () => {
+    assert.equal(scanMatches(api.EXPERIMENTAL_SCAN_KEYWORDS, 'Open Tank Fermentation, 48 hours'), false);
+  });
+
+  test('"Double Honey Fermentation" en "Hydro-Honey Processed" herkennen process=honey + het experimentele-signaal (al aanwezige trefwoorden, hier bevestigd)', () => {
+    assert.equal(processMatch('Double Honey Fermentation'), 'honey');
+    assert.equal(scanMatches(api.EXPERIMENTAL_SCAN_KEYWORDS, 'Double Honey Fermentation'), true);
+    assert.equal(processMatch('Hydro-Honey Processed'), 'honey');
+    assert.equal(scanMatches(api.EXPERIMENTAL_SCAN_KEYWORDS, 'Hydro-Honey Processed'), true);
+  });
+});

@@ -6476,7 +6476,11 @@ const PROCESS_SCAN_KEYWORDS = {
   washed:    ['fully washed','washed','gewassen','wet process'],
   natural:   ['natural process','natural','naturel','dry process','sun-dried','sundried'],
   honey:     ['honey process','honey','miel','pulped natural'],
-  anaerobic: ['anaerobic natural','anaerobic washed','anaerobic','anaeroob','carbonic maceration','co2 maceration','thermal shock','cmn','cm natural'],
+  // 'anaerobe' (bijvoeglijke vorm, bv. "anaerobe fermentatie") toegevoegd naast 'anaeroob'
+  // (zelfstandig naamwoord) — proces-heraudit ronde 2: dit zijn twee verschillende
+  // Nederlandse spellingen die geen van beide substring van de ander zijn, dus zonder deze
+  // toevoeging matchte "Dubbele Anaerobe Fermentatie" geen enkel process-trefwoord.
+  anaerobic: ['anaerobic natural','anaerobic washed','anaerobic','anaeroob','anaerobe','carbonic maceration','co2 maceration','thermal shock','cmn','cm natural'],
   wet_hulled: ['wet-hulled','wet hulled','wet-hull','giling basah']
 };
 /* Experimentele/meertraps-fermentatiemethodes (double honey, hydro-fermentatie, co-fermentatie, etc.).
@@ -6498,7 +6502,25 @@ const EXPERIMENTAL_SCAN_KEYWORDS = [
      experimentele techniek naast dubbele/co-fermentatie — niet hetzelfde als gewone
      spontane natural/anaerobic-fermentatie, dus verdient een eigen herkenningswoord. */
   'yeast fermentation','yeast-fermented','gist fermentatie','gistfermentatie','inoculated fermentation',
-  'anaerobic double','experimental process','experimenteel proces','experimentele verwerking'
+  'anaerobic double','experimental process','experimenteel proces','experimentele verwerking',
+  /* Proces-heraudit ronde 2: 'anaerobic double' hierboven ving alleen die exacte woordvolgorde —
+     substring-matching is woordvolgorde-gevoelig, dus de omgekeerde (en minstens zo gangbare)
+     volgorde "double anaerobic"/"dubbele anaerobe fermentatie" matchte tot nu toe NERGENS,
+     ook niet via 'dubbele fermentatie' hierboven (dat is geen aaneengesloten substring van
+     "dubbele ANAEROBE fermentatie" — het woord "anaerobe" zit er tussenin). */
+  'double anaerobic','double anaerobic fermentation','dubbele anaerobe fermentatie','dubbel anaeroob',
+  /* Open tank pre-fermentatie: een bewust ingezette, extra fermentatiestap VÓÓR de
+     hoofdverwerking (vaak vóór een anaerobic hoofdstap) — expliciet de 'pre-'/'voor'-variant,
+     niet "open tank fermentation" op zichzelf. Onderzoek (Daily Coffee News, Royal Coffee,
+     Cafe Imports) bevestigt dat gewoon-open-tank-fermenteren al decennia de STANDAARD washed-
+     methode is — dat zonder "pre-"/"voor" als los trefwoord toevoegen zou vrijwel elke gewone
+     washed-koffie ten onrechte als extractiegevoelig/experimenteel bestempelen. */
+  'open tank pre-fermentation','open-tank pre-fermentation','open tank pre-ferment',
+  'pre-fermentation','pre-fermentatie','voorfermentatie','open tank voorfermentatie',
+  /* Nederlandse tegenhangers van de al aanwezige Engelse 'double honey'/'hydro-honey' —
+     ontbraken nog, in tegenstelling tot bijna elke andere term in deze lijst die wel een
+     EN/NL-paar heeft. */
+  'dubbele honing fermentatie','hydro-honing','hydro honing'
 ];
 /* Engelse landnaam/spelling → exacte optietekst in de land-dropdown. */
 const COUNTRY_SCAN_SYNONYMS = {
@@ -6917,6 +6939,20 @@ const HONEY_SUBTYPE_TEXT_HINTS = {
   'white honey': 'fresh_clean', 'yellow honey': 'fresh_clean', 'gold honey': 'fresh_clean', 'golden honey': 'fresh_clean',
   'red honey': 'heel_fruitig', 'black honey': 'heel_fruitig'
 };
+/* Washed-subtype-verfijning (proces-heraudit ronde 2), zelfde patroon als
+   HONEY_SUBTYPE_TEXT_HINTS hierboven. "Double washed"/Kenia-stijl dubbele soak is een
+   erkende, goed gedocumenteerde variant binnen washed (Barista Magazine, Perfect Daily
+   Grind, Nates Coffee/Kaffeeklatsch): een extra water-soak ná de eerste fermentatie/spoeling
+   strippt resterende mucilago/fermentatiebijproducten, wat een NOG helderdere kop geeft dan
+   gewoon washed, met "intense acidity and blackcurrant notes". Cassis/zwarte bes is al een
+   bestaande heel_fruitig-tag in SCA_FLAVOR_WHEEL (Keniaanse SL28/SL34-signatuurnoot) — dat
+   maakt heel_fruitig de best onderbouwde bucket, ook al mist het "bijna gefermenteerd"-
+   element van die profielomschrijving (double washed haalt fermentatie juist wég i.p.v. toe
+   te voegen; de match is puur via het bessen/hoog-zuur-karakter, niet via funk). */
+const WASHED_SUBTYPE_TEXT_HINTS = {
+  'double washed': 'heel_fruitig', 'double wash': 'heel_fruitig',
+  'kenya double wash': 'heel_fruitig', 'kenyan double wash': 'heel_fruitig', 'dubbel gewassen': 'heel_fruitig'
+};
 
 /* Smaaktags/tekst die wijzen op funky/gefermenteerd karakter — onafhankelijk van het
    officiële proces-veld. Bron van de mechaniek: dezelfde Drip Roast "Bypass Brewing"-
@@ -6979,6 +7015,13 @@ function classifyProfile(selectedTags, extraText, processValue, experimentalFlag
   if (processValue === 'honey'){
     for (const phrase of Object.keys(HONEY_SUBTYPE_TEXT_HINTS)){
       if (lowerExtra.includes(phrase)){ scores[HONEY_SUBTYPE_TEXT_HINTS[phrase]] += 1; break; }
+    }
+  }
+  // Washed-subtype-verfijning (proces-heraudit ronde 2, zie WASHED_SUBTYPE_TEXT_HINTS
+  // hierboven) — zelfde guard-redenering: alleen relevant als processValue ook echt washed is.
+  if (processValue === 'washed'){
+    for (const phrase of Object.keys(WASHED_SUBTYPE_TEXT_HINTS)){
+      if (lowerExtra.includes(phrase)){ scores[WASHED_SUBTYPE_TEXT_HINTS[phrase]] += 1; break; }
     }
   }
   const total = Object.values(scores).reduce((a,b)=>a+b, 0);
