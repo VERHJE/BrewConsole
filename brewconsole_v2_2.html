@@ -540,6 +540,23 @@
     margin-bottom:10px;
   }
   .summary-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+  /* Fase 3: proefkaart + doel op het receptscherm. */
+  .tasting-card{display:flex; flex-direction:column; gap:14px; margin:14px 0 16px;}
+  .tasting-block{display:flex; flex-direction:column; gap:8px;}
+  .tasting-q{margin:0; font-size:14.5px; font-weight:600; color:var(--text);}
+  .tasting-q-sub{font-weight:400; font-size:12.5px; color:var(--text-faint);}
+  .tasting-card .chip-row{display:flex; flex-wrap:wrap; gap:8px;}
+  .tasting-card .chip{min-height:40px;}
+  .tasting-actuals{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:12px 14px;}
+  .tasting-actuals-edit{display:flex; gap:10px; flex-wrap:wrap;}
+  .tasting-actuals-edit[hidden]{display:none;}
+  .tasting-actuals-edit label{display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--text-faint); flex:1 1 120px;}
+  .tasting-hint{margin:0; font-size:11.5px; color:var(--text-faint);}
+  .tasting-gate{margin:0; font-size:13px; color:var(--text-dim);}
+  .tasting-gate[data-state="passed"]{color:var(--copper-light);}
+  .prep-goal{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 12px;}
+  .prep-goal-label{font-size:12.5px; color:var(--text-dim); margin-right:2px;}
+  .prep-goal-opt{color:var(--text-faint);}
   /* Fase 2: herstelpaneel + Home-banner. */
   .brew-recovery{position:relative; z-index:3; background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:18px; margin:0 0 16px; display:flex; flex-direction:column; gap:10px;}
   .brew-recovery[hidden]{display:none;}
@@ -2274,6 +2291,9 @@
       <h1 class="title">Jouw recept</h1>
       <!-- Phase 0 / BC-01: laat vóór Start zien bij welke boon dit brouwsel gelogd wordt. -->
       <p class="prep-bean-line" id="prep-bean-line"></p>
+      <!-- Fase 3: optioneel doel voor deze kop. Stuurt (nog) geen receptgetal; na het proeven
+           vraagt de proefkaart of het gehaald is — dat bepaalt mee of het een geslaagde kop is. -->
+      <div class="prep-goal" id="prep-goal" role="group" aria-label="Doel voor deze kop"></div>
       <p class="technique-line" id="technique-line"></p>
       <p class="technique-tasting" id="technique-tasting"></p>
       <p class="profile-twin-banner" id="prep-twin-note" hidden></p>
@@ -2610,7 +2630,10 @@
       </div>
       <div class="brewlog-complete-stats" id="brewlog-complete-meta"></div>
       <p class="subtitle" id="brewlog-context"></p>
-      <div class="brewlog-sliders" id="brewlog-sliders"></div>
+      <!-- Fase 3 (Brew Intelligence v2, §5): de proefkaart — actuals-chip, vier vragen, en
+           voorwaardelijk doel + vergelijking. Vervangt de zes 0–5-schuifregelaars. Staat
+           bewust VÓÓR de eerlijke samenvatting (Bouwbesluit B2: geen anker vóór je oordeel). -->
+      <div class="tasting-card" id="tasting-card"></div>
       <!-- NIEUW (Bouwbesluit B2): eerlijke samenvatting i.p.v. het kale cijfer, ÓNDER de
            sliders — zie renderBrewLogHonestSummary(). Geen #score-ring-value meer in de DOM. -->
       <!-- NIEUW (Visual Design 2.0, §19): zelfde redenering als #advice-result — platte
@@ -2621,9 +2644,6 @@
            zonder deze twee werkelijk-gemeten velden (i.p.v. het aanbevolen recept) is er
            straks niets om een leerlus op te bouwen. Beide optioneel: een leeg veld wordt
            NOOIT als 0 opgeslagen (zie saveBrewLogEntry()), puur weggelaten. -->
-      <label for="brewlog-actual-grind" style="font-size:12px; color:var(--text-faint); display:block; margin:14px 0 4px;">Werkelijk gebruikte maalstand <span style="text-transform:none; letter-spacing:0;">(optioneel — klikken, Timemore C3S Pro; alleen invullen als je van het advies bent afgeweken)</span></label>
-      <input type="number" id="brewlog-actual-grind" class="form-input" placeholder="bijv. 22" min="0" max="60" step="1" style="max-width:220px;">
-
       <label for="brewlog-cup-weight" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Kopgewicht na afloop <span style="text-transform:none; letter-spacing:0;">(optioneel, gram — hiermee berekent de app je werkelijke retentie: (water − kopgewicht) / dosis. Vanaf 5 bruikbare metingen verschijnt je eigen gemiddelde op het Recept-scherm, náást de vaste aanname van 2,0 g/g. Het vervangt die aanname niet automatisch. Bij bypass: weeg pas NÁ het toevoegen van het bypass-water — anders klopt deze berekening niet)</span></label>
       <input type="number" id="brewlog-cup-weight" class="form-input" placeholder="bijv. 268" min="0" max="2000" step="1" style="max-width:220px;">
 
@@ -2636,14 +2656,8 @@
         <input type="number" id="brewlog-bypass-actual" class="form-input" min="0" max="2000" step="1" style="max-width:220px;">
       </div>
 
-      <!-- NIEUW (Implementatieplan Zetadvies v3.0, Fase 7, vervuilingsregel 1): bewust
-           standaard UIT — alleen brouwsels die je hier expliciet aanvinkt tellen mee voor je
-           persoonlijke leercorrectie per boontype. Een bewust mislukte testkop (bijv. tijdens
-           het dial-innen) blijft gewoon in de Historie staan, maar telt zo nooit ongemerkt mee. -->
-      <label style="display:flex; align-items:flex-start; gap:8px; margin:16px 0 4px; font-size:13px; cursor:pointer;">
-        <input type="checkbox" id="brewlog-approved" style="margin-top:3px; width:18px; height:18px; flex-shrink:0;">
-        <span>Dit brouwsel was geslaagd — telt mee voor je persoonlijke leercorrectie per boontype <span style="color:var(--text-faint);">(optioneel, staat standaard uit)</span></span>
-      </label>
+      <!-- Fase 3: de handmatige "geslaagd"-checkbox (Fase 7, vervuilingsregel 1) is vervangen
+           door de gate op de proefkaart — zie tastingGate() en #tasting-gate. -->
 
       <label class="form-label" style="margin-top:14px; display:block;">Notities
         <textarea id="brewlog-note" class="form-input" rows="3" placeholder="bijv. iets wateriger dan normaal, minder fruitig"></textarea>
@@ -4360,7 +4374,7 @@ const ICONS = {
   scale: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 5 V27"/><path d="M7 27 H25"/><path d="M16 8 L6 12 L16 12 Z" opacity=".7"/><path d="M16 8 L26 12 L16 12 Z" opacity=".7"/><path d="M3 12 L6 12 L4.5 17 A3 3 0 0 0 7.5 17 Z" opacity=".5"/><path d="M26 12 L29 12 L27.5 17 A3 3 0 0 0 30.5 17 Z" opacity=".5"/></svg>'
 };
 
-const state = { method:null, roast:null, profile:null, waterMl:null, recipe:null, process:null, experimental:false, roastDate:null, openedDate:null, intendedUse:null, altitude:null, bypass:false, bypassPct:30, bypassMoment:'achteraf', strengthAdjust:0, flavorScores:null, fermentEvidence:false, beanId:null };
+const state = { method:null, roast:null, profile:null, waterMl:null, recipe:null, process:null, experimental:false, roastDate:null, openedDate:null, intendedUse:null, altitude:null, bypass:false, bypassPct:30, bypassMoment:'achteraf', strengthAdjust:0, flavorScores:null, fermentEvidence:false, beanId:null, goal:null };
 
 /* ============================================================
    VERSHEID/DEGASSING — op basis van een echte branddatum i.p.v. een
@@ -8262,7 +8276,7 @@ function createBrewRecord(input){
     } : null,
     equipment: { brewerId: input.method || null, grinderId: DEFAULT_GRINDER_ID, filterId: null },
     waterSnapshot: input.water ? cloneJson(input.water) : null,
-    goal: null,
+    goal: BREW_GOALS[input.goal] ? input.goal : null, // Fase 3
     plan: {
       modelPolicyVersion: rec.modelPolicyVersion || null,
       methodId: input.method || null, profileId: input.profile || null, roastId: input.roast || null,
@@ -8408,10 +8422,16 @@ function brewRecordToLogView(rec){
     bypassActualG: bp ? a.bypassActualG : null,
     bypassMoment: bp ? bp.moment : null,
     grindMicron: plan.grindMicron || null, grindStand: plan.grindStand || null, temp: plan.tempC || null,
-    scores: t.scores ? Object.assign({}, t.scores) : {},
+    // Fase 3: nieuwe proefkaarten hebben geen 0–5-scores meer; null i.p.v. {} zodat lezers
+    // die op e.scores filteren (radar, oude hypothesen) ze correct overslaan.
+    scores: t.scores ? Object.assign({}, t.scores) : null,
     note: t.note || '',
     doseG: plan.doseG, ratioText: plan.ratioText, modelPolicyVersion: plan.modelPolicyVersion,
-    actualGrindClicks: a.grindClick, cupWeightG: a.cupWeightG,
+    // Alleen door jou vastgestelde waarden (U) — een afgeleide (I) maalstand is geen meting.
+    actualGrindClicks: a.grindSource === 'U' ? a.grindClick : null,
+    actualDoseG: a.doseSource === 'U' ? a.doseG : null,
+    actualsConfirmed: !!a.confirmed,
+    cupWeightG: a.cupWeightG,
     grindStartingPoint: plan.grindStartingPoint,
     approved: !!t.approved,
     beanSnapshot: rec.beanSnapshot ? cloneJson(rec.beanSnapshot) : null,
@@ -8419,7 +8439,14 @@ function brewRecordToLogView(rec){
     scheduledTimeSec: plan.expectedTotalSec,
     // Fase 2: de enige gemeten tijd — de bed-droog-tik (null = niet vastgelegd).
     bedDrySec: a.bedDrySec != null ? a.bedDrySec : null,
-    drainResidualSec: rec.derived && rec.derived.drainResidualSec != null ? rec.derived.drainResidualSec : null
+    drainResidualSec: rec.derived && rec.derived.drainResidualSec != null ? rec.derived.drainResidualSec : null,
+    goal: rec.goal || null,
+    // Fase 3: de antwoorden van de proefkaart (null voor oudere loggingen met schuifregelaars).
+    tasting: (t.strength || t.acidity || t.liking || (Array.isArray(t.finish) && t.finish.length)) ? {
+      strength: t.strength || null, acidity: t.acidity || null, finish: Array.isArray(t.finish) ? t.finish.slice() : [],
+      liking: t.liking || null, goalHit: t.goalHit || null, vsLast: t.vsLast || null,
+      complete: !!t.complete, late: !!t.late, minutesAfterBrew: t.minutesAfterBrew != null ? t.minutesAfterBrew : null
+    } : null
   };
   if (t.cuppingSuggestion) v.suggestion = cloneJson(t.cuppingSuggestion);
   if (rec.favorite) v.favorite = true;
@@ -8529,6 +8556,119 @@ function recomputeRecipeForRecord(rec){
   return computeRecipe(i.method, i.roast, i.profile, i.waterMl, i.process, i.experimental, i.roastDays, i.altitude, i.bypass, i.fermentEvidence, i.waterHardnessMgL, i.strengthAdjust, i.bypassPct);
 }
 
+/* ---- Fase 3: proefkaart (pure functies) ----
+   Vier vragen in oordeeltermen (niet in intensiteit), ~12 seconden: sterkte, zuur, afdronk,
+   hoe lekker. Plus twee voorwaardelijke: het doel (alleen als je er een koos) en de
+   vergelijking met je vorige kop van deze boon + methode. De zes schuifregelaars (0–5 per
+   cupping-as) zijn vervallen; oude scores blijven alleen-lezen bewaard. */
+const TASTING_STRENGTH = [
+  { v: 'much_too_weak', label: 'Veel te slap' }, { v: 'too_weak', label: 'Te slap' },
+  { v: 'just_right', label: 'Precies goed' },
+  { v: 'too_strong', label: 'Te sterk' }, { v: 'much_too_strong', label: 'Veel te sterk' }
+];
+const TASTING_ACIDITY = [
+  { v: 'flat', label: 'Vlak / dof' }, { v: 'lively', label: 'Levendig & prettig' }, { v: 'sharp', label: 'Scherp / zuur' }
+];
+// Afdronk: meerdere mogelijk, behalve dat "zoet & schoon" de rest uitsluit (zie toggleFinish).
+const TASTING_FINISH = [
+  { v: 'sweet_clean', label: 'Zoet & schoon' }, { v: 'bitter', label: 'Bitter' },
+  { v: 'drying', label: 'Droog / wrang' }, { v: 'hollow', label: 'Leeg / kort' }
+];
+const TASTING_LIKING = [1, 2, 3, 4, 5];
+const TASTING_GOAL_HIT = [{ v: 'yes', label: 'Ja' }, { v: 'almost', label: 'Bijna' }, { v: 'no', label: 'Nee' }];
+const TASTING_VS_LAST = [{ v: 'better', label: 'Beter' }, { v: 'same', label: 'Hetzelfde' }, { v: 'worse', label: 'Slechter' }];
+// Drie doelen (v2 §6). Het doel wordt per brouwsel bewaard; de sterkte-voorkeur per doel
+// blijft uit tot de validatiestudie dat onderbouwt — het doel stuurt dus (nog) geen receptgetal.
+const BREW_GOALS = {
+  bright:   { label: 'Helder & fris',  criterion: 'levendig zuur en een schone afdronk' },
+  balanced: { label: 'Gebalanceerd',   criterion: 'zoet, en niets springt eruit' },
+  rich:     { label: 'Rond & vol',     criterion: 'veel body en zachte zuren' }
+};
+const LATE_TASTING_MIN = 120; // later geproefd telt straks minder zwaar mee bij het leren
+
+function toggleFinish(list, v){
+  const cur = Array.isArray(list) ? list.slice() : [];
+  if (cur.includes(v)) return cur.filter(x => x !== v);
+  if (v === 'sweet_clean') return ['sweet_clean'];
+  return cur.filter(x => x !== 'sweet_clean').concat(v);
+}
+
+// De gate "geslaagde kop" (v2 §7/§8): alle vragen beantwoord, minstens 4 van 5, geen
+// "veel te …" bij sterkte, en — als je een doel koos — dat doel gehaald. Vervangt de
+// handmatige "geslaagd"-checkbox; alleen geslaagde koppen tellen straks mee voor leren.
+function tastingGate(t, goal){
+  const a = t || {};
+  const missing = [];
+  if (!a.strength) missing.push('sterkte');
+  if (!a.acidity) missing.push('zuur');
+  if (!Array.isArray(a.finish) || !a.finish.length) missing.push('afdronk');
+  if (!a.liking) missing.push('hoe lekker');
+  if (goal && !a.goalHit) missing.push('doel');
+  const complete = missing.length === 0;
+  const reasons = [];
+  if (complete){
+    if (a.liking < 4) reasons.push('minder dan 4 van 5');
+    if (a.strength === 'much_too_weak' || a.strength === 'much_too_strong') reasons.push('sterkte "veel te …"');
+    if (goal && a.goalHit !== 'yes') reasons.push('doel niet gehaald');
+  }
+  return { complete, missing, passed: complete && reasons.length === 0, reasons };
+}
+
+function buildTasting(answers, nowMs, completedAt, goal){
+  const a = answers || {};
+  const minutes = Math.max(0, Math.round((nowMs - (completedAt || nowMs)) / 60000));
+  const gate = tastingGate(a, goal);
+  return {
+    at: nowMs, minutesAfterBrew: minutes, late: minutes > LATE_TASTING_MIN,
+    strength: a.strength || null, acidity: a.acidity || null,
+    finish: Array.isArray(a.finish) ? a.finish.slice() : [],
+    liking: a.liking || null,
+    goal: goal || null, goalHit: goal ? (a.goalHit || null) : null,
+    vsLast: a.vsLast || null, vsLastBrewId: a.vsLast ? (a.vsLastBrewId || null) : null,
+    note: a.note || '',
+    complete: gate.complete, approved: gate.passed,
+    scores: null, cuppingSuggestion: null
+  };
+}
+
+// Actuals (v2 §11): bevestigd "zoals gepland" of aangepast = U (door jou vastgesteld);
+// niet bevestigd = I (afgeleid uit het plan) en telt NOOIT mee als leerinvoer.
+function applyActuals(actual, plan, mode, edited){
+  const next = Object.assign({}, actual);
+  const planDose = plan && typeof plan.doseG === 'number' ? plan.doseG : null;
+  const planGrind = plan && typeof plan.grindStartingPoint === 'number' ? plan.grindStartingPoint : null;
+  if (mode === 'planned'){
+    next.doseG = planDose; next.doseSource = planDose != null ? 'U' : null;
+    next.grindClick = planGrind; next.grindSource = planGrind != null ? 'U' : null;
+    next.confirmed = true;
+  } else if (mode === 'edited'){
+    const d = edited && edited.doseG != null ? edited.doseG : null;
+    const g = edited && edited.grindClick != null ? edited.grindClick : null;
+    next.doseG = d; next.doseSource = d != null ? 'U' : null;
+    next.grindClick = g; next.grindSource = g != null ? 'U' : null;
+    next.confirmed = true;
+  } else {
+    next.doseG = planDose; next.doseSource = planDose != null ? 'I' : null;
+    next.grindClick = planGrind; next.grindSource = planGrind != null ? 'I' : null;
+    next.confirmed = false;
+  }
+  return next;
+}
+
+// De vorige gelogde kop van dezelfde boon + methode (voor "beter / hetzelfde / slechter").
+function findPreviousComparableBrew(store, rec){
+  if (!rec || !rec.beanId) return null;
+  const method = rec.plan && rec.plan.methodId;
+  let best = null;
+  for (const r of (store || [])){
+    if (r.id === rec.id || !isBrewInLogView(r) || r.beanId !== rec.beanId) continue;
+    if (!r.plan || r.plan.methodId !== method) continue;
+    if (!(r.createdAt < rec.createdAt)) continue;
+    if (!best || r.createdAt > best.createdAt) best = r;
+  }
+  return best;
+}
+
 let brewStore = [];
 let activeBrewId = null;
 let brewLog = [];
@@ -8622,6 +8762,7 @@ function beginBrewRecord(){
     method: state.method, profile: state.profile, roast: state.roast, waterMl: state.waterMl,
     recipe: state.recipe, strengthAdjust: state.strengthAdjust,
     bypass: state.bypass, bypassPct: state.bypassPct, bypassMoment: state.bypassMoment,
+    goal: state.goal,
     water: currentWaterSnapshot(),
     inputs: {
       method: state.method, roast: state.roast, profile: state.profile, waterMl: state.waterMl,
@@ -8685,16 +8826,18 @@ function applyCompletionSideEffects(rec, nowMs){
   saveBeansToStorage();
 }
 
-const brewLogDraft = {};
+// Fase 3: het concept van de proefkaart voor het actieve brouwsel.
+const tastingDraft = { strength: null, acidity: null, finish: [], liking: null, goalHit: null, vsLast: null, actualsMode: null };
+function resetTastingDraft(){
+  Object.assign(tastingDraft, { strength: null, acidity: null, finish: [], liking: null, goalHit: null, vsLast: null, actualsMode: null });
+}
 function openBrewLogEntry(){
   completeActiveBrew(); // Fase 1: no-op als het record al COMPLETED is (normaal pad: schema-einde)
-  CUPPING_AXES.forEach(axis => { brewLogDraft[axis] = Math.round(RADAR_LEVELS/2); });
+  resetTastingDraft();
   const noteEl = document.getElementById('brewlog-note');
   if (noteEl) noteEl.value = '';
   // NIEUW (Fase 5): draaft leegmaken bij elke nieuwe logging — anders blijft een eerder
-  // ingevulde afwijkende maalstand/kopgewicht per ongeluk staan voor een heel ander brouwsel.
-  const actualGrindEl = document.getElementById('brewlog-actual-grind');
-  if (actualGrindEl) actualGrindEl.value = '';
+  // ingevuld kopgewicht per ongeluk staan voor een heel ander brouwsel.
   const cupWeightEl = document.getElementById('brewlog-cup-weight');
   if (cupWeightEl) cupWeightEl.value = '';
   // NIEUW (Implementatieplan Bypass v1.0, Fase B/C, BP-5/"proef-en-vul"): alleen zichtbaar
@@ -8709,8 +8852,6 @@ function openBrewLogEntry(){
     bypassActualEl.value = wasBypass ? state.recipe.bypassMl : '';
     if (bypassActualHint) bypassActualHint.textContent = wasBypass ? `(optioneel, gram — gepland was ${state.recipe.bypassMl} g)` : '(optioneel, gram)';
   }
-  const approvedEl = document.getElementById('brewlog-approved');
-  if (approvedEl) approvedEl.checked = false;
   const savedMsg = document.getElementById('brewlog-saved-msg');
   if (savedMsg) savedMsg.hidden = true;
   const bean = state.beanId ? beanLibrary.find(b=>b.id===state.beanId) : null;
@@ -8727,9 +8868,110 @@ function openBrewLogEntry(){
       <div class="brewlog-complete-stat"><div class="stat-label">Temperatuur</div><div class="stat-value">${state.recipe.temp}°C</div></div>
     `;
   }
-  renderBrewLogSliders();
+  renderTastingCard();
   renderBrewLogHonestSummary();
   showScreen('brewlog');
+}
+
+/* Fase 3 (Brew Intelligence v2, §5/§11): de proefkaart. Eén keer opbouwen bij openen;
+   daarna werkt refreshTastingCard() alleen selecties en de gate-regel bij, zodat ingevulde
+   actuals niet verdwijnen bij een tik. */
+function renderTastingCard(){
+  const el = document.getElementById('tasting-card');
+  if (!el) return;
+  const rec = activeBrewRecord();
+  const plan = (rec && rec.plan) || {};
+  const goal = rec && rec.goal ? rec.goal : null;
+  const prev = rec ? findPreviousComparableBrew(brewStore, rec) : null;
+  const plannedBits = [
+    plan.doseG != null ? `${fmt(plan.doseG, 1)} g` : null,
+    plan.grindStartingPoint != null ? `klik ${plan.grindStartingPoint}` : null
+  ].filter(Boolean).join(' · ');
+  const chips = (q, opts) => opts.map(o =>
+    `<button type="button" class="chip" data-t-q="${q}" data-t-v="${o.v}">${escapeHtml(o.label)}</button>`).join('');
+  const block = (title, sub, body) =>
+    `<div class="tasting-block"><p class="tasting-q">${escapeHtml(title)}${sub ? ` <span class="tasting-q-sub">${escapeHtml(sub)}</span>` : ''}</p><div class="chip-row">${body}</div></div>`;
+  let html = '';
+  html += `<div class="tasting-block tasting-actuals">
+      <p class="tasting-q">Gezet zoals gepland?${plannedBits ? ` <span class="tasting-q-sub">${escapeHtml(plannedBits)}</span>` : ''}</p>
+      <div class="chip-row">
+        <button type="button" class="chip" id="actuals-planned-btn">✓ Ja, zoals gepland</button>
+        <button type="button" class="chip" id="actuals-edit-btn">Anders…</button>
+      </div>
+      <div class="tasting-actuals-edit" id="actuals-edit" hidden>
+        <label>Dosis (g)<input type="number" id="brewlog-actual-dose" class="form-input" step="0.1" min="0" max="100"></label>
+        <label>Maalstand (klikken)<input type="number" id="brewlog-actual-grind" class="form-input" step="1" min="0" max="60"></label>
+      </div>
+      <p class="tasting-hint">Niet bevestigd? Dan bewaren we het plan als aanname — het telt dan niet mee om te leren.</p>
+    </div>`;
+  html += block('Sterkte', '', chips('strength', TASTING_STRENGTH));
+  html += block('Zuur', '', chips('acidity', TASTING_ACIDITY));
+  html += block('Afdronk', 'meerdere mogelijk', chips('finish', TASTING_FINISH));
+  html += block('Hoe lekker?', '1 = niet, 5 = heerlijk', chips('liking', TASTING_LIKING.map(n => ({ v: String(n), label: String(n) }))));
+  if (goal && BREW_GOALS[goal]){
+    html += block(`Kwam hij uit zoals je wilde — ${BREW_GOALS[goal].label}?`, BREW_GOALS[goal].criterion, chips('goalHit', TASTING_GOAL_HIT));
+  }
+  if (prev){
+    const d = new Date(prev.createdAt);
+    const when = d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
+    html += block('Vergeleken met je vorige kop van deze boon?', when, chips('vsLast', TASTING_VS_LAST));
+  }
+  html += `<p class="tasting-gate" id="tasting-gate" aria-live="polite"></p>`;
+  el.innerHTML = html;
+  refreshTastingCard();
+}
+function refreshTastingCard(){
+  const el = document.getElementById('tasting-card');
+  if (!el) return;
+  const d = tastingDraft;
+  el.querySelectorAll('[data-t-q]').forEach(btn => {
+    const q = btn.getAttribute('data-t-q'), v = btn.getAttribute('data-t-v');
+    const sel = q === 'finish' ? d.finish.includes(v) : q === 'liking' ? String(d.liking) === v : d[q] === v;
+    btn.dataset.selected = String(sel);
+    btn.setAttribute('aria-pressed', String(sel));
+  });
+  const plannedBtn = document.getElementById('actuals-planned-btn');
+  const editBtn = document.getElementById('actuals-edit-btn');
+  if (plannedBtn) plannedBtn.dataset.selected = String(d.actualsMode === 'planned');
+  if (editBtn) editBtn.dataset.selected = String(d.actualsMode === 'edited');
+  const editEl = document.getElementById('actuals-edit');
+  if (editEl) editEl.hidden = d.actualsMode !== 'edited';
+  const rec = activeBrewRecord();
+  const gate = tastingGate(d, rec && rec.goal ? rec.goal : null);
+  const gateEl = document.getElementById('tasting-gate');
+  if (gateEl){
+    gateEl.dataset.state = !gate.complete ? 'open' : gate.passed ? 'passed' : 'not-passed';
+    gateEl.textContent = !gate.complete
+      ? `Nog open: ${gate.missing.join(', ')}. Zonder alle antwoorden telt deze kop niet mee om te leren.`
+      : gate.passed
+        ? '✓ Geslaagde kop — telt mee om te leren wat voor jou werkt.'
+        : `Telt niet als geslaagde kop (${gate.reasons.join(', ')}).`;
+  }
+}
+function handleTastingCardClick(e){
+  const d = tastingDraft;
+  if (e.target.closest('#actuals-planned-btn')){
+    d.actualsMode = d.actualsMode === 'planned' ? null : 'planned';
+  } else if (e.target.closest('#actuals-edit-btn')){
+    d.actualsMode = d.actualsMode === 'edited' ? null : 'edited';
+    if (d.actualsMode === 'edited'){
+      // Voorvullen met het plan: alleen aanpassen wat anders was.
+      const rec = activeBrewRecord();
+      const plan = (rec && rec.plan) || {};
+      const doseEl = document.getElementById('brewlog-actual-dose');
+      const grindEl = document.getElementById('brewlog-actual-grind');
+      if (doseEl && doseEl.value === '' && plan.doseG != null) doseEl.value = plan.doseG;
+      if (grindEl && grindEl.value === '' && plan.grindStartingPoint != null) grindEl.value = plan.grindStartingPoint;
+    }
+  } else {
+    const btn = e.target.closest('[data-t-q]');
+    if (!btn) return;
+    const q = btn.getAttribute('data-t-q'), v = btn.getAttribute('data-t-v');
+    if (q === 'finish') d.finish = toggleFinish(d.finish, v);
+    else if (q === 'liking') d.liking = d.liking === Number(v) ? null : Number(v);
+    else d[q] = d[q] === v ? null : v;
+  }
+  refreshTastingCard();
 }
 // NIEUW (vervolgplan v2.3, Bouwbesluit B2): vervangt de 88-score-ring. Geen verzonnen
 // kwaliteitscijfer — puur wat al écht bekend is uit dít brouwsel (tijd t.o.v. het eigen
@@ -8803,24 +9045,6 @@ function renderBrewLogHonestSummary(){
   el.innerHTML = `<strong>Wat we écht weten</strong>` +
     [timeLine, ratioLine, bypassRatioLine, tempLine, diagnosticLine].filter(Boolean).map(l => `<div>${escapeHtml(l)}</div>`).join('');
 }
-function renderBrewLogSliders(){
-  const el = document.getElementById('brewlog-sliders');
-  if (!el) return;
-  el.innerHTML = CUPPING_AXES.map(axis => `
-    <div class="brewlog-slider-row">
-      <div class="brewlog-slider-label"><span>${escapeHtml(CUPPING_AXIS_LABELS[axis])}</span><span id="brewlog-val-${axis}">${brewLogDraft[axis]}</span></div>
-      <input type="range" min="0" max="${RADAR_LEVELS}" step="1" value="${brewLogDraft[axis]}" data-axis="${axis}">
-    </div>
-  `).join('');
-  el.querySelectorAll('input[type="range"]').forEach(inp=>{
-    inp.addEventListener('input', (e)=>{
-      const axis = e.target.getAttribute('data-axis');
-      brewLogDraft[axis] = Number(e.target.value);
-      const valEl = document.getElementById('brewlog-val-'+axis);
-      if (valEl) valEl.textContent = brewLogDraft[axis];
-    });
-  });
-}
 // NIEUW (Implementatieplan Zetadvies v3.0, Fase 5): las een optioneel numeriek invoerveld
 // als getal, of null als het leeg/ongeldig is — NOOIT 0 voor een leeg veld. Fase 5 eist
 // expliciet dat ontbrekende velden ontbrekend blijven en nergens als nul meetellen (dat zou
@@ -8852,27 +9076,25 @@ function saveBrewLogEntry(){
     }
   }
   if (!rec) return;
-  const scores = Object.assign({}, brewLogDraft);
   const r = applyBrewEvent(rec, 'log', nowMs);
   if (!r.ok) return;
   const next = r.rec;
+  // Fase 3: actuals via de chip — bevestigd/aangepast = U, anders I (telt niet mee om te leren).
+  const edited = tastingDraft.actualsMode === 'edited'
+    ? { doseG: readOptionalNumberInput('brewlog-actual-dose'), grindClick: readOptionalNumberInput('brewlog-actual-grind') }
+    : null;
+  next.actual = applyActuals(next.actual, next.plan, tastingDraft.actualsMode, edited);
   // Wat er ECHT gebeurde (door de gebruiker ingevuld, bron U) — nooit 0 voor een leeg veld.
-  const actualGrind = readOptionalNumberInput('brewlog-actual-grind');
-  next.actual.grindClick = actualGrind;
-  next.actual.grindSource = actualGrind != null ? 'U' : null;
   next.actual.cupWeightG = readOptionalNumberInput('brewlog-cup-weight');
   next.actual.bypassActualG = next.plan.bypass ? readOptionalNumberInput('brewlog-bypass-actual') : null;
   const completedAt = next.actual.completedAt || nowMs;
-  next.tasting = {
-    at: nowMs,
-    minutesAfterBrew: Math.max(0, Math.round((nowMs - completedAt) / 60000)),
-    scores,
+  const prev = findPreviousComparableBrew(brewStore, next);
+  // Fase 3: de proefkaart; "geslaagd" volgt uit de gate i.p.v. een losse checkbox.
+  next.tasting = buildTasting(Object.assign({}, tastingDraft, {
     note: noteEl ? noteEl.value.trim() : '',
-    approved: !!(document.getElementById('brewlog-approved') && document.getElementById('brewlog-approved').checked),
-    // NIEUW (Implementatieplan Zetadvies v3.0, Fase 6): alleen bij een patroon-match, uit de
-    // daadwerkelijk opgeslagen scores — nooit een verzonnen "geen advies"-veld.
-    cuppingSuggestion: cuppingSuggestionFor(scores) || null
-  };
+    vsLast: prev ? tastingDraft.vsLast : null,
+    vsLastBrewId: prev ? prev.id : null
+  }), nowMs, completedAt, next.goal);
   upsertBrewRecord(next);
   persistBrewStore();
   rebuildBrewLogView();
@@ -8889,7 +9111,18 @@ function renderBrewLogEntryCard(e, beanId){
   const dateStr = d.toLocaleDateString('nl-NL', { day:'numeric', month:'short', year:'numeric' }) + ' ' + d.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
   const m = METHOD_INFO[e.method], p = PROFILE_INFO[e.profile], r = ROAST_INFO[e.roast];
   const entryBean = !beanId && e.beanId ? beanLibrary.find(b=>b.id===e.beanId) : null;
-  const scoresHtml = CUPPING_AXES.map(axis => `<span>${CUPPING_AXIS_LABELS[axis]}: ${e.scores && e.scores[axis] != null ? e.scores[axis] : '–'}</span>`).join('');
+  // Fase 3: nieuwe loggingen tonen hun proefkaart-antwoorden; oudere hun 0–5-scores (alleen-lezen).
+  const labelOf = (list, v) => { const o = list.find(x => x.v === v); return o ? o.label : null; };
+  const scoresHtml = e.tasting
+    ? [
+        e.tasting.strength ? `Sterkte: ${labelOf(TASTING_STRENGTH, e.tasting.strength)}` : null,
+        e.tasting.acidity ? `Zuur: ${labelOf(TASTING_ACIDITY, e.tasting.acidity)}` : null,
+        e.tasting.finish && e.tasting.finish.length ? `Afdronk: ${e.tasting.finish.map(v => labelOf(TASTING_FINISH, v)).join(', ')}` : null,
+        e.tasting.liking ? `Lekker: ${e.tasting.liking}/5` : null,
+        e.goal && BREW_GOALS[e.goal] ? `Doel ${BREW_GOALS[e.goal].label}: ${e.tasting.goalHit ? labelOf(TASTING_GOAL_HIT, e.tasting.goalHit).toLowerCase() : '–'}` : null,
+        e.tasting.vsLast ? `T.o.v. vorige: ${labelOf(TASTING_VS_LAST, e.tasting.vsLast).toLowerCase()}` : null
+      ].filter(Boolean).map(t => `<span>${escapeHtml(t)}</span>`).join('')
+    : (e.scores ? CUPPING_AXES.map(axis => `<span>${CUPPING_AXIS_LABELS[axis]}: ${e.scores[axis] != null ? e.scores[axis] : '–'}</span>`).join('') : '');
   // NIEUW (Implementatieplan Zetadvies v3.0, Fase 5): schemaVersion-2-velden, alleen
   // getoond als ze er zijn — oudere (schemaVersion 1) loggingen missen deze simpelweg en
   // laten deze regel dus helemaal weg, i.p.v. een "–" of 0 te tonen (ontbrekend blijft
@@ -8904,7 +9137,8 @@ function renderBrewLogEntryCard(e, beanId){
   if (e.cupWeightG != null) actualBits.push(`kopgewicht ${e.cupWeightG} g`);
   // NIEUW (Fase 7): alleen tonen als het veld bestaat (schemaVersion 3+) — geen "nee"
   // verzinnen voor oudere loggingen die dit onderscheid nog niet konden maken.
-  if (e.approved === true) actualBits.push('✓ goedgekeurd (telt mee voor leercorrectie)');
+  if (e.approved === true) actualBits.push(e.tasting ? '✓ geslaagde kop (telt mee om te leren)' : '✓ goedgekeurd (telt mee voor leercorrectie)');
+  if (e.actualsConfirmed === false && e.tasting) actualBits.push('dosis/maling niet bevestigd');
   const actualHtml = actualBits.length ? `<div class="brewlog-entry-meta">${actualBits.join(' · ')}</div>` : '';
   // NIEUW (Implementatieplan Zetadvies v3.0, Fase 6): het bewaarde voorstel bij déze
   // logging, altijd expliciet als "Hypothese" gelabeld (randvoorwaarde: nooit als
@@ -9058,8 +9292,11 @@ function renderBrewLogHistoryLists(beanId){
    tabel op app-niveau zou precies dat principe schenden. */
 function personalHistoryInsight(beanId){
   if (!beanId) return null;
-  const entries = brewLog.filter(e => e.beanId === beanId && e.scores)
-    .slice().sort((a,b) => b.timestamp - a.timestamp);
+  // Fase 3: is de laatste kop van deze boon een proefkaart (geen 0–5-scores), dan zegt een
+  // vergelijking tussen oudere score-loggingen niets meer over "vorige keer" — geen signaal.
+  const allForBean = brewLog.filter(e => e.beanId === beanId).slice().sort((a,b) => b.timestamp - a.timestamp);
+  if (!allForBean.length || !allForBean[0].scores) return null;
+  const entries = allForBean.filter(e => e.scores);
   if (entries.length < 2) return null; // minstens 1 eerdere logging nodig om een gemiddelde tegen af te zetten
 
   const latest = entries[0];
@@ -9712,6 +9949,7 @@ function exitEditMode(){
 function setActiveBean(id){
   adviceState.beanId = id || null;
   state.beanId = id || null;
+  if (!id) state.goal = null; // Fase 3: een verse start zonder boon begint zonder doel
 }
 // Kopieert de boonkenmerken naar het advies én koppelt de boon. Vervangt drie identieke,
 // los onderhouden kopieerblokken (useBeanForAdvice, useBeanChipInline, opslaan-vanuit-
@@ -9733,6 +9971,7 @@ function loadBeanIntoAdvice(bean){
   // overslaan.
   adviceState.tieResolved = false;
   setActiveBean(bean.id);
+  state.goal = BREW_GOALS[bean.goal] ? bean.goal : null; // Fase 3: het laatst gekozen doel voor deze boon
 }
 
 function useBeanForAdvice(id){
@@ -10439,6 +10678,22 @@ async function runBeanPhotoScan(file){
 /* ============================================================
    RENDER: PREP SCREEN
    ============================================================ */
+// Fase 3: optioneel doel voor deze kop — nogmaals tikken wist het. Bij een gekoppelde boon
+// wordt het onthouden als standaard voor de volgende kop van die boon.
+function renderPrepGoal(){
+  const el = document.getElementById('prep-goal');
+  if (!el) return;
+  el.innerHTML = `<span class="prep-goal-label">Doel <span class="prep-goal-opt">(optioneel)</span></span>` +
+    Object.entries(BREW_GOALS).map(([k, g]) =>
+      `<button type="button" class="chip" data-goal="${k}" data-selected="${state.goal === k}" aria-pressed="${state.goal === k}">${escapeHtml(g.label)}</button>`
+    ).join('');
+}
+function selectPrepGoal(k){
+  state.goal = state.goal === k ? null : (BREW_GOALS[k] ? k : null);
+  const bean = state.beanId ? beanLibrary.find(b => b.id === state.beanId) : null;
+  if (bean){ bean.goal = state.goal; saveBeansToStorage(); }
+  renderPrepGoal();
+}
 function renderPrep(){
   const m = METHOD_INFO[state.method], r = ROAST_INFO[state.roast], p = PROFILE_INFO[state.profile];
   state.recipe = computeRecipe(state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL, state.strengthAdjust, state.bypassPct);
@@ -10464,6 +10719,7 @@ function renderPrep(){
       : 'Geen boon gekoppeld — dit brouwsel komt in geen bonengeschiedenis';
     beanLineEl.dataset.linked = activeBean ? 'true' : 'false';
   }
+  renderPrepGoal();
 
   document.getElementById('technique-line').textContent = `${rec.technique} · ${rec.author}`;
   document.getElementById('technique-tasting').textContent = p.desc;
@@ -10519,8 +10775,10 @@ function renderPrep(){
   const suggestionEl = document.getElementById('prep-cupping-suggestion');
   if (suggestionEl){
     const waterLinkBtn = document.getElementById('prep-suggestion-water-link');
+    // Fase 3: bewust ZONDER "&& e.scores" — een nieuwere proefkaart (zonder 0–5-scores) is
+    // ook een nieuwere kop, en laat een oude score-hypothese dus vervallen.
     const latestEntry = state.beanId
-      ? brewLog.filter(e => e.beanId === state.beanId && e.scores).slice().sort((a,b)=>b.timestamp-a.timestamp)[0]
+      ? brewLog.filter(e => e.beanId === state.beanId).slice().sort((a,b)=>b.timestamp-a.timestamp)[0]
       : null;
     if (latestEntry && latestEntry.suggestion){
       const s = latestEntry.suggestion;
@@ -11478,6 +11736,7 @@ function restoreStateFromRecord(rec){
     roastDate: i.roastDate || null, openedDate: i.openedDate || null, intendedUse: i.intendedUse || null
   });
   setActiveBean(rec.beanId);
+  state.goal = rec.goal || null;
   state.recipe = recomputeRecipeForRecord(rec);
   const planSteps = rec.plan && rec.plan.steps;
   if (planSteps && JSON.stringify(planSteps) !== JSON.stringify(state.recipe.steps.map(s => ({ t: s.t, add: s.add })))){
@@ -11903,6 +12162,12 @@ document.getElementById('start-btn').addEventListener('click', startBrew);
 document.getElementById('pause-btn').addEventListener('click', ()=>{ timer.running ? pauseTimer() : runTimer(); });
 document.getElementById('reset-btn').addEventListener('click', resetTimer);
 document.getElementById('bed-dry-btn').addEventListener('click', tapBedDry);
+// Fase 3: proefkaart + doel op het receptscherm (event-delegatie: de inhoud wordt opnieuw opgebouwd).
+document.getElementById('tasting-card').addEventListener('click', handleTastingCardClick);
+document.getElementById('prep-goal').addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-goal]');
+  if (btn) selectPrepGoal(btn.getAttribute('data-goal'));
+});
 document.getElementById('recovery-continue-btn').addEventListener('click', recoveryContinue);
 document.getElementById('recovery-bed-dry-btn').addEventListener('click', recoveryBedWasDry);
 document.getElementById('recovery-end-btn').addEventListener('click', recoveryEnd);

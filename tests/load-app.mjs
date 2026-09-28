@@ -121,7 +121,9 @@ export function loadApp(){
       createBrewRecord, applyBrewEvent, migrateLegacyLogEntry, brewRecordToLogView, isBrewInLogView,
       purgeDeletedBrews, staleBrewingOutcome,
       elapsedFromEvents, brewPhaseAt, endBrewDecision, completeWithBedDry, recipeInputsFromRecord, recomputeRecipeForRecord,
-      ASSUMED_SINGLE_POUR_SEC
+      ASSUMED_SINGLE_POUR_SEC,
+      TASTING_STRENGTH, TASTING_ACIDITY, TASTING_FINISH, BREW_GOALS, LATE_TASTING_MIN,
+      toggleFinish, tastingGate, buildTasting, applyActuals, findPreviousComparableBrew
     };`,
     sandbox,
     { filename: 'test-exports-shim.js' }

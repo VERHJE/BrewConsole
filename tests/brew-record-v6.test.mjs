@@ -340,3 +340,111 @@ describe('Fase 2 — recept terugrekenen voor herstel', () => {
     assert.deepEqual(j(again.steps.map(s => ({ t: s.t, add: s.add }))), j(rec.plan.steps));
   });
 });
+
+// ---------------------------------------------------------------------------------------
+// NIEUW (Brew Intelligence v2, Fase 3): proefkaart, gate, actuals-chip, vergelijking.
+// ---------------------------------------------------------------------------------------
+describe('Fase 3 — de gate "geslaagde kop"', () => {
+  const good = { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: 4 };
+  test('alles beantwoord, ≥4/5, geen "veel te …", geen doel → geslaagd', () => {
+    const g = j(api.tastingGate(good, null));
+    assert.deepEqual(g, { complete: true, missing: [], passed: true, reasons: [] });
+  });
+  test('ontbrekende antwoorden → niet compleet, nooit geslaagd', () => {
+    const g = j(api.tastingGate({ strength: 'just_right' }, null));
+    assert.equal(g.complete, false);
+    assert.equal(g.passed, false);
+    assert.deepEqual(g.missing, ['zuur', 'afdronk', 'hoe lekker']);
+  });
+  test('3 van 5 → niet geslaagd', () => {
+    assert.equal(api.tastingGate(Object.assign({}, good, { liking: 3 }), null).passed, false);
+  });
+  test('"veel te sterk/slap" → niet geslaagd, ook bij 5 van 5', () => {
+    for (const s of ['much_too_weak', 'much_too_strong']){
+      assert.equal(api.tastingGate(Object.assign({}, good, { strength: s, liking: 5 }), null).passed, false, s);
+    }
+    assert.equal(api.tastingGate(Object.assign({}, good, { strength: 'too_strong' }), null).passed, true, '"te sterk" (niet "veel te") mag nog');
+  });
+  test('met een doel: pas geslaagd als het doel gehaald is ("bijna" telt niet)', () => {
+    assert.deepEqual(j(api.tastingGate(good, 'bright').missing), ['doel']);
+    assert.equal(api.tastingGate(Object.assign({}, good, { goalHit: 'almost' }), 'bright').passed, false);
+    assert.equal(api.tastingGate(Object.assign({}, good, { goalHit: 'yes' }), 'bright').passed, true);
+  });
+});
+
+describe('Fase 3 — proefkaart-antwoorden', () => {
+  test('afdronk: meerdere mogelijk, maar "zoet & schoon" sluit de rest uit', () => {
+    assert.deepEqual(j(api.toggleFinish([], 'bitter')), ['bitter']);
+    assert.deepEqual(j(api.toggleFinish(['bitter'], 'drying')), ['bitter', 'drying']);
+    assert.deepEqual(j(api.toggleFinish(['bitter', 'drying'], 'sweet_clean')), ['sweet_clean']);
+    assert.deepEqual(j(api.toggleFinish(['sweet_clean'], 'hollow')), ['hollow']);
+    assert.deepEqual(j(api.toggleFinish(['bitter'], 'bitter')), []);
+  });
+  test('buildTasting: minuten na voltooien, "laat" na 2 uur, geen 0–5-scores meer', () => {
+    const t = api.buildTasting({ strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: 5 }, T0 + 130 * 60000, T0, null);
+    assert.equal(t.minutesAfterBrew, 130);
+    assert.equal(t.late, true);
+    assert.equal(t.approved, true);
+    assert.equal(t.scores, null);
+    assert.equal(api.buildTasting({}, T0 + 5 * 60000, T0, null).late, false);
+  });
+  test('buildTasting: het doelantwoord wordt alleen bewaard als er een doel was', () => {
+    assert.equal(api.buildTasting({ goalHit: 'yes' }, T0, T0, null).goalHit, null);
+    assert.equal(api.buildTasting({ goalHit: 'yes' }, T0, T0, 'rich').goalHit, 'yes');
+  });
+  test('drie doelen met een label en een criterium', () => {
+    assert.deepEqual(Object.keys(api.BREW_GOALS), ['bright', 'balanced', 'rich']);
+    for (const g of Object.values(api.BREW_GOALS)){ assert.ok(g.label && g.criterion); }
+  });
+});
+
+describe('Fase 3 — actuals: bevestigd = U, niet bevestigd = I (telt niet mee)', () => {
+  const plan = { doseG: 17.3, grindStartingPoint: 15 };
+  const base = { doseG: null, doseSource: null, grindClick: null, grindSource: null, confirmed: false, cupWeightG: null };
+  test('"zoals gepland" → plan-waarden als U, bevestigd', () => {
+    const a = j(api.applyActuals(base, plan, 'planned'));
+    assert.deepEqual([a.doseG, a.doseSource, a.grindClick, a.grindSource, a.confirmed], [17.3, 'U', 15, 'U', true]);
+  });
+  test('"anders" → ingevulde waarden als U; leeg blijft leeg', () => {
+    const a = j(api.applyActuals(base, plan, 'edited', { doseG: 18, grindClick: null }));
+    assert.deepEqual([a.doseG, a.doseSource, a.grindClick, a.grindSource, a.confirmed], [18, 'U', null, null, true]);
+  });
+  test('niet bevestigd → plan-waarden als I, niet bevestigd', () => {
+    const a = j(api.applyActuals(base, plan, null));
+    assert.deepEqual([a.doseG, a.doseSource, a.grindClick, a.grindSource, a.confirmed], [17.3, 'I', 15, 'I', false]);
+  });
+  test('de logboekweergave (en dus de leerlus) ziet een afgeleide maalstand NOOIT als werkelijke', () => {
+    let rec = api.completeWithBedDry(sampleRecord(), T0 + 1000, 200, 'bed_dry').rec;
+    rec = api.applyBrewEvent(rec, 'log', T0 + 2000).rec;
+    rec.actual = api.applyActuals(rec.actual, rec.plan, null);
+    rec.tasting = api.buildTasting({ strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: 5 }, T0 + 2000, T0 + 1000, null);
+    let v = api.brewRecordToLogView(rec);
+    assert.equal(v.actualGrindClicks, null);
+    assert.equal(v.actualsConfirmed, false);
+    rec.actual = api.applyActuals(rec.actual, rec.plan, 'planned');
+    v = api.brewRecordToLogView(rec);
+    assert.equal(v.actualGrindClicks, rec.plan.grindStartingPoint);
+    assert.equal(v.approved, true);
+    assert.equal(v.scores, null, 'geen 0–5-scores → lezers die op scores filteren slaan deze kop over');
+    assert.equal(v.tasting.liking, 5);
+  });
+});
+
+describe('Fase 3 — vergelijking met de vorige kop', () => {
+  function logged(id, beanId, method, createdAt){
+    return { id, beanId, lifecycle: 'logged', deletedAt: null, createdAt, plan: { methodId: method } };
+  }
+  test('de laatste eerdere gelogde kop van dezelfde boon én methode', () => {
+    const store = [
+      logged('a', 'b1', 'v60', 100), logged('b', 'b1', 'v60', 200), logged('c', 'b1', 'chemex', 250),
+      logged('d', 'b2', 'v60', 260), Object.assign(logged('e', 'b1', 'v60', 270), { deletedAt: 1 }),
+      Object.assign(logged('f', 'b1', 'v60', 280), { lifecycle: 'abandoned' })
+    ];
+    const cur = logged('now', 'b1', 'v60', 300);
+    assert.equal(api.findPreviousComparableBrew(store, cur).id, 'b');
+  });
+  test('zonder boon of zonder eerdere kop: geen vergelijkingsvraag', () => {
+    assert.equal(api.findPreviousComparableBrew([logged('a', 'b1', 'v60', 100)], logged('n', null, 'v60', 300)), null);
+    assert.equal(api.findPreviousComparableBrew([], logged('n', 'b1', 'v60', 300)), null);
+  });
+});
