@@ -815,6 +815,7 @@
   .prep-cta-row{display:flex; gap:10px; align-items:stretch;}
   .prep-cta-row .prep-adjust-btn{flex:1; margin-top:0; min-height:auto;}
   .prep-cta-row .start-btn{flex:1.8;}
+  .style-more-body:not([hidden]){display:block; margin-top:6px;}
   .disclaimer{font-size:11px; color:var(--text-faint); margin-top:10px; line-height:1.4;}
 
   /* brew screen */
@@ -2379,7 +2380,6 @@
           <p class="style-note" id="style-note" style="margin:0;"></p>
         </div>
       </div>
-<p class="freshness-readout" id="profile-scope-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
 
       <!-- FIX (teamreview v2 — Midden bevinding, UX Designer/Professional Brewer): tot v2
            konden process-/freshness-/opened-/altitude-/hardness-/bypass-note allemaal
@@ -2511,10 +2511,22 @@
         <button type="button" class="advisor-primary prep-adjust-btn" data-back="profile">Aanpassen</button>
         <button class="start-btn" id="start-btn">Start brew →</button>
       </div>
-      <p class="disclaimer" id="disclaimer"></p>
-<p class="freshness-readout" id="target-window-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
-<p class="freshness-readout" id="retention-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
-<p class="freshness-readout" id="personal-calibration-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
+      <!-- Audit BC-12: de onderbouwing blijft volledig, maar op verzoek i.p.v. als muur tekst
+           onder de startknop. Zelfde elementen/ID's, alleen samen ingeklapt. -->
+      <details class="flavor-category why-details" id="why-details">
+        <summary style="color:var(--copper-light)">
+          <span>Waarom deze getallen?</span>
+          <span class="flavor-category-arrow">+</span>
+        </summary>
+        <div class="flavor-category-body">
+          <p class="freshness-readout" id="profile-scope-note" style="font-size:12.5px; color:var(--text-faint); margin:0 0 8px;" hidden></p>
+          <p class="freshness-readout" id="temp-anchor-note" style="font-size:12.5px; color:var(--text-faint); margin:0 0 8px;"></p>
+          <p class="disclaimer" id="disclaimer"></p>
+          <p class="freshness-readout" id="target-window-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
+          <p class="freshness-readout" id="retention-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
+          <p class="freshness-readout" id="personal-calibration-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
+        </div>
+      </details>
     </section>
 
     <!-- STEP 5: BREW / TIMER -->
@@ -11356,8 +11368,10 @@ function renderPrep(){
   // klikrange (bijv. "Klik 15–17") — die data (grindStartingRange/grindPracticalRange)
   // bestond al en werd al getoond als stat-sub-toelichting hieronder, nu ook als kopregel.
   // Geen nieuw getal berekend — puur welk al-bestaand veld de hoofdwaarde wordt.
+  // Audit BC-12: het getal waar je mee begint staat vooraan; het startgebied eronder.
   let grindHeadline;
   if (rec.grindMicron != null) grindHeadline = `${rec.grindMicron} µm`;
+  else if (rec.grindStartingPoint != null) grindHeadline = `Klik ${rec.grindStartingPoint}`;
   else if (rec.grindStartingRange) grindHeadline = `Klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax}`;
   else if (rec.grindPracticalRange) grindHeadline = `Klik ${rec.grindPracticalRange.clicksMin}–${rec.grindPracticalRange.clicksMax}`;
   else grindHeadline = rec.grindBandLabel || '—';
@@ -11394,13 +11408,13 @@ function renderPrep(){
     <div class="stat-block"${stockWarning ? ' style="border-color:var(--danger);"' : ''}>
       <div class="stat-label">${statIconDose}Gemalen koffie</div>
       <div class="stat-value">${fmt(rec.dose,1)} g</div>
+      <div class="stat-sub">voor ${rec.water} ml${state.strengthAdjust > 0 ? ' · een stap sterker' : state.strengthAdjust < 0 ? ' · een stap zwakker' : ''}</div>
       ${stockWarning}
     </div>
     <div class="stat-block">
       <div class="stat-label">${statIconTemp}Watertemperatuur</div>
       <div class="stat-value">${rec.tempBand.min}–${rec.tempBand.max} °C</div>
-      <div class="stat-sub">${escapeHtml(rec.tempInstruction || '')} (${rec.temp}°C als middenwaarde van deze branddiepte-band)</div>
-      <div class="stat-sub">Ankerpunt binnen de apparaatband van dit toestel (${rec.deviceTempBand.min}–${rec.deviceTempBand.max}°C) — positie, geen apart geteste claim; zie disclaimer onderaan. Ratio en dosis blijven voor elke branddiepte gelijk.</div>
+      <div class="stat-sub">${escapeHtml(rec.tempInstruction || '')}</div>
     </div>
     <div class="stat-block" id="stats-water-block" role="button" tabindex="0" aria-label="Waterhoeveelheid aanpassen">
       <div class="stat-label">${statIconWater}${state.bypass ? 'Water dóór de koffie' : 'Waterhoeveelheid'}</div>
@@ -11417,11 +11431,13 @@ function renderPrep(){
     <div class="stat-block stat-block--secondary">
       <div class="stat-label">Ratio</div>
       <div class="stat-value">${rec.ratioText}</div>
+      <div class="stat-sub">gram water per gram koffie</div>
     </div>
     <div class="stat-block stat-block--secondary">
       <div class="stat-label">Maalgraad</div>
       <div class="stat-value">${escapeHtml(grindHeadline)}</div>
-      ${rec.grindMicron == null && rec.grindBandLabel ? `<div class="stat-sub">${escapeHtml(rec.grindBandLabel)}</div>` : ''}
+      ${rec.grindMicron == null && rec.grindStartingPoint != null && rec.grindStartingRange ? `<div class="stat-sub">start hier · klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} is het startgebied</div><div class="stat-sub">zuur en snel door? fijner · bitter en traag? grover</div>` : ''}
+      ${rec.grindMicron == null && rec.grindStartingPoint == null && rec.grindBandLabel ? `<div class="stat-sub">${escapeHtml(rec.grindBandLabel)}</div>` : ''}
       <div class="stat-sub">${rec.grindMicron != null ? `stand ${rec.grindStand} · Timemore C3S Pro` : `Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}`}</div>
       ${grindMoreNotes.length ? `
       <button type="button" class="stat-more-toggle" id="grind-more-toggle" aria-expanded="false">Meer over deze maalstand ↓</button>
@@ -11430,10 +11446,28 @@ function renderPrep(){
     <div class="stat-block stat-block--secondary">
       <div class="stat-label">Brouwtijd</div>
       <div class="stat-value">${fmtTime(rec.totalTime)}</div>
+      <div class="stat-sub">schema · tik "Bed droog" voor je echte tijd</div>
     </div>
   `;
 
-  document.getElementById('style-note').textContent = rec.notes;
+  // Audit BC-12: de techniek in één zin; de rest van de uitleg op verzoek.
+  const styleNoteEl = document.getElementById('style-note');
+  const noteParts = String(rec.notes || '').split(/(?<=[.!?])\s+(?=[A-ZÀ-Ý'"(])/);
+  const noteFirst = noteParts.shift() || '';
+  const noteRest = noteParts.join(' ');
+  styleNoteEl.innerHTML = escapeHtml(noteFirst) + (noteRest ? `
+    <button type="button" class="stat-more-toggle" id="style-more-toggle" aria-expanded="false">Meer over deze techniek ↓</button>
+    <span class="stat-more-body style-more-body" id="style-more-body" hidden>${escapeHtml(noteRest)}</span>` : '');
+  const styleMoreBtn = document.getElementById('style-more-toggle');
+  if (styleMoreBtn) styleMoreBtn.addEventListener('click', () => {
+    const body = document.getElementById('style-more-body');
+    const open = body.hidden;
+    body.hidden = !open;
+    styleMoreBtn.setAttribute('aria-expanded', String(open));
+    styleMoreBtn.textContent = open ? 'Minder ↑' : 'Meer over deze techniek ↓';
+  });
+  const tempAnchorEl = document.getElementById('temp-anchor-note');
+  if (tempAnchorEl) tempAnchorEl.textContent = `Temperatuur: ${rec.temp}°C is de middenwaarde van de band voor deze branddiepte — een ankerpunt binnen de apparaatband van dit toestel (${rec.deviceTempBand.min}–${rec.deviceTempBand.max}°C), geen apart geteste claim. Ratio en dosis blijven voor elke branddiepte gelijk.`;
   const evidenceBadgeRow = document.getElementById('evidence-badge-row');
   if (evidenceBadgeRow){
     // NIEUW (Implementatieplan v3.0, §15 "Technique provenance"): de "Unverified

@@ -573,6 +573,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
 
+    // Audit BC-12: de onderbouwing staat achter "Waarom deze getallen?" — zichtbaar na één tik.
+    await page.click('#why-details summary');
     const windowNote = page.locator('#target-window-note');
     await assert.ok(await windowNote.isVisible(), '#target-window-note moet zichtbaar zijn op het Prep-scherm');
     const windowText = (await windowNote.textContent()).trim();
@@ -596,6 +598,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
 
+    await page.click('#why-details summary'); // Audit BC-12: op verzoek, één tik
     const scopeNote = page.locator('#profile-scope-note');
     await assert.ok(await scopeNote.isVisible(), '#profile-scope-note moet zichtbaar zijn op het Prep-scherm');
     const scopeText = (await scopeNote.textContent()).trim();
@@ -902,6 +905,11 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
   // data volledig onveranderd laten.
   test('C-2: een schemaVersion-3-record zonder beanSnapshot levert nog steeds dezelfde leercorrectie op (live terugval)', async () => {
     const page = await newTrackedPage();
+    // Leren telt alleen binnen hetzelfde bekende waterprofiel (B-7) — zonder waterprofiel kan
+    // deze test niets bewijzen. Tot de BC-12-herindeling slaagde hij alleen doordat "exacte"
+    // toevallig in de Kasuya-uitleg stond; hij controleert nu de leercorrectie zelf.
+    const WATER = { hardnessMgL: 120, alkalinity: { value: 40, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } };
+    await page.addInitScript((w) => { if (!sessionStorage.getItem('c2w')){ sessionStorage.setItem('c2w', '1'); localStorage.setItem('brewconsole_water_hardness', JSON.stringify(w)); } }, WATER);
     await page.goto(FILE_URL, { waitUntil: 'load' });
     await page.click('.navbar [data-nav="beans"]');
     await assertBecomesActive(page, '#screen-beans');
@@ -911,7 +919,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       id, schemaVersion: 3, timestamp: Date.now(),
       beanId: bean.id, method: 'v60', profile: 'klassiek', roast: 'light',
       waterMl: 300, bypass: false, grindMicron: 650, grindStand: null, temp: 95,
-      scores: {}, note: '', approved: true, grindStartingPoint: 14, actualGrindClicks: clicks
+      scores: {}, note: '', approved: true, grindStartingPoint: 14, actualGrindClicks: clicks,
+      waterProfileSnapshot: WATER
       // Bewust GEEN beanSnapshot — dit is precies het schemaVersion-3-record dat C-2 zegt
       // via entryBeanFor()/de live boon te blijven bedienen.
     });
@@ -936,9 +945,9 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#advice-cta');
     await assertBecomesActive(page, '#screen-prep');
 
-    const prepText = (await page.locator('#screen-prep').innerText()).trim();
-    assert.match(prepText, /leercorrectie|klikken (fijner|grover)|exact/i,
+    assert.equal(await page.locator('#prep-learning-correction').isVisible(), true,
       'drie goedgekeurde schemaVersion-3-loggings (zonder beanSnapshot) horen nog steeds een leercorrectie te tonen, via de live boon-terugval');
+    assert.match(await page.locator('#prep-learning-correction-text').innerText(), /fijner/, 'gemiddeld 2 klikken fijner dan het recept');
 
     await page.close();
   });
@@ -2058,6 +2067,33 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.match(text, /Nog 19 geteste stappen tot een betrouwbaar oordeel/);
       await page.close();
     });
+  });
+
+  // NIEUW (audit BC-12): het receptscherm is in een paar seconden te scannen.
+  test('BC-12: startklik vooraan, elke waarde met één regel uitleg, onderbouwing ingeklapt', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.evaluate(() => { selectMethod('v60'); selectRoast('light'); selectProfile('klassiek'); });
+    const rec = await page.evaluate(() => ({ start: state.recipe.grindStartingPoint, min: state.recipe.grindStartingRange.clicksMin, max: state.recipe.grindStartingRange.clicksMax }));
+    const grind = page.locator('#stats-grid .stat-block', { hasText: 'Maalgraad' });
+    assert.equal((await grind.locator('.stat-value').textContent()).trim(), `Klik ${rec.start}`);
+    assert.match(await grind.innerText(), new RegExp(`start hier · klik ${rec.min}–${rec.max} is het startgebied`));
+    assert.match(await grind.innerText(), /zuur en snel door\? fijner · bitter en traag\? grover/);
+    for (const label of ['Gemalen koffie', 'Watertemperatuur', 'Ratio', 'Maalgraad', 'Brouwtijd']){
+      const n = await page.locator('#stats-grid .stat-block', { hasText: label }).locator('.stat-sub').count();
+      assert.ok(n >= 1, `${label} heeft een uitlegregel`);
+    }
+    assert.equal(await page.locator('#disclaimer').isVisible(), false, 'onderbouwing standaard ingeklapt');
+    assert.equal(await page.locator('#why-details').getAttribute('open'), null);
+    const styleText = (await page.locator('#style-note').innerText()).trim();
+    assert.ok(styleText.length < 400, `techniekkaart kort (${styleText.length} tekens)`);
+    if (await page.locator('#style-more-toggle').count()){
+      await page.click('#style-more-toggle');
+      assert.equal(await page.locator('#style-more-body').isVisible(), true);
+    }
+    const words = await page.evaluate(() => document.getElementById('screen-prep').innerText.split(/\s+/).filter(Boolean).length);
+    assert.ok(words < 450, `zichtbare tekst op het receptscherm: ${words} woorden`);
+    await page.close();
   });
 
   // NIEUW (audit BC-14/BC-25): geen stille verliezen en een eerlijke eerste indruk.
