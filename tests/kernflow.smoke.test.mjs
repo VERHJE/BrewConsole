@@ -1235,6 +1235,46 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
+  // NIEUW (audit BC-20): na plakken een controlekaart met naam, branddatum en wat niet herkend
+  // is — en direct opslaan zonder door het hele formulier te hoeven.
+  test('BC-20: plakken → controlekaart (naam, branddatum, niet-herkend eerlijk benoemd) → direct opslaan', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="beans"]');
+    await page.click('#bean-add-link');
+    await assertBecomesActive(page, '#screen-bean-add');
+    const d = new Date(Date.now() - 5 * 86400000);
+    const dd = String(d.getDate()).padStart(2, '0'), mm = String(d.getMonth() + 1).padStart(2, '0'), yyyy = d.getFullYear();
+    await page.fill('#f-scan-text', `Ethiopia Guji — washed — light roast. Notes: jasmine, peach, black tea\nRoasted on ${dd}-${mm}-${yyyy}`);
+    await page.click('#scan-text-btn');
+    const card = page.locator('#scan-result');
+    assert.equal(await card.isVisible(), true);
+    const rows = await card.locator('.scan-review-row').allInnerTexts();
+    assert.match(rows.join('\n'), /Naam\s+Ethiopia Guji/i);
+    assert.match(rows.join('\n'), /Branddatum\s+\d{1,2} \w+ \d{4}/i);
+    assert.equal(await page.locator('#f-roast-date').inputValue(), `${yyyy}-${mm}-${dd}`);
+    assert.equal(await page.locator('#f-name').inputValue(), 'Ethiopia Guji');
+    await page.click('#scan-review-save-btn');
+    const beans = await page.evaluate(() => beanLibrary.map(b => ({ name: b.name, roastDate: b.roastDate, roast: b.roastLevel, process: b.process })));
+    assert.equal(beans.length, 1);
+    assert.deepEqual(beans[0], { name: 'Ethiopia Guji', roastDate: `${yyyy}-${mm}-${dd}`, roast: 'light', process: 'washed' });
+    await page.close();
+  });
+
+  test('BC-20: wat niet herkend is, staat er eerlijk bij (met de huidige standaard)', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="beans"]');
+    await page.click('#bean-add-link');
+    await page.fill('#f-scan-text', 'Huisblend nummer 3');
+    await page.click('#scan-text-btn');
+    const text = await page.locator('#scan-result').innerText();
+    assert.match(text, /Branding\s+niet herkend — staat nu op Medium \(standaard\)/i);
+    assert.match(text, /Proces\s+niet herkend — staat nu op Washed \(standaard\)/i);
+    assert.match(text, /Branddatum\s+niet herkend/i);
+    await page.close();
+  });
+
   // NIEUW (Phase 0 / BC-01 — audit: boonkoppeling). Voorheen koppelde de bonenchip in het
   // advies-scherm de boon niet, en wiste niets ooit een eerdere koppeling: een brouwsel
   // belandde dan stilzwijgend bij de boon van een vorige sessie (of bij geen boon).

@@ -344,6 +344,7 @@
   }
 
   /* tracker */
+  .tracker[hidden]{display:none;}
   .tracker{
     display:flex;
     gap:0;
@@ -816,6 +817,13 @@
   .prep-cta-row .prep-adjust-btn{flex:1; margin-top:0; min-height:auto;}
   .prep-cta-row .start-btn{flex:1.8;}
   .style-more-body:not([hidden]){display:block; margin-top:6px;}
+  .scan-review-summary{margin:0 0 8px;}
+  .scan-review-rows{margin:0; display:grid; gap:4px;}
+  .scan-review-row{display:grid; grid-template-columns:96px 1fr; gap:8px; font-size:13px;}
+  .scan-review-row dt{color:var(--text-muted); font-family:var(--font-mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; padding-top:2px;}
+  .scan-review-row dd{margin:0; color:var(--text);}
+  .scan-review-row[data-missing="true"] dd{color:var(--warn, var(--copper-light));}
+  .scan-review-hint{margin:8px 0 0; font-size:11.5px; color:var(--text-faint);}
   .profile-group-label{flex-basis:100%; width:100%; grid-column:1/-1; margin:12px 0 2px; font-family:var(--font-mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted);}
   .disclaimer{font-size:11px; color:var(--text-faint); margin-top:10px; line-height:1.4;}
 
@@ -1846,7 +1854,7 @@
     <div class="tracker-item" data-step="method">Methode</div>
     <div class="tracker-item" data-step="roast">Roast</div>
     <div class="tracker-item" data-step="profile">Profiel</div>
-    <div class="tracker-item" data-step="prep">Brew</div>
+    <div class="tracker-item" data-step="prep">Recept</div>
   </header>
 
   <main>
@@ -2095,7 +2103,7 @@
             <textarea id="f-scan-text" class="form-input" rows="3" placeholder="bijv. Ethiopia Guji — washed — light roast. Notes: jasmine, peach, black tea"></textarea>
           </label>
           <button type="button" class="advisor-link" id="scan-text-btn" style="margin-top:8px;">Herken kenmerken uit tekst →</button>
-          <p class="process-note" id="scan-result" hidden></p>
+          <div class="process-note scan-review" id="scan-result" hidden></div>
         </div>
 
         <div class="section-divider">of vul handmatig in</div>
@@ -7041,12 +7049,14 @@ function applyParsedTextToForm(rawText){
   // BC-06: eigen, strengere smaakmatcher — zie scanFlavorTagsInText().
   found.tags = Array.from(scanFlavorTagsInText(text, { fuzzy: true }));
 
-  // Eerste korte regel als naamsuggestie — alleen als het naamveld nog leeg is.
+  // BC-20: naamsuggestie (ook uit een lange eerste regel) en branddatum — alleen als die
+  // velden nog leeg zijn, nooit iets overschrijven wat je zelf invulde.
+  found.name = extractBeanNameFromText(rawText);
+  found.roastDate = extractRoastDateFromText(rawText);
   const nameEl = document.getElementById('f-name');
-  if (nameEl && !nameEl.value.trim()){
-    const firstLine = (rawText || '').split('\n').map(s=>s.trim()).filter(Boolean)[0];
-    if (firstLine && firstLine.length <= 60) nameEl.value = firstLine;
-  }
+  if (nameEl && !nameEl.value.trim() && found.name) nameEl.value = found.name;
+  const roastDateEl = document.getElementById('f-roast-date');
+  if (roastDateEl && !roastDateEl.value && found.roastDate) roastDateEl.value = found.roastDate;
 
   if (found.roast){ formRoastChip = found.roast; renderFormRoastChips(); }
   if (found.intendedUse){ formIntendedUseChip = found.intendedUse; renderFormIntendedUseChips(); }
@@ -7089,6 +7099,52 @@ function applyParsedTextToForm(rawText){
   }
   suggestProfileFromForm();
   return found;
+}
+
+/* NIEUW (audit BC-20): naam en branddatum uit de etikettekst. Pure functies, getest.
+   Naam: een lange eerste regel (typisch een geplakte productomschrijving) werd eerder
+   helemaal genegeerd, waardoor elke boon "Naamloze boon" heette. Nu het stuk vóór het
+   eerste scheidingsteken. Branddatum: alleen met een brand-/roast-woord vlak ervoor op
+   dezelfde regel — zo wordt een THT-/best-before-datum nooit als branddatum gelezen. */
+const NAME_SKIP_RE = /^(roast(ed)?\b|gebrand|branddatum|best before|tht\b|ten minste|origin\b|herkomst|process\b|proces\b|notes?\b|smaak|tasting)/i;
+function extractBeanNameFromText(rawText){
+  const lines = String(rawText || '').split('\n').map(s => s.trim()).filter(Boolean).filter(l => !NAME_SKIP_RE.test(l));
+  const first = lines[0];
+  if (!first) return null;
+  if (first.length <= 40 && !/[.:;]\s/.test(first) && !/\s[—–|]\s/.test(first)) return first;
+  const head = first.split(/\s[—–\-|·]\s|[.,;:](?:\s|$)/)[0].trim();
+  if (head.length >= 3 && head.length <= 60) return head;
+  const words = first.split(/\s+/).slice(0, 6).join(' ');
+  return words.length <= 60 ? words : words.slice(0, 60).trim();
+}
+const SCAN_MONTHS = { jan:1, januari:1, january:1, feb:2, februari:2, february:2, mrt:3, maart:3, mar:3, march:3, apr:4, april:4, mei:5, may:5, jun:6, juni:6, june:6, jul:7, juli:7, july:7, aug:8, augustus:8, august:8, sep:9, sept:9, september:9, okt:10, oktober:10, oct:10, october:10, nov:11, november:11, dec:12, december:12 };
+function scanYmd(y, mo, d){
+  if (!(mo >= 1 && mo <= 12 && d >= 1 && d <= 31)) return null;
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  if (dt.getUTCMonth() !== mo - 1) return null;
+  return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+function parseScanDate(s){
+  let m;
+  if ((m = s.match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/))) return scanYmd(+m[1], +m[2], +m[3]);
+  if ((m = s.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/))){ let y = +m[3]; if (y < 100) y += 2000; return scanYmd(y, +m[2], +m[1]); } // Europees: dag-maand-jaar
+  if ((m = s.match(/(\d{1,2})\s+([a-zé]+)\.?\s+(\d{4})/i))){ const mo = SCAN_MONTHS[m[2].toLowerCase()]; if (mo) return scanYmd(+m[3], mo, +m[1]); }
+  if ((m = s.match(/([a-z]+)\.?\s+(\d{1,2}),?\s+(\d{4})/i))){ const mo = SCAN_MONTHS[m[1].toLowerCase()]; if (mo) return scanYmd(+m[3], mo, +m[2]); }
+  return null;
+}
+const ROAST_DATE_KEYWORD_RE = /(roasted(\s+on)?|roast(ing)?\s+date|roast\s+on|gebrand(\s+op)?|brand\s*datum|geroosterd(\s+op)?|röstdatum|geröstet(\s+am)?)/i;
+function extractRoastDateFromText(rawText, nowMs){
+  const now = nowMs == null ? Date.now() : nowMs;
+  for (const line of String(rawText || '').split('\n')){
+    const kw = line.match(ROAST_DATE_KEYWORD_RE);
+    if (!kw) continue;
+    const iso = parseScanDate(line.slice(kw.index + kw[0].length, kw.index + kw[0].length + 40));
+    if (!iso) continue;
+    const t = Date.parse(iso + 'T12:00:00Z');
+    if (isNaN(t) || t > now + 86400000 || now - t > 400 * 86400000) continue; // toekomst of >~13 mnd oud: geen branddatum
+    return iso;
+  }
+  return null;
 }
 
 function summariseScan(found){
@@ -11056,11 +11112,32 @@ function setScanStatus(text, isError){
   else { el.removeAttribute('data-error'); el.setAttribute('data-busy','true'); }
 }
 
+// Audit BC-20: na scannen/plakken een korte controlekaart met wat er is ingevuld — en eerlijk
+// wat NIET herkend is en op welke standaard dat nu staat — plus direct opslaan, zodat je
+// niet door het hele formulier hoeft om een zak toe te voegen.
 function showScanResult(found){
   const el = document.getElementById('scan-result');
   if (!el) return;
   el.hidden = false;
-  el.textContent = summariseScan(found);
+  if (!found){ el.innerHTML = `<p class="scan-review-summary">${escapeHtml(summariseScan(null))}</p>`; return; }
+  const nameVal = (document.getElementById('f-name') || {}).value || '';
+  const dateVal = (document.getElementById('f-roast-date') || {}).value || '';
+  const origin = [found.country, found.region].filter(Boolean).join(' · ');
+  const rows = [
+    ['Naam', nameVal.trim() || null, 'niet herkend — vul hieronder in'],
+    ['Branddatum', dateVal ? new Date(dateVal + 'T00:00:00').toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' }) : null, 'niet herkend — staat die op de zak? Vul hieronder in (preciezer bloom-advies)'],
+    ['Branding', found.roast ? ROAST_INFO[found.roast].name : null, `niet herkend — staat nu op ${ROAST_INFO[formRoastChip] ? ROAST_INFO[formRoastChip].name : formRoastChip} (standaard), controleer`],
+    ['Proces', found.process ? PROCESS_INFO[found.process].name : null, `niet herkend — staat nu op ${PROCESS_INFO[formProcessChip] ? PROCESS_INFO[formProcessChip].name : formProcessChip} (standaard), controleer`],
+    ['Herkomst', origin || null, 'niet herkend'],
+    ['Smaak', found.tags && found.tags.length ? found.tags.slice(0, 5).join(', ') + (found.tags.length > 5 ? ` +${found.tags.length - 5}` : '') : null, 'geen smaaknotities herkend']
+  ];
+  el.innerHTML = `<p class="scan-review-summary">${escapeHtml(summariseScan(found))}</p>
+    <dl class="scan-review-rows">${rows.map(([label, val, missing]) =>
+      `<div class="scan-review-row" data-missing="${val ? 'false' : 'true'}"><dt>${label}</dt><dd>${escapeHtml(val || missing)}</dd></div>`).join('')}</dl>
+    <button type="button" class="advisor-primary" id="scan-review-save-btn" style="margin-top:10px;">Klopt — boon opslaan</button>
+    <p class="scan-review-hint">Of pas hieronder aan wat niet klopt; details zoals smaaknotities en herkomst zijn optioneel.</p>`;
+  const saveBtn = document.getElementById('scan-review-save-btn');
+  if (saveBtn) saveBtn.addEventListener('click', () => { const b = document.getElementById('save-bean-btn'); if (b) b.click(); });
 }
 
 async function runBeanPhotoScan(file){
@@ -11865,6 +11942,9 @@ function showScreen(name, opts){
   const order = ['method','roast','profile','prep'];
   const idx = order.indexOf(name);
   const wizardless = ['brew','advice','beans','bean-add','home','settings','brewlog-history','bean-detail','brewlog','triage'];
+  // Audit BC-25: de stappenbalk hoort bij de recept-wizard, niet bij Home/Instellingen/timer.
+  const trackerEl = document.getElementById('tracker');
+  if (trackerEl) trackerEl.hidden = wizardless.includes(name);
   document.querySelectorAll('.tracker-item').forEach(item=>{
     const step = item.getAttribute('data-step');
     const stepIdx = order.indexOf(step);
