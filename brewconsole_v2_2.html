@@ -8901,20 +8901,32 @@ function renderTriageQuestions(){
     updateTriageResult();
   });
 }
-// NIEUW (Pagina-Polish-spec §6.4 acties): "Opnieuw naar recept" navigeert puur naar het
-// al bestaande #screen-prep (state.recipe/state.waterMl etc. blijven ongewijzigd — Triage
-// raakt nooit receptvelden aan); "Terug naar bonen" is de bestaande back-bestemming.
+// NIEUW (Pagina-Polish-spec §6.4 acties): "Opnieuw naar recept" gaat terug naar
+// #screen-prep (Triage raakt nooit receptvelden aan); "Terug naar bonen" is de bestaande
+// back-bestemming.
+// Phase 0 / BC-05 (audit: triage-crash): Triage is ook bereikbaar vanaf het Bonen-scherm,
+// zónder dat er ooit een recept gekozen is. De knop toonde dan een leeg receptscherm en
+// Start crashte op state.recipe === null. Nu: is er een volledige receptkeuze, dan wordt
+// het receptscherm eerst opgebouwd; anders heet de knop eerlijk "Recept kiezen" en gaat
+// hij naar het methodescherm.
+function hasRecipeChoice(){
+  return !!(METHOD_INFO[state.method] && ROAST_INFO[state.roast] && PROFILE_INFO[state.profile] && state.waterMl);
+}
 function triageActionsHtml(){
+  const label = hasRecipeChoice() ? 'Opnieuw naar recept' : 'Recept kiezen';
   return `<div class="prep-cta-row" style="margin-top:18px;">
     <button type="button" class="advisor-primary" id="triage-back-beans-btn" style="margin-top:0;">Terug naar bonen</button>
-    <button type="button" class="start-btn" id="triage-to-recipe-btn">Opnieuw naar recept</button>
+    <button type="button" class="start-btn" id="triage-to-recipe-btn">${label}</button>
   </div>`;
 }
 function wireTriageActionButtons(){
   const backBtn = document.getElementById('triage-back-beans-btn');
   if (backBtn) backBtn.addEventListener('click', ()=> showScreen('beans'));
   const recipeBtn = document.getElementById('triage-to-recipe-btn');
-  if (recipeBtn) recipeBtn.addEventListener('click', ()=> showScreen('prep'));
+  if (recipeBtn) recipeBtn.addEventListener('click', ()=>{
+    if (hasRecipeChoice()){ renderPrep(); showScreen('prep'); }
+    else { renderMethodGrid(); showScreen('method'); }
+  });
 }
 function updateTriageResult(){
   const resEl = document.getElementById('triage-result');
@@ -10631,6 +10643,9 @@ function setDialRunning(running){
 }
 
 function startBrew(){
+  // BC-05: vangnet — zonder berekend recept valt er niets te brouwen (voorheen een crash
+  // in renderDialTicks() op state.recipe.totalTime). Terug naar het begin van de keuze.
+  if (!state.recipe){ renderMethodGrid(); showScreen('method'); return; }
   timer.elapsed = 0; timer.running = false; timer.lastStepIndex = -1; timer.preAlertedFor = -1; timer.startTs = 0;
   unlockAudioForIOS(); // binnen deze user-gesture, zodat latere beeps op iOS altijd geluid geven
   /* "Brouw opnieuw" (expertreview A8): onthoud methode/waterhoeveelheid/bypass op de boon

@@ -1340,6 +1340,64 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     });
   });
 
+  // NIEUW (Phase 0 / BC-05 — audit: triage-crash). Triage is bereikbaar vanaf het
+  // Bonen-scherm zonder dat er ooit een recept gekozen is; "Opnieuw naar recept" toonde dan
+  // een leeg receptscherm en Start crashte op state.recipe === null.
+  describe('BC-05: "Opnieuw naar recept" vanuit Triage crasht nooit', () => {
+    async function runTriageToResult(page){
+      await page.click('.navbar [data-nav="beans"]');
+      await assertBecomesActive(page, '#screen-beans');
+      await page.click('#triage-open-btn');
+      await assertBecomesActive(page, '#screen-triage');
+      for (let i = 0; i < 20 && !(await page.locator('#triage-to-recipe-btn').count()); i++){
+        await page.click('[data-triage-opt] >> nth=0');
+      }
+      assert.equal(await page.locator('#triage-to-recipe-btn').count(), 1, 'triage-resultaat met actieknoppen verwacht');
+    }
+
+    test('zonder gekozen recept heet de knop "Recept kiezen" en gaat hij naar het methodescherm', async () => {
+      const page = await newTrackedPage();
+      const errorsBefore = pageErrors.length;
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await runTriageToResult(page);
+      assert.equal((await page.locator('#triage-to-recipe-btn').textContent()).trim(), 'Recept kiezen');
+      await page.click('#triage-to-recipe-btn');
+      await assertBecomesActive(page, '#screen-method');
+      assert.equal(pageErrors.length, errorsBefore, `onverwachte JS-fout: ${pageErrors.slice(errorsBefore).join(' | ')}`);
+      await page.close();
+    });
+
+    test('met een gekozen recept bouwt de knop het receptscherm op en werkt Start', async () => {
+      const page = await newTrackedPage();
+      const errorsBefore = pageErrors.length;
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('[data-method="v60"]');
+      await page.click('#roast-grid [data-roast] >> nth=0');
+      await page.click('#profile-grid [data-profile="klassiek"]');
+      await assertBecomesActive(page, '#screen-prep');
+      await runTriageToResult(page);
+      assert.equal((await page.locator('#triage-to-recipe-btn').textContent()).trim(), 'Opnieuw naar recept');
+      await page.click('#triage-to-recipe-btn');
+      await assertBecomesActive(page, '#screen-prep');
+      assert.ok((await page.locator('#summary-tag').textContent()).trim().length > 0);
+      await page.click('#start-btn');
+      await assertBecomesActive(page, '#screen-brew');
+      assert.equal(pageErrors.length, errorsBefore, `onverwachte JS-fout: ${pageErrors.slice(errorsBefore).join(' | ')}`);
+      await page.close();
+    });
+
+    test('vangnet: startBrew() zonder recept gaat terug naar het methodescherm in plaats van te crashen', async () => {
+      const page = await newTrackedPage();
+      const errorsBefore = pageErrors.length;
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.evaluate(() => { state.recipe = null; startBrew(); });
+      await assertBecomesActive(page, '#screen-method');
+      assert.equal(pageErrors.length, errorsBefore, `onverwachte JS-fout: ${pageErrors.slice(errorsBefore).join(' | ')}`);
+      await page.close();
+    });
+  });
+
   test('Geen console- of pageerrors opgetreden tijdens de hele kernflow', () => {
     assert.deepEqual(consoleErrors, [], 'Onverwachte console.error()-aanroepen tijdens de kernflow');
     assert.deepEqual(pageErrors, [], 'Onverwachte onafgevangen JS-fouten tijdens de kernflow');
