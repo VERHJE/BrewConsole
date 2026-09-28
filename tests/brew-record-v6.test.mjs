@@ -733,3 +733,28 @@ describe('Meetoverzicht — hoe goed werken de adviezen? (gate voor fase 5–7)'
     assert.equal(api.adviceOutcomeStats(many(16, 0, 4)).gate, 'failed');  // 80% gelukt, maar 20% slechter
   });
 });
+
+describe('BC-10 — blinde helder-proef: oordeel', () => {
+  const t = (preferred) => ({ preferred });
+  test('antwoord per kop → arm (variant/controle/geen)', () => {
+    assert.equal(api.abArmForAnswer('1', 1), 'variant');
+    assert.equal(api.abArmForAnswer('2', 1), 'control');
+    assert.equal(api.abArmForAnswer('none', 2), 'none');
+    assert.equal(api.abArmForAnswer(null, 2), null);
+  });
+  test('onder de 5 proeven: onvoldoende, hoe duidelijk ook', () => {
+    const v = j(api.abTrialVerdict([t('variant'), t('variant'), t('variant'), t('variant')]));
+    assert.equal(v.verdict, 'insufficient');
+    assert.equal(v.needed, 1);
+  });
+  test('variant wint pas bij ≥70% van de beslissende proeven én minstens 4 keer', () => {
+    assert.equal(api.abTrialVerdict([t('variant'), t('variant'), t('variant'), t('variant'), t('control')]).verdict, 'variant');
+    assert.equal(api.abTrialVerdict([t('variant'), t('variant'), t('variant'), t('none'), t('control')]).verdict, 'unclear', '3 keer is te weinig');
+    assert.equal(api.abTrialVerdict([t('variant'), t('variant'), t('variant'), t('control'), t('control')]).verdict, 'unclear');
+    assert.equal(api.abTrialVerdict([t('control'), t('control'), t('control'), t('control'), t('none')]).verdict, 'control');
+  });
+  test('onbeantwoorde proeven tellen niet mee', () => {
+    const v = j(api.abTrialVerdict([t(null), t('variant'), { }, null]));
+    assert.equal(v.n, 1);
+  });
+});

@@ -27,7 +27,7 @@ describe('BC-02: UI-teksten beloven geen effecten die de engine niet heeft', () 
   test('de vervangende teksten staan in de UI', () => {
     assert.match(html, /Natural\/anaerobic\? Dat weegt mee in de methodekeuze \(V60 of Chemex\) en het voorgestelde profiel; dosis, maling en temperatuur veranderen er niet door\./);
     assert.match(html, /m\.a\.s\.l\. — ter info, verandert het recept niet/);
-    assert.match(html, /Bepaalt vooral het schenkschema\. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding\./);
+    assert.match(html, /Bepaalt vooral het schenkschema\. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding \(een heel kort schema start één klik fijner\)\./);
   });
 
   test('profieltekst klopt met de engine: temperatuur en maling gelijk over profielen, dosis binnen 0,5 g', () => {
@@ -37,7 +37,12 @@ describe('BC-02: UI-teksten beloven geen effecten die de engine niet heeft', () 
           .filter(p => !api.PROFILE_INFO[p].methodOnly || api.PROFILE_INFO[p].methodOnly === m)
           .map(p => api.computeRecipe(m, roast, p, m === 'v60' ? 300 : 600, 'washed', false, 10, null, false, false, null, 0));
         assert.equal(new Set(recs.map(r => r.temp)).size, 1, `${m}/${roast}: temperatuur verschilt per profiel`);
-        assert.equal(new Set(recs.map(r => r.grindStartingPoint)).size, 1, `${m}/${roast}: maling verschilt per profiel`);
+        // BC-11: alleen een heel kort schema (≤ SHORT_CONTACT_MAX_SEC) start één klik fijner — precies wat de tekst zegt.
+        const normal = recs.filter(r => r.totalTime > 120);
+        assert.equal(new Set(normal.map(r => r.grindStartingPoint)).size, 1, `${m}/${roast}: maling verschilt per profiel`);
+        for (const r of recs.filter(r => r.totalTime <= 120 && r.grindStartingPoint != null)){
+          assert.equal(r.grindStartingPoint, normal[0].grindStartingPoint - 1, `${m}/${roast}: kort schema hoort precies één klik fijner te starten`);
+        }
         const doses = recs.map(r => r.dose);
         const spread = Math.max(...doses) - Math.min(...doses);
         assert.ok(spread <= 0.5 + 1e-9, `${m}/${roast}: dosisverschil ${spread.toFixed(2)} g is meer dan "een paar tiende gram"`);

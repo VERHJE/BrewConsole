@@ -344,6 +344,7 @@
   }
 
   /* tracker */
+  .tracker[hidden]{display:none;}
   .tracker{
     display:flex;
     gap:0;
@@ -815,6 +816,23 @@
   .prep-cta-row{display:flex; gap:10px; align-items:stretch;}
   .prep-cta-row .prep-adjust-btn{flex:1; margin-top:0; min-height:auto;}
   .prep-cta-row .start-btn{flex:1.8;}
+  .style-more-body:not([hidden]){display:block; margin-top:6px;}
+  .scan-review-summary{margin:0 0 8px;}
+  .ab-trial{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px 14px; margin:10px 0 14px;}
+  .ab-trial[hidden]{display:none;}
+  .ab-title{margin:0 0 6px; font-weight:600; color:var(--copper-light); font-size:14px;}
+  .ab-text, .ab-tally, .ab-reveal{margin:4px 0 8px; font-size:12.5px; color:var(--text-dim); line-height:1.45;}
+  .ab-reveal{color:var(--text);}
+  .ab-q{margin:10px 0 4px; font-size:12px; color:var(--text-muted);}
+  .ab-q-hint{color:var(--text-faint); font-size:11px;}
+  .ab-actions{display:flex; gap:12px; align-items:center; margin-top:10px;}
+  .scan-review-rows{margin:0; display:grid; gap:4px;}
+  .scan-review-row{display:grid; grid-template-columns:96px 1fr; gap:8px; font-size:13px;}
+  .scan-review-row dt{color:var(--text-muted); font-family:var(--font-mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; padding-top:2px;}
+  .scan-review-row dd{margin:0; color:var(--text);}
+  .scan-review-row[data-missing="true"] dd{color:var(--warn, var(--copper-light));}
+  .scan-review-hint{margin:8px 0 0; font-size:11.5px; color:var(--text-faint);}
+  .profile-group-label{flex-basis:100%; width:100%; grid-column:1/-1; margin:12px 0 2px; font-family:var(--font-mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted);}
   .disclaimer{font-size:11px; color:var(--text-faint); margin-top:10px; line-height:1.4;}
 
   /* brew screen */
@@ -1256,10 +1274,6 @@
      --border in beide thema's, maar nog steeds duidelijk zwakker dan de --copper-vulling. */
   .star-bg{color:var(--text-faint);}
   .star-fill{color:var(--copper);}
-  /* NIEUW (smaakwiel-scoring): exact percentage naast de sterren — zie
-     profileScorePercentages(). Klein en zwak zoals andere secundaire chip-tekst, geen
-     eigen visueel gewicht t.o.v. de sterren zelf. */
-  .profile-match-pct{font-size:10.5px; color:var(--text-faint); line-height:1;}
   /* NIEUW (bijna-gelijke-stand): default = de oude, passieve informatieve toon (kleine,
      zwakke tekst — gebruikt wanneer een tie inmiddels is opgelost). [data-pending="true"]
      is de actieve variant: geen chip is voorgeselecteerd, dus dit moet opvallen genoeg zijn
@@ -1496,6 +1510,30 @@
   @media (min-width:700px) and (orientation:landscape){
     .app{ --app-max:920px; }
   }
+  /* Audit BC-19: groter scherm = meer overzicht, niet een uitgerekte telefoon. */
+  @media (min-width:700px){
+    #screen-prep .photo-slot--banner{ aspect-ratio:auto; height:190px; }
+    #screen-prep .stats-grid{ grid-template-columns:repeat(3,1fr); }
+  }
+  /* iPad op het aanrecht ("counter mode"): grotere dial en giet-instructie, leesbaar op afstand. */
+  @media (min-width:700px) and (min-height:900px){
+    .dial-wrap{ width:380px; height:380px; }
+    .dial-time{ font-size:64px; }
+    .brew-action-main{ font-size:52px; }
+    .brew-action-sub{ font-size:17px; }
+    .brew-hero{ padding-top:72px; }
+  }
+  @media (min-width:1100px){
+    #screen-prep.active{ display:grid; grid-template-columns:minmax(0,1fr) 370px; column-gap:28px; align-items:start; }
+    #screen-prep > .back-btn, #screen-prep > .photo-slot{ grid-column:1 / -1; }
+    #screen-prep .prep-main{ grid-column:1; min-width:0; }
+    #screen-prep .prep-side{ grid-column:2; position:sticky; top:max(18px, var(--safe-t)); display:flex; flex-direction:column; }
+    #screen-prep .prep-side .prep-cta-row{ order:-1; margin:0 0 14px; }
+    #screen-prep .stat-value{ white-space:nowrap; }
+    #screen-prep .recipe-table{ font-size:13px; }
+  }
+  /* Schermtitels krijgen programmatisch focus (voor schermlezers); geen zichtbaar kader daarom. */
+  [data-screen-heading]:focus, .screen > h1.title:focus, .screen .prep-main > h1.title:focus{ outline:none; }
 
   /* ============================================================
      NAVIGATIESHELL (vervolgplan v2.3, Fase 3) — vijf bestemmingen
@@ -1848,7 +1886,7 @@
     <div class="tracker-item" data-step="method">Methode</div>
     <div class="tracker-item" data-step="roast">Roast</div>
     <div class="tracker-item" data-step="profile">Profiel</div>
-    <div class="tracker-item" data-step="prep">Brew</div>
+    <div class="tracker-item" data-step="prep">Recept</div>
   </header>
 
   <main>
@@ -1858,7 +1896,7 @@
          (Bouwbesluiten B6): de hero hieronder toont sinds Fase 7 photos/home-hero.jpg
          (data-has-photo="true"); zonder foto zou hetzelfde neutrale .photo-slot-vlak tonen. -->
     <section class="screen active" id="screen-home" data-screen="home">
-      <h1 class="title" data-screen-heading tabindex="-1">Welkom terug</h1>
+      <h1 class="title" data-screen-heading tabindex="-1" id="home-title">Welkom terug</h1>
       <!-- Fase 2 (§20): een lopend of nog niet geproefd brouwsel blijft zichtbaar als je wegnavigeert. -->
       <button type="button" class="home-active-brew" id="home-active-brew" hidden>
         <span class="home-active-brew-title" id="home-active-brew-title"></span>
@@ -1912,7 +1950,7 @@
         <div class="chip-row" id="advice-roast"></div>
       </div>
       <div class="advice-q">
-        <p class="advice-q-label">Smaakkarakter</p>
+        <p class="advice-q-label">Smaakrichting</p>
         <div class="chip-row" id="advice-profile"></div>
         <p id="advice-profile-tie-note" class="advice-tie-note" style="display:none;"></p>
       </div>
@@ -2097,7 +2135,7 @@
             <textarea id="f-scan-text" class="form-input" rows="3" placeholder="bijv. Ethiopia Guji — washed — light roast. Notes: jasmine, peach, black tea"></textarea>
           </label>
           <button type="button" class="advisor-link" id="scan-text-btn" style="margin-top:8px;">Herken kenmerken uit tekst →</button>
-          <p class="process-note" id="scan-result" hidden></p>
+          <div class="process-note scan-review" id="scan-result" hidden></div>
         </div>
 
         <div class="section-divider">of vul handmatig in</div>
@@ -2294,7 +2332,7 @@
     <section class="screen" id="screen-profile" data-screen="profile">
       <button class="back-btn" data-back="roast">← Roast</button>
       <h1 class="title">Wat wordt het smaakprofiel?</h1>
-      <p class="subtitle">Bepaalt vooral het schenkschema. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding. Een paar profielen delen vandaag nog hetzelfde recept — dat zie je hieronder per profiel.</p>
+      <p class="subtitle">Bepaalt vooral het schenkschema. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding (een heel kort schema start één klik fijner). Een paar profielen delen vandaag nog hetzelfde recept — dat zie je hieronder per profiel.</p>
       <div class="choice-grid choice-grid--1" id="profile-grid"></div>
     </section>
 
@@ -2306,6 +2344,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 8h13v5a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6V8Z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/></svg>
         <div class="photo-scrim"></div>
       </div>
+      <!-- Audit BC-19: twee wrappers zodat een breed scherm recept (links) en schema + Start
+           (rechts, blijft in beeld) naast elkaar kan tonen. Op een telefoon verandert er niets. -->
+      <div class="prep-main">
       <div class="summary-tag" id="summary-tag"></div>
       <h1 class="title">Jouw recept</h1>
       <!-- Phase 0 / BC-01: laat vóór Start zien bij welke boon dit brouwsel gelogd wordt. -->
@@ -2313,6 +2354,8 @@
       <!-- Fase 3: optioneel doel voor deze kop. Stuurt (nog) geen receptgetal; na het proeven
            vraagt de proefkaart of het gehaald is — dat bepaalt mee of het een geslaagde kop is. -->
       <div class="prep-goal" id="prep-goal" role="group" aria-label="Doel voor deze kop"></div>
+      <!-- BC-10: blinde helder-proef (alleen bij doel "Helder & fris"). -->
+      <div class="ab-trial" id="ab-trial" hidden></div>
       <!-- Fase 4: de stap die je na je vorige kop koos ("Gebruik voor volgende kop"). -->
       <div class="prep-next-adjust" id="prep-next-adjust" hidden></div>
       <p class="technique-line" id="technique-line"></p>
@@ -2379,7 +2422,6 @@
           <p class="style-note" id="style-note" style="margin:0;"></p>
         </div>
       </div>
-<p class="freshness-readout" id="profile-scope-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
 
       <!-- FIX (teamreview v2 — Midden bevinding, UX Designer/Professional Brewer): tot v2
            konden process-/freshness-/opened-/altitude-/hardness-/bypass-note allemaal
@@ -2417,34 +2459,12 @@
             <p class="freshness-readout" id="opened-readout" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
           </div>
 
-          <div class="advice-q" style="margin:14px 0;">
-            <p class="advice-q-label">Waterprofiel <span style="text-transform:none; letter-spacing:0;">(optioneel — je kraanwater, blijft onthouden, los van deze boon/methode)</span></p>
-            <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:0 0 8px;">Vereenvoudiging: hardheid (calcium/magnesium) is niet hetzelfde als alkaliniteit (bufferende werking tegen zuren) — vooral bij fruitige/zure profielen bepaalt alkaliniteit minstens zo sterk hoe zuur de kop aankomt. Elke parameter hieronder krijgt daarom zijn EIGEN oordeel, nooit één samengevoegd "water is goed"-signaal (Implementatieplan Zetadvies v3.0, Fase 4/Bouwbesluit B-5).</p>
-
-            <label for="prep-water-hardness" style="font-size:12px; color:var(--text-faint); display:block; margin:10px 0 4px;">Hardheid (mg/L als CaCO3)</label>
-            <input type="number" id="prep-water-hardness" class="form-input" placeholder="bijv. 128" min="0" max="600" step="1" style="max-width:220px;">
-
-            <label for="prep-water-alkalinity" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Alkaliniteit</label>
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-              <input type="number" id="prep-water-alkalinity" class="form-input" placeholder="bijv. 50" min="0" max="600" step="1" style="max-width:150px;">
-              <select id="prep-water-alkalinity-unit" class="form-input" style="max-width:150px;">
-                <option value="CaCO3">mg/L CaCO3</option>
-                <option value="HCO3">mg/L HCO3</option>
-              </select>
-            </div>
-            <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:6px 0 0;">Te vinden op het kwaliteitsoverzicht per productiebedrijf van je waterbedrijf, of met een KH-druppeltest. HCO3 wordt omgerekend naar CaCO3-equivalent (×0,82) voor de SCA-vergelijking hieronder.</p>
-
-            <label for="prep-water-dilution" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Verdunning kraan : gedemineraliseerd <span style="text-transform:none; letter-spacing:0;">(optioneel — herberekent het effectieve profiel hieronder, puur rekenkundig, geen receptinvloed)</span></label>
-            <select id="prep-water-dilution" class="form-input" style="max-width:220px;">
-              <option value="1:0">Geen verdunning (1:0, puur kraanwater)</option>
-              <option value="2:1">2 : 1</option>
-              <option value="1:1">1 : 1</option>
-            </select>
-
-            <p class="freshness-readout" id="hardness-readout" style="font-size:12.5px; color:var(--text-faint); margin:10px 0 0;"></p>
-            <p class="freshness-readout" id="alkalinity-readout" style="font-size:12.5px; color:var(--text-faint); margin:4px 0 0;"></p>
-            <p class="freshness-readout" id="ph-readout" style="font-size:12.5px; color:var(--text-faint); margin:4px 0 0;"></p>
-            <p class="freshness-readout" id="water-confidence-readout" style="font-size:11px; color:var(--text-faint); margin:8px 0 0;"></p>
+          <!-- Audit BC-24: het waterprofiel is een eenmalige instelling en staat in Instellingen;
+               hier alleen wat er nu geldt, met een weg ernaartoe. -->
+          <div class="advice-q" style="margin:14px 0;" id="prep-water-summary-block">
+            <p class="advice-q-label">Waterprofiel</p>
+            <p class="freshness-readout" id="prep-water-summary" style="font-size:12.5px; color:var(--text-faint); margin:0;"></p>
+            <button type="button" class="link-secondary" id="prep-water-settings-link" style="margin-top:4px; padding:4px 0;">Waterprofiel in Instellingen →</button>
           </div>
 
           <div class="advice-q" style="margin:14px 0;">
@@ -2489,7 +2509,8 @@
           <p class="process-note" id="bypass-note" hidden></p>
         </div>
       </details>
-
+      </div>
+      <div class="prep-side">
       <table class="recipe-table" id="recipe-table">
         <thead>
           <tr><th>Stap</th><th>Tijd</th><th>Water erbij</th><th>Totaal</th></tr>
@@ -2511,10 +2532,23 @@
         <button type="button" class="advisor-primary prep-adjust-btn" data-back="profile">Aanpassen</button>
         <button class="start-btn" id="start-btn">Start brew →</button>
       </div>
-      <p class="disclaimer" id="disclaimer"></p>
-<p class="freshness-readout" id="target-window-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
-<p class="freshness-readout" id="retention-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
-<p class="freshness-readout" id="personal-calibration-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
+      <!-- Audit BC-12: de onderbouwing blijft volledig, maar op verzoek i.p.v. als muur tekst
+           onder de startknop. Zelfde elementen/ID's, alleen samen ingeklapt. -->
+      <details class="flavor-category why-details" id="why-details">
+        <summary style="color:var(--copper-light)">
+          <span>Waarom deze getallen?</span>
+          <span class="flavor-category-arrow">+</span>
+        </summary>
+        <div class="flavor-category-body">
+          <p class="freshness-readout" id="profile-scope-note" style="font-size:12.5px; color:var(--text-faint); margin:0 0 8px;" hidden></p>
+          <p class="freshness-readout" id="temp-anchor-note" style="font-size:12.5px; color:var(--text-faint); margin:0 0 8px;"></p>
+          <p class="disclaimer" id="disclaimer"></p>
+          <p class="freshness-readout" id="target-window-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
+          <p class="freshness-readout" id="retention-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
+          <p class="freshness-readout" id="personal-calibration-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
+        </div>
+      </details>
+      </div>
     </section>
 
     <!-- STEP 5: BREW / TIMER -->
@@ -2752,6 +2786,46 @@
           <div><div class="bean-detail-fact-label">Eenheden</div><div class="bean-detail-fact-value">Celsius (°C)</div></div>
         </div>
         <p class="empty-hint" style="margin:10px 0 0;">Vast ingesteld voor dit toestel — alle maal-/temperatuuradviezen in de app gaan hiervan uit. Molen- of eenheidkeuze is nog niet instelbaar.</p>
+      </div>
+
+      <!-- Audit BC-24: waterprofiel hoort bij je keuken, niet bij één recept. -->
+      <div class="bean-detail-section" id="settings-water-section">
+        <p class="bean-detail-section-label">Water</p>
+      <div class="advice-q" style="margin:0;">
+        <p class="empty-hint" style="margin:0 0 10px;">Eenmalig invullen: het blijft onthouden, los van boon of methode. Het verandert geen receptgetal, maar helpt bij vlakke of doffe koppen (alkaliniteit dempt zuren).</p>
+        <p class="freshness-readout" style="font-size:12px; color:var(--text-faint); margin:0 0 6px;">Snel invullen:</p>
+        <div class="chip-row" id="water-presets">
+          <button type="button" class="chip" data-water-preset="sca">SCA-richtwaarde (68 / 40)</button>
+          <button type="button" class="chip" data-water-preset="clear">Wissen</button>
+        </div>
+        <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:6px 0 10px;">Kraanwater: zoek op je postcode het kwaliteitsoverzicht van je waterbedrijf ("totale hardheid" en "waterstofcarbonaat/HCO3"). Mineralenzakje of flessenwater: neem de waarden van de verpakking over. De SCA-richtwaarde is bedoeld voor wie water zelf mengt.</p>
+        <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:0 0 8px;">Vereenvoudiging: hardheid (calcium/magnesium) is niet hetzelfde als alkaliniteit (bufferende werking tegen zuren) — vooral bij fruitige/zure profielen bepaalt alkaliniteit minstens zo sterk hoe zuur de kop aankomt. Elke parameter hieronder krijgt daarom een eigen oordeel, nooit één samengevoegd "water is goed".</p>
+
+        <label for="prep-water-hardness" style="font-size:12px; color:var(--text-faint); display:block; margin:10px 0 4px;">Hardheid (mg/L als CaCO3)</label>
+        <input type="number" id="prep-water-hardness" class="form-input" placeholder="bijv. 128" min="0" max="600" step="1" style="max-width:220px;">
+
+        <label for="prep-water-alkalinity" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Alkaliniteit</label>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <input type="number" id="prep-water-alkalinity" class="form-input" placeholder="bijv. 50" min="0" max="600" step="1" style="max-width:150px;">
+          <select id="prep-water-alkalinity-unit" class="form-input" style="max-width:150px;">
+            <option value="CaCO3">mg/L CaCO3</option>
+            <option value="HCO3">mg/L HCO3</option>
+          </select>
+        </div>
+        <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:6px 0 0;">Te vinden op het kwaliteitsoverzicht per productiebedrijf van je waterbedrijf, of met een KH-druppeltest. HCO3 wordt omgerekend naar CaCO3-equivalent (×0,82) voor de SCA-vergelijking hieronder.</p>
+
+        <label for="prep-water-dilution" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Verdunning kraan : gedemineraliseerd <span style="text-transform:none; letter-spacing:0;">(optioneel — herberekent het effectieve profiel hieronder, puur rekenkundig, geen receptinvloed)</span></label>
+        <select id="prep-water-dilution" class="form-input" style="max-width:220px;">
+          <option value="1:0">Geen verdunning (1:0, puur kraanwater)</option>
+          <option value="2:1">2 : 1</option>
+          <option value="1:1">1 : 1</option>
+        </select>
+
+        <p class="freshness-readout" id="hardness-readout" style="font-size:12.5px; color:var(--text-faint); margin:10px 0 0;"></p>
+        <p class="freshness-readout" id="alkalinity-readout" style="font-size:12.5px; color:var(--text-faint); margin:4px 0 0;"></p>
+        <p class="freshness-readout" id="ph-readout" style="font-size:12.5px; color:var(--text-faint); margin:4px 0 0;"></p>
+        <p class="freshness-readout" id="water-confidence-readout" style="font-size:11px; color:var(--text-faint); margin:8px 0 0;"></p>
+      </div>
       </div>
 
       <div class="bean-detail-section">
@@ -4035,18 +4109,20 @@ const ROAST_TEMP_ANCHOR = {
 // brandt grof. Voegt geen nieuwe claim toe, positioneert alleen binnen een bereik dat er
 // al staat (§2c).
 const ROAST_GRIND_ANCHOR_FRACTION = { light:0, light_medium:0.25, medium:0.5, medium_dark:0.75, dark:1 };
+// Audit BC-11: schema's van hooguit 2:00 (vandaag alleen Perger 80/20 op V60, 1:40) starten één klik fijner.
+const SHORT_CONTACT_MAX_SEC = 120;
 
 const PROFILE_INFO = {
   heel_fruitig:  { name:'Heel fruitig',    desc:'Bessen, wijnachtig, bijna gefermenteerd', color:'#C2445C', icon:'berries' },
   fruitig_clean: { name:'Fruitig & Clean', desc:'Sinaasappel, perzik — helder zuur',        color:'#D3824A', icon:'drop'    },
-  fresh_clean:   { name:'Fresh & Clean',   desc:'Appel, bloesem — techniek boven grind',    color:'#8FA872', icon:'leaf'    },
-  klassiek:      { name:'Klassiek',        desc:'Vijf gelijke pours — evenwichtig, geen lean', color:'#A69684', icon:'target' },
+  fresh_clean:   { name:'Fresh & Clean',   desc:'Appel, bloesem — techniek boven maling',    color:'#8FA872', icon:'leaf'    },
+  klassiek:      { name:'Klassiek',        desc:'Vijf gelijke beurten — evenwichtig, geen uitschieter', color:'#A69684', icon:'target' },
   vol_rond:      { name:'Vol & rond',      desc:'Chocolade, noten, body',                    color:'#8A5A2E', icon:'sphere'  },
   zoet:          { name:'Zoet',            desc:'Karamel, bruine suiker, zachte afdronk',   color:'#C9A233', icon:'crystal' },
   snel_puur:     { name:'Snel & puur',     desc:'Simpele basismethode, altijd heet — in 2,5 min klaar', color:'#5B8AA6', icon:'bolt' },
   bloemig_delicaat: { name:'Bloemig & delicaat', desc:'Jasmijn, thee, Geisha — helderheid en scheiding', color:'#B98FC7', icon:'flower', methodOnly:'v60' },
   sirooprig_vol: { name:'Sirooprig & rond', desc:'Kissaten-stijl, minimale agitatie — zwaarste body', color:'#6B4A2E', icon:'drip', methodOnly:'v60' },
-  robuust:       { name:'Robuust & vol',   desc:'April-stijl — stevige agitatie elke pour, vol uitgesponnen', color:'#A6543C', icon:'spiral' },
+  robuust:       { name:'Robuust & vol',   desc:'April-stijl — stevig roeren bij elke beurt, vol uitgesponnen', color:'#A6543C', icon:'spiral' },
   // FIX (P1 §4, gecontroleerde herbeoordeling): "drie simpele pours" beschreef een
   // specifiek giet-aantal als vaststaand feit — dat spreekt de eigen onzekerheid van de
   // engine tegen (HEDRICK_1_2_1.pulseCount is een researchGap, juist omdát het aantal
@@ -4145,10 +4221,10 @@ const ENGINE_PROFILE_MAP = {
    evidence-veld in de engine zelf aangeraakt. */
 const OVERLAY_DISPLAY = {
   KASUYA_4_6:            { name:'Kasuya 4:6', mechanism:'Twee fasen: de eerste 40% van het water gaat in twee gietbeurten en bepaalt zoetheid/helderheid (Kasuya’s eigen ‘smaakknop’ — een grotere eerste pour geeft meer helderheid/zuur, een kleinere meer zoetheid), de resterende 60% bepaalt via het aantal beurten de sterkte.' },
-  HOFFMANN_ULTIMATE:     { name:'Hoffmann Ultimate', mechanism:'Ondiepe bloom, net genoeg geswirld om droge plekken weg te werken, gevolgd door een hoofdpour in twee spiraalbewegingen. Bewust zonder eigen temperatuurgetal — die komt hier uit het kernrecept.' },
+  HOFFMANN_ULTIMATE:     { name:'Hoffmann Ultimate', mechanism:'Ondiepe bloom, net genoeg geswirld om droge plekken weg te werken, gevolgd door een hoofdgiet in twee spiraalbewegingen. Bewust zonder eigen temperatuurgetal — die komt hier uit het kernrecept.' },
   APRIL_HOUSE_METHOD:    { name:'April huismethode', mechanism:'Zes gelijke gietbeurten, geen aparte bloom-fase; elke pour gebeurt in een stevige cirkelbeweging die zelf voor de agitatie zorgt.' },
   RAO_V60_MINIMAL_POUR:  { name:'Rao — Minimal Pour', mechanism:'Zo min mogelijk losse gietbeurten om temperatuurverlies en turbulentie te beperken, afgesloten met de ‘Rao Spin’ — de dripper ronddraaien na de laatste pour om kanaalvorming tegen te gaan.' },
-  RAO_CHEMEX_DISCLOSED:  { name:'Rao Clarity', mechanism:'Snelle, hete gietstijl (derdehands toegeschreven, zie disclaimer): bloom, één hoofdpour tot volume, lichte agitatie.' },
+  RAO_CHEMEX_DISCLOSED:  { name:'Rao Clarity', mechanism:'Snelle, hete gietstijl (derdehands toegeschreven, zie disclaimer): bloom, één hoofdgiet tot volume, lichte agitatie.' },
   PERGER_80_20:          { name:'Perger 80/20', mechanism:'Geen vaste gietstructuur — bewust een beslisregel, geen recept: te zwak → fijner malen en/of langer zetten en/of meer water, te sterk → het omgekeerde. Dosis blijft gelijk; toestel-onafhankelijk volgens Perger zelf.' },
   HEDRICK_1_2_1:         { name:'Hedrick' }
 };
@@ -5085,13 +5161,13 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
     runningTo += pour1Add;
     const pour1Start = HOFFMANN_BLOOM_SEC;
     const pour1End = pour1Start + HOFFMANN_POUR_WINDOW_SEC;
-    steps.push({ label:'Pour 1', t:pour1Start, endT:pour1End, add:pour1Add, to:runningTo, note:'', flow:'' });
+    steps.push({ label:'Giet 1', t:pour1Start, endT:pour1End, add:pour1Add, to:runningTo, note:'', flow:'' });
 
     const pour2Add = Math.max(0, Math.round(water) - runningTo);
     runningTo += pour2Add;
     const pour2Start = pour1End;
     const pour2End = pour2Start + HOFFMANN_POUR_WINDOW_SEC;
-    steps.push({ label:'Pour 2', t:pour2Start, endT:pour2End, add:pour2Add, to:runningTo, note:'', flow:'' });
+    steps.push({ label:'Giet 2', t:pour2Start, endT:pour2End, add:pour2Add, to:runningTo, note:'', flow:'' });
   } else if (pulseCountIncludesBloom){
     // Fase-bewuste verdeling (§3a/3b): de bloom is pulse 1 van pulseCount. Zonder een
     // vastgesteld fase-mechanisme is er één fase (gelijke verdeling over alle pulseCount
@@ -5138,7 +5214,9 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
               : Math.min(perPulse, phaseWater - addedInPhase));
         addedInPhase += add;
         runningTo += add;
-        const label = pulseIndex === 0 ? 'Bloom' : `Pour ${pulseIndex + 1}`;
+        // Audit BC-25: bij een fase-mechanisme (Kasuya 4:6) is de eerste beurt de eerste van
+        // twee smaakbeurten die tegelijk bloeit — geen losse bloom. Labels in het Nederlands.
+        const label = pulseIndex === 0 ? (phaseSplit ? 'Giet 1 (bloom)' : 'Bloom') : `Giet ${pulseIndex + 1}`;
         const t = pulseIndex === 0 ? 0 : Math.round(bloomTime + (postBloomWindow * (pulseIndex - 1)) / Math.max(1, effectivePulseCount));
         steps.push({ label, t, add, to: runningTo, note:'', flow:'' });
         pulseIndex++;
@@ -5170,7 +5248,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
       // April: pour 2 en verder schuiven 10 sec op door firstPourExtraSec (zie
       // APRIL_FIRST_POUR_EXTRA_SEC) — pour 1 (i===0) blijft op startTime.
       const t = Math.round(startTime + i * cycleSec + (i >= 1 ? firstPourExtraSec : 0));
-      steps.push({ label: pulseCount === 1 ? 'Hoofdpour' : `Pour ${i + 1}`, t, add, to: runningTo, note:'', flow:'' });
+      steps.push({ label: pulseCount === 1 ? 'Hoofdgiet' : `Giet ${i + 1}`, t, add, to: runningTo, note:'', flow:'' });
     }
   }
   steps.push({ label:'Klaar — laten doorlopen', t: totalTime, add:0, to: Math.round(water), note:'Doorloop compleet', flow:'' });
@@ -5185,7 +5263,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
 function buildFallbackRecipe(reason, waterMl){
   return {
     dose:0, water: waterMl, pourWaterMl: waterMl, bypassMl:0, temp:0, tempClamped:false,
-    grindMicron:null, grindStand:null, grindClamped:false, grindConfidence:'INSUFFICIENT', grindBandLabel:'', grindStartingRange:null, grindPracticalRange:null, grindStartingPoint:null, grindMicronContest:null, grindMechanicalMicron:null,
+    grindMicron:null, grindStand:null, grindClamped:false, grindConfidence:'INSUFFICIENT', grindBandLabel:'', grindStartingRange:null, grindPracticalRange:null, grindStartingPoint:null, grindRoastPoint:null, grindShortContact:false, grindMicronContest:null, grindMechanicalMicron:null,
     tempBandNote:'', tempBand:{min:0,max:0}, tempInstruction:'', deviceTempBand:{min:0,max:0},
     totalTime:0, steps:[],
     technique:'Geen geldig recept bij dit watervolume', author:'—',
@@ -5417,7 +5495,10 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // het register, ook de Timemore C3S Pro) tonen we geen verzonnen µm-/klik-getal.
   const grindResolvedNum = core.grind.setting.state === 'RESOLVED' ? core.grind.setting.value : null;
   const grindConfidence = core.grind.confidenceBand;
-  const grindBandLabel = core.grind.psdTarget.qualitativeBand.replace(/_/g, ' ').toLowerCase();
+  // Audit BC-25: de engine-band in het Nederlands i.p.v. "medium fine".
+  const GRIND_BAND_NL = { FINE:'fijn', MEDIUM_FINE:'middelfijn', MEDIUM:'middel', MEDIUM_COARSE:'middelgrof', COARSE:'grof' };
+  const bandKey = core.grind.psdTarget.qualitativeBand;
+  const grindBandLabel = GRIND_BAND_NL[bandKey] || bandKey.replace(/_/g, ' ').toLowerCase();
   // Community-sourced starting-click range (never a calibration value) — resolved only
   // for the Timemore C3S Pro's V60 band today; RESEARCH_GAP everywhere else, including
   // Chemex. See src/registry/grinders.ts's TIMEMORE_C3S_PRO_V60_STARTING_RANGE and
@@ -5435,7 +5516,7 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // brandt fijn/ondergrens, donker brandt grof/bovengrens). Voegt geen nieuwe claim toe
   // en verlegt de range zelf niet; alleen INSUFFICIENT/RESEARCH_GAP-molens (grindStartingRange
   // === null) krijgen terecht geen enkel startpunt, net als hierboven.
-  const grindStartingPoint = grindStartingRange
+  const grindRoastPoint = grindStartingRange
     ? Math.round(grindStartingRange.clicksMin + (ROAST_GRIND_ANCHOR_FRACTION[roastKey] != null ? ROAST_GRIND_ANCHOR_FRACTION[roastKey] : 0.5) * (grindStartingRange.clicksMax - grindStartingRange.clicksMin))
     : null;
   // BIJGEWERKT (Implementatieplan v3.0 / C3S Pro Technische Deep-Dive, §11): het
@@ -5461,6 +5542,15 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // B-2b: cyclus-/doorloopconstanten per brewer (V60 blijft exact de referentie, 30/40s).
   const pourCycleConstants = brewerPourCycleConstants(brewerScopeKey);
   const { steps, totalTime } = buildPourSchedule(dose, pourWaterMl, overlayId, overlayMeta, freshTier ? freshTier.bloomExtraSec : 0, pourCycleConstants.cycleSec, pourCycleConstants.drawdownSec);
+  // NIEUW (audit BC-11, akkoord gebruiker): de klikrange past bij gangbare contacttijden
+  // (~2:30-3:30). Een schema van hooguit SHORT_CONTACT_MAX_SEC laat het water korter met de
+  // koffie in contact en extraheert bij dezelfde maling minder — daarom één klik fijner,
+  // nooit buiten de praktische range. Vertrekpunt, geen gemeten getal; de proefkaart en
+  // het advies corrigeren het als het voor jou niet klopt.
+  const grindShortContact = grindRoastPoint != null && totalTime <= SHORT_CONTACT_MAX_SEC;
+  const grindFloor = grindPracticalRange ? grindPracticalRange.clicksMin : (grindStartingRange ? grindStartingRange.clicksMin : null);
+  const grindStartingPoint = grindRoastPoint == null ? null
+    : grindShortContact ? Math.max(grindFloor, grindRoastPoint - 1) : grindRoastPoint;
   // FIX (Implementatieplan Zetadvies v3.0, Fase 3c/D-4): contactTimeGuidance stuurt de
   // schemalengte niet langer (die volgt nu uit de giet-structuur, zie buildPourSchedule()
   // hierboven) — het blijft precies wat de registry het al noemde: een gemonitorde
@@ -5560,7 +5650,7 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // CONTESTED (fijner: Coffee ad Astra/Drip Roast/Gagné — grover: Royal Coffee/Wang), dus
   // geen eenzijdig advies meer.
   const bypassNote = bypassActuallyApplied
-    ? `In de brewer zet je feitelijk op 1:${fmt(brewerRatio, 1)} (${fmt(dose,1)} g op ${pourWaterMl} ml), niet op de ${ratioText} die hierboven staat — die geldt pas ná het bijschenken. Belangrijk voorbehoud: het sterkte-/extractievenster waaruit dosis en ratio zijn afgeleid, gaat ervan uit dat ál het water door het koffiebed gaat. Bij de concentraat-methode is dat niet zo, dus de werkelijke extractie ligt buiten dat venster en de app kan niet voorspellen hoever. Vergeet niet: na het zetten ${bypassMl} ml vers heet water toevoegen aan de kan/kop (zie stat-blok hierboven) — dat brengt het volume terug op ${Math.round(water)} ml, maar NIET gegarandeerd op dezelfde sterkte: dat klopt alleen als de extractie in de geconcentreerde fase gelijk blijft aan een normale zetting, en dat is niet gemeten (RESEARCH_GAP). Zonder maalcorrectie is de kop eerder iets zwakker dan sterker — bypass is geen sterktehendel (gebruik daarvoor Sterkte hierboven). Concentraat-methode actief op ${bypassAdv.pct}% bypass (zelf gekozen, niet per boon afgestemd — zie renderBypassToggle()). Werkt volgens de brontechniek (Drip Roast's V60-bypassgids) doorgaans het meest overtuigend bij funky naturals, anaerobic/experimentele fermentaties en dark roasts — maar er is geen bewijs dat andere koffies (bijv. lichte, gewassen bonen) er niet ook van profiteren. Maling en temperatuur hierboven zijn NIET aangepast voor de concentraat-methode: de bronnen spreken elkaar tegen over de richting (fijner: Coffee ad Astra/Drip Roast/Gagné; grover: Royal Coffee, vooral bij donkere brandingen) — proef bewust en houd zelf bij wat voor jou werkt.`
+    ? `In de brewer zet je feitelijk op 1:${fmt(brewerRatio, 1)} (${fmt(dose,1)} g op ${pourWaterMl} ml), niet op de ${ratioText} die hierboven staat — die geldt pas ná het bijschenken. Belangrijk voorbehoud: het sterkte-/extractievenster waaruit dosis en ratio zijn afgeleid, gaat ervan uit dat ál het water door het koffiebed gaat. Bij de concentraat-methode is dat niet zo, dus de werkelijke extractie ligt buiten dat venster en de app kan niet voorspellen hoever. Vergeet niet: na het zetten ${bypassMl} ml vers heet water toevoegen aan de kan/kop (zie stat-blok hierboven) — dat brengt het volume terug op ${Math.round(water)} ml, maar NIET gegarandeerd op dezelfde sterkte: dat klopt alleen als de extractie in de geconcentreerde fase gelijk blijft aan een normale zetting, en dat is niet gemeten. Zonder maalcorrectie is de kop eerder iets zwakker dan sterker — bypass is geen sterktehendel (gebruik daarvoor Sterkte hierboven). Concentraat-methode actief op ${bypassAdv.pct}% bypass (zelf gekozen, niet per boon afgestemd). Werkt volgens de brontechniek (Drip Roast's V60-bypassgids) doorgaans het meest overtuigend bij funky naturals, anaerobic/experimentele fermentaties en dark roasts — maar er is geen bewijs dat andere koffies (bijv. lichte, gewassen bonen) er niet ook van profiteren. Maling en temperatuur hierboven zijn NIET aangepast voor de concentraat-methode: de bronnen spreken elkaar tegen over de richting (fijner: Coffee ad Astra/Drip Roast/Gagné; grover: Royal Coffee, vooral bij donkere brandingen) — proef bewust en houd zelf bij wat voor jou werkt.`
     : (bypassIgnoredForMethod
         ? `Concentraat-methode NIET toegepast: deze methode is V60-georiënteerd (Drip Roast's V60-bypassgids) — er is geen gevalideerde basis gevonden om het bypasspercentage op deze methode toe te passen, dus dit recept blijft op de normale ratio. Geen stille substitutie: dit wordt hier expliciet gemeld.`
         : '');
@@ -5568,7 +5658,7 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   return {
     dose, water: Math.round(water), pourWaterMl, bypassMl, temp, tempClamped:false,
     grindMicron: grindResolvedNum, grindStand: grindResolvedNum, grindClamped:false,
-    grindConfidence, grindBandLabel, grindStartingRange, grindPracticalRange, grindStartingPoint, grindMicronContest, grindMechanicalMicron, tempBandNote, tempBand:{min:tMin,max:tMax}, tempInstruction, deviceTempBand:{min:deviceTMin,max:deviceTMax},
+    grindConfidence, grindBandLabel, grindStartingRange, grindPracticalRange, grindStartingPoint, grindRoastPoint, grindShortContact: grindShortContact && grindStartingPoint < grindRoastPoint, grindMicronContest, grindMechanicalMicron, tempBandNote, tempBand:{min:tMin,max:tMax}, tempInstruction, deviceTempBand:{min:deviceTMin,max:deviceTMax},
     totalTime, steps,
     technique, author,
     notes, ratioText, processNote, freshnessNote, altitudeNote, hardnessNote, bypassNote, strengthNote,
@@ -5672,10 +5762,7 @@ function renderProfileGrid(){
   // FIX (v2.2 kernflow — Bouwbesluit "Schijnkeuze profielen: Knoppen samenvoegen"):
   // visibleProfileKeys() i.p.v. Object.keys(PROFILE_INFO) — klassiek/vol_rond/zoet tonen
   // hier voortaan als één knop ("Klassiek"). PROFILE_INFO zelf blijft ongewijzigd.
-  el.innerHTML = visibleProfileKeys().filter(key=>{
-    const only = PROFILE_INFO[key].methodOnly;
-    return !only || only === state.method;
-  }).map(key=>{
+  const profileRow = (key)=>{
     const p = PROFILE_INFO[key];
     const twins = visibleProfileTwins(key, methodKey);
     const twinHtml = twins.length
@@ -5685,7 +5772,16 @@ function renderProfileGrid(){
       <span style="color:${p.color}">${ICONS[p.icon]}</span>
       <span><span class="profile-name">${p.name}</span><span class="profile-desc">${p.desc}</span>${twinHtml}</span>
     </button>`;
-  }).join('');
+  };
+  // Audit BC-23: eerst de smaakrichting, daaronder los de gietstijlen.
+  const keysForMethod = visibleProfileKeys().filter(key=>{
+    const only = PROFILE_INFO[key].methodOnly;
+    return !only || only === state.method;
+  });
+  const flavorKeys = keysForMethod.filter(k => !PROFILE_TECHNIQUE_ONLY_KEYS.includes(k));
+  const styleKeys = keysForMethod.filter(k => PROFILE_TECHNIQUE_ONLY_KEYS.includes(k));
+  el.innerHTML = flavorKeys.map(profileRow).join('') +
+    (styleKeys.length ? `<p class="profile-group-label">Of kies een gietstijl</p>${styleKeys.map(profileRow).join('')}` : '');
   el.querySelectorAll('[data-profile]').forEach(btn=>{
     btn.addEventListener('click', ()=>selectProfile(btn.getAttribute('data-profile')));
   });
@@ -5847,7 +5943,6 @@ function renderAdviceChips(){
   // HERAUDIT (smaakwiel-scoring): percentages tonen naast de sterren — het exacte,
   // herleidbare getal (bv. "62%") in plaats van alleen een visuele indicatie. Zie
   // profileScorePercentages() voor de precieze berekening (puur informatief).
-  const profilePercentages = adviceState.flavorScores ? profileScorePercentages(adviceState.flavorScores) : null;
   // HERAUDIT (bijna-gelijke-stand): bij een echte bijna-gelijke stand (zie
   // profileNearTieCandidates()) wordt adviceState.profile hier bewust NIET vooringevuld
   // vanuit bean.profileKey — er wordt geen keuze voor de gebruiker gemaakt. Zodra de
@@ -5857,15 +5952,21 @@ function renderAdviceChips(){
   const nearTieCandidates = adviceState.flavorScores ? profileNearTieCandidates(adviceState.flavorScores) : null;
   const hasPendingTie = !!(nearTieCandidates && !adviceState.tieResolved);
   if (hasPendingTie) adviceState.profile = null;
-  document.getElementById('advice-profile').innerHTML = visibleProfileKeys().map(k=>{
+  // Audit BC-23: smaakrichtingen en gietstijlen zijn verschillende soorten keuzes — twee
+  // groepen, nog steeds één keuze. En één schaal: sterren (het percentage ernaast zei
+  // hetzelfde op een tweede manier en verwarde meer dan het hielp).
+  const adviceProfileChip = (k) => {
     const isTechniqueOnly = PROFILE_TECHNIQUE_ONLY_KEYS.includes(k);
     const rawScore = (!isTechniqueOnly && adviceState.flavorScores) ? displayScoreFor(adviceState.flavorScores, k) : null;
     const stars = profileMatchStars(rawScore);
     const starsHtml = stars != null ? renderStarRow(stars) : '';
-    const pctVal = (!isTechniqueOnly && profilePercentages) ? profilePercentages[k] : null;
-    const pctHtml = pctVal != null ? `<span class="profile-match-pct">${pctVal}%</span>` : '';
-    return `<button class="chip${starsHtml ? ' chip-with-stars' : ''}" data-adv-profile="${k}" data-selected="${canonicalProfileKey(adviceState.profile)===k}"><span>${PROFILE_INFO[k].name}</span>${starsHtml}${pctHtml}</button>`;
-  }).join('');
+    return `<button class="chip${starsHtml ? ' chip-with-stars' : ''}" data-adv-profile="${k}" data-selected="${canonicalProfileKey(adviceState.profile)===k}"><span>${PROFILE_INFO[k].name}</span>${starsHtml}</button>`;
+  };
+  const flavorKeys = visibleProfileKeys().filter(k => !PROFILE_TECHNIQUE_ONLY_KEYS.includes(k));
+  const styleKeys = visibleProfileKeys().filter(k => PROFILE_TECHNIQUE_ONLY_KEYS.includes(k));
+  document.getElementById('advice-profile').innerHTML =
+    flavorKeys.map(adviceProfileChip).join('') +
+    (styleKeys.length ? `<p class="profile-group-label">Of kies een gietstijl</p>${styleKeys.map(adviceProfileChip).join('')}` : '');
   /* HERAUDIT (bijna-gelijke-stand): verving de oude, uitsluitend-passieve tie-note (B1,
      koffie-expertpanel Amara/Youssef — alleen exacte gelijke standen, en zelfs dan alleen
      een tekstje ONDER een al stilzwijgend voorgeselecteerde chip). Nu: zolang de tie niet is
@@ -5878,9 +5979,7 @@ function renderAdviceChips(){
   if (tieNoteEl){
     if (hasPendingTie){
       const names = nearTieCandidates.map(k => {
-        const pct = profilePercentages ? profilePercentages[k] : null;
-        const name = PROFILE_INFO[k] ? PROFILE_INFO[k].name : k;
-        return pct != null ? `${name} (${pct}%)` : name;
+        return PROFILE_INFO[k] ? PROFILE_INFO[k].name : k;
       });
       tieNoteEl.textContent = `Deze boon past ongeveer even goed bij ${names.join(' en ')} — er wordt geen keuze voor je gemaakt, kies zelf hieronder welk profiel je wilt volgen.`;
       tieNoteEl.dataset.pending = 'true';
@@ -5982,6 +6081,7 @@ function applyAdvice(){
   state.bypassPct = 30; // BP-2: terug naar de standaardoptie bij een nieuwe sessie
   state.bypassMoment = 'achteraf';
   state.strengthAdjust = 0; // C2: zelfde redenering — sterkte is ook een per-keer-keuze
+  state.goalLighterApplied = false; // BC-10
   state.beanId = adviceState.beanId || null;
   const baseWater = defaultWaterMlFor(state.method, state.profile);
   const factor = adviceState.batch === 'multi' ? 1.5 : 1;
@@ -7000,12 +7100,14 @@ function applyParsedTextToForm(rawText){
   // BC-06: eigen, strengere smaakmatcher — zie scanFlavorTagsInText().
   found.tags = Array.from(scanFlavorTagsInText(text, { fuzzy: true }));
 
-  // Eerste korte regel als naamsuggestie — alleen als het naamveld nog leeg is.
+  // BC-20: naamsuggestie (ook uit een lange eerste regel) en branddatum — alleen als die
+  // velden nog leeg zijn, nooit iets overschrijven wat je zelf invulde.
+  found.name = extractBeanNameFromText(rawText);
+  found.roastDate = extractRoastDateFromText(rawText);
   const nameEl = document.getElementById('f-name');
-  if (nameEl && !nameEl.value.trim()){
-    const firstLine = (rawText || '').split('\n').map(s=>s.trim()).filter(Boolean)[0];
-    if (firstLine && firstLine.length <= 60) nameEl.value = firstLine;
-  }
+  if (nameEl && !nameEl.value.trim() && found.name) nameEl.value = found.name;
+  const roastDateEl = document.getElementById('f-roast-date');
+  if (roastDateEl && !roastDateEl.value && found.roastDate) roastDateEl.value = found.roastDate;
 
   if (found.roast){ formRoastChip = found.roast; renderFormRoastChips(); }
   if (found.intendedUse){ formIntendedUseChip = found.intendedUse; renderFormIntendedUseChips(); }
@@ -7048,6 +7150,52 @@ function applyParsedTextToForm(rawText){
   }
   suggestProfileFromForm();
   return found;
+}
+
+/* NIEUW (audit BC-20): naam en branddatum uit de etikettekst. Pure functies, getest.
+   Naam: een lange eerste regel (typisch een geplakte productomschrijving) werd eerder
+   helemaal genegeerd, waardoor elke boon "Naamloze boon" heette. Nu het stuk vóór het
+   eerste scheidingsteken. Branddatum: alleen met een brand-/roast-woord vlak ervoor op
+   dezelfde regel — zo wordt een THT-/best-before-datum nooit als branddatum gelezen. */
+const NAME_SKIP_RE = /^(roast(ed)?\b|gebrand|branddatum|best before|tht\b|ten minste|origin\b|herkomst|process\b|proces\b|notes?\b|smaak|tasting)/i;
+function extractBeanNameFromText(rawText){
+  const lines = String(rawText || '').split('\n').map(s => s.trim()).filter(Boolean).filter(l => !NAME_SKIP_RE.test(l));
+  const first = lines[0];
+  if (!first) return null;
+  if (first.length <= 40 && !/[.:;]\s/.test(first) && !/\s[—–|]\s/.test(first)) return first;
+  const head = first.split(/\s[—–\-|·]\s|[.,;:](?:\s|$)/)[0].trim();
+  if (head.length >= 3 && head.length <= 60) return head;
+  const words = first.split(/\s+/).slice(0, 6).join(' ');
+  return words.length <= 60 ? words : words.slice(0, 60).trim();
+}
+const SCAN_MONTHS = { jan:1, januari:1, january:1, feb:2, februari:2, february:2, mrt:3, maart:3, mar:3, march:3, apr:4, april:4, mei:5, may:5, jun:6, juni:6, june:6, jul:7, juli:7, july:7, aug:8, augustus:8, august:8, sep:9, sept:9, september:9, okt:10, oktober:10, oct:10, october:10, nov:11, november:11, dec:12, december:12 };
+function scanYmd(y, mo, d){
+  if (!(mo >= 1 && mo <= 12 && d >= 1 && d <= 31)) return null;
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  if (dt.getUTCMonth() !== mo - 1) return null;
+  return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+function parseScanDate(s){
+  let m;
+  if ((m = s.match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/))) return scanYmd(+m[1], +m[2], +m[3]);
+  if ((m = s.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/))){ let y = +m[3]; if (y < 100) y += 2000; return scanYmd(y, +m[2], +m[1]); } // Europees: dag-maand-jaar
+  if ((m = s.match(/(\d{1,2})\s+([a-zé]+)\.?\s+(\d{4})/i))){ const mo = SCAN_MONTHS[m[2].toLowerCase()]; if (mo) return scanYmd(+m[3], mo, +m[1]); }
+  if ((m = s.match(/([a-z]+)\.?\s+(\d{1,2}),?\s+(\d{4})/i))){ const mo = SCAN_MONTHS[m[1].toLowerCase()]; if (mo) return scanYmd(+m[3], mo, +m[2]); }
+  return null;
+}
+const ROAST_DATE_KEYWORD_RE = /(roasted(\s+on)?|roast(ing)?\s+date|roast\s+on|gebrand(\s+op)?|brand\s*datum|geroosterd(\s+op)?|röstdatum|geröstet(\s+am)?)/i;
+function extractRoastDateFromText(rawText, nowMs){
+  const now = nowMs == null ? Date.now() : nowMs;
+  for (const line of String(rawText || '').split('\n')){
+    const kw = line.match(ROAST_DATE_KEYWORD_RE);
+    if (!kw) continue;
+    const iso = parseScanDate(line.slice(kw.index + kw[0].length, kw.index + kw[0].length + 40));
+    if (!iso) continue;
+    const t = Date.parse(iso + 'T12:00:00Z');
+    if (isNaN(t) || t > now + 86400000 || now - t > 400 * 86400000) continue; // toekomst of >~13 mnd oud: geen branddatum
+    return iso;
+  }
+  return null;
 }
 
 function summariseScan(found){
@@ -7601,6 +7749,9 @@ function renderBeanLibraryScreen(){
    ============================================================ */
 function renderHomeScreen(){
   renderHomeActiveBrewBanner(); // Fase 2
+  // Audit BC-25/§4: "Welkom terug" klopt pas als er al iets is — bij de eerste start gewoon "Welkom".
+  const homeTitle = document.getElementById('home-title');
+  if (homeTitle) homeTitle.textContent = (beanLibrary.length || brewStore.length) ? 'Welkom terug' : 'Welkom';
   const chipRow = document.getElementById('home-chip-row');
   if (chipRow){
     const chips = [];
@@ -8125,7 +8276,8 @@ async function exportBackup(){
     // loaders/backups die alleen dit veld kennen) — waterAlkalinity/waterDilution zijn de
     // nieuwe velden ernaast, niet ter vervanging.
     waterHardnessMgL: waterHardnessMgL,
-    waterAlkalinity: waterAlkalinity, waterDilution: waterDilution
+    waterAlkalinity: waterAlkalinity, waterDilution: waterDilution,
+    abTrials: abTrials, brightLighter: abLighterEnabled() // BC-10: blinde proeven + je eigen keuze
   };
   const json = JSON.stringify(payload, null, 2);
   const stamp = new Date().toISOString().slice(0,10);
@@ -8213,6 +8365,13 @@ function importBackupFile(file){
     // waterDilution zijn nieuwe velden (backupVersion 2, na deze wijziging) — een oudere
     // backup heeft ze simpelweg niet, en de optionele checks hieronder laten die default
     // dan gewoon staan i.p.v. te crashen op een ontbrekend veld.
+    // BC-10: blinde proeven samenvoegen op id (bestaande blijven staan).
+    if (Array.isArray(data.abTrials)){
+      const known = new Set(abTrials.map(t => t && t.id));
+      const added = data.abTrials.filter(t => t && t.id && !known.has(t.id));
+      if (added.length){ abTrials = abTrials.concat(added); saveAbTrials(); prefsMsg += `, ${added.length} blinde ${added.length === 1 ? 'proef' : 'proeven'}`; }
+    }
+    if (data.brightLighter === true && !abLighterEnabled()) setAbLighter(true);
     let waterProfileRestored = false;
     if (typeof data.waterHardnessMgL === 'number' && !isNaN(data.waterHardnessMgL)){
       waterHardnessMgL = data.waterHardnessMgL;
@@ -8238,10 +8397,22 @@ function importBackupFile(file){
 }
 
 function deleteBean(id){
+  // Audit BC-14: één tik zonder weg terug was te hard — de boon komt via "Ongedaan maken" op
+  // dezelfde plek terug. Brouwsels van deze boon blijven bestaan (ze dragen een boon-snapshot).
+  const idx = beanLibrary.findIndex(b=>b.id===id);
+  if (idx < 0) return;
+  const removed = beanLibrary[idx];
   beanLibrary = beanLibrary.filter(b=>b.id!==id);
   saveBeansToStorage();
   renderBeanLibraryScreen();
   renderBeanChipsInAdvice();
+  showUndoBar(`${removed.name || 'Boon'} verwijderd.`, () => {
+    if (beanLibrary.some(b=>b.id===id)) return;
+    beanLibrary.splice(Math.min(idx, beanLibrary.length), 0, removed);
+    saveBeansToStorage();
+    renderBeanLibraryScreen();
+    renderBeanChipsInAdvice();
+  });
 }
 
 // NIEUW (Visual Design 2.0 fase 3, boon-niveau favorieten): losstaand van de bestaande
@@ -8657,6 +8828,34 @@ const BREW_GOALS = {
   rich:     { label: 'Rond & vol',     criterion: 'veel body en zachte zuren' }
 };
 const LATE_TASTING_MIN = 120; // later geproefd telt straks minder zwaar mee bij het leren
+
+/* NIEUW (audit BC-10 / open vraag D-1): "Helder & fris" zou volgens de Brewing Control
+   Chart (Guinard e.a. 2023) eerder om een lagere STERKTE vragen dan om minder extractie.
+   Dat verandert elk recept, dus eerst blind proeven op je eigen bonen: controle = het
+   recept zoals het is, variant = één sterktestap lager (~8% minder koffie, zelfde maling
+   en water). Pas als de variant duidelijk wint, kun je hem zelf aanzetten — nooit vanzelf. */
+const AB_TRIALS_KEY = 'brewconsole_ab_trials';
+const AB_LIGHTER_KEY = 'brewconsole_bright_lighter';
+const AB_MIN_TRIALS = 5;
+const AB_WIN_SHARE = 0.7;
+function abArmForAnswer(answer, cupForVariant){
+  if (answer === 'none') return 'none';
+  if (answer == null) return null;
+  return Number(answer) === cupForVariant ? 'variant' : 'control';
+}
+function abTrialVerdict(trials){
+  const done = (trials || []).filter(t => t && t.preferred);
+  const variant = done.filter(t => t.preferred === 'variant').length;
+  const control = done.filter(t => t.preferred === 'control').length;
+  const ties = done.filter(t => t.preferred === 'none').length;
+  const decided = variant + control;
+  let verdict;
+  if (done.length < AB_MIN_TRIALS) verdict = 'insufficient';
+  else if (decided && variant / decided >= AB_WIN_SHARE && variant >= 4) verdict = 'variant';
+  else if (decided && control / decided >= AB_WIN_SHARE && control >= 4) verdict = 'control';
+  else verdict = 'unclear';
+  return { n: done.length, variant, control, ties, verdict, needed: Math.max(0, AB_MIN_TRIALS - done.length) };
+}
 
 function toggleFinish(list, v){
   const cur = Array.isArray(list) ? list.slice() : [];
@@ -9364,7 +9563,7 @@ function renderBrewLogHonestSummary(){
     const { min, max } = rec.contactTimeDiagnosticBand;
     const scheduleWithinBand = rec.totalTime >= min && rec.totalTime <= max;
     if (!scheduleWithinBand){
-      diagnosticLine = `Het schema dat deze app je hierboven gaf (${fmtTime(rec.totalTime)}) valt zelf al buiten de gangbare band voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — deze giet-structuur heeft nu eenmaal ${rec.steps.filter(s=>s.add>0).length} waterbeurten. De band is daarom géén zinvolle controle op jouw uitvoering; hij zegt hier iets over het recept, niet over jou. Geregistreerd als openstaand punt (bevinding E-03).`;
+      diagnosticLine = `Het schema dat deze app je hierboven gaf (${fmtTime(rec.totalTime)}) valt zelf al buiten de gangbare band voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — deze giet-structuur heeft nu eenmaal ${rec.steps.filter(s=>s.add>0).length} waterbeurten. De band is daarom géén zinvolle controle op jouw uitvoering; hij zegt hier iets over het recept, niet over jou.`;
     } else if (actualTime != null){
       const within = actualTime >= min && actualTime <= max;
       diagnosticLine = within
@@ -10088,7 +10287,7 @@ const TRIAGE_QUESTIONS = [
     // toegevoegd — ook bij precies de juiste hoeveelheid bijgeschonken water kan de kop
     // afwijken, omdat de geconcentreerde brouwfase zelf een andere extractie kan geven dan
     // een normale zetting (RB §4.2, RESEARCH_GAP voor percolatie). Eerste zin ongewijzigd.
-    diagnosis:'Te veel bypass-water verdunt verder dan bedoeld — dat proeft precies als "wateriger, minder intens". Te weinig geeft juist een overdreven sterke kop. Ook bij precies de juiste hoeveelheid kan de smaak afwijken: de geconcentreerde brouwfase zelf geeft mogelijk een andere extractie dan een normale zetting met dezelfde maling — dat is niet gemeten (RESEARCH_GAP), geen weegfout.',
+    diagnosis:'Te veel bypass-water verdunt verder dan bedoeld — dat proeft precies als "wateriger, minder intens". Te weinig geeft juist een overdreven sterke kop. Ook bij precies de juiste hoeveelheid kan de smaak afwijken: de geconcentreerde brouwfase zelf geeft mogelijk een andere extractie dan een normale zetting met dezelfde maling — dat is niet gemeten, geen weegfout.',
     action:'Volg de aanbevolen bypass-hoeveelheid uit het recept exact, of laat bypass weg als je die niet precies kunt afmeten.' },
   { id:'age', category:'Versheid', text:'Is deze boon sinds je vorige goede brouwsel duidelijk ouder geworden, of de zak al langer open?',
     options:['Ja, merkbaar ouder','Nee, vergelijkbaar'], flagOn:'Ja, merkbaar ouder',
@@ -10538,6 +10737,26 @@ function renderOpenedDateInput(){
    loadWaterHardness()/localStorage in plaats van in `state` (die per methode/boon reset).
    UITGEBREID (Implementatieplan Zetadvies v3.0, Fase 4a-4d): alkaliniteit + eenheid,
    verdunningsinstelling, en per-parameter oordelen (B-5) i.p.v. één hardheidsgetal. */
+// Audit BC-24: het waterprofiel staat in Instellingen en kan ook zonder lopend recept
+// wijzigen — alleen het receptscherm herrekenen als er een recept is.
+function onWaterProfileChanged(){
+  saveWaterProfileToStorage();
+  renderWaterHardnessInput();
+  if (state.method && state.roast && state.profile) renderPrep();
+}
+const WATER_PRESETS = {
+  // SCA-richtwaarde voor wie water zelf mengt; valt binnen de SCA-banden die waterSCAVerdict() gebruikt.
+  sca: { hardnessMgL: 68, alkalinity: { value: 40, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } },
+  clear: { hardnessMgL: null, alkalinity: { value: null, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } }
+};
+function applyWaterPreset(key){
+  const preset = WATER_PRESETS[key];
+  if (!preset) return;
+  waterHardnessMgL = preset.hardnessMgL;
+  waterAlkalinity = { value: preset.alkalinity.value, unit: preset.alkalinity.unit };
+  waterDilution = { tapParts: preset.dilution.tapParts, demiParts: preset.dilution.demiParts };
+  onWaterProfileChanged();
+}
 function renderWaterHardnessInput(){
   const input = document.getElementById('prep-water-hardness');
   const alkInput = document.getElementById('prep-water-alkalinity');
@@ -10549,8 +10768,7 @@ function renderWaterHardnessInput(){
   input.onchange = ()=>{
     const v = input.value;
     waterHardnessMgL = (v === '') ? null : Number(v);
-    saveWaterProfileToStorage();
-    renderPrep();
+    onWaterProfileChanged();
   };
 
   if (alkInput){
@@ -10558,16 +10776,14 @@ function renderWaterHardnessInput(){
     alkInput.onchange = ()=>{
       const v = alkInput.value;
       waterAlkalinity = { value: (v === '') ? null : Number(v), unit: waterAlkalinity.unit };
-      saveWaterProfileToStorage();
-      renderPrep();
+      onWaterProfileChanged();
     };
   }
   if (alkUnitSelect){
     alkUnitSelect.value = waterAlkalinity.unit;
     alkUnitSelect.onchange = ()=>{
       waterAlkalinity = { value: waterAlkalinity.value, unit: alkUnitSelect.value === 'HCO3' ? 'HCO3' : 'CaCO3' };
-      saveWaterProfileToStorage();
-      renderPrep();
+      onWaterProfileChanged();
     };
   }
   if (dilutionSelect){
@@ -10575,8 +10791,7 @@ function renderWaterHardnessInput(){
     dilutionSelect.onchange = ()=>{
       const [tapParts, demiParts] = dilutionSelect.value.split(':').map(Number);
       waterDilution = { tapParts, demiParts };
-      saveWaterProfileToStorage();
-      renderPrep();
+      onWaterProfileChanged();
     };
   }
 
@@ -10603,6 +10818,15 @@ function renderWaterHardnessInput(){
     alkEl.textContent = effAlkCaCO3 != null
       ? `Alkaliniteit${dilutionSuffix}: ${fmt(effAlkCaCO3,0)} mg/L CaCO3-equivalent — ${waterSCAVerdict(effAlkCaCO3,40,70)}.`
       : 'Alkaliniteit: niet ingevuld — buffering onbekend (SCA-richtwaarde 40–70 mg/L CaCO3). Zonder dit gegeven is "hardheid in orde" GEEN "water binnen de richtlijn".';
+  }
+  const summaryEl = document.getElementById('prep-water-summary');
+  if (summaryEl){
+    const parts = [];
+    if (effHardness != null) parts.push(`hardheid ${fmt(effHardness,0)}`);
+    if (effAlkCaCO3 != null) parts.push(`alkaliniteit ${fmt(effAlkCaCO3,0)} mg/L CaCO3`);
+    summaryEl.textContent = parts.length
+      ? `${parts.join(' · ')}${dilutionSuffix}. Verandert geen receptgetal.`
+      : 'Niet ingesteld — eenmalig invullen helpt bij vlakke of doffe koppen.';
   }
   const phEl = document.getElementById('ph-readout');
   if (phEl){
@@ -10975,11 +11199,32 @@ function setScanStatus(text, isError){
   else { el.removeAttribute('data-error'); el.setAttribute('data-busy','true'); }
 }
 
+// Audit BC-20: na scannen/plakken een korte controlekaart met wat er is ingevuld — en eerlijk
+// wat NIET herkend is en op welke standaard dat nu staat — plus direct opslaan, zodat je
+// niet door het hele formulier hoeft om een zak toe te voegen.
 function showScanResult(found){
   const el = document.getElementById('scan-result');
   if (!el) return;
   el.hidden = false;
-  el.textContent = summariseScan(found);
+  if (!found){ el.innerHTML = `<p class="scan-review-summary">${escapeHtml(summariseScan(null))}</p>`; return; }
+  const nameVal = (document.getElementById('f-name') || {}).value || '';
+  const dateVal = (document.getElementById('f-roast-date') || {}).value || '';
+  const origin = [found.country, found.region].filter(Boolean).join(' · ');
+  const rows = [
+    ['Naam', nameVal.trim() || null, 'niet herkend — vul hieronder in'],
+    ['Branddatum', dateVal ? new Date(dateVal + 'T00:00:00').toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' }) : null, 'niet herkend — staat die op de zak? Vul hieronder in (preciezer bloom-advies)'],
+    ['Branding', found.roast ? ROAST_INFO[found.roast].name : null, `niet herkend — staat nu op ${ROAST_INFO[formRoastChip] ? ROAST_INFO[formRoastChip].name : formRoastChip} (standaard), controleer`],
+    ['Proces', found.process ? PROCESS_INFO[found.process].name : null, `niet herkend — staat nu op ${PROCESS_INFO[formProcessChip] ? PROCESS_INFO[formProcessChip].name : formProcessChip} (standaard), controleer`],
+    ['Herkomst', origin || null, 'niet herkend'],
+    ['Smaak', found.tags && found.tags.length ? found.tags.slice(0, 5).join(', ') + (found.tags.length > 5 ? ` +${found.tags.length - 5}` : '') : null, 'geen smaaknotities herkend']
+  ];
+  el.innerHTML = `<p class="scan-review-summary">${escapeHtml(summariseScan(found))}</p>
+    <dl class="scan-review-rows">${rows.map(([label, val, missing]) =>
+      `<div class="scan-review-row" data-missing="${val ? 'false' : 'true'}"><dt>${label}</dt><dd>${escapeHtml(val || missing)}</dd></div>`).join('')}</dl>
+    <button type="button" class="advisor-primary" id="scan-review-save-btn" style="margin-top:10px;">Klopt — boon opslaan</button>
+    <p class="scan-review-hint">Of pas hieronder aan wat niet klopt; details zoals smaaknotities en herkomst zijn optioneel.</p>`;
+  const saveBtn = document.getElementById('scan-review-save-btn');
+  if (saveBtn) saveBtn.addEventListener('click', () => { const b = document.getElementById('save-bean-btn'); if (b) b.click(); });
 }
 
 async function runBeanPhotoScan(file){
@@ -11033,6 +11278,99 @@ function selectPrepGoal(k){
   const bean = state.beanId ? beanLibrary.find(b => b.id === state.beanId) : null;
   if (bean){ bean.goal = state.goal; saveBeansToStorage(); }
   renderPrepGoal();
+  if (state.method && state.roast && state.profile) renderPrep(); // BC-10: proefkaart en eventuele helder-stap volgen het doel
+}
+
+/* ---- BC-10: blinde helder-proef ---- */
+let abTrials = [];
+let abOpenTrial = null;   // lopende proef (nog niet onthuld)
+let abLastReveal = null;  // tekst na onthullen, tot de volgende render van een andere proef
+function loadAbTrials(){
+  try { const raw = localStorage.getItem(AB_TRIALS_KEY); const v = raw ? JSON.parse(raw) : []; abTrials = Array.isArray(v) ? v : []; } catch(e){ abTrials = []; }
+}
+function saveAbTrials(){ try { localStorage.setItem(AB_TRIALS_KEY, JSON.stringify(abTrials)); } catch(e){} }
+function abLighterEnabled(){ try { return localStorage.getItem(AB_LIGHTER_KEY) === '1'; } catch(e){ return false; } }
+function setAbLighter(on){ try { if (on) localStorage.setItem(AB_LIGHTER_KEY, '1'); else localStorage.removeItem(AB_LIGHTER_KEY); } catch(e){} }
+// De opt-in-stap: bij Helder & fris één sterktestap lager, één keer per keuze (daarna kun je
+// gewoon zelf weer "Standaard" kiezen). Een ander doel draait de automatisch gezette stap terug.
+function applyGoalStrengthPreference(){
+  if (state.goal === 'bright' && abLighterEnabled()){
+    if (!state.goalLighterApplied && (state.strengthAdjust || 0) === 0){ state.strengthAdjust = -1; state.goalLighterApplied = true; }
+  } else if (state.goalLighterApplied){
+    if (state.strengthAdjust === -1) state.strengthAdjust = 0;
+    state.goalLighterApplied = false;
+  }
+}
+function abDosesForState(){
+  const args = [state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL];
+  const control = computeRecipe(...args, 0, state.bypassPct);
+  const variant = computeRecipe(...args, -1, state.bypassPct);
+  return { control, variant };
+}
+function renderAbTrial(){
+  const el = document.getElementById('ab-trial');
+  if (!el) return;
+  if (state.goal !== 'bright' || !state.recipe || !(state.recipe.dose > 0)){ el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  const v = abTrialVerdict(abTrials);
+  const tally = v.n ? `${v.n} ${v.n === 1 ? 'proef' : 'proeven'}: ${v.variant}× minder koffie lekkerder, ${v.control}× het gewone recept, ${v.ties}× geen verschil.` : 'Nog geen proeven gedaan.';
+  let body;
+  if (abOpenTrial){
+    const t = abOpenTrial;
+    const dose = (cup) => fmt(cup === t.cupForVariant ? t.variantDose : t.controlDose, 1);
+    const q = (key, label) => `<p class="ab-q">${label} <span class="ab-q-hint">(het nummer onder de kop)</span></p><div class="chip-row">${['1','2','none'].map(a => `<button type="button" class="chip" data-ab-q="${key}" data-ab-a="${a}" data-selected="${t[key] === a}">${a === 'none' ? 'Geen verschil' : 'Kop ' + a}</button>`).join('')}</div>`;
+    body = `<p class="ab-text">Kop 1: <b>${dose(1)} g</b> · Kop 2: <b>${dose(2)} g</b> — verder precies hetzelfde (maling, water, schema). Zet het kopnummer op een stickertje <b>onder</b> elke kop, schuif de koppen door elkaar (of laat iemand anders dat doen) en proef zonder te kijken. Kijk pas daarna onder de kop welk nummer het was.</p>
+      ${q('preferredCup', 'Welke vond je lekkerder?')}
+      ${q('brighterCup', 'Welke was helderder / fruitiger?')}
+      <div class="ab-actions"><button type="button" class="advisor-primary" id="ab-reveal-btn"${t.preferredCup ? '' : ' disabled'}>Onthullen en opslaan</button>
+      <button type="button" class="link-secondary" id="ab-cancel-btn">Annuleren</button></div>`;
+  } else {
+    const { control, variant } = abDosesForState();
+    const possible = variant.dose > 0 && Math.abs(variant.dose - control.dose) >= 0.15;
+    const on = abLighterEnabled();
+    body = `<p class="ab-text">Zet twee koppen met deze boon, vlak na elkaar: zelfde maling, zelfde water. Eén kop krijgt ~8% minder koffie. Doordat je de koppen door elkaar schuift, weet je tijdens het proeven niet welke het is.</p>
+      ${abLastReveal ? `<p class="ab-reveal" id="ab-reveal">${escapeHtml(abLastReveal)}</p>` : ''}
+      <p class="ab-tally" data-ab-verdict="${v.verdict}">${escapeHtml(tally)} ${v.verdict === 'insufficient' ? `Nog ${v.needed} tot een oordeel.` : v.verdict === 'variant' ? 'Minder koffie wint duidelijk.' : v.verdict === 'control' ? 'Het gewone recept wint — niets veranderen.' : 'Geen duidelijke winnaar — niets veranderen.'}</p>
+      ${possible ? `<button type="button" class="advisor-link" id="ab-start-btn">Start een proef</button>` : `<p class="ab-text">Bij dit watervolume zit de dosis al aan de rand van het bereik — een stap minder koffie kan hier niet.</p>`}
+      ${on ? `<p class="ab-text">Staat aan: bij Helder &amp; fris zet je een stap zwakker. <button type="button" class="link-secondary" id="ab-lighter-off">Uitzetten</button></p>`
+        : v.verdict === 'variant' ? `<button type="button" class="advisor-primary" id="ab-lighter-on">Voortaan bij Helder &amp; fris een stap zwakker</button>` : ''}`;
+  }
+  el.innerHTML = `<p class="ab-title">Blinde proef: smaakt helder beter met minder koffie?</p>${body}`;
+}
+function handleAbTrialClick(e){
+  const btn = e.target.closest('button');
+  if (!btn || btn.disabled) return;
+  if (btn.id === 'ab-start-btn'){
+    const { control, variant } = abDosesForState();
+    abOpenTrial = { id: 'ab_' + Date.now(), createdAt: Date.now(), beanId: state.beanId || null, method: state.method, profile: state.profile, roast: state.roast, waterMl: state.waterMl,
+      controlDose: control.dose, variantDose: variant.dose, cupForVariant: Math.random() < 0.5 ? 1 : 2, preferredCup: null, brighterCup: null };
+    abLastReveal = null;
+  } else if (btn.dataset.abQ && abOpenTrial){
+    abOpenTrial[btn.dataset.abQ] = btn.dataset.abA;
+  } else if (btn.id === 'ab-cancel-btn'){
+    abOpenTrial = null;
+  } else if (btn.id === 'ab-reveal-btn' && abOpenTrial && abOpenTrial.preferredCup){
+    const t = abOpenTrial;
+    const rec = { id: t.id, createdAt: t.createdAt, beanId: t.beanId, method: t.method, profile: t.profile, roast: t.roast, waterMl: t.waterMl,
+      controlDose: t.controlDose, variantDose: t.variantDose, cupForVariant: t.cupForVariant,
+      preferred: abArmForAnswer(t.preferredCup, t.cupForVariant), brighter: abArmForAnswer(t.brighterCup, t.cupForVariant) };
+    abTrials.push(rec);
+    saveAbTrials();
+    const pick = rec.preferred === 'variant' ? 'de kop met minder koffie' : rec.preferred === 'control' ? 'het gewone recept' : 'geen van beide';
+    abLastReveal = `Kop ${t.cupForVariant} had minder koffie (${fmt(t.variantDose, 1)} g). Je vond ${pick} lekkerder.`;
+    abOpenTrial = null;
+  } else if (btn.id === 'ab-lighter-on'){
+    setAbLighter(true);
+    applyGoalStrengthPreference();
+    renderPrep();
+    return;
+  } else if (btn.id === 'ab-lighter-off'){
+    setAbLighter(false);
+    applyGoalStrengthPreference();
+    renderPrep();
+    return;
+  } else return;
+  renderAbTrial();
 }
 /* ---- Fase 4: advies koppelen aan de flow ---- */
 // De stap die klaarstaat voor de volgende kop met deze boon (+ methode).
@@ -11193,6 +11531,7 @@ function cancelPendingAdjust(){
 }
 function renderPrep(){
   const m = METHOD_INFO[state.method], r = ROAST_INFO[state.roast], p = PROFILE_INFO[state.profile];
+  applyGoalStrengthPreference(); // BC-10: alleen als je dat zelf aanzette na je blinde proeven
   state.recipe = computeRecipe(state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL, state.strengthAdjust, state.bypassPct);
   const rec = state.recipe;
 
@@ -11217,6 +11556,7 @@ function renderPrep(){
     beanLineEl.dataset.linked = activeBean ? 'true' : 'false';
   }
   renderPrepGoal();
+  renderAbTrial(); // BC-10
   renderPrepNextAdjust(); // Fase 4
 
   document.getElementById('technique-line').textContent = `${rec.technique} · ${rec.author}`;
@@ -11336,8 +11676,10 @@ function renderPrep(){
   // klikrange (bijv. "Klik 15–17") — die data (grindStartingRange/grindPracticalRange)
   // bestond al en werd al getoond als stat-sub-toelichting hieronder, nu ook als kopregel.
   // Geen nieuw getal berekend — puur welk al-bestaand veld de hoofdwaarde wordt.
+  // Audit BC-12: het getal waar je mee begint staat vooraan; het startgebied eronder.
   let grindHeadline;
   if (rec.grindMicron != null) grindHeadline = `${rec.grindMicron} µm`;
+  else if (rec.grindStartingPoint != null) grindHeadline = `Klik ${rec.grindStartingPoint}`;
   else if (rec.grindStartingRange) grindHeadline = `Klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax}`;
   else if (rec.grindPracticalRange) grindHeadline = `Klik ${rec.grindPracticalRange.clicksMin}–${rec.grindPracticalRange.clicksMax}`;
   else grindHeadline = rec.grindBandLabel || '—';
@@ -11349,7 +11691,7 @@ function renderPrep(){
   // permanent uitgeklapt. De korte "stand X/vertrouwen"-regel blijft altijd zichtbaar.
   const grindMoreNotes = [];
   if (rec.grindMicron == null){
-    grindMoreNotes.push(`Geen gevalideerde kalibratiecurve voor deze molen gevonden — relatieve instructie i.p.v. een verzonnen getal. Vertrek vanaf ${escapeHtml(rec.grindBandLabel || 'medium')} en stel bij op smaak.`);
+    grindMoreNotes.push(`Geen gevalideerde kalibratiecurve voor deze molen gevonden — relatieve instructie i.p.v. een verzonnen getal. Vertrek vanaf ${escapeHtml(rec.grindBandLabel || 'middel')} en stel bij op smaak.`);
   }
   if (rec.grindStartingRange){
     grindMoreNotes.push(`Algemeen startgebied (Timemore C3S Pro — Technische Deep-Dive, technische consolidatie van fabrikantgegevens + onafhankelijke bronnen, niet per-toestel geverifieerd): klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} vanaf het nulpunt voor ${escapeHtml(rec.grindStartingRange.brewMethodLabel)}. Vermijd klik 0–6/7 (risico op beschadiging maalschijven). Zie dit als eigen kalibratie-vertrekpunt, geen gevalideerde instelling.`);
@@ -11357,8 +11699,13 @@ function renderPrep(){
   if (rec.grindPracticalRange){
     grindMoreNotes.push(`Practical V60 range: klik ${rec.grindPracticalRange.clicksMin}–${rec.grindPracticalRange.clicksMax} vanaf het nulpunt — een bredere, zinvolle werkzone; het startgebied hierboven ligt daarbinnen.`);
   }
+  if (rec.grindShortContact){
+    grindMoreNotes.push(`Dit schema duurt maar ${fmtTime(rec.totalTime)}. Korter contact tussen water en koffie haalt bij dezelfde maling minder uit de boon, daarom start je hier één klik fijner dan normaal voor deze branding. Een vertrekpunt, geen gemeten getal — is de kop bitter of loopt hij traag, ga dan terug.`);
+  }
   if (rec.grindStartingPoint != null){
-    grindMoreNotes.push(`Maalrichting bij deze branddiepte: begin rond klik ${rec.grindStartingPoint} binnen het startgebied (lichter brandt fijner/lager, donkerder brandt grover/hoger) — een positie binnen de bestaande range hierboven, geen nieuw maalgetal.`);
+    grindMoreNotes.push(rec.grindShortContact
+      ? `Maalrichting: de branding bepaalt de positie binnen het startgebied (lichter brandt fijner/lager, donkerder grover/hoger); het korte schema zet daar één klik fijner op — klik ${rec.grindStartingPoint}, binnen de praktische range.`
+      : `Maalrichting bij deze branddiepte: begin rond klik ${rec.grindStartingPoint} binnen het startgebied (lichter brandt fijner/lager, donkerder brandt grover/hoger) — een positie binnen de bestaande range hierboven, geen nieuw maalgetal.`);
   }
   if (rec.grindMechanicalMicron != null){
     grindMoreNotes.push(`Mechanische resolutie: ${fmt(rec.grindMechanicalMicron,1)} µm mechanische verstelling per click (S2C660, 38 mm, SUS420 — sourced fabrikantspecificatie, herhaald over meerdere onafhankelijke retailers). Dit is géén particle-size-/deeltjesgrootte-meting. Een eerder afwijkende 50 µm-claim (één bron, niet onderbouwd) staat niet meer gelijkwaardig in deze UI.`);
@@ -11374,13 +11721,13 @@ function renderPrep(){
     <div class="stat-block"${stockWarning ? ' style="border-color:var(--danger);"' : ''}>
       <div class="stat-label">${statIconDose}Gemalen koffie</div>
       <div class="stat-value">${fmt(rec.dose,1)} g</div>
+      <div class="stat-sub">voor ${rec.water} ml${state.strengthAdjust > 0 ? ' · een stap sterker' : state.strengthAdjust < 0 ? ' · een stap zwakker' : ''}</div>
       ${stockWarning}
     </div>
     <div class="stat-block">
       <div class="stat-label">${statIconTemp}Watertemperatuur</div>
       <div class="stat-value">${rec.tempBand.min}–${rec.tempBand.max} °C</div>
-      <div class="stat-sub">${escapeHtml(rec.tempInstruction || '')} (${rec.temp}°C als middenwaarde van deze branddiepte-band)</div>
-      <div class="stat-sub">Ankerpunt binnen de apparaatband van dit toestel (${rec.deviceTempBand.min}–${rec.deviceTempBand.max}°C) — positie, geen apart geteste claim; zie disclaimer onderaan. Ratio en dosis blijven voor elke branddiepte gelijk.</div>
+      <div class="stat-sub">${escapeHtml(rec.tempInstruction || '')}</div>
     </div>
     <div class="stat-block" id="stats-water-block" role="button" tabindex="0" aria-label="Waterhoeveelheid aanpassen">
       <div class="stat-label">${statIconWater}${state.bypass ? 'Water dóór de koffie' : 'Waterhoeveelheid'}</div>
@@ -11397,11 +11744,14 @@ function renderPrep(){
     <div class="stat-block stat-block--secondary">
       <div class="stat-label">Ratio</div>
       <div class="stat-value">${rec.ratioText}</div>
+      <div class="stat-sub">gram water per gram koffie</div>
     </div>
     <div class="stat-block stat-block--secondary">
       <div class="stat-label">Maalgraad</div>
       <div class="stat-value">${escapeHtml(grindHeadline)}</div>
-      ${rec.grindMicron == null && rec.grindBandLabel ? `<div class="stat-sub">${escapeHtml(rec.grindBandLabel)}</div>` : ''}
+      ${rec.grindShortContact ? `<div class="stat-sub">1 klik fijner: kort schema (${fmtTime(rec.totalTime)})</div>` : ''}
+      ${rec.grindMicron == null && rec.grindStartingPoint != null && rec.grindStartingRange ? `<div class="stat-sub">start hier · klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} is het startgebied</div><div class="stat-sub">zuur en snel door? fijner · bitter en traag? grover</div>` : ''}
+      ${rec.grindMicron == null && rec.grindStartingPoint == null && rec.grindBandLabel ? `<div class="stat-sub">${escapeHtml(rec.grindBandLabel)}</div>` : ''}
       <div class="stat-sub">${rec.grindMicron != null ? `stand ${rec.grindStand} · Timemore C3S Pro` : `Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}`}</div>
       ${grindMoreNotes.length ? `
       <button type="button" class="stat-more-toggle" id="grind-more-toggle" aria-expanded="false">Meer over deze maalstand ↓</button>
@@ -11410,10 +11760,28 @@ function renderPrep(){
     <div class="stat-block stat-block--secondary">
       <div class="stat-label">Brouwtijd</div>
       <div class="stat-value">${fmtTime(rec.totalTime)}</div>
+      <div class="stat-sub">schema · tik "Bed droog" voor je echte tijd</div>
     </div>
   `;
 
-  document.getElementById('style-note').textContent = rec.notes;
+  // Audit BC-12: de techniek in één zin; de rest van de uitleg op verzoek.
+  const styleNoteEl = document.getElementById('style-note');
+  const noteParts = String(rec.notes || '').split(/(?<=[.!?])\s+(?=[A-ZÀ-Ý'"(])/);
+  const noteFirst = noteParts.shift() || '';
+  const noteRest = noteParts.join(' ');
+  styleNoteEl.innerHTML = escapeHtml(noteFirst) + (noteRest ? `
+    <button type="button" class="stat-more-toggle" id="style-more-toggle" aria-expanded="false">Meer over deze techniek ↓</button>
+    <span class="stat-more-body style-more-body" id="style-more-body" hidden>${escapeHtml(noteRest)}</span>` : '');
+  const styleMoreBtn = document.getElementById('style-more-toggle');
+  if (styleMoreBtn) styleMoreBtn.addEventListener('click', () => {
+    const body = document.getElementById('style-more-body');
+    const open = body.hidden;
+    body.hidden = !open;
+    styleMoreBtn.setAttribute('aria-expanded', String(open));
+    styleMoreBtn.textContent = open ? 'Minder ↑' : 'Meer over deze techniek ↓';
+  });
+  const tempAnchorEl = document.getElementById('temp-anchor-note');
+  if (tempAnchorEl) tempAnchorEl.textContent = `Temperatuur: ${rec.temp}°C is de middenwaarde van de band voor deze branddiepte — een ankerpunt binnen de apparaatband van dit toestel (${rec.deviceTempBand.min}–${rec.deviceTempBand.max}°C), geen apart geteste claim. Ratio en dosis blijven voor elke branddiepte gelijk.`;
   const evidenceBadgeRow = document.getElementById('evidence-badge-row');
   if (evidenceBadgeRow){
     // NIEUW (Implementatieplan v3.0, §15 "Technique provenance"): de "Unverified
@@ -11433,7 +11801,7 @@ function renderPrep(){
   const profileScopeEl = document.getElementById('profile-scope-note');
   if (profileScopeEl){
     // TIJDELIJK (Reparatieplan v4.0, A-3) — vervalt zodra Fase D-1 de vensters herdefinieert.
-    profileScopeEl.textContent = 'Wat het gekozen profiel vandaag wél en niet stuurt: het bepaalt het gietschema (aantal beurten, verdeling, timing). Het bepaalt de dosis, ratio, temperatuur en maalstand praktisch niet — de twee onderliggende sterkte-/extractievensters liggen zo dicht bij elkaar dat het verschil in dosis onder een tiende gram per 100 ml blijft. Dat is een bekende, geregistreerde beperking (bevinding E-01), geen weergavefout.';
+    profileScopeEl.textContent = 'Wat het gekozen profiel vandaag wél en niet stuurt: het bepaalt het gietschema (aantal beurten, verdeling, timing). Het bepaalt de dosis, ratio, temperatuur en maalstand praktisch niet — de twee onderliggende sterkte-/extractievensters liggen zo dicht bij elkaar dat het verschil in dosis onder een tiende gram per 100 ml blijft. Dat is een bekende beperking, geen weergavefout.';
     profileScopeEl.hidden = false;
   }
 
@@ -11556,7 +11924,7 @@ function renderPrep(){
   if (windowEl){
     const cluster = (ENGINE_PROFILE_MAP[state.profile] || ENGINE_PROFILE_MAP.klassiek).cluster;
     const w = ENGINE_TARGET_WINDOWS[cluster];
-    windowEl.textContent = `Doelvenster achter dit recept: ${fmt(w.strengthTDS[0],2)}–${fmt(w.strengthTDS[1],2)} %TDS bij ${w.extractionYieldEY[0]}–${w.extractionYieldEY[1]} %extractie. Deze twee getallenparen zijn door de app aangeleverd (SCA-Brewing-Control-Chart-achtig) en maken GEEN deel uit van het eigen onderzoekscorpus van dit project — de engine zelf markeert dit veld als openstaande onderzoeksvraag (G-CONTROL-CHART-01). Vastgelegd als Model Policy v${MODEL_POLICY.version} (${MODEL_POLICY.targetWindows[cluster].provenance}) — geen sourced evidence, een expliciete, versieerbare productaanname. Dosis en ratio hierboven volgen er rechtstreeks uit.`;
+    windowEl.textContent = `Doelvenster achter dit recept: ${fmt(w.strengthTDS[0],2)}–${fmt(w.strengthTDS[1],2)} %TDS bij ${w.extractionYieldEY[0]}–${w.extractionYieldEY[1]} %extractie. Deze twee getallenparen zijn door de app aangeleverd (in de geest van de SCA Brewing Control Chart) en komen niet uit het eigen onderzoek van dit project — de engine zelf markeert dit als openstaande onderzoeksvraag. Vastgelegd als productaanname (modelversie ${MODEL_POLICY.version}), geen onderbouwd getal. Dosis en ratio hierboven volgen er rechtstreeks uit.`;
     windowEl.hidden = false;
   }
   const retEl = document.getElementById('retention-note');
@@ -11585,7 +11953,7 @@ function renderPrep(){
   // doelvenster hieronder is bewust ongewijzigd gelaten: dat is een stabiele, toetsbare
   // evidence-ID, geen intern planningsdocument — zie tests/kernflow.smoke.test.mjs "A-1".)
   document.getElementById('disclaimer').textContent =
-    '* Dosis/water/ratio komen algebraïsch uit een sterkte-/extractievenster (zie het doelvenster-blok hierboven — door de app aangeleverd, niet uit het eigen onderzoekscorpus) en het gevalideerde dosisbereik van dit toestel — nooit gekopieerd uit een naam-gebonden receptentabel. De ratio bevat een retentieaanname (LIQUID_RETAINED_RATIO = 2,0 g achtergebleven water per g droge koffie bij percolatie, tier 3-4/klasse C, gebaseerd op Rao en Coffee ad Astra) — zonder die aanname zou de ratio het achtergebleven water in het koffiebed negeren en te sterk lijken. Temperatuur is een ankerpunt + instructie binnen de apparaatband, gepositioneerd op branddiepte — géén los geteste claim: de bevinding dat temperatuur weinig zelfstandig smaakeffect heeft (Batali, Ristenpart & Guinard, 2020) hield maling en zettijd bewust vast om TDS/extractie gelijk te houden en testte alleen 87/90/93°C, en die voorwaarde geldt hier niet. Eerlijk erbij: het ankerpunt voor lichte branding (94–96°C) ligt zélf boven dat geteste bereik — het steunt op gangbare praktijk voor lichte brandingen, niet op deze studie, en is dus een vertrekpunt, geen getest getal. Maling is de eerlijke (instelling, vertrouwensband, korrelgrootte-doel)-drieling van de Setting Translator — vandaag voor elke molen "Insufficient" (geen gevalideerde kalibratiecurve); waar een community-startklikrange wél bestaat, positioneert branddiepte alleen wáár je daarbinnen begint (fijner/lichter, grover/donkerder) — geen nieuw maalgetal. Branddiepte stuurt in beide gevallen nooit de ratio of dosis (die blijven voor elke branddiepte identiek). Een eventueel giet-schema hierboven is óf een gecorroboreerde, aan een naam gebonden pour-structuur (zie de recept-notitie), óf — als die er niet is — een eigen, gelijkmatige verdeling; giet-snelheid (g/sec) is altijd een generieke aanname, geen letterlijk gepubliceerd getal. De totale schemalengte (en dus de brouwtimer) volgt uit het aantal giet-momenten van dit schema, niet meer uit de apparaatbrede contacttijd-diagnostiek — die diagnostische band staat los, als plausibiliteitscontrole achteraf op het Klaar-scherm.';
+    '* Dosis/water/ratio komen algebraïsch uit een sterkte-/extractievenster (zie het doelvenster-blok hierboven — door de app aangeleverd, niet uit het eigen onderzoekscorpus) en het gevalideerde dosisbereik van dit toestel — nooit gekopieerd uit een naam-gebonden receptentabel. De ratio bevat een retentieaanname (2,0 g achtergebleven water per g droge koffie bij percolatie, tier 3-4/klasse C, gebaseerd op Rao en Coffee ad Astra) — zonder die aanname zou de ratio het achtergebleven water in het koffiebed negeren en te sterk lijken. Temperatuur is een ankerpunt + instructie binnen de apparaatband, gepositioneerd op branddiepte — géén los geteste claim: de bevinding dat temperatuur weinig zelfstandig smaakeffect heeft (Batali, Ristenpart & Guinard, 2020) hield maling en zettijd bewust vast om TDS/extractie gelijk te houden en testte alleen 87/90/93°C, en die voorwaarde geldt hier niet. Eerlijk erbij: het ankerpunt voor lichte branding (94–96°C) ligt zélf boven dat geteste bereik — het steunt op gangbare praktijk voor lichte brandingen, niet op deze studie, en is dus een vertrekpunt, geen getest getal. Maling is de eerlijke drieling instelling, vertrouwensband en korrelgrootte-doel — vandaag voor elke molen "onvoldoende" (geen gevalideerde kalibratiecurve); waar een community-startklikrange wél bestaat, positioneert branddiepte alleen wáár je daarbinnen begint (fijner/lichter, grover/donkerder) — geen nieuw maalgetal. Branddiepte stuurt in beide gevallen nooit de ratio of dosis (die blijven voor elke branddiepte identiek). Een eventueel giet-schema hierboven is óf een gecorroboreerde, aan een naam gebonden pour-structuur (zie de recept-notitie), óf — als die er niet is — een eigen, gelijkmatige verdeling; giet-snelheid (g/sec) is altijd een generieke aanname, geen letterlijk gepubliceerd getal. De totale schemalengte (en dus de brouwtimer) volgt uit het aantal giet-momenten van dit schema, niet meer uit de apparaatbrede contacttijd-diagnostiek — die diagnostische band staat los, als plausibiliteitscontrole achteraf op het Klaar-scherm.';
 
   // NIEUW (Visual Design 2.0 fase 3): het waterhoeveelheid-statblok hierboven opnieuw
   // tikbaar maken na elke render (het element wordt via innerHTML vervangen, dus oude
@@ -11704,7 +12072,56 @@ const NAV_SCREEN_MAP = {
   settings:'settings',
   'brewlog-history':'brewlog-history'
 };
-function showScreen(name){
+/* NIEUW (audit BC-15): het terug-gebaar van de telefoon ging de app uit. Elke schermwissel
+   krijgt nu een eigen stap in de browsergeschiedenis; terug = één scherm terug. Een
+   in-app terugknop naar het vorige scherm loopt via history.back(), zodat de geschiedenis
+   niet aangroeit. Schermen die gegevens nodig hebben vallen terug op een veilig scherm. */
+const NAV_HISTORY = (typeof window !== 'undefined' && window.history && typeof window.history.pushState === 'function') ? window.history : null;
+const navStack = [];
+let navIgnorePops = 0;
+function recordNavigation(name){
+  if (!NAV_HISTORY) return;
+  if (navStack[navStack.length - 1] === name) return;
+  if (navStack.length >= 2 && navStack[navStack.length - 2] === name){
+    navStack.pop();
+    navIgnorePops++;
+    NAV_HISTORY.back();
+    return;
+  }
+  const first = navStack.length === 0;
+  navStack.push(name);
+  try {
+    if (first) NAV_HISTORY.replaceState({ bcScreen: name, idx: 0 }, ''); // opstarten: geen extra stap
+    else NAV_HISTORY.pushState({ bcScreen: name, idx: navStack.length - 1 }, '');
+  } catch(e){ /* bv. sandbox zonder history */ }
+}
+function safeScreenFor(name){
+  if ((name === 'prep' || name === 'brew') && !state.recipe) return 'method';
+  if (name === 'brewlog' && !activeBrewRecord()) return 'home';
+  if (name === 'bean-detail' && !(beanDetailId && beanLibrary.some(b => b.id === beanDetailId))) return 'beans';
+  return name;
+}
+function onHistoryPop(e){
+  if (navIgnorePops > 0){ navIgnorePops--; return; }
+  const st = e && e.state;
+  if (!st || !st.bcScreen) return;
+  const current = navStack[navStack.length - 1];
+  // Tijdens het gieten laat een per ongeluk terug-geveegd gebaar je niet van de timer af.
+  if (current === 'brew' && st.bcScreen !== 'brew' && timer.running){
+    try { NAV_HISTORY.pushState({ bcScreen: 'brew', idx: navStack.length - 1 }, ''); } catch(err){}
+    return;
+  }
+  navStack.length = Math.min(navStack.length, st.idx);
+  const target = safeScreenFor(st.bcScreen);
+  navStack.push(target);
+  if (target !== st.bcScreen){ try { NAV_HISTORY.replaceState({ bcScreen: target, idx: navStack.length - 1 }, ''); } catch(err){} }
+  if (target === 'home') renderHomeScreen();
+  showScreen(target, { fromHistory: true });
+}
+if (NAV_HISTORY && typeof window.addEventListener === 'function') window.addEventListener('popstate', onHistoryPop);
+
+function showScreen(name, opts){
+  if (!(opts && opts.fromHistory)) recordNavigation(name);
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const target = document.getElementById('screen-'+name);
   target.classList.add('active');
@@ -11713,6 +12130,9 @@ function showScreen(name){
   const order = ['method','roast','profile','prep'];
   const idx = order.indexOf(name);
   const wizardless = ['brew','advice','beans','bean-add','home','settings','brewlog-history','bean-detail','brewlog','triage'];
+  // Audit BC-25: de stappenbalk hoort bij de recept-wizard, niet bij Home/Instellingen/timer.
+  const trackerEl = document.getElementById('tracker');
+  if (trackerEl) trackerEl.hidden = wizardless.includes(name);
   document.querySelectorAll('.tracker-item').forEach(item=>{
     const step = item.getAttribute('data-step');
     const stepIdx = order.indexOf(step);
@@ -11762,6 +12182,7 @@ function selectMethod(key){
   state.bypassPct = 30;
   state.bypassMoment = 'achteraf';
   state.strengthAdjust = 0;
+  state.goalLighterApplied = false; // BC-10
   renderMethodGrid();
   showScreen('roast');
   renderRoastGrid();
@@ -11822,11 +12243,18 @@ if (prepHistoryTriageLink) prepHistoryTriageLink.addEventListener('click', openT
 // NIEUW (Implementatieplan Zetadvies v3.0, Fase 6): bij het "vlak, mogelijk waterbuffering"
 // -patroon wijst het voorstel naar het waterprofiel — dat staat verderop op ditzelfde
 // Recept-scherm, dus scrollen + focus i.p.v. een nieuwe navigatie.
-const prepSuggestionWaterLink = document.getElementById('prep-suggestion-water-link');
-if (prepSuggestionWaterLink) prepSuggestionWaterLink.addEventListener('click', ()=>{
+// Audit BC-24: het waterprofiel staat in Instellingen — beide links gaan daarheen.
+function openWaterSettings(){
+  renderWaterHardnessInput();
+  showScreen('settings');
   const target = document.getElementById('prep-water-hardness');
   if (target){ target.scrollIntoView({ behavior:'smooth', block:'center' }); target.focus(); }
-});
+}
+const prepSuggestionWaterLink = document.getElementById('prep-suggestion-water-link');
+if (prepSuggestionWaterLink) prepSuggestionWaterLink.addEventListener('click', openWaterSettings);
+const prepWaterSettingsLink = document.getElementById('prep-water-settings-link');
+if (prepWaterSettingsLink) prepWaterSettingsLink.addEventListener('click', openWaterSettings);
+document.querySelectorAll('[data-water-preset]').forEach(btn => btn.addEventListener('click', () => applyWaterPreset(btn.getAttribute('data-water-preset'))));
 // NIEUW (Pagina-Polish-spec §4.1): gedeelde actie voor zowel de lege-staat-CTA
 // (#bean-add-link) als de nieuwe header-plusknop (#bean-add-header-btn) — exact dezelfde
 // stappen als voorheen inline op #bean-add-link stonden, nu op één plek.
@@ -12658,10 +13086,19 @@ async function stopBrewTimer(confirmMessage){
 
 document.getElementById('start-btn').addEventListener('click', startBrew);
 document.getElementById('pause-btn').addEventListener('click', ()=>{ timer.running ? pauseTimer() : runTimer(); });
-document.getElementById('reset-btn').addEventListener('click', resetTimer);
+// Audit BC-14: Reset zit vlak naast Pauze — een lopend brouwsel breek je niet af met één misser.
+async function confirmResetTimer(){
+  if (isActiveBrewBrewing() && timer.elapsed > 0){
+    const ok = await showConfirmModal('Opnieuw beginnen? Dit brouwsel wordt afgebroken en telt niet mee.', { confirmLabel:'Ja, opnieuw', cancelLabel:'Nee, doorgaan' });
+    if (!ok) return;
+  }
+  resetTimer();
+}
+document.getElementById('reset-btn').addEventListener('click', confirmResetTimer);
 document.getElementById('bed-dry-btn').addEventListener('click', tapBedDry);
 // Fase 3: proefkaart + doel op het receptscherm (event-delegatie: de inhoud wordt opnieuw opgebouwd).
 document.getElementById('tasting-card').addEventListener('click', handleTastingCardClick);
+document.getElementById('ab-trial').addEventListener('click', handleAbTrialClick); // BC-10
 // Fase 4: advies-paneel + klaargezette stap op het receptscherm.
 document.getElementById('reco-card').addEventListener('click', handleRecommendationClick);
 document.getElementById('prep-next-adjust').addEventListener('click', (e)=>{
@@ -12840,6 +13277,8 @@ function registerOfflineServiceWorker(){
    ============================================================ */
 loadTheme();
 loadWaterHardness();
+loadAbTrials(); // BC-10
+renderWaterHardnessInput(); // BC-24: de velden staan nu ook buiten het receptscherm (Instellingen)
 renderMethodGrid();
 renderRoastGrid();
 renderProfileGrid();
@@ -12896,6 +13335,8 @@ function resetAppData(){
       localStorage.removeItem(BREW_LOG_KEY);
       localStorage.removeItem(BREW_STORE_KEY);
       localStorage.removeItem(ACTIVE_BREW_KEY);
+      localStorage.removeItem(AB_TRIALS_KEY);   // BC-10: proeven zijn data, net als brouwsels
+      localStorage.removeItem(AB_LIGHTER_KEY);
     } catch(e){ /* storage niet beschikbaar — er is dan toch niets blijvends om te wissen */ }
     location.reload();
   });

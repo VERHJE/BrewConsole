@@ -126,7 +126,9 @@ export function loadApp(){
       toggleFinish, tastingGate, buildTasting, applyActuals, findPreviousComparableBrew,
       DIAGNOSIS_RULESET_VERSION, KH_HIGH_CACO3, diagnoseTasting, leverFromMatrix, adjustFeasibility,
       recommendNext, recommendationTexts, TASTING_GOAL_HIT, TASTING_VS_LAST,
-      adviceOutcomeStats, ADVICE_GATE_MIN_TESTED, ADVICE_GATE_SUCCESS_MIN, ADVICE_GATE_HARM_MAX
+      adviceOutcomeStats, ADVICE_GATE_MIN_TESTED, ADVICE_GATE_SUCCESS_MIN, ADVICE_GATE_HARM_MAX,
+      extractBeanNameFromText, extractRoastDateFromText,
+      abTrialVerdict, abArmForAnswer, AB_MIN_TRIALS, AB_WIN_SHARE
     };`,
     sandbox,
     { filename: 'test-exports-shim.js' }

@@ -561,9 +561,9 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
   });
 
   // NIEUW (Reparatieplan v4.0, A-1 — bevinding E-07a): het doelvenster (TDS/EY) en zijn
-  // herkomst (G-CONTROL-CHART-01) moeten daadwerkelijk in de UI staan, niet alleen in de
-  // disclaimer-tekst beweerd worden.
-  test('A-1: het doelvenster-blok toont de TDS/EY-getallen en de G-CONTROL-CHART-01-herkomst', async () => {
+  // herkomst (openstaande onderzoeksvraag) moeten daadwerkelijk in de UI staan, niet alleen in de
+  // disclaimer-tekst beweerd worden. Audit BC-12: in gewone woorden, zonder de interne gap-code.
+  test('A-1: het doelvenster-blok toont de TDS/EY-getallen en de herkomst (openstaande onderzoeksvraag)', async () => {
     const page = await newTrackedPage();
     await page.goto(FILE_URL, { waitUntil: 'load' });
     await page.click('.navbar [data-nav="method"]');
@@ -573,11 +573,15 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
 
+    // Audit BC-12: de onderbouwing staat achter "Waarom deze getallen?" — zichtbaar na één tik.
+    await page.click('#why-details summary');
     const windowNote = page.locator('#target-window-note');
     await assert.ok(await windowNote.isVisible(), '#target-window-note moet zichtbaar zijn op het Prep-scherm');
     const windowText = (await windowNote.textContent()).trim();
     assert.match(windowText, /%TDS/, 'moet de %TDS-grenzen noemen');
-    assert.match(windowText, /G-CONTROL-CHART-01/, 'moet de herkomst (research gap) noemen');
+    assert.match(windowText, /openstaande onderzoeksvraag/, 'moet de herkomst (research gap) noemen');
+    assert.match(windowText, /productaanname/, 'moet zeggen dat het een productaanname is');
+    assert.doesNotMatch(windowText, /G-CONTROL-CHART|APP_ASSUMED/, 'geen interne codes in de UI');
 
     await page.close();
   });
@@ -594,6 +598,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
 
+    await page.click('#why-details summary'); // Audit BC-12: op verzoek, één tik
     const scopeNote = page.locator('#profile-scope-note');
     await assert.ok(await scopeNote.isVisible(), '#profile-scope-note moet zichtbaar zijn op het Prep-scherm');
     const scopeText = (await scopeNote.textContent()).trim();
@@ -626,13 +631,10 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     assert.match(statusText, /waterprofiel hersteld/, 'De import-statusmelding moet aangeven dat het waterprofiel is hersteld');
     assert.doesNotMatch(statusText, /undefined|NaN/, 'Geen kapotte waarden in de statusmelding');
 
-    // Waterhardheid moet daadwerkelijk hersteld zijn, zichtbaar in het invoerveld op Recept.
-    await page.click('.navbar [data-nav="method"]');
-    await assertBecomesActive(page, '#screen-method');
-    await page.click('[data-method="v60"]');
-    await page.click('#roast-grid [data-roast] >> nth=0');
-    await page.click('#profile-grid [data-profile="klassiek"]');
-    await assertBecomesActive(page, '#screen-prep');
+    // Waterhardheid moet daadwerkelijk hersteld zijn, zichtbaar in het invoerveld (audit
+    // BC-24: het waterprofiel staat in Instellingen).
+    await page.click('.navbar [data-nav="settings"]');
+    await assertBecomesActive(page, '#screen-settings');
     const hardnessValue = await page.locator('#prep-water-hardness').inputValue();
     assert.equal(hardnessValue, '128', 'De uit de oude backup herstelde waterhardheid moet in het invoerveld staan');
     const hardnessReadout = (await page.locator('#hardness-readout').textContent()).trim();
@@ -656,11 +658,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
 
-    // FIX (visuele afstemming referentiebeeld "Aanvullende informatie"): het waterprofiel-
-    // invoerveld zit sinds de Prep-compactheidsslag in de collapsed-by-default "Verfijn dit
-    // recept"-accordion — open 'm expliciet vóór .fill()/.selectOption(), die (anders dan
-    // .inputValue()/.textContent() hierboven) wél zichtbaarheid vereisen.
-    await page.evaluate(() => { document.getElementById('refine-details').open = true; });
+    // Audit BC-24: het waterprofiel staat in Instellingen; het receptscherm toont alleen een samenvatting.
+    assert.match(await page.locator('#prep-water-summary').textContent(), /Niet ingesteld/);
 
     // Vóór invullen: alkaliniteit moet eerlijk "niet ingevuld" tonen, geen "binnen de richtwaarde".
     const beforeAlk = (await page.locator('#alkalinity-readout').textContent()).trim();
@@ -670,6 +669,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     // B-6-nulmeting: het kernrecept (dosis) vóór er iets aan het waterprofiel verandert.
     const doseBeforeWaterProfile = (await page.locator('#stats-grid .stat-block').first().textContent()).trim();
 
+    await page.click('.navbar [data-nav="settings"]');
+    await assertBecomesActive(page, '#screen-settings');
     await page.fill('#prep-water-hardness', '128');
     await page.dispatchEvent('#prep-water-hardness', 'change');
     await page.fill('#prep-water-alkalinity', '100');
@@ -699,6 +700,23 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     // of te verdunnen.
     const doseAfterDilution = (await page.locator('#stats-grid .stat-block').first().textContent()).trim();
     assert.equal(doseAfterDilution, doseBeforeWaterProfile, 'B-6: waterprofiel/verdunning mag het kernrecept (dosis) nooit beïnvloeden');
+    assert.match(await page.locator('#prep-water-summary').textContent(), /hardheid 64 · alkaliniteit 50 mg\/L CaCO3 \(effectief na verdunning 1:1\)/);
+
+    // Preset: SCA-richtwaarde vult beide velden in; Wissen maakt ze weer leeg.
+    await page.click('[data-water-preset="sca"]');
+    assert.equal(await page.locator('#prep-water-hardness').inputValue(), '68');
+    assert.equal(await page.locator('#prep-water-alkalinity').inputValue(), '40');
+    assert.match((await page.locator('#alkalinity-readout').textContent()), /binnen de SCA-richtwaarde/);
+    assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem('brewconsole_water_hardness'))).hardnessMgL, 68, 'preset wordt onthouden');
+    await page.click('[data-water-preset="clear"]');
+    assert.equal(await page.locator('#prep-water-hardness').inputValue(), '');
+    assert.equal(await page.evaluate(() => localStorage.getItem('brewconsole_water_hardness')), null);
+
+    // De link op het receptscherm brengt je naar het waterprofiel in Instellingen.
+    await page.evaluate(() => showScreen('prep'));
+    await page.evaluate(() => { document.getElementById('refine-details').open = true; });
+    await page.click('#prep-water-settings-link');
+    await assertBecomesActive(page, '#screen-settings');
 
     await page.close();
   });
@@ -900,6 +918,11 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
   // data volledig onveranderd laten.
   test('C-2: een schemaVersion-3-record zonder beanSnapshot levert nog steeds dezelfde leercorrectie op (live terugval)', async () => {
     const page = await newTrackedPage();
+    // Leren telt alleen binnen hetzelfde bekende waterprofiel (B-7) — zonder waterprofiel kan
+    // deze test niets bewijzen. Tot de BC-12-herindeling slaagde hij alleen doordat "exacte"
+    // toevallig in de Kasuya-uitleg stond; hij controleert nu de leercorrectie zelf.
+    const WATER = { hardnessMgL: 120, alkalinity: { value: 40, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } };
+    await page.addInitScript((w) => { if (!sessionStorage.getItem('c2w')){ sessionStorage.setItem('c2w', '1'); localStorage.setItem('brewconsole_water_hardness', JSON.stringify(w)); } }, WATER);
     await page.goto(FILE_URL, { waitUntil: 'load' });
     await page.click('.navbar [data-nav="beans"]');
     await assertBecomesActive(page, '#screen-beans');
@@ -909,7 +932,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       id, schemaVersion: 3, timestamp: Date.now(),
       beanId: bean.id, method: 'v60', profile: 'klassiek', roast: 'light',
       waterMl: 300, bypass: false, grindMicron: 650, grindStand: null, temp: 95,
-      scores: {}, note: '', approved: true, grindStartingPoint: 14, actualGrindClicks: clicks
+      scores: {}, note: '', approved: true, grindStartingPoint: 14, actualGrindClicks: clicks,
+      waterProfileSnapshot: WATER
       // Bewust GEEN beanSnapshot — dit is precies het schemaVersion-3-record dat C-2 zegt
       // via entryBeanFor()/de live boon te blijven bedienen.
     });
@@ -934,9 +958,9 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#advice-cta');
     await assertBecomesActive(page, '#screen-prep');
 
-    const prepText = (await page.locator('#screen-prep').innerText()).trim();
-    assert.match(prepText, /leercorrectie|klikken (fijner|grover)|exact/i,
+    assert.equal(await page.locator('#prep-learning-correction').isVisible(), true,
       'drie goedgekeurde schemaVersion-3-loggings (zonder beanSnapshot) horen nog steeds een leercorrectie te tonen, via de live boon-terugval');
+    assert.match(await page.locator('#prep-learning-correction-text').innerText(), /fijner/, 'gemiddeld 2 klikken fijner dan het recept');
 
     await page.close();
   });
@@ -1211,6 +1235,46 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
+  // NIEUW (audit BC-20): na plakken een controlekaart met naam, branddatum en wat niet herkend
+  // is — en direct opslaan zonder door het hele formulier te hoeven.
+  test('BC-20: plakken → controlekaart (naam, branddatum, niet-herkend eerlijk benoemd) → direct opslaan', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="beans"]');
+    await page.click('#bean-add-link');
+    await assertBecomesActive(page, '#screen-bean-add');
+    const d = new Date(Date.now() - 5 * 86400000);
+    const dd = String(d.getDate()).padStart(2, '0'), mm = String(d.getMonth() + 1).padStart(2, '0'), yyyy = d.getFullYear();
+    await page.fill('#f-scan-text', `Ethiopia Guji — washed — light roast. Notes: jasmine, peach, black tea\nRoasted on ${dd}-${mm}-${yyyy}`);
+    await page.click('#scan-text-btn');
+    const card = page.locator('#scan-result');
+    assert.equal(await card.isVisible(), true);
+    const rows = await card.locator('.scan-review-row').allInnerTexts();
+    assert.match(rows.join('\n'), /Naam\s+Ethiopia Guji/i);
+    assert.match(rows.join('\n'), /Branddatum\s+\d{1,2} \w+ \d{4}/i);
+    assert.equal(await page.locator('#f-roast-date').inputValue(), `${yyyy}-${mm}-${dd}`);
+    assert.equal(await page.locator('#f-name').inputValue(), 'Ethiopia Guji');
+    await page.click('#scan-review-save-btn');
+    const beans = await page.evaluate(() => beanLibrary.map(b => ({ name: b.name, roastDate: b.roastDate, roast: b.roastLevel, process: b.process })));
+    assert.equal(beans.length, 1);
+    assert.deepEqual(beans[0], { name: 'Ethiopia Guji', roastDate: `${yyyy}-${mm}-${dd}`, roast: 'light', process: 'washed' });
+    await page.close();
+  });
+
+  test('BC-20: wat niet herkend is, staat er eerlijk bij (met de huidige standaard)', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="beans"]');
+    await page.click('#bean-add-link');
+    await page.fill('#f-scan-text', 'Huisblend nummer 3');
+    await page.click('#scan-text-btn');
+    const text = await page.locator('#scan-result').innerText();
+    assert.match(text, /Branding\s+niet herkend — staat nu op Medium \(standaard\)/i);
+    assert.match(text, /Proces\s+niet herkend — staat nu op Washed \(standaard\)/i);
+    assert.match(text, /Branddatum\s+niet herkend/i);
+    await page.close();
+  });
+
   // NIEUW (Phase 0 / BC-01 — audit: boonkoppeling). Voorheen koppelde de bonenchip in het
   // advies-scherm de boon niet, en wiste niets ooit een eerdere koppeling: een brouwsel
   // belandde dan stilzwijgend bij de boon van een vorige sessie (of bij geen boon).
@@ -1465,6 +1529,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('#pause-btn');
       await page.click('#pause-btn'); // hervat
       await page.click('#reset-btn');
+      await page.click('#confirm-modal-ok'); // BC-14: lopend brouwsel → eerst bevestigen
       await page.click('#pause-btn'); // start opnieuw vanaf 0
       const s = await store(page);
       assert.equal(s.length, 2);
@@ -1541,7 +1606,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await toPrepWithBean(page);
       await page.click('#start-btn');
       await page.clock.fastForward('00:10');
-      await page.click('#reset-btn'); // één abandoned record
+      await page.click('#reset-btn');
+      await page.click('#confirm-modal-ok'); // één abandoned record
       const exported = await page.evaluate(() => ({ app:'brew-console', backupVersion:3, beans: beanLibrary, brews: brewStore, brewLog }));
       assert.equal(exported.brews.length, 1);
       await page.evaluate(() => { localStorage.removeItem('brewconsole_brews'); localStorage.removeItem('brewconsole_active_brew'); });
@@ -2052,6 +2118,225 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.match(text, /1× houd zo/);
       assert.equal(await page.locator('#advice-outcome [data-advice-gate]').getAttribute('data-advice-gate'), 'insufficient');
       assert.match(text, /Nog 19 geteste stappen tot een betrouwbaar oordeel/);
+      await page.close();
+    });
+  });
+
+  // NIEUW (audit BC-12): het receptscherm is in een paar seconden te scannen.
+  test('BC-12: startklik vooraan, elke waarde met één regel uitleg, onderbouwing ingeklapt', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.evaluate(() => { selectMethod('v60'); selectRoast('light'); selectProfile('klassiek'); });
+    const rec = await page.evaluate(() => ({ start: state.recipe.grindStartingPoint, min: state.recipe.grindStartingRange.clicksMin, max: state.recipe.grindStartingRange.clicksMax }));
+    const grind = page.locator('#stats-grid .stat-block', { hasText: 'Maalgraad' });
+    assert.equal((await grind.locator('.stat-value').textContent()).trim(), `Klik ${rec.start}`);
+    assert.match(await grind.innerText(), new RegExp(`start hier · klik ${rec.min}–${rec.max} is het startgebied`));
+    assert.match(await grind.innerText(), /zuur en snel door\? fijner · bitter en traag\? grover/);
+    for (const label of ['Gemalen koffie', 'Watertemperatuur', 'Ratio', 'Maalgraad', 'Brouwtijd']){
+      const n = await page.locator('#stats-grid .stat-block', { hasText: label }).locator('.stat-sub').count();
+      assert.ok(n >= 1, `${label} heeft een uitlegregel`);
+    }
+    assert.equal(await page.locator('#disclaimer').isVisible(), false, 'onderbouwing standaard ingeklapt');
+    assert.equal(await page.locator('#why-details').getAttribute('open'), null);
+    const styleText = (await page.locator('#style-note').innerText()).trim();
+    assert.ok(styleText.length < 400, `techniekkaart kort (${styleText.length} tekens)`);
+    if (await page.locator('#style-more-toggle').count()){
+      await page.click('#style-more-toggle');
+      assert.equal(await page.locator('#style-more-body').isVisible(), true);
+    }
+    const words = await page.evaluate(() => document.getElementById('screen-prep').innerText.split(/\s+/).filter(Boolean).length);
+    assert.ok(words < 450, `zichtbare tekst op het receptscherm: ${words} woorden`);
+    await page.close();
+  });
+
+  // NIEUW (audit BC-15): het terug-gebaar gaat één scherm terug in plaats van de app uit.
+  test('BC-15: terug-gebaar = één scherm terug; in-app terug laat de geschiedenis niet groeien; tijdens gieten blijf je op de timer', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    const active = () => page.evaluate(() => document.querySelector('.screen.active').id);
+    await page.click('.navbar [data-nav="method"]');
+    await page.click('[data-method="v60"]');
+    await page.click('#roast-grid [data-roast] >> nth=0');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await assertBecomesActive(page, '#screen-prep');
+    const lenAtPrep = await page.evaluate(() => history.length);
+    await page.goBack();
+    await assertBecomesActive(page, '#screen-profile');
+    await page.goBack();
+    await assertBecomesActive(page, '#screen-roast');
+    await page.goForward();
+    await assertBecomesActive(page, '#screen-profile');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await assertBecomesActive(page, '#screen-prep');
+    await page.click('#screen-prep .back-btn');
+    await assertBecomesActive(page, '#screen-profile');
+    assert.equal(await page.evaluate(() => history.length), lenAtPrep, 'in-app terug groeit de geschiedenis niet');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await page.click('#start-btn');
+    await assertBecomesActive(page, '#screen-brew');
+    await page.goBack();
+    await page.waitForTimeout(150);
+    assert.equal(await active(), 'screen-brew', 'tijdens het gieten brengt terug je niet van de timer af');
+    await page.close();
+  });
+
+  // NIEUW (audit BC-10): blinde helder-proef; het recept verandert alleen als je dat na een
+  // duidelijke uitslag zelf aanzet.
+  test('BC-10: blinde proef bij Helder & fris — onthullen, opslaan, en pas na een duidelijke uitslag zelf aanzetten', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.evaluate(() => { selectMethod('v60'); selectRoast('medium'); selectProfile('klassiek'); });
+    assert.equal(await page.locator('#ab-trial').isVisible(), false, 'zonder helder-doel geen proefkaart');
+    const dose0 = await page.evaluate(() => state.recipe.dose);
+    await page.click('[data-goal="bright"]');
+    assert.equal(await page.locator('#ab-trial').isVisible(), true);
+    assert.equal(await page.evaluate(() => state.recipe.dose), dose0, 'standaard verandert het recept niet');
+    await page.click('#ab-start-btn');
+    const cup = await page.evaluate(() => abOpenTrial.cupForVariant);
+    assert.match(await page.locator('#ab-trial').innerText(), /Kop 1: [\d,]+ g · Kop 2: [\d,]+ g/);
+    assert.equal(await page.locator('#ab-reveal-btn').isDisabled(), true, 'eerst antwoorden');
+    await page.click(`[data-ab-q="preferredCup"][data-ab-a="${cup}"]`);
+    await page.click(`[data-ab-q="brighterCup"][data-ab-a="${cup}"]`);
+    await page.click('#ab-reveal-btn');
+    assert.match(await page.locator('#ab-reveal').innerText(), new RegExp(`Kop ${cup} had minder koffie .* Je vond de kop met minder koffie lekkerder`));
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_ab_trials')));
+    assert.equal(stored.length, 1);
+    assert.equal(stored[0].preferred, 'variant');
+    assert.equal(stored[0].brighter, 'variant');
+    assert.ok(stored[0].variantDose < stored[0].controlDose);
+    assert.equal(await page.locator('#ab-lighter-on').count(), 0, 'na één proef nog niets aan te zetten');
+
+    // Vier extra proeven waarin de variant wint → duidelijke uitslag → zelf aanzetten.
+    await page.evaluate(() => { for (let i = 0; i < 4; i++) abTrials.push({ id: 'x' + i, preferred: 'variant' }); saveAbTrials(); renderAbTrial(); });
+    assert.equal(await page.locator('.ab-tally').getAttribute('data-ab-verdict'), 'variant');
+    await page.click('#ab-lighter-on');
+    assert.equal(await page.evaluate(() => state.strengthAdjust), -1);
+    assert.ok(await page.evaluate(() => state.recipe.dose) < dose0, 'nu een stap minder koffie');
+    await page.click('[data-goal="balanced"]');
+    assert.equal(await page.evaluate(() => state.strengthAdjust), 0, 'ander doel → automatische stap terug');
+    assert.equal(await page.evaluate(() => state.recipe.dose), dose0);
+    await page.close();
+  });
+
+  // NIEUW (audit BC-23): smaakrichting en gietstijl gescheiden, één schaal.
+  test('BC-23: profielkeuze in twee groepen (smaakrichting / gietstijl), zonder percentages', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    const layout = await page.evaluate(() => {
+      selectMethod('v60'); selectRoast('light'); showScreen('profile');
+      const grid = document.getElementById('profile-grid');
+      const kids = [...grid.children];
+      const labelIdx = kids.findIndex(el => el.classList.contains('profile-group-label'));
+      const keyIdx = (k) => kids.findIndex(el => el.getAttribute('data-profile') === k);
+      adviceState.flavorScores = { heel_fruitig: 2, fruitig_clean: 3, fresh_clean: 1, vol_rond: 0, zoet: 0 };
+      renderAdviceChips();
+      return {
+        label: labelIdx >= 0 ? kids[labelIdx].textContent : null,
+        flavorBefore: ['heel_fruitig', 'klassiek'].every(k => keyIdx(k) >= 0 && keyIdx(k) < labelIdx),
+        styleAfter: PROFILE_TECHNIQUE_ONLY_KEYS.filter(k => keyIdx(k) >= 0).every(k => keyIdx(k) > labelIdx),
+        adviceText: document.getElementById('advice-profile').textContent,
+        adviceStars: document.querySelectorAll('#advice-profile .chip-with-stars').length
+      };
+    });
+    assert.equal(layout.label, 'Of kies een gietstijl');
+    assert.ok(layout.flavorBefore, 'smaakrichtingen staan boven het gietstijl-label');
+    assert.ok(layout.styleAfter, 'gietstijlen staan eronder');
+    assert.match(layout.adviceText, /Of kies een gietstijl/);
+    assert.doesNotMatch(layout.adviceText, /\d+%/, 'geen percentage meer naast de sterren');
+    assert.ok(layout.adviceStars >= 1, 'de sterren blijven de ene schaal');
+    await page.close();
+  });
+
+  // NIEUW (audit BC-14/BC-25): geen stille verliezen en een eerlijke eerste indruk.
+  describe('Audit: bevestigen, ongedaan maken en eerste start', () => {
+    const BEAN = { id:'bean-au', name:'Audit Boon', roastLevel:'medium', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:0 };
+    async function seeded(beans){
+      const page = await newTrackedPage();
+      await page.addInitScript((beans) => {
+        if (sessionStorage.getItem('au')) return;
+        sessionStorage.setItem('au', '1');
+        if (beans) localStorage.setItem('brewconsole_beans', JSON.stringify(beans));
+      }, beans || null);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      return page;
+    }
+
+    test('eerste start zegt "Welkom", met een boon "Welkom terug"', async () => {
+      let page = await seeded(null);
+      assert.equal((await page.locator('#home-title').textContent()).trim(), 'Welkom');
+      await page.close();
+      page = await seeded([BEAN]);
+      assert.equal((await page.locator('#home-title').textContent()).trim(), 'Welkom terug');
+      await page.close();
+    });
+
+    test('Reset tijdens een lopend brouwsel vraagt eerst; "Nee" laat het brouwsel doorlopen', async () => {
+      const page = await seeded(null);
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('[data-method="v60"]');
+      await page.click('#roast-grid [data-roast] >> nth=0');
+      await page.click('#profile-grid [data-profile="klassiek"]');
+      await page.click('#start-btn');
+      await page.clock.fastForward('00:20');
+      await page.click('#reset-btn');
+      assert.equal(await page.locator('#confirm-modal').isVisible(), true);
+      await page.click('#confirm-modal-cancel');
+      const st = await page.evaluate(() => ({ brewing: isActiveBrewBrewing(), elapsed: timer.elapsed }));
+      assert.equal(st.brewing, true, 'annuleren breekt het brouwsel niet af');
+      assert.ok(st.elapsed >= 20);
+      await page.close();
+    });
+
+    test('boon verwijderen kan ongedaan worden gemaakt, op dezelfde plek', async () => {
+      const B2 = Object.assign({}, BEAN, { id:'bean-au2', name:'Tweede Boon' });
+      const page = await seeded([BEAN, B2]);
+      await page.click('.navbar [data-nav="beans"]');
+      await page.click('[data-del="bean-au"]');
+      assert.match(await page.locator('#undo-bar').innerText(), /Audit Boon verwijderd/);
+      assert.deepEqual(await page.evaluate(() => beanLibrary.map(b => b.id)), ['bean-au2']);
+      await page.click('#undo-bar-btn');
+      assert.deepEqual(await page.evaluate(() => beanLibrary.map(b => b.id)), ['bean-au', 'bean-au2']);
+      assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_beans')).map(b => b.id)), ['bean-au', 'bean-au2'], 'ook opgeslagen');
+      await page.close();
+    });
+  });
+
+  // NIEUW (audit BC-12/BC-25): interne codes, bestandsnamen en functienamen horen niet in de
+  // UI. Loopt elk profiel × branding × methode langs (V60 ook met bypass), inclusief
+  // ingeklapte uitleg (textContent i.p.v. innerText).
+  describe('Audit: geen interne codes of Engelse labels op het receptscherm', () => {
+    const LEAKS = [
+      [/\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b/, 'engine-code (bv. RESEARCH_GAP)'],
+      [/bevinding\s+[A-Z]-\d/i, 'auditbevinding-ID'],
+      [/\b[a-z]+[A-Z][A-Za-z]*\(\)/, 'JS-functienaam'],
+      [/\bG-[A-Z-]+-\d+/, 'gap-ID'],
+      [/\.md\b/, 'bestandsnaam'],
+      [/\bPour \d|\bHoofdpour\b|\bmedium fine\b/i, 'Engels stap-/maallabel']
+    ];
+    test('alle profielen, brandingen en methodes', async () => {
+      const page = await newTrackedPage();
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      const combos = await page.evaluate(() => {
+        const out = [];
+        for (const m of ['v60', 'chemex']) for (const r of ['light', 'medium', 'dark'])
+          for (const p of Object.keys(PROFILE_INFO)) if (!PROFILE_INFO[p].methodOnly || PROFILE_INFO[p].methodOnly === m) out.push([m, r, p]);
+        return out;
+      });
+      const problems = [];
+      for (const [m, r, p] of combos){
+        const texts = await page.evaluate(([m, r, p]) => {
+          selectMethod(m); selectRoast(r); selectProfile(p);
+          const t = [document.getElementById('screen-prep').textContent];
+          const byp = document.querySelector('[data-bypass-pct="30"]');
+          if (m === 'v60' && byp){ byp.click(); t.push(document.getElementById('screen-prep').textContent); document.querySelector('[data-bypass-pct="0"]').click(); }
+          return t;
+        }, [m, r, p]);
+        for (const text of texts) for (const [re, what] of LEAKS){
+          const hit = text.match(re);
+          if (hit) problems.push(`${m}/${r}/${p}: ${what} "${hit[0]}"`);
+        }
+      }
+      assert.deepEqual([...new Set(problems)], []);
       await page.close();
     });
   });
