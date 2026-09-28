@@ -2096,6 +2096,35 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
+  // NIEUW (audit BC-23): smaakrichting en gietstijl gescheiden, één schaal.
+  test('BC-23: profielkeuze in twee groepen (smaakrichting / gietstijl), zonder percentages', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    const layout = await page.evaluate(() => {
+      selectMethod('v60'); selectRoast('light'); showScreen('profile');
+      const grid = document.getElementById('profile-grid');
+      const kids = [...grid.children];
+      const labelIdx = kids.findIndex(el => el.classList.contains('profile-group-label'));
+      const keyIdx = (k) => kids.findIndex(el => el.getAttribute('data-profile') === k);
+      adviceState.flavorScores = { heel_fruitig: 2, fruitig_clean: 3, fresh_clean: 1, vol_rond: 0, zoet: 0 };
+      renderAdviceChips();
+      return {
+        label: labelIdx >= 0 ? kids[labelIdx].textContent : null,
+        flavorBefore: ['heel_fruitig', 'klassiek'].every(k => keyIdx(k) >= 0 && keyIdx(k) < labelIdx),
+        styleAfter: PROFILE_TECHNIQUE_ONLY_KEYS.filter(k => keyIdx(k) >= 0).every(k => keyIdx(k) > labelIdx),
+        adviceText: document.getElementById('advice-profile').textContent,
+        adviceStars: document.querySelectorAll('#advice-profile .chip-with-stars').length
+      };
+    });
+    assert.equal(layout.label, 'Of kies een gietstijl');
+    assert.ok(layout.flavorBefore, 'smaakrichtingen staan boven het gietstijl-label');
+    assert.ok(layout.styleAfter, 'gietstijlen staan eronder');
+    assert.match(layout.adviceText, /Of kies een gietstijl/);
+    assert.doesNotMatch(layout.adviceText, /\d+%/, 'geen percentage meer naast de sterren');
+    assert.ok(layout.adviceStars >= 1, 'de sterren blijven de ene schaal');
+    await page.close();
+  });
+
   // NIEUW (audit BC-14/BC-25): geen stille verliezen en een eerlijke eerste indruk.
   describe('Audit: bevestigen, ongedaan maken en eerste start', () => {
     const BEAN = { id:'bean-au', name:'Audit Boon', roastLevel:'medium', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:0 };
