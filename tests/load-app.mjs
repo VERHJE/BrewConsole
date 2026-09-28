@@ -116,7 +116,10 @@ export function loadApp(){
       profileNearTieCandidates, PROFILE_NEAR_TIE_MARGIN,
       PROCESS_SCAN_KEYWORDS, EXPERIMENTAL_SCAN_KEYWORDS,
       scanFlavorTagsInText, stripFlavorContextPhrases, flavorFuzzyDistance,
-      DEFECT_TAGS, defectTagWarning, TAG_TO_CATEGORY
+      DEFECT_TAGS, defectTagWarning, TAG_TO_CATEGORY,
+      BREW_RECORD_SCHEMA_VERSION, BREW_TRANSITIONS, SOFT_DELETE_RETENTION_MS, STALE_BREWING_GRACE_SEC,
+      createBrewRecord, applyBrewEvent, migrateLegacyLogEntry, brewRecordToLogView, isBrewInLogView,
+      purgeDeletedBrews, staleBrewingOutcome
     };`,
     sandbox,
     { filename: 'test-exports-shim.js' }

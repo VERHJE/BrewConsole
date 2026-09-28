@@ -467,7 +467,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     assert.equal(savedEntry.bypassPlannedG, 120);
     assert.equal(savedEntry.bypassActualG, 115, 'het aangepaste, werkelijk ingevulde bedrag moet bewaard worden, niet het geplande');
     assert.equal(savedEntry.bypassMoment, 'achteraf');
-    assert.equal(savedEntry.schemaVersion, 5);
+    // BIJGEWERKT (Fase 1): nieuwe loggings zijn v6-records (brewLog is er de platte weergave van).
+    assert.equal(savedEntry.schemaVersion, 6);
 
     await page.close();
   });
@@ -738,7 +739,10 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     assert.match(cardText, /werkelijke stand 22/, 'De werkelijk gebruikte maalstand moet in de Historie-kaart staan');
     assert.match(cardText, /kopgewicht 268 g/, 'Het kopgewicht moet in de Historie-kaart staan');
     assert.match(cardText, /recept/, 'De aanbevolen dosis/ratio moet er als vergelijking naast staan');
-    assert.match(cardText, /werkelijke tijd/, 'De werkelijke brouwtijd moet er ook bij staan (was al berekend, nu ook bewaard)');
+    // BIJGEWERKT (Fase 1): de timer stopt op het schema-einde, dus dit was nooit een gemeten
+    // brouwtijd. De kaart toont hem nu eerlijk als schema-tijd; een echte meting komt in Fase 2.
+    assert.match(cardText, /schema-tijd \d+:\d{2} \(niet gemeten\)/, 'De schema-tijd moet er eerlijk gelabeld bij staan');
+    assert.doesNotMatch(cardText, /werkelijke tijd/, 'De schema-tijd mag nooit als werkelijke tijd getoond worden');
 
     await page.close();
   });
@@ -824,7 +828,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     assert.match(cardText, /volledige rondgang/);
     assert.match(cardText, /recept 18[,.]8 g · 1:16/, `verwacht dosis+ratio in de kaart, kreeg "${cardText}"`);
     assert.match(cardText, /werkelijke stand 21/);
-    assert.match(cardText, /werkelijke tijd 3:05/, `verwacht 185s als 3:05, kreeg "${cardText}"`);
+    // BIJGEWERKT (Fase 1): de oude actualTimeSec (185 s) blijft bewaard, maar heet nu schema-tijd.
+    assert.match(cardText, /schema-tijd 3:05 \(niet gemeten\)/, `verwacht 185s als schema-tijd 3:05, kreeg "${cardText}"`);
     assert.match(cardText, /kopgewicht 262\.5 g/);
 
     await page.close();
@@ -1270,10 +1275,9 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await assertBecomesActive(page, '#screen-brewlog');
       await page.click('#brewlog-save-btn');
       await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
-      return page.evaluate(() => {
-        const log = JSON.parse(localStorage.getItem('brewConsoleLog') || '[]');
-        return log.slice().sort((a, b) => b.timestamp - a.timestamp)[0];
-      });
+      // BIJGEWERKT (Fase 1): loggings leven als v6-records onder 'brewconsole_brews';
+      // brewLog is de platte weergave die alle lezers gebruiken.
+      return page.evaluate(() => brewLog.slice().sort((a, b) => b.timestamp - a.timestamp)[0]);
     }
     const beanLine = (page) => page.locator('#prep-bean-line').textContent();
 
@@ -1394,6 +1398,188 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.evaluate(() => { state.recipe = null; startBrew(); });
       await assertBecomesActive(page, '#screen-method');
       assert.equal(pageErrors.length, errorsBefore, `onverwachte JS-fout: ${pageErrors.slice(errorsBefore).join(' | ')}`);
+      await page.close();
+    });
+  });
+
+  // NIEUW (Brew Intelligence v2, Fase 1): het v6-record bestaat vanaf Start, wordt bij elke
+  // gebeurtenis bewaard, en de bijwerkingen (voorraad, "brouw opnieuw") volgen COMPLETED.
+  describe('Fase 1: brouwrecord vanaf Start — levenscyclus, bewaren, herstel, migratie', () => {
+    const BEAN = { id:'bean-f1', name:'Fase1 Boon', roastLevel:'medium', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:0, bagSizeG:250 };
+    async function pageWith(seed){
+      const page = await newTrackedPage();
+      await page.addInitScript((seed) => {
+        if (sessionStorage.getItem('f1-seeded')) return;
+        sessionStorage.setItem('f1-seeded', '1');
+        for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+      }, seed);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      return page;
+    }
+    const store = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_brews') || '[]'));
+    const beanUsed = (page) => page.evaluate(() => beanLibrary.find(b => b.id === 'bean-f1').doseUsedG);
+    async function toPrepWithBean(page){
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('#advisor-link');
+      await page.click('[data-bean-pick="bean-f1"]');
+      await page.click('#advice-batch [data-adv-batch="single"]');
+      await page.waitForFunction(() => getComputedStyle(document.getElementById('advice-result')).display !== 'none');
+      await page.click('#advice-cta');
+      await assertBecomesActive(page, '#screen-prep');
+    }
+
+    test('Start maakt meteen een bewaard brewing-record; voorraad wordt pas bij voltooien afgeboekt, precies één keer', async () => {
+      const page = await pageWith({ brewconsole_beans: [BEAN] });
+      await toPrepWithBean(page);
+      await page.click('#start-btn');
+      await assertBecomesActive(page, '#screen-brew');
+      let s = await store(page);
+      assert.equal(s.length, 1);
+      assert.equal(s[0].lifecycle, 'brewing');
+      assert.equal(s[0].beanId, 'bean-f1');
+      assert.equal(s[0].actual.events[0].type, 'start');
+      assert.equal(await page.evaluate(() => localStorage.getItem('brewconsole_active_brew')), s[0].id);
+      assert.equal(await beanUsed(page), 0, 'bij Start nog geen voorraadverbruik');
+
+      await page.clock.fastForward(FAST_FORWARD);
+      await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
+      s = await store(page);
+      assert.equal(s[0].lifecycle, 'completed');
+      assert.equal(s[0].actual.bedDrySec, null, 'een schema-einde is geen bed-droog-meting');
+      const planned = s[0].plan.doseG;
+      assert.equal(await beanUsed(page), planned, 'voorraad afgeboekt bij voltooien');
+
+      await page.click('#brewlog-open-btn');
+      await assertBecomesActive(page, '#screen-brewlog');
+      await page.click('#brewlog-save-btn');
+      await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
+      await page.click('#brewlog-save-btn'); // dubbel opslaan
+      s = await store(page);
+      assert.equal(s.length, 1, 'nogmaals opslaan werkt hetzelfde record bij, geen tweede logging');
+      assert.equal(s[0].lifecycle, 'logged');
+      assert.equal(await page.evaluate(() => brewLog.length), 1);
+      assert.equal(await beanUsed(page), planned, 'opslaan boekt niet nog eens af');
+      await page.close();
+    });
+
+    test('stoppen midden in een brouwsel → abandoned: geen voorraadverbruik en niet in het logboek', async () => {
+      const page = await pageWith({ brewconsole_beans: [BEAN] });
+      await toPrepWithBean(page);
+      await page.click('#start-btn');
+      await assertBecomesActive(page, '#screen-brew');
+      await page.clock.fastForward('00:30');
+      await page.click('#stop-btn');
+      await page.click('#confirm-modal-ok');
+      await page.waitForFunction(() => JSON.parse(localStorage.getItem('brewconsole_brews'))[0].lifecycle === 'abandoned');
+      const s = await store(page);
+      const ab = s[0].actual.events.at(-1);
+      assert.equal(ab.type, 'abandon');
+      assert.equal(ab.reason, 'stopped');
+      assert.ok(ab.tSec >= 29 && ab.tSec <= 31, `gestopt na ~30 s, kreeg ${ab.tSec}`);
+      assert.equal(await beanUsed(page), 0);
+      assert.equal(await page.evaluate(() => brewLog.length), 0);
+      await page.close();
+    });
+
+    test('reset → het lopende brouwsel wordt abandoned; opnieuw starten maakt een nieuw record', async () => {
+      const page = await pageWith({ brewconsole_beans: [BEAN] });
+      await toPrepWithBean(page);
+      await page.click('#start-btn');
+      await page.clock.fastForward('00:20');
+      await page.click('#pause-btn');
+      await page.click('#pause-btn'); // hervat
+      await page.click('#reset-btn');
+      await page.click('#pause-btn'); // start opnieuw vanaf 0
+      const s = await store(page);
+      assert.equal(s.length, 2);
+      assert.equal(s[0].lifecycle, 'abandoned');
+      assert.deepEqual(s[0].actual.events.map(e => e.type), ['start', 'pause', 'resume', 'abandon']);
+      assert.equal(s[1].lifecycle, 'brewing');
+      assert.equal(await page.evaluate(() => localStorage.getItem('brewconsole_active_brew')), s[1].id);
+      await page.close();
+    });
+
+    test('herladen midden in een brouwsel: het record blijft bewaard (brewing); lang daarna wordt het voltooid met bed-droog onbekend', async () => {
+      const page = await pageWith({ brewconsole_beans: [BEAN] });
+      await toPrepWithBean(page);
+      await page.click('#start-btn');
+      await page.clock.fastForward('00:40');
+      await page.reload({ waitUntil: 'load' });
+      let s = await store(page);
+      assert.equal(s.length, 1, 'het brouwsel is niet verloren na herladen');
+      assert.equal(s[0].lifecycle, 'brewing', 'binnen schema + 15 min blijft het staan (Fase 2 biedt "Doorgaan")');
+
+      await page.clock.fastForward('40:00');
+      await page.reload({ waitUntil: 'load' });
+      s = await store(page);
+      assert.equal(s[0].lifecycle, 'completed');
+      const types = s[0].actual.events.map(e => e.type);
+      assert.deepEqual(types.slice(-2), ['recovered', 'complete']);
+      assert.equal(s[0].actual.events.at(-1).bedDry, 'unknown');
+      assert.equal(s[0].actual.bedDrySec, null, 'nooit ingevuld vanuit het schema');
+      assert.equal(await beanUsed(page), s[0].plan.doseG, 'voltooid → voorraad afgeboekt, ook na herstel');
+      await page.close();
+    });
+
+    test('migratie: een schema-5-logboek wordt bij het eerste laden v6, het oude logboek blijft onaangeroerd staan', async () => {
+      const legacy = [{ id:'log_old', schemaVersion:5, timestamp: Date.now() - 86400000, beanId:null, method:'v60', profile:'klassiek',
+        roast:'medium', waterMl:300, bypass:false, scores:{ aroma:3 }, note:'van vroeger', doseG:17.3, ratioText:'1:17,4',
+        actualGrindClicks:null, actualTimeSec:185, cupWeightG:null, approved:false }];
+      const page = await pageWith({ brewConsoleLog: legacy });
+      const s = await store(page);
+      assert.equal(s.length, 1);
+      assert.equal(s[0].id, 'log_old');
+      assert.equal(s[0].lifecycle, 'logged');
+      assert.equal(s[0].legacy.scheduledSec, 185);
+      assert.deepEqual(JSON.parse(await page.evaluate(() => localStorage.getItem('brewConsoleLog'))), legacy, 'oude sleutel blijft als bron staan');
+      await page.click('.navbar [data-nav="brewlog-history"]');
+      await assertBecomesActive(page, '#screen-brewlog-history');
+      const card = (await page.locator('.brewlog-entry-card').first().innerText()).trim();
+      assert.match(card, /van vroeger/);
+      assert.match(card, /schema-tijd 3:05 \(niet gemeten\)/);
+      await page.close();
+    });
+
+    test('verwijderen is zacht en met één tik ongedaan te maken; het record blijft bewaard met deletedAt', async () => {
+      const legacy = [{ id:'log_del', schemaVersion:5, timestamp: Date.now(), beanId:null, method:'v60', profile:'klassiek',
+        roast:'medium', waterMl:300, bypass:false, scores:{}, note:'weg ermee' }];
+      const page = await pageWith({ brewConsoleLog: legacy });
+      await page.click('.navbar [data-nav="brewlog-history"]');
+      await assertBecomesActive(page, '#screen-brewlog-history');
+      assert.equal(await page.locator('.brewlog-entry-card:visible').count(), 1);
+      await page.click('.brewlog-entry-card:visible [data-delete-brew]');
+      assert.equal(await page.locator('.brewlog-entry-card:visible').count(), 0);
+      assert.equal(await page.locator('#undo-bar').isVisible(), true);
+      let s = await store(page);
+      assert.equal(s.length, 1, 'zacht verwijderd, niet weg');
+      assert.ok(s[0].deletedAt > 0);
+      await page.click('#undo-bar-btn');
+      assert.equal(await page.locator('.brewlog-entry-card:visible').count(), 1);
+      s = await store(page);
+      assert.equal(s[0].deletedAt, null);
+      await page.close();
+    });
+
+    test('backup: export bevat de volledige v6-opslag (ook niet-gelogde records) en import herstelt ze zonder dubbelingen', async () => {
+      const page = await pageWith({ brewconsole_beans: [BEAN] });
+      await toPrepWithBean(page);
+      await page.click('#start-btn');
+      await page.clock.fastForward('00:10');
+      await page.click('#reset-btn'); // één abandoned record
+      const exported = await page.evaluate(() => ({ app:'brew-console', backupVersion:3, beans: beanLibrary, brews: brewStore, brewLog }));
+      assert.equal(exported.brews.length, 1);
+      await page.evaluate(() => { localStorage.removeItem('brewconsole_brews'); localStorage.removeItem('brewconsole_active_brew'); });
+      await page.reload({ waitUntil: 'load' });
+      assert.equal((await store(page)).length, 0);
+      await page.click('.navbar [data-nav="settings"]');
+      for (let i = 0; i < 2; i++){ // twee keer importeren: tweede keer mag niets dupliceren
+        await page.evaluate(() => { const el = document.getElementById('backup-status'); el.hidden = true; el.textContent = ''; });
+        await page.setInputFiles('#backup-import-file', { name:'backup.json', mimeType:'application/json', buffer: Buffer.from(JSON.stringify(exported)) });
+        await page.waitForFunction(() => document.getElementById('backup-status').hidden === false);
+      }
+      const s = await store(page);
+      assert.equal(s.length, 1);
+      assert.equal(s[0].lifecycle, 'abandoned');
       await page.close();
     });
   });

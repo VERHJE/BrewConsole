@@ -540,6 +540,13 @@
     margin-bottom:10px;
   }
   .summary-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+  /* Fase 1: verwijderen van een logging + "Ongedaan maken"-balk. */
+  .brewlog-entry-delete{background:none; border:none; color:var(--text-faint); font-size:12px; padding:6px 0 0; cursor:pointer; text-decoration:underline;}
+  .undo-bar{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(96px + env(safe-area-inset-bottom)); z-index:60;
+    display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-pill); padding:10px 16px; font-size:13px; color:var(--text); box-shadow:0 6px 24px rgba(0,0,0,.35); white-space:nowrap;}
+  .undo-bar[hidden]{display:none;}
+  .undo-bar button{background:none; border:none; color:var(--copper-light); font-weight:600; cursor:pointer; font-size:13px;}
   .prep-bean-line{font-size:13px; color:var(--text-dim); margin:-4px 0 8px;}
   .prep-bean-line[data-linked="false"]{color:var(--text-faint);}
 
@@ -2697,6 +2704,8 @@
   </main>
   </div>
 </div>
+<!-- Fase 1: "Ongedaan maken" na het verwijderen van een logging (zie showUndoBar()). -->
+<div class="undo-bar" id="undo-bar" role="status" aria-live="polite" hidden><span id="undo-bar-text"></span><button type="button" id="undo-bar-btn">Ongedaan maken</button></div>
 
 <script>
 /* ============================================================
@@ -7815,7 +7824,7 @@ function renderBeanDetailBestBrew(bean){
   ].filter(Boolean).join(' · ');
   const grindText = chosen.actualGrindClicks != null ? `Stand ${chosen.actualGrindClicks}`
     : (chosen.grindMicron != null ? `${chosen.grindMicron} µm` : null);
-  const timeText = chosen.actualTimeSec != null ? fmtTime(chosen.actualTimeSec) : null;
+  const timeText = chosen.scheduledTimeSec != null ? `schema ${fmtTime(chosen.scheduledTimeSec)}` : null; // Fase 1: geen gemeten tijd
   const line2 = [grindText, timeText].filter(Boolean).join(' · ');
   body.innerHTML = `
     ${line1 ? `<p class="bean-detail-best-brew-facts">${escapeHtml(line1)}</p>` : ''}
@@ -7966,6 +7975,8 @@ wireDetailTabs('history-tabs');
 // bypass-velden op elke logging (zie saveBrewLogEntry()). Zelfde discipline als elke
 // eerdere schemaversie-ophoging: ontbrekende velden op oudere records blijven gewoon
 // null, niets wordt met terugwerkende kracht aangevuld of geraden.
+// Fase 1 (Brew Intelligence v2): brouwsels hebben sindsdien hun eigen v6-record (zie
+// BREW_RECORD_SCHEMA_VERSION); deze versie markeert vanaf nu alleen nog boonrecords.
 const RECORD_SCHEMA_VERSION = 5;
 
 /* ============================================================
@@ -7986,8 +7997,11 @@ async function exportBackup(){
      bean-/log-aanmaak — dat is een apart, fijnmaziger versienummer dan dit backupVersion). */
   const currentTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
   const payload = {
-    app: 'brew-console', backupVersion: 2, exportedAt: new Date().toISOString(),
-    beans: beanLibrary, brewLog: brewLog,
+    // backupVersion 3 (Fase 1): `brews` is de volledige v6-opslag (ook nog niet geproefde,
+    // afgebroken en zacht verwijderde records). `brewLog` blijft erbij in de oude platte vorm,
+    // zodat een oudere app-versie deze backup nog kan lezen; importBackupFile() ontdubbelt op id.
+    app: 'brew-console', backupVersion: 3, exportedAt: new Date().toISOString(),
+    beans: beanLibrary, brews: brewStore, brewLog: brewLog,
     theme: currentTheme,
     // waterHardnessMgL blijft als apart, kaal getal-veld bestaan (Implementatieplan
     // Zetadvies v3.0, Fase 4-persistentie-eis: achterwaartse compatibiliteit met oudere
@@ -8046,17 +8060,26 @@ function importBackupFile(file){
     let data;
     try{ data = JSON.parse(reader.result); }
     catch(e){ setBackupStatus('Kon dit bestand niet lezen — is het een geldige backup-JSON?', true); return; }
-    if (!data || (!Array.isArray(data.beans) && !Array.isArray(data.brewLog))){
+    if (!data || (!Array.isArray(data.beans) && !Array.isArray(data.brewLog) && !Array.isArray(data.brews))){
       setBackupStatus('Dit bestand bevat geen herkenbare backup-data.', true); return;
     }
     const existingBeanIds = new Set(beanLibrary.map(b=>b.id));
     const newBeans = (data.beans || []).filter(b => b && b.id && !existingBeanIds.has(b.id));
     beanLibrary = beanLibrary.concat(newBeans);
-    const existingLogIds = new Set(brewLog.map(e=>e.id));
-    const newEntries = (data.brewLog || []).filter(e => e && e.id && !existingLogIds.has(e.id));
-    brewLog = brewLog.concat(newEntries);
+    // Fase 1: v6-records eerst (backupVersion 3), daarna oude platte loggings (backupVersion
+    // 1–2, of de meegeleverde brewLog-weergave van een v3-backup) — die worden gemigreerd,
+    // tenzij hun id al bestaat. Bestaande records worden nooit overschreven.
+    const knownIds = new Set(brewStore.map(r=>r.id));
+    const importedRecords = (Array.isArray(data.brews) ? data.brews : [])
+      .filter(r => r && typeof r === 'object' && r.id && r.schemaVersion === BREW_RECORD_SCHEMA_VERSION && !knownIds.has(r.id));
+    importedRecords.forEach(r => { knownIds.add(r.id); brewStore.push(r); });
+    const importedLegacy = (Array.isArray(data.brewLog) ? data.brewLog : [])
+      .filter(e => e && typeof e === 'object' && e.id && !knownIds.has(e.id));
+    importedLegacy.forEach((e, i) => { knownIds.add(e.id); brewStore.push(migrateLegacyLogEntry(e, i)); });
+    const newEntries = importedRecords.filter(isBrewInLogView).concat(importedLegacy);
     saveBeansToStorage();
-    saveBrewLogToStorage();
+    persistBrewStore();
+    rebuildBrewLogView();
     renderBeanLibraryScreen();
     renderBeanChipsInAdvice();
 
@@ -8129,20 +8152,387 @@ function toggleBeanFavorite(id){
    grind/temp) — dus ook nog te herleiden als de boon of het recept later
    verandert. Puur lokaal (localStorage), net als de bonenbibliotheek.
    ============================================================ */
-let brewLog = [];
-const BREW_LOG_KEY = 'brewConsoleLog';
-function loadBrewLog(){
-  try{
-    const raw = localStorage.getItem(BREW_LOG_KEY);
-    brewLog = raw ? JSON.parse(raw) : [];
-  } catch(e){ brewLog = []; }
+/* ============================================================
+   BROUWRECORD v6 — Brew Intelligence Architecture v2, Fase 1
+   ------------------------------------------------------------
+   Tot en met schema 5 bestond een brouwsel pas zodra je op "Opslaan" drukte op het
+   Klaar-scherm, en plan en werkelijkheid liepen door elkaar (actualTimeSec was in feite
+   het schema: de timer stopt op het schema-einde). Vanaf v6:
+   - Eén record per brouwsel, aangemaakt bij Start en bij elke gebeurtenis meteen bewaard.
+   - Levenscyclus: brewing → completed → logged, of brewing → abandoned. Verwijderen is
+     een zachte verwijdering (deletedAt), 30 dagen herstelbaar, daarna opgeschoond. De
+     levenscyclus zelf blijft staan, zodat herstellen exact de vorige staat teruggeeft.
+   - plan (bevroren kopie van het recept bij Start) staat los van actual (wat er echt
+     gebeurde). Elke gebeurtenis draagt een herkomstklasse: M gemeten (klok/tik), U door
+     de gebruiker ingevuld, I afgeleid uit het schema (nooit als gemeten tonen).
+   - Bijwerkingen van een brouwsel (bean.lastBrew, voorraadverbruik) gebeuren bij
+     COMPLETED, niet meer bij Start: een afgebroken brouwsel verbruikt geen voorraad.
+   - Oude loggings (schema 1–5) worden eenmalig gemigreerd; het originele record blijft
+     letterlijk bewaard in legacy.entry, er wordt niets verzonnen. Hun actualTimeSec heet
+     voortaan scheduledTimeSec en wordt getoond als "niet gemeten".
+   - `brewLog` blijft bestaan als afgeleide weergave (alleen gelogde, niet-verwijderde
+     records, in de vertrouwde platte vorm), zodat alle bestaande lezers ongewijzigd werken.
+     De weergave wordt IN PLAATS bijgewerkt (zelfde array-object).
+   De pure functies hieronder (createBrewRecord, applyBrewEvent, migrateLegacyLogEntry,
+   brewRecordToLogView, purgeDeletedBrews, staleBrewingOutcome) raken geen DOM of opslag
+   en worden rechtstreeks getest in tests/brew-record-v6.test.mjs.
+   ============================================================ */
+const BREW_RECORD_SCHEMA_VERSION = 6;
+const BREW_STORE_KEY = 'brewconsole_brews';
+const ACTIVE_BREW_KEY = 'brewconsole_active_brew';
+const BREW_LOG_KEY = 'brewConsoleLog'; // schema 1–5: alleen nog migratiebron, wordt niet meer beschreven
+const SOFT_DELETE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+const STALE_BREWING_GRACE_SEC = 15 * 60;
+const BREW_TRANSITIONS = {
+  brewing:   { complete:'completed', abandon:'abandoned' },
+  completed: { log:'logged' },
+  logged:    { log:'logged' }, // opnieuw opslaan werkt hetzelfde record bij (geen dubbele logging)
+  abandoned: {}
+};
+const BREW_LIFECYCLE_EVENTS = ['complete', 'abandon', 'log'];
+const DEFAULT_GRINDER_ID = 'TIMEMORE_C3S_PRO';
+
+function newBrewId(nowMs){
+  return 'brew_' + nowMs + '_' + Math.random().toString(36).slice(2, 8);
 }
-function saveBrewLogToStorage(){
-  try{ localStorage.setItem(BREW_LOG_KEY, JSON.stringify(brewLog)); } catch(e){ /* storage niet beschikbaar (bijv. artifact-preview) — log blijft alleen in-memory */ }
+function cloneJson(obj){ return JSON.parse(JSON.stringify(obj)); }
+
+function createBrewRecord(input){
+  const rec = input.recipe || {};
+  const b = input.bean || null;
+  const nowMs = input.nowMs;
+  const bypass = !!input.bypass;
+  return {
+    id: input.id, schemaVersion: BREW_RECORD_SCHEMA_VERSION,
+    createdAt: nowMs, updatedAt: nowMs,
+    lifecycle: 'brewing',
+    beanId: input.beanId || null,
+    beanSnapshot: b ? {
+      process: b.process != null ? b.process : null,
+      intendedUse: b.intendedUse != null ? b.intendedUse : null,
+      roastLevel: b.roastLevel != null ? b.roastLevel : null,
+      roastDate: b.roastDate != null ? b.roastDate : null
+    } : null,
+    equipment: { brewerId: input.method || null, grinderId: DEFAULT_GRINDER_ID, filterId: null },
+    waterSnapshot: input.water ? cloneJson(input.water) : null,
+    goal: null,
+    plan: {
+      modelPolicyVersion: rec.modelPolicyVersion || null,
+      methodId: input.method || null, profileId: input.profile || null, roastId: input.roast || null,
+      waterMl: input.waterMl != null ? input.waterMl : null,
+      doseG: typeof rec.dose === 'number' ? rec.dose : null,
+      ratioText: rec.ratioText || null,
+      tempC: rec.temp != null ? rec.temp : null,
+      tempBand: rec.tempBand ? { min: rec.tempBand.min, max: rec.tempBand.max } : null,
+      grindStartingPoint: typeof rec.grindStartingPoint === 'number' ? rec.grindStartingPoint : null,
+      grindStand: rec.grindStand || null,
+      grindMicron: rec.grindMicron || null,
+      strengthStep: input.strengthAdjust || 0,
+      bypass: bypass ? {
+        pct: input.bypassPct != null ? input.bypassPct : null,
+        pourWaterG: typeof rec.pourWaterMl === 'number' ? rec.pourWaterMl : null,
+        plannedG: typeof rec.bypassMl === 'number' ? rec.bypassMl : null,
+        moment: input.bypassMoment || null
+      } : null,
+      technique: rec.technique || null,
+      steps: Array.isArray(rec.steps) ? rec.steps.map(s => ({ t: s.t, add: s.add })) : null,
+      expectedTotalSec: typeof rec.totalTime === 'number' ? rec.totalTime : null
+    },
+    actual: {
+      doseG: null, doseSource: null, grindClick: null, grindSource: null, confirmed: false,
+      events: [{ type: 'start', at: nowMs, source: 'M', tSec: 0 }],
+      bedDrySec: null, completedAt: null, cupWeightG: null, bypassActualG: null
+    },
+    derived: {},
+    tasting: null, diagnosis: null, recommendation: null,
+    flags: {}, favorite: false, sideEffectsAppliedAt: null, deletedAt: null
+  };
+}
+
+// Pure overgang: geeft {ok, rec} terug met een NIEUW record; het origineel blijft ongemoeid.
+// Levenscyclus-gebeurtenissen volgen BREW_TRANSITIONS; de overige (pause, resume,
+// schedule_end, recovered) mogen alleen tijdens het brouwen.
+function applyBrewEvent(rec, type, nowMs, payload){
+  const p = payload || {};
+  const isLifecycle = BREW_LIFECYCLE_EVENTS.includes(type);
+  const allowed = BREW_TRANSITIONS[rec.lifecycle] || {};
+  if (isLifecycle && !allowed[type]) return { ok: false, rec, error: `${type} is niet toegestaan vanuit ${rec.lifecycle}` };
+  if (!isLifecycle && rec.lifecycle !== 'brewing') return { ok: false, rec, error: `${type} kan alleen tijdens het brouwen` };
+  const next = cloneJson(rec);
+  const ev = Object.assign({ type, at: nowMs, source: p.source || 'M' }, p.tSec != null ? { tSec: p.tSec } : {}, p.data || {});
+  next.actual.events.push(ev);
+  if (isLifecycle) next.lifecycle = allowed[type];
+  if (type === 'complete') next.actual.completedAt = nowMs;
+  next.updatedAt = nowMs;
+  return { ok: true, rec: next };
+}
+
+// Schema 1–5 → 6. Verzint geen werkelijke waarden: de geplande dosis blijft plan, een
+// ontbrekende werkelijke maalstand blijft null, en de oude "werkelijke tijd" wordt als
+// schema-tijd gemarkeerd. Het originele record blijft integraal bewaard (legacy.entry).
+function migrateLegacyLogEntry(e, index){
+  const at = typeof e.timestamp === 'number' ? e.timestamp : null;
+  const has = (k) => e[k] !== undefined && e[k] !== null;
+  return {
+    id: e.id || ('log_legacy_' + (at != null ? at : 'x') + '_' + (index || 0)),
+    schemaVersion: BREW_RECORD_SCHEMA_VERSION,
+    createdAt: at, updatedAt: at,
+    lifecycle: 'logged',
+    beanId: e.beanId || null,
+    beanSnapshot: e.beanSnapshot || null,
+    equipment: { brewerId: e.method || null, grinderId: null, filterId: null },
+    waterSnapshot: e.waterProfileSnapshot || null,
+    goal: null,
+    plan: {
+      modelPolicyVersion: e.modelPolicyVersion || null,
+      methodId: e.method || null, profileId: e.profile || null, roastId: e.roast || null,
+      waterMl: has('waterMl') ? e.waterMl : null,
+      doseG: has('doseG') ? e.doseG : null,
+      ratioText: e.ratioText || null,
+      tempC: has('temp') ? e.temp : null, tempBand: null,
+      grindStartingPoint: has('grindStartingPoint') ? e.grindStartingPoint : null,
+      grindStand: e.grindStand || null, grindMicron: e.grindMicron || null,
+      strengthStep: null,
+      bypass: e.bypass ? {
+        pct: has('bypassPct') ? e.bypassPct : null,
+        pourWaterG: has('pourWaterG') ? e.pourWaterG : null,
+        plannedG: has('bypassPlannedG') ? e.bypassPlannedG : null,
+        moment: e.bypassMoment || null
+      } : null,
+      technique: null, steps: null, expectedTotalSec: null
+    },
+    actual: {
+      doseG: null, doseSource: null,
+      grindClick: has('actualGrindClicks') ? e.actualGrindClicks : null,
+      grindSource: has('actualGrindClicks') ? 'U' : null,
+      confirmed: false, events: [], bedDrySec: null, completedAt: null,
+      cupWeightG: has('cupWeightG') ? e.cupWeightG : null,
+      bypassActualG: has('bypassActualG') ? e.bypassActualG : null
+    },
+    derived: {},
+    tasting: {
+      at, minutesAfterBrew: null,
+      scores: e.scores || null, note: e.note || '', approved: e.approved === true,
+      cuppingSuggestion: e.suggestion || null
+    },
+    diagnosis: null, recommendation: null, flags: {},
+    favorite: e.favorite === true,
+    sideEffectsAppliedAt: at, // oude app-versies pasten ze al bij Start toe
+    deletedAt: null,
+    legacy: {
+      sourceSchemaVersion: e.schemaVersion || 1,
+      scheduledSec: typeof e.actualTimeSec === 'number' ? e.actualTimeSec : null,
+      entry: cloneJson(e)
+    }
+  };
+}
+
+// De vertrouwde platte logboekvorm, afgeleid uit een record. Gemigreerde records geven hun
+// originele vorm terug (met veldnamen/afwezigheden exact zoals ze waren), met twee
+// bewuste correcties: favoriet en boonkoppeling komen uit het record, en actualTimeSec
+// wordt scheduledTimeSec (de timer mat nooit een werkelijke brouwtijd).
+function brewRecordToLogView(rec){
+  if (rec.legacy && rec.legacy.entry){
+    const v = cloneJson(rec.legacy.entry);
+    delete v.actualTimeSec;
+    if (rec.legacy.scheduledSec != null) v.scheduledTimeSec = rec.legacy.scheduledSec;
+    v.id = rec.id;
+    v.beanId = rec.beanId || null;
+    if (rec.favorite) v.favorite = true; else delete v.favorite;
+    return v;
+  }
+  const plan = rec.plan || {}, a = rec.actual || {}, t = rec.tasting || {};
+  const bp = plan.bypass;
+  const v = {
+    id: rec.id, schemaVersion: rec.schemaVersion,
+    timestamp: t.at || a.completedAt || rec.createdAt,
+    beanId: rec.beanId || null,
+    method: plan.methodId, profile: plan.profileId, roast: plan.roastId,
+    waterMl: plan.waterMl, bypass: !!bp,
+    bypassPct: bp ? bp.pct : null,
+    pourWaterG: bp ? bp.pourWaterG : null,
+    bypassPlannedG: bp ? bp.plannedG : null,
+    bypassActualG: bp ? a.bypassActualG : null,
+    bypassMoment: bp ? bp.moment : null,
+    grindMicron: plan.grindMicron || null, grindStand: plan.grindStand || null, temp: plan.tempC || null,
+    scores: t.scores ? Object.assign({}, t.scores) : {},
+    note: t.note || '',
+    doseG: plan.doseG, ratioText: plan.ratioText, modelPolicyVersion: plan.modelPolicyVersion,
+    actualGrindClicks: a.grindClick, cupWeightG: a.cupWeightG,
+    grindStartingPoint: plan.grindStartingPoint,
+    approved: !!t.approved,
+    beanSnapshot: rec.beanSnapshot ? cloneJson(rec.beanSnapshot) : null,
+    waterProfileSnapshot: rec.waterSnapshot ? cloneJson(rec.waterSnapshot) : null,
+    scheduledTimeSec: plan.expectedTotalSec
+  };
+  if (t.cuppingSuggestion) v.suggestion = cloneJson(t.cuppingSuggestion);
+  if (rec.favorite) v.favorite = true;
+  return v;
+}
+
+function isBrewInLogView(rec){ return rec.lifecycle === 'logged' && !rec.deletedAt; }
+
+// Zacht verwijderde records ouder dan de bewaartermijn verdwijnen definitief.
+function purgeDeletedBrews(store, nowMs){
+  return store.filter(r => !(r.deletedAt && nowMs - r.deletedAt > SOFT_DELETE_RETENTION_MS));
+}
+
+// Een record dat nog op 'brewing' staat bij het openen van de app (herladen, crash, iOS die
+// de app sloot): binnen het schema + 15 min laten staan (Fase 2 biedt dan "Doorgaan"), daarna
+// als voltooid beschouwen met bed-droog "onbekend" — nooit ingevuld vanuit het schema.
+function staleBrewingOutcome(rec, nowMs){
+  if (!rec || rec.lifecycle !== 'brewing') return 'none';
+  const events = (rec.actual && rec.actual.events) || [];
+  const lastAt = events.length ? events[events.length - 1].at : rec.createdAt;
+  const planSec = (rec.plan && rec.plan.expectedTotalSec) || 0;
+  const gapSec = Math.floor((nowMs - lastAt) / 1000);
+  return gapSec > planSec + STALE_BREWING_GRACE_SEC ? 'complete' : 'keep';
+}
+
+let brewStore = [];
+let activeBrewId = null;
+let brewLog = [];
+
+function persistBrewStore(){
+  try{ localStorage.setItem(BREW_STORE_KEY, JSON.stringify(brewStore)); } catch(e){ /* storage niet beschikbaar (bijv. artifact-preview) — records blijven alleen in-memory */ }
+}
+function setActiveBrewId(id){
+  activeBrewId = id || null;
+  try{
+    if (activeBrewId) localStorage.setItem(ACTIVE_BREW_KEY, activeBrewId);
+    else localStorage.removeItem(ACTIVE_BREW_KEY);
+  } catch(e){ /* alleen in-memory */ }
+}
+function getBrewRecord(id){ return brewStore.find(r => r.id === id) || null; }
+function activeBrewRecord(){ return activeBrewId ? getBrewRecord(activeBrewId) : null; }
+// Idempotent op id: nogmaals opslaan vervangt, dupliceert nooit.
+function upsertBrewRecord(rec){
+  const i = brewStore.findIndex(r => r.id === rec.id);
+  if (i >= 0) brewStore[i] = rec; else brewStore.push(rec);
+  return rec;
+}
+function rebuildBrewLogView(){
+  const view = brewStore.filter(isBrewInLogView).map(brewRecordToLogView);
+  brewLog.length = 0;
+  view.forEach(v => brewLog.push(v));
+}
+
+function loadBrewLog(){
+  const nowMs = Date.now();
+  let loaded = null;
+  try{
+    const raw = localStorage.getItem(BREW_STORE_KEY);
+    if (raw != null){
+      try{ loaded = JSON.parse(raw); }
+      catch(parseErr){
+        // Onleesbaar: bewaar de ruwe inhoud apart voordat een volgende save hem overschrijft.
+        try{ localStorage.setItem(BREW_STORE_KEY + '_corrupt_' + nowMs, raw); } catch(e){ /* geen ruimte */ }
+        loaded = [];
+      }
+    } else {
+      // Eerste start met v6: eenmalig migreren uit het schema 1–5-logboek (dat blijft staan).
+      const legacyRaw = localStorage.getItem(BREW_LOG_KEY);
+      let legacy = [];
+      try{ legacy = legacyRaw ? JSON.parse(legacyRaw) : []; } catch(e){ legacy = []; }
+      loaded = (Array.isArray(legacy) ? legacy : []).filter(e => e && typeof e === 'object').map(migrateLegacyLogEntry);
+      brewStore = loaded;
+      persistBrewStore();
+    }
+    try{ activeBrewId = localStorage.getItem(ACTIVE_BREW_KEY) || null; } catch(e){ activeBrewId = null; }
+  } catch(e){ loaded = []; }
+  brewStore = Array.isArray(loaded) ? loaded.filter(r => r && typeof r === 'object' && r.id) : [];
+  const purged = purgeDeletedBrews(brewStore, nowMs);
+  if (purged.length !== brewStore.length){ brewStore = purged; persistBrewStore(); }
+  rebuildBrewLogView();
+  // Herstel van een vastgelopen 'brewing'-record gebeurt pas ná loadBeans() (zie opstart),
+  // omdat het de voorraad van de boon bijwerkt.
+}
+function recoverStaleActiveBrew(nowMs){
+  const cur = activeBrewRecord();
+  if (!cur){ if (activeBrewId) setActiveBrewId(null); return; }
+  if (staleBrewingOutcome(cur, nowMs) !== 'complete') return;
+  const events = cur.actual.events;
+  const lastAt = events.length ? events[events.length - 1].at : cur.createdAt;
+  const rec1 = applyBrewEvent(cur, 'recovered', nowMs, { data: { gapSec: Math.floor((nowMs - lastAt) / 1000) } });
+  const rec2 = rec1.ok ? applyBrewEvent(rec1.rec, 'complete', nowMs, { source: 'I', data: { by: 'recovery', bedDry: 'unknown' } }) : rec1;
+  if (!rec2.ok) return;
+  upsertBrewRecord(rec2.rec);
+  applyCompletionSideEffects(rec2.rec, nowMs);
+  persistBrewStore();
+}
+
+/* ---- Koppeling met de brouwflow (impuur: leest state/timer/bonen) ---- */
+function currentWaterSnapshot(){
+  return {
+    hardnessMgL: (waterHardnessMgL == null) ? null : waterHardnessMgL,
+    alkalinity: { value: waterAlkalinity.value == null ? null : waterAlkalinity.value, unit: waterAlkalinity.unit },
+    dilution: { tapParts: waterDilution.tapParts, demiParts: waterDilution.demiParts }
+  };
+}
+function beginBrewRecord(){
+  const nowMs = Date.now();
+  const cur = activeBrewRecord();
+  if (cur && cur.lifecycle === 'brewing'){
+    const r = applyBrewEvent(cur, 'abandon', nowMs, { data: { reason: 'superseded' } });
+    if (r.ok) upsertBrewRecord(r.rec);
+  }
+  const bean = state.beanId ? beanLibrary.find(b => b.id === state.beanId) : null;
+  const rec = createBrewRecord({
+    id: newBrewId(nowMs), nowMs, beanId: bean ? bean.id : null, bean,
+    method: state.method, profile: state.profile, roast: state.roast, waterMl: state.waterMl,
+    recipe: state.recipe, strengthAdjust: state.strengthAdjust,
+    bypass: state.bypass, bypassPct: state.bypassPct, bypassMoment: state.bypassMoment,
+    water: currentWaterSnapshot()
+  });
+  upsertBrewRecord(rec);
+  setActiveBrewId(rec.id);
+  persistBrewStore();
+  return rec;
+}
+function recordActiveBrewEvent(type, payload){
+  const cur = activeBrewRecord();
+  if (!cur) return null;
+  const r = applyBrewEvent(cur, type, Date.now(), payload);
+  if (!r.ok) return null;
+  upsertBrewRecord(r.rec);
+  persistBrewStore();
+  return r.rec;
+}
+function isActiveBrewBrewing(){
+  const cur = activeBrewRecord();
+  return !!(cur && cur.lifecycle === 'brewing');
+}
+function completeActiveBrew(){
+  if (!isActiveBrewBrewing()) return null;
+  const tSec = timer.elapsed;
+  recordActiveBrewEvent('schedule_end', { source: 'I', tSec });
+  const done = recordActiveBrewEvent('complete', { source: 'I', tSec, data: { by: 'schedule_end' } });
+  if (done) applyCompletionSideEffects(done, Date.now());
+  return done;
+}
+function abandonActiveBrew(reason){
+  if (!isActiveBrewBrewing()) return null;
+  return recordActiveBrewEvent('abandon', { tSec: timer.elapsed, data: { reason } });
+}
+/* "Brouw opnieuw" (expertreview A8) + voorraadtracking (expertreview B6): voorheen bij
+   Start, nu bij COMPLETED — precies één keer per record (sideEffectsAppliedAt). Alleen
+   als het brouwsel aan een opgeslagen boon hangt. */
+function applyCompletionSideEffects(rec, nowMs){
+  if (!rec || rec.sideEffectsAppliedAt) return;
+  rec.sideEffectsAppliedAt = nowMs;
+  upsertBrewRecord(rec);
+  persistBrewStore();
+  const bean = rec.beanId ? beanLibrary.find(b => b.id === rec.beanId) : null;
+  if (!bean) return;
+  const plan = rec.plan || {};
+  bean.lastBrew = { method: plan.methodId, waterMl: plan.waterMl, bypass: !!plan.bypass, bypassPct: plan.bypass ? plan.bypass.pct : null };
+  bean.doseUsedG = Math.round(((bean.doseUsedG || 0) + (plan.doseG || 0)) * 10) / 10;
+  saveBeansToStorage();
 }
 
 const brewLogDraft = {};
 function openBrewLogEntry(){
+  completeActiveBrew(); // Fase 1: no-op als het record al COMPLETED is (normaal pad: schema-einde)
   CUPPING_AXES.forEach(axis => { brewLogDraft[axis] = Math.round(RADAR_LEVELS/2); });
   const noteEl = document.getElementById('brewlog-note');
   if (noteEl) noteEl.value = '';
@@ -8282,71 +8672,46 @@ function readOptionalNumberInput(id){
 }
 function saveBrewLogEntry(){
   const noteEl = document.getElementById('brewlog-note');
-  const rec = state.recipe || {};
-  const actualTime = (timer && timer.elapsed != null) ? timer.elapsed : null;
-  const entry = {
-    id: 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
-    schemaVersion: RECORD_SCHEMA_VERSION,
-    timestamp: Date.now(),
-    beanId: state.beanId || null,
-    method: state.method, profile: state.profile, roast: state.roast,
-    waterMl: state.waterMl, bypass: !!state.bypass,
-    // NIEUW (Implementatieplan Bypass v1.0, Fase B, BP-5): tot nu toe sloeg de app alleen
-    // een boolean op — geen percentage, geen grammen, geen werkelijk toegevoegde hoeveelheid,
-    // dus was geen enkel bypass-brouwsel achteraf toetsbaar. Alle velden null wanneer deze
-    // logging geen bypass was (readOptionalNumberInput leest ook null bij een leeg/verborgen
-    // veld — nooit 0 voor "niet van toepassing").
-    bypassPct: state.bypass ? state.bypassPct : null,
-    pourWaterG: (state.bypass && typeof rec.pourWaterMl === 'number') ? rec.pourWaterMl : null,
-    bypassPlannedG: (state.bypass && typeof rec.bypassMl === 'number') ? rec.bypassMl : null,
-    bypassActualG: state.bypass ? readOptionalNumberInput('brewlog-bypass-actual') : null,
-    bypassMoment: state.bypass ? state.bypassMoment : null,
-    grindMicron: rec.grindMicron || null, grindStand: rec.grindStand || null, temp: rec.temp || null,
-    scores: Object.assign({}, brewLogDraft),
-    note: noteEl ? noteEl.value.trim() : '',
-    // NIEUW (Fase 5) — het aanbevolen recept, voor de vergelijking met wat er echt gebeurde:
-    doseG: (typeof rec.dose === 'number') ? rec.dose : null,
-    ratioText: rec.ratioText || null,
-    // NIEUW (Implementatieplan v3.0, §6/§20): welke Model Policy-versie het aanbevolen
-    // recept leverde — additief, RECORD_SCHEMA_VERSION-onafhankelijk. Oudere records
-    // missen dit veld simpelweg; niets leest het terug om ze te migreren.
-    modelPolicyVersion: rec.modelPolicyVersion || null,
-    // NIEUW (Fase 5) — wat er ECHT gebeurde, niet het advies: fundament voor Fase 6/7.
-    actualGrindClicks: readOptionalNumberInput('brewlog-actual-grind'),
-    actualTimeSec: actualTime,
-    cupWeightG: readOptionalNumberInput('brewlog-cup-weight'),
-    // NIEUW (Fase 7) — het "vertrekpunt"-klikgetal (zie recipeGrindBaseline()) en de
-    // goedkeuring die vervuilingsregel 1 van het boontype-model vereist.
-    grindStartingPoint: (typeof rec.grindStartingPoint === 'number') ? rec.grindStartingPoint : null,
-    approved: !!(document.getElementById('brewlog-approved') && document.getElementById('brewlog-approved').checked),
-    // NIEUW (Fase 5) — momentopname van het actieve waterprofiel bij het loggen, zodat een
-    // latere waterprofielwijziging (Bouwbesluit B-7) niet met terugwerkende kracht oude
-    // loggingen "herschrijft"; ontbrekende waarden blijven null i.p.v. te worden geraden.
-    // NIEUW (Reparatieplan v4.0, C-2): boon-momentopname, zelfde discipline als de
-    // waterProfileSnapshot hieronder. null als er geen boon aan hangt.
-    beanSnapshot: (function(){
-      const b = state.beanId ? beanLibrary.find(x => x.id === state.beanId) : null;
-      if (!b) return null;
-      return {
-        process: b.process != null ? b.process : null,
-        intendedUse: b.intendedUse != null ? b.intendedUse : null,
-        roastLevel: b.roastLevel != null ? b.roastLevel : null
-      };
-    })(),
-    waterProfileSnapshot: {
-      hardnessMgL: (waterHardnessMgL == null) ? null : waterHardnessMgL,
-      alkalinity: { value: waterAlkalinity.value == null ? null : waterAlkalinity.value, unit: waterAlkalinity.unit },
-      dilution: { tapParts: waterDilution.tapParts, demiParts: waterDilution.demiParts }
+  const nowMs = Date.now();
+  /* Fase 1 (Brew Intelligence v2): de proeving hoort bij het record dat bij Start is
+     aangemaakt. Opnieuw opslaan werkt datzelfde record bij (idempotent op id) in plaats
+     van een tweede logging te maken. Zonder actief record (bijv. na herladen midden in de
+     flow) valt dit terug op een nieuw record uit de huidige state — nooit een verloren
+     logging. */
+  let rec = activeBrewRecord();
+  if (!rec || (rec.lifecycle !== 'completed' && rec.lifecycle !== 'logged')){
+    if (rec && rec.lifecycle === 'brewing'){
+      rec = completeActiveBrew();
+    } else {
+      beginBrewRecord();
+      rec = completeActiveBrew();
     }
+  }
+  if (!rec) return;
+  const scores = Object.assign({}, brewLogDraft);
+  const r = applyBrewEvent(rec, 'log', nowMs);
+  if (!r.ok) return;
+  const next = r.rec;
+  // Wat er ECHT gebeurde (door de gebruiker ingevuld, bron U) — nooit 0 voor een leeg veld.
+  const actualGrind = readOptionalNumberInput('brewlog-actual-grind');
+  next.actual.grindClick = actualGrind;
+  next.actual.grindSource = actualGrind != null ? 'U' : null;
+  next.actual.cupWeightG = readOptionalNumberInput('brewlog-cup-weight');
+  next.actual.bypassActualG = next.plan.bypass ? readOptionalNumberInput('brewlog-bypass-actual') : null;
+  const completedAt = next.actual.completedAt || nowMs;
+  next.tasting = {
+    at: nowMs,
+    minutesAfterBrew: Math.max(0, Math.round((nowMs - completedAt) / 60000)),
+    scores,
+    note: noteEl ? noteEl.value.trim() : '',
+    approved: !!(document.getElementById('brewlog-approved') && document.getElementById('brewlog-approved').checked),
+    // NIEUW (Implementatieplan Zetadvies v3.0, Fase 6): alleen bij een patroon-match, uit de
+    // daadwerkelijk opgeslagen scores — nooit een verzonnen "geen advies"-veld.
+    cuppingSuggestion: cuppingSuggestionFor(scores) || null
   };
-  // NIEUW (Implementatieplan Zetadvies v3.0, Fase 6): "vuurt alleen wanneer er scores zijn
-  // gelogd" — dit loopt pas hier, ná het samenstellen van entry.scores uit de daadwerkelijk
-  // opgeslagen logging, nooit op een los, niet-opgeslagen sleepconcept. Bij geen patroon-
-  // match blijft entry.suggestion gewoon afwezig (geen "geen advies"-veld verzinnen).
-  const suggestion = cuppingSuggestionFor(entry.scores);
-  if (suggestion) entry.suggestion = suggestion;
-  brewLog.push(entry);
-  saveBrewLogToStorage();
+  upsertBrewRecord(next);
+  persistBrewStore();
+  rebuildBrewLogView();
   const savedMsg = document.getElementById('brewlog-saved-msg');
   if (savedMsg) savedMsg.hidden = false;
 }
@@ -8368,7 +8733,9 @@ function renderBrewLogEntryCard(e, beanId){
   const actualBits = [];
   if (e.doseG != null || e.ratioText) actualBits.push(`recept ${e.doseG != null ? fmt(e.doseG,1) + ' g' : '?'}${e.ratioText ? ' · ' + e.ratioText : ''}`);
   if (e.actualGrindClicks != null) actualBits.push(`werkelijke stand ${e.actualGrindClicks}`);
-  if (e.actualTimeSec != null) actualBits.push(`werkelijke tijd ${fmtTime(e.actualTimeSec)}`);
+  // Fase 1: de timer stopte altijd op het schema-einde, dus dit was nooit een gemeten
+  // brouwtijd. Eerlijk gelabeld; een echte meting (bed droog) komt in Fase 2.
+  if (e.scheduledTimeSec != null) actualBits.push(`schema-tijd ${fmtTime(e.scheduledTimeSec)} (niet gemeten)`);
   if (e.cupWeightG != null) actualBits.push(`kopgewicht ${e.cupWeightG} g`);
   // NIEUW (Fase 7): alleen tonen als het veld bestaat (schemaVersion 3+) — geen "nee"
   // verzinnen voor oudere loggingen die dit onderscheid nog niet konden maken.
@@ -8388,6 +8755,7 @@ function renderBrewLogEntryCard(e, beanId){
     <div class="brewlog-entry-scores">${scoresHtml}</div>
     ${e.note ? `<div class="brewlog-entry-note">"${escapeHtml(e.note)}"</div>` : ''}
     ${suggestionHtml}
+    <button type="button" class="brewlog-entry-delete" data-delete-brew="${e.id}">Verwijderen</button>
   </div>`;
 }
 // NIEUW (Visual Design 2.0 fase 2/3): gedeelde hartje-bekabeling voor elke plek waar
@@ -8400,6 +8768,41 @@ function wireFavToggleButtons(container){
   container.querySelectorAll('[data-fav-toggle]').forEach(btn=>{
     btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); toggleBrewLogFavorite(btn.getAttribute('data-fav-toggle')); });
   });
+  // Fase 1: zacht verwijderen met "Ongedaan maken" (30 dagen herstelbaar, zie
+  // SOFT_DELETE_RETENTION_MS) — geen bevestigingsvraag, want het is omkeerbaar.
+  container.querySelectorAll('[data-delete-brew]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); softDeleteBrew(btn.getAttribute('data-delete-brew')); });
+  });
+}
+function softDeleteBrew(id){
+  const rec = getBrewRecord(id);
+  if (!rec || rec.deletedAt) return;
+  rec.deletedAt = Date.now();
+  rec.updatedAt = rec.deletedAt;
+  persistBrewStore();
+  rebuildBrewLogView();
+  refreshBrewLogViews();
+  showUndoBar('Brouwsel verwijderd.', () => restoreBrew(id));
+}
+function restoreBrew(id){
+  const rec = getBrewRecord(id);
+  if (!rec || !rec.deletedAt) return;
+  rec.deletedAt = null;
+  rec.updatedAt = Date.now();
+  persistBrewStore();
+  rebuildBrewLogView();
+  refreshBrewLogViews();
+}
+let undoBarTimeout = null;
+function showUndoBar(text, onUndo){
+  const bar = document.getElementById('undo-bar');
+  if (!bar) return;
+  document.getElementById('undo-bar-text').textContent = text;
+  const btn = document.getElementById('undo-bar-btn');
+  btn.onclick = () => { bar.hidden = true; clearTimeout(undoBarTimeout); onUndo(); };
+  bar.hidden = false;
+  clearTimeout(undoBarTimeout);
+  undoBarTimeout = setTimeout(() => { bar.hidden = true; }, 8000);
 }
 // FIX (Visual Design 2.0 fase 3): deze functie riep voorheen altijd renderBrewLogHistory()
 // aan, die op zijn beurt altijd showScreen('brewlog-history') deed — dus een tik op het
@@ -8407,10 +8810,16 @@ function wireFavToggleButtons(container){
 // Ververst nu alleen de al-opgebouwde weergaven waarin deze logging kan voorkomen, zonder
 // een schermwissel te forceren.
 function toggleBrewLogFavorite(id){
-  const entry = brewLog.find(e=>e.id===id);
-  if (!entry) return;
-  entry.favorite = !entry.favorite;
-  saveBrewLogToStorage();
+  // Fase 1: de favoriet leeft op het v6-record; brewLog is een afgeleide weergave.
+  const rec = getBrewRecord(id);
+  if (!rec) return;
+  rec.favorite = !rec.favorite;
+  rec.updatedAt = Date.now();
+  persistBrewStore();
+  rebuildBrewLogView();
+  refreshBrewLogViews();
+}
+function refreshBrewLogViews(){
   renderBrewLogHistoryLists(historyBeanIdShown);
   if (beanDetailId){
     const bean = beanLibrary.find(b=>b.id===beanDetailId);
@@ -10740,23 +11149,11 @@ function startBrew(){
   if (!state.recipe){ renderMethodGrid(); showScreen('method'); return; }
   timer.elapsed = 0; timer.running = false; timer.lastStepIndex = -1; timer.preAlertedFor = -1; timer.startTs = 0;
   unlockAudioForIOS(); // binnen deze user-gesture, zodat latere beeps op iOS altijd geluid geven
-  /* "Brouw opnieuw" (expertreview A8): onthoud methode/waterhoeveelheid/bypass op de boon
-     zelf zodra er daadwerkelijk gezet wordt — dit zijn de sessie-keuzes die de volgende
-     keer zonder het hele advies-scherm hergebruikt kunnen worden. Alleen als deze brouw
-     via een opgeslagen boon liep (state.beanId); handmatige method→roast→profiel-sessies
-     zonder boon slaan niets op. */
-  if (state.beanId){
-    const bean = beanLibrary.find(b=>b.id===state.beanId);
-    if (bean){
-      bean.lastBrew = { method: state.method, waterMl: state.waterMl, bypass: !!state.bypass, bypassPct: state.bypass ? state.bypassPct : null };
-      /* Voorraadtracking (expertreview B6, Sanne): tel de daadwerkelijk gebruikte
-         dosis (state.recipe.dose, al inclusief bypass/batch-schaling) op bij het
-         verbruik tot nu toe. Alleen zinvol als er een zakgrootte is opgegeven —
-         zonder bagSizeG blijft doseUsedG gewoon meelopen maar wordt nergens getoond. */
-      bean.doseUsedG = Math.round(((bean.doseUsedG || 0) + (state.recipe ? state.recipe.dose : 0)) * 10) / 10;
-      saveBeansToStorage();
-    }
-  }
+  /* Fase 1 (Brew Intelligence v2): het brouwsel bestaat vanaf nu als v6-record, meteen
+     bewaard. De bijwerkingen die hier vroeger stonden (bean.lastBrew = "brouw opnieuw"-
+     keuzes, voorraadverbruik) gebeuren nu pas bij COMPLETED — zie
+     applyCompletionSideEffects(). Een afgebroken brouwsel verbruikt dus geen voorraad. */
+  beginBrewRecord();
   renderDialTicks();
   renderBrewStepsList();
   document.getElementById('finish-note').style.display = 'none';
@@ -10781,6 +11178,10 @@ function startBrew(){
 
 function runTimer(){
   if (timer.running) return;
+  // Fase 1: hervatten na pauze is een gebeurtenis op het lopende record; opnieuw starten na
+  // een reset (timer op 0, vorig record afgebroken) is een nieuw brouwsel.
+  if (timer.elapsed > 0 && isActiveBrewBrewing()) recordActiveBrewEvent('resume', { tSec: timer.elapsed });
+  else if (timer.elapsed === 0 && !isActiveBrewBrewing() && state.recipe) beginBrewRecord();
   timer.running = true;
   timer.startTs = Date.now() - timer.elapsed * 1000;
   setPauseBtnLabel(true);
@@ -10790,6 +11191,7 @@ function runTimer(){
   tick();
 }
 function pauseTimer(){
+  if (timer.running && isActiveBrewBrewing()) recordActiveBrewEvent('pause', { tSec: timer.elapsed });
   timer.running = false;
   clearInterval(timer.intervalId);
   setPauseBtnLabel(false);
@@ -10797,6 +11199,7 @@ function pauseTimer(){
   releaseWakeLock();
 }
 function resetTimer(){
+  abandonActiveBrew('reset'); // Fase 1: reset = dit brouwsel afgebroken; opnieuw starten maakt een nieuw record
   clearInterval(timer.intervalId);
   timer.elapsed = 0; timer.running = false; timer.lastStepIndex = -1; timer.preAlertedFor = -1; timer.startTs = 0;
   // FIX (bestaand gedrag gecorrigeerd tijdens icoon-omzetting): na reset staat de timer
@@ -10829,6 +11232,7 @@ function tick(){
       clearInterval(timer.intervalId);
       timer.running = false;
       setDialRunning(false);
+      completeActiveBrew(); // Fase 1: schema-einde → COMPLETED (bron I: afgeleid uit het schema, geen bed-droog-meting)
       document.getElementById('finish-note').style.display = 'block';
       const logBtn = document.getElementById('brewlog-open-btn');
       if (logBtn) logBtn.style.display = 'block';
@@ -11126,6 +11530,7 @@ async function stopBrewTimer(confirmMessage){
     const ok = await showConfirmModal(confirmMessage, { confirmLabel:'Ja, stoppen', cancelLabel:'Nee, doorgaan' });
     if (!ok) return false;
   }
+  abandonActiveBrew('stopped'); // Fase 1: gestopt vóór het einde → ABANDONED (na het einde is het record al COMPLETED)
   clearInterval(timer.intervalId);
   timer.running = false;
   releaseWakeLock();
@@ -11298,6 +11703,8 @@ renderFormProfileChips();
 renderFlavorTagChips();
 loadBrewLog();
 loadBeans();
+recoverStaleActiveBrew(Date.now()); // Fase 1: na loadBeans(), zie loadBrewLog()
+rebuildBrewLogView();
 const brewlogOpenBtn = document.getElementById('brewlog-open-btn');
 if (brewlogOpenBtn) brewlogOpenBtn.addEventListener('click', openBrewLogEntry);
 const brewlogSaveBtn = document.getElementById('brewlog-save-btn');
@@ -11339,6 +11746,8 @@ function resetAppData(){
     try{
       localStorage.removeItem('brewconsole_beans');
       localStorage.removeItem(BREW_LOG_KEY);
+      localStorage.removeItem(BREW_STORE_KEY);
+      localStorage.removeItem(ACTIVE_BREW_KEY);
     } catch(e){ /* storage niet beschikbaar — er is dan toch niets blijvends om te wissen */ }
     location.reload();
   });
