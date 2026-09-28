@@ -11807,7 +11807,56 @@ const NAV_SCREEN_MAP = {
   settings:'settings',
   'brewlog-history':'brewlog-history'
 };
-function showScreen(name){
+/* NIEUW (audit BC-15): het terug-gebaar van de telefoon ging de app uit. Elke schermwissel
+   krijgt nu een eigen stap in de browsergeschiedenis; terug = één scherm terug. Een
+   in-app terugknop naar het vorige scherm loopt via history.back(), zodat de geschiedenis
+   niet aangroeit. Schermen die gegevens nodig hebben vallen terug op een veilig scherm. */
+const NAV_HISTORY = (typeof window !== 'undefined' && window.history && typeof window.history.pushState === 'function') ? window.history : null;
+const navStack = [];
+let navIgnorePops = 0;
+function recordNavigation(name){
+  if (!NAV_HISTORY) return;
+  if (navStack[navStack.length - 1] === name) return;
+  if (navStack.length >= 2 && navStack[navStack.length - 2] === name){
+    navStack.pop();
+    navIgnorePops++;
+    NAV_HISTORY.back();
+    return;
+  }
+  const first = navStack.length === 0;
+  navStack.push(name);
+  try {
+    if (first) NAV_HISTORY.replaceState({ bcScreen: name, idx: 0 }, ''); // opstarten: geen extra stap
+    else NAV_HISTORY.pushState({ bcScreen: name, idx: navStack.length - 1 }, '');
+  } catch(e){ /* bv. sandbox zonder history */ }
+}
+function safeScreenFor(name){
+  if ((name === 'prep' || name === 'brew') && !state.recipe) return 'method';
+  if (name === 'brewlog' && !activeBrewRecord()) return 'home';
+  if (name === 'bean-detail' && !(beanDetailId && beanLibrary.some(b => b.id === beanDetailId))) return 'beans';
+  return name;
+}
+function onHistoryPop(e){
+  if (navIgnorePops > 0){ navIgnorePops--; return; }
+  const st = e && e.state;
+  if (!st || !st.bcScreen) return;
+  const current = navStack[navStack.length - 1];
+  // Tijdens het gieten laat een per ongeluk terug-geveegd gebaar je niet van de timer af.
+  if (current === 'brew' && st.bcScreen !== 'brew' && timer.running){
+    try { NAV_HISTORY.pushState({ bcScreen: 'brew', idx: navStack.length - 1 }, ''); } catch(err){}
+    return;
+  }
+  navStack.length = Math.min(navStack.length, st.idx);
+  const target = safeScreenFor(st.bcScreen);
+  navStack.push(target);
+  if (target !== st.bcScreen){ try { NAV_HISTORY.replaceState({ bcScreen: target, idx: navStack.length - 1 }, ''); } catch(err){} }
+  if (target === 'home') renderHomeScreen();
+  showScreen(target, { fromHistory: true });
+}
+if (NAV_HISTORY && typeof window.addEventListener === 'function') window.addEventListener('popstate', onHistoryPop);
+
+function showScreen(name, opts){
+  if (!(opts && opts.fromHistory)) recordNavigation(name);
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const target = document.getElementById('screen-'+name);
   target.classList.add('active');

@@ -2109,6 +2109,37 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
+  // NIEUW (audit BC-15): het terug-gebaar gaat één scherm terug in plaats van de app uit.
+  test('BC-15: terug-gebaar = één scherm terug; in-app terug laat de geschiedenis niet groeien; tijdens gieten blijf je op de timer', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    const active = () => page.evaluate(() => document.querySelector('.screen.active').id);
+    await page.click('.navbar [data-nav="method"]');
+    await page.click('[data-method="v60"]');
+    await page.click('#roast-grid [data-roast] >> nth=0');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await assertBecomesActive(page, '#screen-prep');
+    const lenAtPrep = await page.evaluate(() => history.length);
+    await page.goBack();
+    await assertBecomesActive(page, '#screen-profile');
+    await page.goBack();
+    await assertBecomesActive(page, '#screen-roast');
+    await page.goForward();
+    await assertBecomesActive(page, '#screen-profile');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await assertBecomesActive(page, '#screen-prep');
+    await page.click('#screen-prep .back-btn');
+    await assertBecomesActive(page, '#screen-profile');
+    assert.equal(await page.evaluate(() => history.length), lenAtPrep, 'in-app terug groeit de geschiedenis niet');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await page.click('#start-btn');
+    await assertBecomesActive(page, '#screen-brew');
+    await page.goBack();
+    await page.waitForTimeout(150);
+    assert.equal(await active(), 'screen-brew', 'tijdens het gieten brengt terug je niet van de timer af');
+    await page.close();
+  });
+
   // NIEUW (audit BC-23): smaakrichting en gietstijl gescheiden, één schaal.
   test('BC-23: profielkeuze in twee groepen (smaakrichting / gietstijl), zonder percentages', async () => {
     const page = await newTrackedPage();
