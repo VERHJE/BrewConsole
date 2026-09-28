@@ -629,3 +629,107 @@ describe('Fase 4 — eigenschappen over alle proefkaart-combinaties (v2 §15)', 
     }
   });
 });
+
+describe('Meetoverzicht — hoe goed werken de adviezen? (gate voor fase 5–7)', () => {
+  // Minimale records: alleen de velden die adviceOutcomeStats leest.
+  const rec = (id, reco, extra = {}) => Object.assign({ id, recommendation: reco }, extra);
+  const tested = (id, outcome, testedByBrewId = null) => rec(id, { type: 'ADJUST', status: 'tested', outcome, testedByBrewId });
+  const tester = (id, approved) => ({ id, tasting: { approved } });
+
+  test('drempels zijn die van het ontwerp (≥20 getest, ≥65% gelukt, ≤15% slechter)', () => {
+    assert.equal(api.ADVICE_GATE_MIN_TESTED, 20);
+    assert.equal(api.ADVICE_GATE_SUCCESS_MIN, 0.65);
+    assert.equal(api.ADVICE_GATE_HARM_MAX, 0.15);
+  });
+
+  test('lege of ontbrekende opslag → niets geteld, oordeel "onvoldoende"', () => {
+    for (const store of [[], null, undefined]){
+      const s = j(api.adviceOutcomeStats(store));
+      assert.equal(s.tested, 0);
+      assert.equal(s.successRate, null);
+      assert.equal(s.harmRate, null);
+      assert.equal(s.gate, 'insufficient');
+      assert.equal(s.needed, 20);
+    }
+  });
+
+  test('telt per type en per status; alleen ADJUST telt mee voor de statussen', () => {
+    const store = [
+      rec('k', { type: 'KEEP', status: 'proposed' }),
+      rec('r', { type: 'REPEAT', status: 'proposed' }),
+      rec('c', { type: 'CHECK', status: 'proposed' }),
+      rec('n', { type: 'NONE' }),
+      rec('a1', { type: 'ADJUST', status: 'proposed' }),
+      rec('a2', { type: 'ADJUST', status: 'applied' }),
+      rec('a3', { type: 'ADJUST', status: 'ignored' }),
+      tested('a4', 'better'),
+      { id: 'geen-advies' }
+    ];
+    const s = j(api.adviceOutcomeStats(store));
+    assert.deepEqual(s.byType, { KEEP: 1, REPEAT: 1, CHECK: 1, ADJUST: 4, NONE: 1 });
+    assert.equal(s.proposed, 1);
+    assert.equal(s.applied, 1);
+    assert.equal(s.ignored, 1);
+    assert.equal(s.tested, 1);
+    assert.equal(s.better, 1);
+  });
+
+  test('"gelukt" = beter, óf een geslaagde testkop zolang de uitkomst niet "slechter" is', () => {
+    const store = [
+      tested('a', 'better'),                 // gelukt
+      tested('b', 'same', 'tb'), tester('tb', true),   // gelukt: testkop geslaagd
+      tested('c', 'same', 'tc'), tester('tc', false),  // niet gelukt
+      tested('d', null, 'td'), tester('td', true),     // geen antwoord, maar testkop geslaagd → gelukt
+      tested('e', 'worse', 'te'), tester('te', true),  // slechter wint van geslaagd → niet gelukt, wel schade
+      tested('f', 'same', 'weg')                      // testkop bestaat niet → niet gelukt
+    ];
+    const s = j(api.adviceOutcomeStats(store));
+    assert.equal(s.tested, 6);
+    assert.equal(s.better, 1);
+    assert.equal(s.same, 3);
+    assert.equal(s.worse, 1);
+    assert.equal(s.unanswered, 1);
+    assert.equal(s.success, 3);
+    assert.equal(s.successRate, 3 / 6);
+    assert.equal(s.harmRate, 1 / 6);
+  });
+
+  test('een verwijderde testkop telt niet als geslaagd; een verwijderd advies telt helemaal niet', () => {
+    const store = [
+      tested('a', 'same', 'tb'), { id: 'tb', deletedAt: T0, tasting: { approved: true } },
+      Object.assign(tested('b', 'better'), { deletedAt: T0 })
+    ];
+    const s = j(api.adviceOutcomeStats(store));
+    assert.equal(s.tested, 1);
+    assert.equal(s.success, 0);
+    assert.equal(s.byType.ADJUST, 1);
+  });
+
+  const many = (nBetter, nSame, nWorse) => {
+    const out = [];
+    let i = 0;
+    for (let k = 0; k < nBetter; k++) out.push(tested(`x${i++}`, 'better'));
+    for (let k = 0; k < nSame; k++) out.push(tested(`x${i++}`, 'same'));
+    for (let k = 0; k < nWorse; k++) out.push(tested(`x${i++}`, 'worse'));
+    return out;
+  };
+
+  test('onder de 20 geteste stappen blijft het oordeel "onvoldoende", hoe goed ook', () => {
+    const s = j(api.adviceOutcomeStats(many(19, 0, 0)));
+    assert.equal(s.successRate, 1);
+    assert.equal(s.gate, 'insufficient');
+    assert.equal(s.needed, 1);
+  });
+
+  test('precies op de drempels → gehaald (13/20 = 65% gelukt, 3/20 = 15% slechter)', () => {
+    const s = j(api.adviceOutcomeStats(many(13, 4, 3)));
+    assert.equal(s.tested, 20);
+    assert.equal(s.gate, 'passed');
+    assert.equal(s.needed, 0);
+  });
+
+  test('net onder de succesdrempel of net boven de schadedrempel → niet gehaald', () => {
+    assert.equal(api.adviceOutcomeStats(many(12, 5, 3)).gate, 'failed');  // 60% gelukt
+    assert.equal(api.adviceOutcomeStats(many(16, 0, 4)).gate, 'failed');  // 80% gelukt, maar 20% slechter
+  });
+});

@@ -7666,6 +7666,33 @@ document.getElementById('home-start-brew-btn').addEventListener('click', ()=>{
    altijd per boon, nooit een cross-boon gemiddelde.
    ============================================================ */
 const MIN_TREND_N = 5;
+// NIEUW (Brew Intelligence v2, slagboom na Fase 4) — zie adviceOutcomeStats(). Alleen
+// tellen en eerlijk benoemen; stuurt niets aan.
+function renderAdviceOutcomeSection(st){
+  const pct = (x) => x == null ? '—' : `${Math.round(x * 100)}%`;
+  const typeLine = `Advies per kop: ${st.byType.KEEP}× houd zo · ${st.byType.REPEAT}× herhaal · ${st.byType.CHECK}× check eerst · ${st.byType.ADJUST}× een stap`;
+  let body;
+  if (!st.byType.ADJUST){
+    body = `<p class="insights-note" style="margin:0;">Nog geen stap-adviezen. Zodra de proefkaart een stap voorstelt en je die gebruikt voor je volgende kop, telt de uitkomst hier mee.</p>`;
+  } else {
+    const verdict = st.gate === 'insufficient'
+      ? `Nog ${st.needed} geteste ${st.needed === 1 ? 'stap' : 'stappen'} tot een betrouwbaar oordeel (minimaal ${ADVICE_GATE_MIN_TESTED}). Pas daarna is leren van jouw koppen verantwoord.`
+      : st.gate === 'passed'
+        ? `✓ De adviezen werken voor jou: ${pct(st.successRate)} gelukt, ${pct(st.harmRate)} slechter (drempel ≥${Math.round(ADVICE_GATE_SUCCESS_MIN * 100)}% / ≤${Math.round(ADVICE_GATE_HARM_MAX * 100)}%). Leren van jouw koppen is nu verantwoord.`
+        : `De adviezen halen de drempel (nog) niet: ${pct(st.successRate)} gelukt, ${pct(st.harmRate)} slechter (nodig ≥${Math.round(ADVICE_GATE_SUCCESS_MIN * 100)}% / ≤${Math.round(ADVICE_GATE_HARM_MAX * 100)}%). Eerst de adviesregels bijstellen — nog niet leren.`;
+    body = `<div class="stats-grid">
+        <div class="stat-block"><div class="stat-label">Stappen getest</div><div class="stat-value">${st.tested}</div><div class="stat-sub">${st.applied} klaargezet · ${st.proposed + st.ignored} niet gebruikt</div></div>
+        <div class="stat-block"><div class="stat-label">Gelukt</div><div class="stat-value">${pct(st.successRate)}</div><div class="stat-sub">${st.success} van ${st.tested}</div></div>
+        <div class="stat-block"><div class="stat-label">Slechter</div><div class="stat-value">${pct(st.harmRate)}</div><div class="stat-sub">${st.worse} van ${st.tested}</div></div>
+      </div>
+      <p class="insights-note" data-advice-gate="${st.gate}" style="margin:10px 0 0;">${escapeHtml(verdict)}</p>`;
+  }
+  return `<div class="bean-detail-section" id="advice-outcome" style="margin-top:18px;">
+      <p class="bean-detail-section-label">Hoe goed werken de adviezen?</p>
+      ${body}
+      <p class="insights-note" style="margin:8px 0 0;">${escapeHtml(typeLine)}. "Gelukt" = de kop die de stap testte was beter, of een geslaagde kop.</p>
+    </div>`;
+}
 // NIEUW (Visual Design 2.0 fase 2, Geschiedenis-tabs): optionele targetId-parameter zodat
 // dezelfde functie/tellingen ook in de nieuwe "Statistieken"-tab (Geschiedenis-scherm)
 // kunnen renderen, i.p.v. een tweede kopie van deze functie te onderhouden. Standaard
@@ -7697,6 +7724,8 @@ function renderInsightsScreen(targetId){
       <div class="stat-sub">${topMethod ? methodCounts[topMethod] + '×' : ''}</div>
     </div>
   </div>`;
+
+  html += renderAdviceOutcomeSection(adviceOutcomeStats(brewStore));
 
   if (brewLog.length < MIN_TREND_N){
     html += `<div class="insights-empty" style="margin-top:14px;">Nog ${MIN_TREND_N - brewLog.length} ${MIN_TREND_N - brewLog.length === 1 ? 'logging' : 'loggings'} tot een persoonlijk signaal (minimaal ${MIN_TREND_N}) — tot die tijd bewust geen trend, dat zou ruis zijn.</div>`;
@@ -8923,6 +8952,42 @@ function recommendationTexts(reco, diag, extra){
   }
   const notes = (r.notes || []).map(k => ({ actuals_unconfirmed: 'Dosis en maling waren niet bevestigd — dit advies gaat uit van het plan.' })[k]).filter(Boolean);
   return { title, body, expect, confidence: r.confidence ? CONFIDENCE_LABELS[r.confidence] : null, notes };
+}
+
+/* ---- Slagboom na Fase 4: werken de adviezen voor deze gebruiker? (pure functie) ----
+   v2 §16: Fase 5–7 (leren van jouw koppen, voorstellen) pas als de adviezen in de praktijk
+   werken: ≥20 toegepaste én geteste stappen, waarvan ≥65% "gelukt" en ≤15% "schade".
+   Gelukt = de kop die de stap testte was "beter" dan de vorige, óf een geslaagde kop
+   (gate). Schade = "slechter". Alleen-lezen: dit verandert geen advies en geen recept. */
+const ADVICE_GATE_MIN_TESTED = 20;
+const ADVICE_GATE_SUCCESS_MIN = 0.65;
+const ADVICE_GATE_HARM_MAX = 0.15;
+function adviceOutcomeStats(store){
+  const recs = (store || []).filter(r => r && !r.deletedAt && r.recommendation);
+  const byId = new Map((store || []).map(r => [r.id, r]));
+  const byType = { KEEP: 0, REPEAT: 0, CHECK: 0, ADJUST: 0, NONE: 0 };
+  const s = { proposed: 0, applied: 0, ignored: 0, tested: 0, better: 0, same: 0, worse: 0, unanswered: 0, success: 0 };
+  for (const r of recs){
+    const reco = r.recommendation;
+    if (byType[reco.type] != null) byType[reco.type]++;
+    if (reco.type !== 'ADJUST') continue;
+    if (reco.status === 'proposed') s.proposed++;
+    else if (reco.status === 'applied') s.applied++;
+    else if (reco.status === 'ignored') s.ignored++;
+    else if (reco.status === 'tested'){
+      s.tested++;
+      const o = reco.outcome;
+      if (o === 'better') s.better++; else if (o === 'same') s.same++; else if (o === 'worse') s.worse++; else s.unanswered++;
+      const tester = reco.testedByBrewId ? byId.get(reco.testedByBrewId) : null;
+      const testerPassed = !!(tester && !tester.deletedAt && tester.tasting && tester.tasting.approved);
+      if (o === 'better' || (o !== 'worse' && testerPassed)) s.success++;
+    }
+  }
+  const successRate = s.tested ? s.success / s.tested : null;
+  const harmRate = s.tested ? s.worse / s.tested : null;
+  const gate = s.tested < ADVICE_GATE_MIN_TESTED ? 'insufficient'
+    : (successRate >= ADVICE_GATE_SUCCESS_MIN && harmRate <= ADVICE_GATE_HARM_MAX) ? 'passed' : 'failed';
+  return Object.assign({ byType, successRate, harmRate, gate, needed: Math.max(0, ADVICE_GATE_MIN_TESTED - s.tested) }, s);
 }
 
 let brewStore = [];

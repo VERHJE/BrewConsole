@@ -2012,6 +2012,45 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.match(await page.locator('#reco-card').innerText(), /Koppel een boon/);
       await page.close();
     });
+
+    test('meetoverzicht op Statistieken: geteste stap telt mee, oordeel blijft "onvoldoende" onder 20', async () => {
+      const page = await seeded();
+      await toPrep(page);
+      await brewToCard(page);
+      await answer(page, { strength: 'just_right', acidity: 'sharp', finish: ['hollow'], liking: 2 });
+      await page.click('.navbar [data-nav="brewlog-history"]');
+      await page.click('#history-tabs [data-tab="statistieken"]');
+      let text = await page.locator('#advice-outcome').innerText();
+      assert.match(text, /Hoe goed werken de adviezen\?/i);
+      assert.match(text, /Stappen getest\s*0/i);
+      assert.match(text, /1× een stap/);
+      assert.match(text, /Nog 20 geteste stappen tot een betrouwbaar oordeel/);
+
+      await page.click('.navbar [data-nav="brewlog-history"]');
+      await page.click('#history-tabs [data-tab="alle"]');
+      await page.click('.navbar [data-nav="home"]');
+      await toPrep(page);
+      await brewToCard(page);
+      // Stap niet via het paneel gebruikt: de volgende kop test hem dus niet.
+      await answer(page, { strength: 'just_right', acidity: 'sharp', finish: ['hollow'], liking: 2 });
+      await page.click('#reco-apply-btn');
+      await toPrep(page);
+      await brewToCard(page);
+      await answer(page, { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: 5, vsLast: 'better' });
+      const s = await store(page);
+      assert.equal(s[1].recommendation.status, 'tested');
+
+      await page.click('.navbar [data-nav="brewlog-history"]');
+      await page.click('#history-tabs [data-tab="statistieken"]');
+      text = await page.locator('#advice-outcome').innerText();
+      assert.match(text, /Stappen getest\s*1/i);
+      assert.match(text, /Gelukt\s*100%\s*1 van 1/i);
+      assert.match(text, /Slechter\s*0%\s*0 van 1/i);
+      assert.match(text, /1× houd zo/);
+      assert.equal(await page.locator('#advice-outcome [data-advice-gate]').getAttribute('data-advice-gate'), 'insufficient');
+      assert.match(text, /Nog 19 geteste stappen tot een betrouwbaar oordeel/);
+      await page.close();
+    });
   });
 
   test('Geen console- of pageerrors opgetreden tijdens de hele kernflow', () => {
