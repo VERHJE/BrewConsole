@@ -631,13 +631,10 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     assert.match(statusText, /waterprofiel hersteld/, 'De import-statusmelding moet aangeven dat het waterprofiel is hersteld');
     assert.doesNotMatch(statusText, /undefined|NaN/, 'Geen kapotte waarden in de statusmelding');
 
-    // Waterhardheid moet daadwerkelijk hersteld zijn, zichtbaar in het invoerveld op Recept.
-    await page.click('.navbar [data-nav="method"]');
-    await assertBecomesActive(page, '#screen-method');
-    await page.click('[data-method="v60"]');
-    await page.click('#roast-grid [data-roast] >> nth=0');
-    await page.click('#profile-grid [data-profile="klassiek"]');
-    await assertBecomesActive(page, '#screen-prep');
+    // Waterhardheid moet daadwerkelijk hersteld zijn, zichtbaar in het invoerveld (audit
+    // BC-24: het waterprofiel staat in Instellingen).
+    await page.click('.navbar [data-nav="settings"]');
+    await assertBecomesActive(page, '#screen-settings');
     const hardnessValue = await page.locator('#prep-water-hardness').inputValue();
     assert.equal(hardnessValue, '128', 'De uit de oude backup herstelde waterhardheid moet in het invoerveld staan');
     const hardnessReadout = (await page.locator('#hardness-readout').textContent()).trim();
@@ -661,11 +658,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
 
-    // FIX (visuele afstemming referentiebeeld "Aanvullende informatie"): het waterprofiel-
-    // invoerveld zit sinds de Prep-compactheidsslag in de collapsed-by-default "Verfijn dit
-    // recept"-accordion — open 'm expliciet vóór .fill()/.selectOption(), die (anders dan
-    // .inputValue()/.textContent() hierboven) wél zichtbaarheid vereisen.
-    await page.evaluate(() => { document.getElementById('refine-details').open = true; });
+    // Audit BC-24: het waterprofiel staat in Instellingen; het receptscherm toont alleen een samenvatting.
+    assert.match(await page.locator('#prep-water-summary').textContent(), /Niet ingesteld/);
 
     // Vóór invullen: alkaliniteit moet eerlijk "niet ingevuld" tonen, geen "binnen de richtwaarde".
     const beforeAlk = (await page.locator('#alkalinity-readout').textContent()).trim();
@@ -675,6 +669,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     // B-6-nulmeting: het kernrecept (dosis) vóór er iets aan het waterprofiel verandert.
     const doseBeforeWaterProfile = (await page.locator('#stats-grid .stat-block').first().textContent()).trim();
 
+    await page.click('.navbar [data-nav="settings"]');
+    await assertBecomesActive(page, '#screen-settings');
     await page.fill('#prep-water-hardness', '128');
     await page.dispatchEvent('#prep-water-hardness', 'change');
     await page.fill('#prep-water-alkalinity', '100');
@@ -704,6 +700,23 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     // of te verdunnen.
     const doseAfterDilution = (await page.locator('#stats-grid .stat-block').first().textContent()).trim();
     assert.equal(doseAfterDilution, doseBeforeWaterProfile, 'B-6: waterprofiel/verdunning mag het kernrecept (dosis) nooit beïnvloeden');
+    assert.match(await page.locator('#prep-water-summary').textContent(), /hardheid 64 · alkaliniteit 50 mg\/L CaCO3 \(effectief na verdunning 1:1\)/);
+
+    // Preset: SCA-richtwaarde vult beide velden in; Wissen maakt ze weer leeg.
+    await page.click('[data-water-preset="sca"]');
+    assert.equal(await page.locator('#prep-water-hardness').inputValue(), '68');
+    assert.equal(await page.locator('#prep-water-alkalinity').inputValue(), '40');
+    assert.match((await page.locator('#alkalinity-readout').textContent()), /binnen de SCA-richtwaarde/);
+    assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem('brewconsole_water_hardness'))).hardnessMgL, 68, 'preset wordt onthouden');
+    await page.click('[data-water-preset="clear"]');
+    assert.equal(await page.locator('#prep-water-hardness').inputValue(), '');
+    assert.equal(await page.evaluate(() => localStorage.getItem('brewconsole_water_hardness')), null);
+
+    // De link op het receptscherm brengt je naar het waterprofiel in Instellingen.
+    await page.evaluate(() => showScreen('prep'));
+    await page.evaluate(() => { document.getElementById('refine-details').open = true; });
+    await page.click('#prep-water-settings-link');
+    await assertBecomesActive(page, '#screen-settings');
 
     await page.close();
   });

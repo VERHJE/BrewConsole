@@ -2414,34 +2414,12 @@
             <p class="freshness-readout" id="opened-readout" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
           </div>
 
-          <div class="advice-q" style="margin:14px 0;">
-            <p class="advice-q-label">Waterprofiel <span style="text-transform:none; letter-spacing:0;">(optioneel — je kraanwater, blijft onthouden, los van deze boon/methode)</span></p>
-            <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:0 0 8px;">Vereenvoudiging: hardheid (calcium/magnesium) is niet hetzelfde als alkaliniteit (bufferende werking tegen zuren) — vooral bij fruitige/zure profielen bepaalt alkaliniteit minstens zo sterk hoe zuur de kop aankomt. Elke parameter hieronder krijgt daarom zijn EIGEN oordeel, nooit één samengevoegd "water is goed"-signaal (Implementatieplan Zetadvies v3.0, Fase 4/Bouwbesluit B-5).</p>
-
-            <label for="prep-water-hardness" style="font-size:12px; color:var(--text-faint); display:block; margin:10px 0 4px;">Hardheid (mg/L als CaCO3)</label>
-            <input type="number" id="prep-water-hardness" class="form-input" placeholder="bijv. 128" min="0" max="600" step="1" style="max-width:220px;">
-
-            <label for="prep-water-alkalinity" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Alkaliniteit</label>
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-              <input type="number" id="prep-water-alkalinity" class="form-input" placeholder="bijv. 50" min="0" max="600" step="1" style="max-width:150px;">
-              <select id="prep-water-alkalinity-unit" class="form-input" style="max-width:150px;">
-                <option value="CaCO3">mg/L CaCO3</option>
-                <option value="HCO3">mg/L HCO3</option>
-              </select>
-            </div>
-            <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:6px 0 0;">Te vinden op het kwaliteitsoverzicht per productiebedrijf van je waterbedrijf, of met een KH-druppeltest. HCO3 wordt omgerekend naar CaCO3-equivalent (×0,82) voor de SCA-vergelijking hieronder.</p>
-
-            <label for="prep-water-dilution" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Verdunning kraan : gedemineraliseerd <span style="text-transform:none; letter-spacing:0;">(optioneel — herberekent het effectieve profiel hieronder, puur rekenkundig, geen receptinvloed)</span></label>
-            <select id="prep-water-dilution" class="form-input" style="max-width:220px;">
-              <option value="1:0">Geen verdunning (1:0, puur kraanwater)</option>
-              <option value="2:1">2 : 1</option>
-              <option value="1:1">1 : 1</option>
-            </select>
-
-            <p class="freshness-readout" id="hardness-readout" style="font-size:12.5px; color:var(--text-faint); margin:10px 0 0;"></p>
-            <p class="freshness-readout" id="alkalinity-readout" style="font-size:12.5px; color:var(--text-faint); margin:4px 0 0;"></p>
-            <p class="freshness-readout" id="ph-readout" style="font-size:12.5px; color:var(--text-faint); margin:4px 0 0;"></p>
-            <p class="freshness-readout" id="water-confidence-readout" style="font-size:11px; color:var(--text-faint); margin:8px 0 0;"></p>
+          <!-- Audit BC-24: het waterprofiel is een eenmalige instelling en staat in Instellingen;
+               hier alleen wat er nu geldt, met een weg ernaartoe. -->
+          <div class="advice-q" style="margin:14px 0;" id="prep-water-summary-block">
+            <p class="advice-q-label">Waterprofiel</p>
+            <p class="freshness-readout" id="prep-water-summary" style="font-size:12.5px; color:var(--text-faint); margin:0;"></p>
+            <button type="button" class="link-secondary" id="prep-water-settings-link" style="margin-top:4px; padding:4px 0;">Waterprofiel in Instellingen →</button>
           </div>
 
           <div class="advice-q" style="margin:14px 0;">
@@ -2761,6 +2739,46 @@
           <div><div class="bean-detail-fact-label">Eenheden</div><div class="bean-detail-fact-value">Celsius (°C)</div></div>
         </div>
         <p class="empty-hint" style="margin:10px 0 0;">Vast ingesteld voor dit toestel — alle maal-/temperatuuradviezen in de app gaan hiervan uit. Molen- of eenheidkeuze is nog niet instelbaar.</p>
+      </div>
+
+      <!-- Audit BC-24: waterprofiel hoort bij je keuken, niet bij één recept. -->
+      <div class="bean-detail-section" id="settings-water-section">
+        <p class="bean-detail-section-label">Water</p>
+      <div class="advice-q" style="margin:0;">
+        <p class="empty-hint" style="margin:0 0 10px;">Eenmalig invullen: het blijft onthouden, los van boon of methode. Het verandert geen receptgetal, maar helpt bij vlakke of doffe koppen (alkaliniteit dempt zuren).</p>
+        <p class="freshness-readout" style="font-size:12px; color:var(--text-faint); margin:0 0 6px;">Snel invullen:</p>
+        <div class="chip-row" id="water-presets">
+          <button type="button" class="chip" data-water-preset="sca">SCA-richtwaarde (68 / 40)</button>
+          <button type="button" class="chip" data-water-preset="clear">Wissen</button>
+        </div>
+        <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:6px 0 10px;">Kraanwater: zoek op je postcode het kwaliteitsoverzicht van je waterbedrijf ("totale hardheid" en "waterstofcarbonaat/HCO3"). Mineralenzakje of flessenwater: neem de waarden van de verpakking over. De SCA-richtwaarde is bedoeld voor wie water zelf mengt.</p>
+        <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:0 0 8px;">Vereenvoudiging: hardheid (calcium/magnesium) is niet hetzelfde als alkaliniteit (bufferende werking tegen zuren) — vooral bij fruitige/zure profielen bepaalt alkaliniteit minstens zo sterk hoe zuur de kop aankomt. Elke parameter hieronder krijgt daarom een eigen oordeel, nooit één samengevoegd "water is goed".</p>
+
+        <label for="prep-water-hardness" style="font-size:12px; color:var(--text-faint); display:block; margin:10px 0 4px;">Hardheid (mg/L als CaCO3)</label>
+        <input type="number" id="prep-water-hardness" class="form-input" placeholder="bijv. 128" min="0" max="600" step="1" style="max-width:220px;">
+
+        <label for="prep-water-alkalinity" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Alkaliniteit</label>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <input type="number" id="prep-water-alkalinity" class="form-input" placeholder="bijv. 50" min="0" max="600" step="1" style="max-width:150px;">
+          <select id="prep-water-alkalinity-unit" class="form-input" style="max-width:150px;">
+            <option value="CaCO3">mg/L CaCO3</option>
+            <option value="HCO3">mg/L HCO3</option>
+          </select>
+        </div>
+        <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:6px 0 0;">Te vinden op het kwaliteitsoverzicht per productiebedrijf van je waterbedrijf, of met een KH-druppeltest. HCO3 wordt omgerekend naar CaCO3-equivalent (×0,82) voor de SCA-vergelijking hieronder.</p>
+
+        <label for="prep-water-dilution" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Verdunning kraan : gedemineraliseerd <span style="text-transform:none; letter-spacing:0;">(optioneel — herberekent het effectieve profiel hieronder, puur rekenkundig, geen receptinvloed)</span></label>
+        <select id="prep-water-dilution" class="form-input" style="max-width:220px;">
+          <option value="1:0">Geen verdunning (1:0, puur kraanwater)</option>
+          <option value="2:1">2 : 1</option>
+          <option value="1:1">1 : 1</option>
+        </select>
+
+        <p class="freshness-readout" id="hardness-readout" style="font-size:12.5px; color:var(--text-faint); margin:10px 0 0;"></p>
+        <p class="freshness-readout" id="alkalinity-readout" style="font-size:12.5px; color:var(--text-faint); margin:4px 0 0;"></p>
+        <p class="freshness-readout" id="ph-readout" style="font-size:12.5px; color:var(--text-faint); margin:4px 0 0;"></p>
+        <p class="freshness-readout" id="water-confidence-readout" style="font-size:11px; color:var(--text-faint); margin:8px 0 0;"></p>
+      </div>
       </div>
 
       <div class="bean-detail-section">
@@ -10576,6 +10594,26 @@ function renderOpenedDateInput(){
    loadWaterHardness()/localStorage in plaats van in `state` (die per methode/boon reset).
    UITGEBREID (Implementatieplan Zetadvies v3.0, Fase 4a-4d): alkaliniteit + eenheid,
    verdunningsinstelling, en per-parameter oordelen (B-5) i.p.v. één hardheidsgetal. */
+// Audit BC-24: het waterprofiel staat in Instellingen en kan ook zonder lopend recept
+// wijzigen — alleen het receptscherm herrekenen als er een recept is.
+function onWaterProfileChanged(){
+  saveWaterProfileToStorage();
+  renderWaterHardnessInput();
+  if (state.method && state.roast && state.profile) renderPrep();
+}
+const WATER_PRESETS = {
+  // SCA-richtwaarde voor wie water zelf mengt; valt binnen de SCA-banden die waterSCAVerdict() gebruikt.
+  sca: { hardnessMgL: 68, alkalinity: { value: 40, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } },
+  clear: { hardnessMgL: null, alkalinity: { value: null, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } }
+};
+function applyWaterPreset(key){
+  const preset = WATER_PRESETS[key];
+  if (!preset) return;
+  waterHardnessMgL = preset.hardnessMgL;
+  waterAlkalinity = { value: preset.alkalinity.value, unit: preset.alkalinity.unit };
+  waterDilution = { tapParts: preset.dilution.tapParts, demiParts: preset.dilution.demiParts };
+  onWaterProfileChanged();
+}
 function renderWaterHardnessInput(){
   const input = document.getElementById('prep-water-hardness');
   const alkInput = document.getElementById('prep-water-alkalinity');
@@ -10587,8 +10625,7 @@ function renderWaterHardnessInput(){
   input.onchange = ()=>{
     const v = input.value;
     waterHardnessMgL = (v === '') ? null : Number(v);
-    saveWaterProfileToStorage();
-    renderPrep();
+    onWaterProfileChanged();
   };
 
   if (alkInput){
@@ -10596,16 +10633,14 @@ function renderWaterHardnessInput(){
     alkInput.onchange = ()=>{
       const v = alkInput.value;
       waterAlkalinity = { value: (v === '') ? null : Number(v), unit: waterAlkalinity.unit };
-      saveWaterProfileToStorage();
-      renderPrep();
+      onWaterProfileChanged();
     };
   }
   if (alkUnitSelect){
     alkUnitSelect.value = waterAlkalinity.unit;
     alkUnitSelect.onchange = ()=>{
       waterAlkalinity = { value: waterAlkalinity.value, unit: alkUnitSelect.value === 'HCO3' ? 'HCO3' : 'CaCO3' };
-      saveWaterProfileToStorage();
-      renderPrep();
+      onWaterProfileChanged();
     };
   }
   if (dilutionSelect){
@@ -10613,8 +10648,7 @@ function renderWaterHardnessInput(){
     dilutionSelect.onchange = ()=>{
       const [tapParts, demiParts] = dilutionSelect.value.split(':').map(Number);
       waterDilution = { tapParts, demiParts };
-      saveWaterProfileToStorage();
-      renderPrep();
+      onWaterProfileChanged();
     };
   }
 
@@ -10641,6 +10675,15 @@ function renderWaterHardnessInput(){
     alkEl.textContent = effAlkCaCO3 != null
       ? `Alkaliniteit${dilutionSuffix}: ${fmt(effAlkCaCO3,0)} mg/L CaCO3-equivalent — ${waterSCAVerdict(effAlkCaCO3,40,70)}.`
       : 'Alkaliniteit: niet ingevuld — buffering onbekend (SCA-richtwaarde 40–70 mg/L CaCO3). Zonder dit gegeven is "hardheid in orde" GEEN "water binnen de richtlijn".';
+  }
+  const summaryEl = document.getElementById('prep-water-summary');
+  if (summaryEl){
+    const parts = [];
+    if (effHardness != null) parts.push(`hardheid ${fmt(effHardness,0)}`);
+    if (effAlkCaCO3 != null) parts.push(`alkaliniteit ${fmt(effAlkCaCO3,0)} mg/L CaCO3`);
+    summaryEl.textContent = parts.length
+      ? `${parts.join(' · ')}${dilutionSuffix}. Verandert geen receptgetal.`
+      : 'Niet ingesteld — eenmalig invullen helpt bij vlakke of doffe koppen.';
   }
   const phEl = document.getElementById('ph-readout');
   if (phEl){
@@ -11882,11 +11925,18 @@ if (prepHistoryTriageLink) prepHistoryTriageLink.addEventListener('click', openT
 // NIEUW (Implementatieplan Zetadvies v3.0, Fase 6): bij het "vlak, mogelijk waterbuffering"
 // -patroon wijst het voorstel naar het waterprofiel — dat staat verderop op ditzelfde
 // Recept-scherm, dus scrollen + focus i.p.v. een nieuwe navigatie.
-const prepSuggestionWaterLink = document.getElementById('prep-suggestion-water-link');
-if (prepSuggestionWaterLink) prepSuggestionWaterLink.addEventListener('click', ()=>{
+// Audit BC-24: het waterprofiel staat in Instellingen — beide links gaan daarheen.
+function openWaterSettings(){
+  renderWaterHardnessInput();
+  showScreen('settings');
   const target = document.getElementById('prep-water-hardness');
   if (target){ target.scrollIntoView({ behavior:'smooth', block:'center' }); target.focus(); }
-});
+}
+const prepSuggestionWaterLink = document.getElementById('prep-suggestion-water-link');
+if (prepSuggestionWaterLink) prepSuggestionWaterLink.addEventListener('click', openWaterSettings);
+const prepWaterSettingsLink = document.getElementById('prep-water-settings-link');
+if (prepWaterSettingsLink) prepWaterSettingsLink.addEventListener('click', openWaterSettings);
+document.querySelectorAll('[data-water-preset]').forEach(btn => btn.addEventListener('click', () => applyWaterPreset(btn.getAttribute('data-water-preset'))));
 // NIEUW (Pagina-Polish-spec §4.1): gedeelde actie voor zowel de lege-staat-CTA
 // (#bean-add-link) als de nieuwe header-plusknop (#bean-add-header-btn) — exact dezelfde
 // stappen als voorheen inline op #bean-add-link stonden, nu op één plek.
@@ -12908,6 +12958,7 @@ function registerOfflineServiceWorker(){
    ============================================================ */
 loadTheme();
 loadWaterHardness();
+renderWaterHardnessInput(); // BC-24: de velden staan nu ook buiten het receptscherm (Instellingen)
 renderMethodGrid();
 renderRoastGrid();
 renderProfileGrid();
