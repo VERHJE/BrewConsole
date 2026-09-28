@@ -2180,6 +2180,44 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
+  // NIEUW (audit BC-10): blinde helder-proef; het recept verandert alleen als je dat na een
+  // duidelijke uitslag zelf aanzet.
+  test('BC-10: blinde proef bij Helder & fris — onthullen, opslaan, en pas na een duidelijke uitslag zelf aanzetten', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.evaluate(() => { selectMethod('v60'); selectRoast('medium'); selectProfile('klassiek'); });
+    assert.equal(await page.locator('#ab-trial').isVisible(), false, 'zonder helder-doel geen proefkaart');
+    const dose0 = await page.evaluate(() => state.recipe.dose);
+    await page.click('[data-goal="bright"]');
+    assert.equal(await page.locator('#ab-trial').isVisible(), true);
+    assert.equal(await page.evaluate(() => state.recipe.dose), dose0, 'standaard verandert het recept niet');
+    await page.click('#ab-start-btn');
+    const cup = await page.evaluate(() => abOpenTrial.cupForVariant);
+    assert.match(await page.locator('#ab-trial').innerText(), /Kop 1: [\d,]+ g · Kop 2: [\d,]+ g/);
+    assert.equal(await page.locator('#ab-reveal-btn').isDisabled(), true, 'eerst antwoorden');
+    await page.click(`[data-ab-q="preferredCup"][data-ab-a="${cup}"]`);
+    await page.click(`[data-ab-q="brighterCup"][data-ab-a="${cup}"]`);
+    await page.click('#ab-reveal-btn');
+    assert.match(await page.locator('#ab-reveal').innerText(), new RegExp(`Kop ${cup} had minder koffie .* Je vond de kop met minder koffie lekkerder`));
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_ab_trials')));
+    assert.equal(stored.length, 1);
+    assert.equal(stored[0].preferred, 'variant');
+    assert.equal(stored[0].brighter, 'variant');
+    assert.ok(stored[0].variantDose < stored[0].controlDose);
+    assert.equal(await page.locator('#ab-lighter-on').count(), 0, 'na één proef nog niets aan te zetten');
+
+    // Vier extra proeven waarin de variant wint → duidelijke uitslag → zelf aanzetten.
+    await page.evaluate(() => { for (let i = 0; i < 4; i++) abTrials.push({ id: 'x' + i, preferred: 'variant' }); saveAbTrials(); renderAbTrial(); });
+    assert.equal(await page.locator('.ab-tally').getAttribute('data-ab-verdict'), 'variant');
+    await page.click('#ab-lighter-on');
+    assert.equal(await page.evaluate(() => state.strengthAdjust), -1);
+    assert.ok(await page.evaluate(() => state.recipe.dose) < dose0, 'nu een stap minder koffie');
+    await page.click('[data-goal="balanced"]');
+    assert.equal(await page.evaluate(() => state.strengthAdjust), 0, 'ander doel → automatische stap terug');
+    assert.equal(await page.evaluate(() => state.recipe.dose), dose0);
+    await page.close();
+  });
+
   // NIEUW (audit BC-23): smaakrichting en gietstijl gescheiden, één schaal.
   test('BC-23: profielkeuze in twee groepen (smaakrichting / gietstijl), zonder percentages', async () => {
     const page = await newTrackedPage();

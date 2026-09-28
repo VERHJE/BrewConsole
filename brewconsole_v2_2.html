@@ -818,6 +818,14 @@
   .prep-cta-row .start-btn{flex:1.8;}
   .style-more-body:not([hidden]){display:block; margin-top:6px;}
   .scan-review-summary{margin:0 0 8px;}
+  .ab-trial{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px 14px; margin:10px 0 14px;}
+  .ab-trial[hidden]{display:none;}
+  .ab-title{margin:0 0 6px; font-weight:600; color:var(--copper-light); font-size:14px;}
+  .ab-text, .ab-tally, .ab-reveal{margin:4px 0 8px; font-size:12.5px; color:var(--text-dim); line-height:1.45;}
+  .ab-reveal{color:var(--text);}
+  .ab-q{margin:10px 0 4px; font-size:12px; color:var(--text-muted);}
+  .ab-q-hint{color:var(--text-faint); font-size:11px;}
+  .ab-actions{display:flex; gap:12px; align-items:center; margin-top:10px;}
   .scan-review-rows{margin:0; display:grid; gap:4px;}
   .scan-review-row{display:grid; grid-template-columns:96px 1fr; gap:8px; font-size:13px;}
   .scan-review-row dt{color:var(--text-muted); font-family:var(--font-mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; padding-top:2px;}
@@ -2346,6 +2354,8 @@
       <!-- Fase 3: optioneel doel voor deze kop. Stuurt (nog) geen receptgetal; na het proeven
            vraagt de proefkaart of het gehaald is — dat bepaalt mee of het een geslaagde kop is. -->
       <div class="prep-goal" id="prep-goal" role="group" aria-label="Doel voor deze kop"></div>
+      <!-- BC-10: blinde helder-proef (alleen bij doel "Helder & fris"). -->
+      <div class="ab-trial" id="ab-trial" hidden></div>
       <!-- Fase 4: de stap die je na je vorige kop koos ("Gebruik voor volgende kop"). -->
       <div class="prep-next-adjust" id="prep-next-adjust" hidden></div>
       <p class="technique-line" id="technique-line"></p>
@@ -6071,6 +6081,7 @@ function applyAdvice(){
   state.bypassPct = 30; // BP-2: terug naar de standaardoptie bij een nieuwe sessie
   state.bypassMoment = 'achteraf';
   state.strengthAdjust = 0; // C2: zelfde redenering — sterkte is ook een per-keer-keuze
+  state.goalLighterApplied = false; // BC-10
   state.beanId = adviceState.beanId || null;
   const baseWater = defaultWaterMlFor(state.method, state.profile);
   const factor = adviceState.batch === 'multi' ? 1.5 : 1;
@@ -8265,7 +8276,8 @@ async function exportBackup(){
     // loaders/backups die alleen dit veld kennen) — waterAlkalinity/waterDilution zijn de
     // nieuwe velden ernaast, niet ter vervanging.
     waterHardnessMgL: waterHardnessMgL,
-    waterAlkalinity: waterAlkalinity, waterDilution: waterDilution
+    waterAlkalinity: waterAlkalinity, waterDilution: waterDilution,
+    abTrials: abTrials, brightLighter: abLighterEnabled() // BC-10: blinde proeven + je eigen keuze
   };
   const json = JSON.stringify(payload, null, 2);
   const stamp = new Date().toISOString().slice(0,10);
@@ -8353,6 +8365,13 @@ function importBackupFile(file){
     // waterDilution zijn nieuwe velden (backupVersion 2, na deze wijziging) — een oudere
     // backup heeft ze simpelweg niet, en de optionele checks hieronder laten die default
     // dan gewoon staan i.p.v. te crashen op een ontbrekend veld.
+    // BC-10: blinde proeven samenvoegen op id (bestaande blijven staan).
+    if (Array.isArray(data.abTrials)){
+      const known = new Set(abTrials.map(t => t && t.id));
+      const added = data.abTrials.filter(t => t && t.id && !known.has(t.id));
+      if (added.length){ abTrials = abTrials.concat(added); saveAbTrials(); prefsMsg += `, ${added.length} blinde ${added.length === 1 ? 'proef' : 'proeven'}`; }
+    }
+    if (data.brightLighter === true && !abLighterEnabled()) setAbLighter(true);
     let waterProfileRestored = false;
     if (typeof data.waterHardnessMgL === 'number' && !isNaN(data.waterHardnessMgL)){
       waterHardnessMgL = data.waterHardnessMgL;
@@ -8809,6 +8828,34 @@ const BREW_GOALS = {
   rich:     { label: 'Rond & vol',     criterion: 'veel body en zachte zuren' }
 };
 const LATE_TASTING_MIN = 120; // later geproefd telt straks minder zwaar mee bij het leren
+
+/* NIEUW (audit BC-10 / open vraag D-1): "Helder & fris" zou volgens de Brewing Control
+   Chart (Guinard e.a. 2023) eerder om een lagere STERKTE vragen dan om minder extractie.
+   Dat verandert elk recept, dus eerst blind proeven op je eigen bonen: controle = het
+   recept zoals het is, variant = één sterktestap lager (~8% minder koffie, zelfde maling
+   en water). Pas als de variant duidelijk wint, kun je hem zelf aanzetten — nooit vanzelf. */
+const AB_TRIALS_KEY = 'brewconsole_ab_trials';
+const AB_LIGHTER_KEY = 'brewconsole_bright_lighter';
+const AB_MIN_TRIALS = 5;
+const AB_WIN_SHARE = 0.7;
+function abArmForAnswer(answer, cupForVariant){
+  if (answer === 'none') return 'none';
+  if (answer == null) return null;
+  return Number(answer) === cupForVariant ? 'variant' : 'control';
+}
+function abTrialVerdict(trials){
+  const done = (trials || []).filter(t => t && t.preferred);
+  const variant = done.filter(t => t.preferred === 'variant').length;
+  const control = done.filter(t => t.preferred === 'control').length;
+  const ties = done.filter(t => t.preferred === 'none').length;
+  const decided = variant + control;
+  let verdict;
+  if (done.length < AB_MIN_TRIALS) verdict = 'insufficient';
+  else if (decided && variant / decided >= AB_WIN_SHARE && variant >= 4) verdict = 'variant';
+  else if (decided && control / decided >= AB_WIN_SHARE && control >= 4) verdict = 'control';
+  else verdict = 'unclear';
+  return { n: done.length, variant, control, ties, verdict, needed: Math.max(0, AB_MIN_TRIALS - done.length) };
+}
 
 function toggleFinish(list, v){
   const cur = Array.isArray(list) ? list.slice() : [];
@@ -11231,6 +11278,99 @@ function selectPrepGoal(k){
   const bean = state.beanId ? beanLibrary.find(b => b.id === state.beanId) : null;
   if (bean){ bean.goal = state.goal; saveBeansToStorage(); }
   renderPrepGoal();
+  if (state.method && state.roast && state.profile) renderPrep(); // BC-10: proefkaart en eventuele helder-stap volgen het doel
+}
+
+/* ---- BC-10: blinde helder-proef ---- */
+let abTrials = [];
+let abOpenTrial = null;   // lopende proef (nog niet onthuld)
+let abLastReveal = null;  // tekst na onthullen, tot de volgende render van een andere proef
+function loadAbTrials(){
+  try { const raw = localStorage.getItem(AB_TRIALS_KEY); const v = raw ? JSON.parse(raw) : []; abTrials = Array.isArray(v) ? v : []; } catch(e){ abTrials = []; }
+}
+function saveAbTrials(){ try { localStorage.setItem(AB_TRIALS_KEY, JSON.stringify(abTrials)); } catch(e){} }
+function abLighterEnabled(){ try { return localStorage.getItem(AB_LIGHTER_KEY) === '1'; } catch(e){ return false; } }
+function setAbLighter(on){ try { if (on) localStorage.setItem(AB_LIGHTER_KEY, '1'); else localStorage.removeItem(AB_LIGHTER_KEY); } catch(e){} }
+// De opt-in-stap: bij Helder & fris één sterktestap lager, één keer per keuze (daarna kun je
+// gewoon zelf weer "Standaard" kiezen). Een ander doel draait de automatisch gezette stap terug.
+function applyGoalStrengthPreference(){
+  if (state.goal === 'bright' && abLighterEnabled()){
+    if (!state.goalLighterApplied && (state.strengthAdjust || 0) === 0){ state.strengthAdjust = -1; state.goalLighterApplied = true; }
+  } else if (state.goalLighterApplied){
+    if (state.strengthAdjust === -1) state.strengthAdjust = 0;
+    state.goalLighterApplied = false;
+  }
+}
+function abDosesForState(){
+  const args = [state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL];
+  const control = computeRecipe(...args, 0, state.bypassPct);
+  const variant = computeRecipe(...args, -1, state.bypassPct);
+  return { control, variant };
+}
+function renderAbTrial(){
+  const el = document.getElementById('ab-trial');
+  if (!el) return;
+  if (state.goal !== 'bright' || !state.recipe || !(state.recipe.dose > 0)){ el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  const v = abTrialVerdict(abTrials);
+  const tally = v.n ? `${v.n} ${v.n === 1 ? 'proef' : 'proeven'}: ${v.variant}× minder koffie lekkerder, ${v.control}× het gewone recept, ${v.ties}× geen verschil.` : 'Nog geen proeven gedaan.';
+  let body;
+  if (abOpenTrial){
+    const t = abOpenTrial;
+    const dose = (cup) => fmt(cup === t.cupForVariant ? t.variantDose : t.controlDose, 1);
+    const q = (key, label) => `<p class="ab-q">${label} <span class="ab-q-hint">(het nummer onder de kop)</span></p><div class="chip-row">${['1','2','none'].map(a => `<button type="button" class="chip" data-ab-q="${key}" data-ab-a="${a}" data-selected="${t[key] === a}">${a === 'none' ? 'Geen verschil' : 'Kop ' + a}</button>`).join('')}</div>`;
+    body = `<p class="ab-text">Kop 1: <b>${dose(1)} g</b> · Kop 2: <b>${dose(2)} g</b> — verder precies hetzelfde (maling, water, schema). Zet het kopnummer op een stickertje <b>onder</b> elke kop, schuif de koppen door elkaar (of laat iemand anders dat doen) en proef zonder te kijken. Kijk pas daarna onder de kop welk nummer het was.</p>
+      ${q('preferredCup', 'Welke vond je lekkerder?')}
+      ${q('brighterCup', 'Welke was helderder / fruitiger?')}
+      <div class="ab-actions"><button type="button" class="advisor-primary" id="ab-reveal-btn"${t.preferredCup ? '' : ' disabled'}>Onthullen en opslaan</button>
+      <button type="button" class="link-secondary" id="ab-cancel-btn">Annuleren</button></div>`;
+  } else {
+    const { control, variant } = abDosesForState();
+    const possible = variant.dose > 0 && Math.abs(variant.dose - control.dose) >= 0.15;
+    const on = abLighterEnabled();
+    body = `<p class="ab-text">Zet twee koppen met deze boon, vlak na elkaar: zelfde maling, zelfde water. Eén kop krijgt ~8% minder koffie. Doordat je de koppen door elkaar schuift, weet je tijdens het proeven niet welke het is.</p>
+      ${abLastReveal ? `<p class="ab-reveal" id="ab-reveal">${escapeHtml(abLastReveal)}</p>` : ''}
+      <p class="ab-tally" data-ab-verdict="${v.verdict}">${escapeHtml(tally)} ${v.verdict === 'insufficient' ? `Nog ${v.needed} tot een oordeel.` : v.verdict === 'variant' ? 'Minder koffie wint duidelijk.' : v.verdict === 'control' ? 'Het gewone recept wint — niets veranderen.' : 'Geen duidelijke winnaar — niets veranderen.'}</p>
+      ${possible ? `<button type="button" class="advisor-link" id="ab-start-btn">Start een proef</button>` : `<p class="ab-text">Bij dit watervolume zit de dosis al aan de rand van het bereik — een stap minder koffie kan hier niet.</p>`}
+      ${on ? `<p class="ab-text">Staat aan: bij Helder &amp; fris zet je een stap zwakker. <button type="button" class="link-secondary" id="ab-lighter-off">Uitzetten</button></p>`
+        : v.verdict === 'variant' ? `<button type="button" class="advisor-primary" id="ab-lighter-on">Voortaan bij Helder &amp; fris een stap zwakker</button>` : ''}`;
+  }
+  el.innerHTML = `<p class="ab-title">Blinde proef: smaakt helder beter met minder koffie?</p>${body}`;
+}
+function handleAbTrialClick(e){
+  const btn = e.target.closest('button');
+  if (!btn || btn.disabled) return;
+  if (btn.id === 'ab-start-btn'){
+    const { control, variant } = abDosesForState();
+    abOpenTrial = { id: 'ab_' + Date.now(), createdAt: Date.now(), beanId: state.beanId || null, method: state.method, profile: state.profile, roast: state.roast, waterMl: state.waterMl,
+      controlDose: control.dose, variantDose: variant.dose, cupForVariant: Math.random() < 0.5 ? 1 : 2, preferredCup: null, brighterCup: null };
+    abLastReveal = null;
+  } else if (btn.dataset.abQ && abOpenTrial){
+    abOpenTrial[btn.dataset.abQ] = btn.dataset.abA;
+  } else if (btn.id === 'ab-cancel-btn'){
+    abOpenTrial = null;
+  } else if (btn.id === 'ab-reveal-btn' && abOpenTrial && abOpenTrial.preferredCup){
+    const t = abOpenTrial;
+    const rec = { id: t.id, createdAt: t.createdAt, beanId: t.beanId, method: t.method, profile: t.profile, roast: t.roast, waterMl: t.waterMl,
+      controlDose: t.controlDose, variantDose: t.variantDose, cupForVariant: t.cupForVariant,
+      preferred: abArmForAnswer(t.preferredCup, t.cupForVariant), brighter: abArmForAnswer(t.brighterCup, t.cupForVariant) };
+    abTrials.push(rec);
+    saveAbTrials();
+    const pick = rec.preferred === 'variant' ? 'de kop met minder koffie' : rec.preferred === 'control' ? 'het gewone recept' : 'geen van beide';
+    abLastReveal = `Kop ${t.cupForVariant} had minder koffie (${fmt(t.variantDose, 1)} g). Je vond ${pick} lekkerder.`;
+    abOpenTrial = null;
+  } else if (btn.id === 'ab-lighter-on'){
+    setAbLighter(true);
+    applyGoalStrengthPreference();
+    renderPrep();
+    return;
+  } else if (btn.id === 'ab-lighter-off'){
+    setAbLighter(false);
+    applyGoalStrengthPreference();
+    renderPrep();
+    return;
+  } else return;
+  renderAbTrial();
 }
 /* ---- Fase 4: advies koppelen aan de flow ---- */
 // De stap die klaarstaat voor de volgende kop met deze boon (+ methode).
@@ -11391,6 +11531,7 @@ function cancelPendingAdjust(){
 }
 function renderPrep(){
   const m = METHOD_INFO[state.method], r = ROAST_INFO[state.roast], p = PROFILE_INFO[state.profile];
+  applyGoalStrengthPreference(); // BC-10: alleen als je dat zelf aanzette na je blinde proeven
   state.recipe = computeRecipe(state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL, state.strengthAdjust, state.bypassPct);
   const rec = state.recipe;
 
@@ -11415,6 +11556,7 @@ function renderPrep(){
     beanLineEl.dataset.linked = activeBean ? 'true' : 'false';
   }
   renderPrepGoal();
+  renderAbTrial(); // BC-10
   renderPrepNextAdjust(); // Fase 4
 
   document.getElementById('technique-line').textContent = `${rec.technique} · ${rec.author}`;
@@ -12040,6 +12182,7 @@ function selectMethod(key){
   state.bypassPct = 30;
   state.bypassMoment = 'achteraf';
   state.strengthAdjust = 0;
+  state.goalLighterApplied = false; // BC-10
   renderMethodGrid();
   showScreen('roast');
   renderRoastGrid();
@@ -12955,6 +13098,7 @@ document.getElementById('reset-btn').addEventListener('click', confirmResetTimer
 document.getElementById('bed-dry-btn').addEventListener('click', tapBedDry);
 // Fase 3: proefkaart + doel op het receptscherm (event-delegatie: de inhoud wordt opnieuw opgebouwd).
 document.getElementById('tasting-card').addEventListener('click', handleTastingCardClick);
+document.getElementById('ab-trial').addEventListener('click', handleAbTrialClick); // BC-10
 // Fase 4: advies-paneel + klaargezette stap op het receptscherm.
 document.getElementById('reco-card').addEventListener('click', handleRecommendationClick);
 document.getElementById('prep-next-adjust').addEventListener('click', (e)=>{
@@ -13133,6 +13277,7 @@ function registerOfflineServiceWorker(){
    ============================================================ */
 loadTheme();
 loadWaterHardness();
+loadAbTrials(); // BC-10
 renderWaterHardnessInput(); // BC-24: de velden staan nu ook buiten het receptscherm (Instellingen)
 renderMethodGrid();
 renderRoastGrid();
@@ -13190,6 +13335,8 @@ function resetAppData(){
       localStorage.removeItem(BREW_LOG_KEY);
       localStorage.removeItem(BREW_STORE_KEY);
       localStorage.removeItem(ACTIVE_BREW_KEY);
+      localStorage.removeItem(AB_TRIALS_KEY);   // BC-10: proeven zijn data, net als brouwsels
+      localStorage.removeItem(AB_LIGHTER_KEY);
     } catch(e){ /* storage niet beschikbaar — er is dan toch niets blijvends om te wissen */ }
     location.reload();
   });
