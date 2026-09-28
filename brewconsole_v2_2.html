@@ -6736,6 +6736,87 @@ function matchKind(text, tokens, keyword){
   return null;
 }
 
+/* Phase 0 / BC-06 (audit: valse smaaktags uit tekstherkenning). Smaaknotities werden
+   gematcht met een kale substring-test plus de algemene tikfouttolerantie van
+   textOrFuzzyIncludes(). Voor korte smaakwoorden is dat veel te ruim: "light roast" gaf
+   Geroosterd (roasted ~ roast), "grapefruit" gaf ook Druif, "tastes like" gaf Limoen
+   (lime ~ like), "appearance" gaf Peer, "plus" gaf Pruim, "honey process" gaf Honing.
+   Deze matcher geldt ALLEEN voor smaaktags (OCR-scan + vrije tekst in classifyProfile);
+   branddiepte/proces/land/variëteit houden bewust hun eigen, apart geteste matching.
+   Regels:
+   1. Eerst context-frasen wegpoetsen die geen smaak zijn (branddiepte, "roasted on",
+      roasters, honey-proces) — zie FLAVOR_CONTEXT_STRIP_PATTERNS.
+   2. Een trefwoord moet aan het begin van een woord staan en als heel woord eindigen,
+      met alleen een meervouds-/buigingsuitgang erachter (plums, cherries, perziken,
+      geroosterde). Dus "grapefruit" is geen "grape" en "sublime" geen "lime".
+   3. Overlap: de langste treffer wint ("milk chocolate" telt als Melkchocolade, niet
+      óók als Chocolade).
+   4. Tikfouttolerantie alleen voor losse woorden van 7+ letters (7-9: 1 letter, 10+: 2),
+      en nooit op een woord dat al exact als smaak herkend is. */
+const FLAVOR_CONTEXT_STRIP_PATTERNS = [
+  /(?:extra[- ]?)?(?:light|medium|dark|city|full[- ]city|french|italian|vienna|filter|espresso|omni)(?:[- ](?:to[- ])?(?:light|medium|dark))?[- ]?roast(?:ed|ing)?(?![a-zà-öø-ÿ])/g,
+  /roast(?:ed|ing)?[- ](?:on|by|in|at|date|level|profile|degree)(?![a-zà-öø-ÿ])/g,
+  /(?<![a-zà-öø-ÿ])roast(?:er|ers|ery|eries)(?![a-zà-öø-ÿ])/g,
+  /(?:licht|lichte|medium|middel|donker|donkere)[- ]?(?:gebrand|gebrande|branding|geroosterd|geroosterde)(?![a-zà-öø-ÿ])/g,
+  /(?:gebrand|geroosterd) op(?![a-zà-öø-ÿ])/g,
+  /(?:(?:white|yellow|golden|red|black|double|hydro)[- ])?honey[- ](?:process(?:ed)?|method)(?![a-zà-öø-ÿ])/g,
+  /(?:white|yellow|golden|red|black|double|hydro)[- ]honey(?![a-zà-öø-ÿ])/g
+];
+function stripFlavorContextPhrases(text){
+  return FLAVOR_CONTEXT_STRIP_PATTERNS.reduce((t, re) => t.replace(re, m => ' '.repeat(m.length)), text);
+}
+function escapeForRegExp(str){
+  return str.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
+}
+function flavorKeywordSpans(text, keyword){
+  const variants = [keyword, keyword + 's', keyword + 'es', keyword + 'en', keyword + 'n', keyword + 'e'];
+  if (keyword.endsWith('y')) variants.push(keyword.slice(0, -1) + 'ies');
+  const alt = variants.sort((a, b) => b.length - a.length).map(escapeForRegExp).join('|');
+  const re = new RegExp(`(^|[^a-zà-öø-ÿ])(${alt})(?![a-zà-öø-ÿ])`, 'g');
+  const spans = [];
+  let m;
+  while ((m = re.exec(text))){
+    const start = m.index + m[1].length;
+    spans.push({ start, end: start + m[2].length });
+    re.lastIndex = start + m[2].length;
+  }
+  return spans;
+}
+function flavorFuzzyDistance(len){
+  if (len <= 6) return 0;
+  if (len <= 9) return 1;
+  return 2;
+}
+// Geeft de set herkende smaaktags terug voor een (al lowercase) tekst. opts.fuzzy zet de
+// tikfouttolerantie aan (OCR-scan); classifyProfile() gebruikt alleen exacte treffers.
+function scanFlavorTagsInText(lowerText, opts){
+  const fuzzy = !!(opts && opts.fuzzy);
+  const text = stripFlavorContextPhrases(lowerText || '');
+  const candidates = []; // { keyword, tag }
+  Object.keys(FLAVOR_TAG_HINTS).forEach(tag => candidates.push({ keyword: tag.toLowerCase(), tag }));
+  Object.keys(FLAVOR_SCAN_SYNONYMS).forEach(kw => candidates.push({ keyword: kw, tag: FLAVOR_SCAN_SYNONYMS[kw] }));
+  const hits = [];
+  candidates.forEach(c => flavorKeywordSpans(text, c.keyword).forEach(sp => hits.push({ tag: c.tag, start: sp.start, end: sp.end })));
+  const kept = hits.filter(h => !hits.some(o => (o.end - o.start) > (h.end - h.start) && o.start <= h.start && o.end >= h.end));
+  const tags = new Set(kept.map(h => h.tag));
+  if (fuzzy){
+    const tokenRe = /[a-zà-öø-ÿ]+/g;
+    const freeTokens = [];
+    let m;
+    while ((m = tokenRe.exec(text))){
+      const start = m.index, end = start + m[0].length;
+      if (!kept.some(h => h.start < end && h.end > start)) freeTokens.push(m[0]);
+    }
+    candidates.forEach(c => {
+      if (tags.has(c.tag) || /[^a-zà-öø-ÿ]/.test(c.keyword)) return;
+      const maxDist = flavorFuzzyDistance(c.keyword.length);
+      if (maxDist === 0) return;
+      if (freeTokens.some(tok => Math.abs(tok.length - c.keyword.length) <= maxDist && levenshtein(tok, c.keyword) <= maxDist)) tags.add(c.tag);
+    });
+  }
+  return tags;
+}
+
 /* Herkent roast/proces/land/smaaknotities in vrije tekst (OCR of geplakt)
    en past het bonenformulier daarop aan. Vult nooit stilletjes zonder
    overzicht — roept altijd summariseScan() aan zodat je kan controleren
@@ -6803,14 +6884,8 @@ function applyParsedTextToForm(rawText){
     if (kind){ found.variety = VARIETY_SCAN_SYNONYMS[key]; found.varietyFuzzy = kind === 'fuzzy'; break; }
   }
   found.altitude = extractAltitudeFromText(text);
-  const tagSet = new Set();
-  Object.keys(FLAVOR_TAG_HINTS).forEach(tag=>{
-    if (textOrFuzzyIncludes(text, tokens, tag.toLowerCase())) tagSet.add(tag);
-  });
-  Object.keys(FLAVOR_SCAN_SYNONYMS).forEach(en=>{
-    if (textOrFuzzyIncludes(text, tokens, en)) tagSet.add(FLAVOR_SCAN_SYNONYMS[en]);
-  });
-  found.tags = Array.from(tagSet);
+  // BC-06: eigen, strengere smaakmatcher — zie scanFlavorTagsInText().
+  found.tags = Array.from(scanFlavorTagsInText(text, { fuzzy: true }));
 
   // Eerste korte regel als naamsuggestie — alleen als het naamveld nog leeg is.
   const nameEl = document.getElementById('f-name');
@@ -6981,13 +7056,10 @@ function classifyProfile(selectedTags, extraText, processValue, experimentalFlag
      past hetzelfde patroon toe op de eigen vrije tekst van classifyProfile(). Tags die al
      via selectedTags zijn aangevinkt tellen hier bewust niet nogmaals mee (voorkomt dubbel
      tellen van hetzelfde signaal). */
+  // BC-06: zelfde strengere smaakmatcher als de OCR-scan (zonder tikfouttolerantie).
   const matchedFreeTextTags = new Set();
-  Object.keys(FLAVOR_TAG_HINTS).forEach(tag=>{
-    if (!(selectedTags || []).includes(tag) && lowerExtra.includes(tag.toLowerCase())) matchedFreeTextTags.add(tag);
-  });
-  Object.keys(FLAVOR_SCAN_SYNONYMS).forEach(syn=>{
-    const tag = FLAVOR_SCAN_SYNONYMS[syn];
-    if (!(selectedTags || []).includes(tag) && lowerExtra.includes(syn)) matchedFreeTextTags.add(tag);
+  scanFlavorTagsInText(lowerExtra, { fuzzy: false }).forEach(tag=>{
+    if (!(selectedTags || []).includes(tag)) matchedFreeTextTags.add(tag);
   });
   matchedFreeTextTags.forEach(tag=>{
     const hint = FLAVOR_TAG_HINTS[tag];

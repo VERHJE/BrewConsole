@@ -1882,7 +1882,10 @@ describe('Smaakwiel-uitbreiding — nieuwe tags o.b.v. echte, gebruikersaangelev
   // losstaande FLAVOR_TAG_HINTS-invoer.
   test('"Raspberry, Strawberry, Violet" (echte tasting note) matcht Viooltje via vrije tekst', () => {
     const cls = api.classifyProfile([], 'Raspberry, Strawberry, Violet', null, false);
-    assert.equal(cls.scores.heel_fruitig, 3, 'Framboos + Aardbei + Zure aromatiek(?) — in elk geval Viooltje telt niet mee in heel_fruitig');
+    // BIJGEWERKT (Phase 0 / BC-06): was 3 — de derde punt kwam van "berry" als substring
+    // midden in rasp-BERRY/straw-BERRY (Bessen (algemeen)), een dubbeltelling van dezelfde
+    // twee noten. Sinds de woordgrens-regel tellen alleen Framboos + Aardbei.
+    assert.equal(cls.scores.heel_fruitig, 2, 'Framboos + Aardbei — "berry" binnen raspberry/strawberry telt niet nog eens als Bessen');
     assert.equal(cls.scores.fresh_clean, 1, 'Violet → Viooltje → fresh_clean');
   });
 
@@ -2029,5 +2032,62 @@ describe('Proces-heraudit ronde 2 — Double Washed / Dubbele Anaerobe Fermentat
     assert.equal(scanMatches(api.EXPERIMENTAL_SCAN_KEYWORDS, 'Double Honey Fermentation'), true);
     assert.equal(processMatch('Hydro-Honey Processed'), 'honey');
     assert.equal(scanMatches(api.EXPERIMENTAL_SCAN_KEYWORDS, 'Hydro-Honey Processed'), true);
+  });
+});
+
+// NIEUW (Phase 0 / BC-06 — audit: valse smaaktags uit tekstherkenning). Zie
+// scanFlavorTagsInText() in de app voor de vier regels. Elke "niet"-rij hieronder was vóór
+// deze fix een echte, gemeten valse tag.
+describe('BC-06: smaaktags uit tekst — geen valse treffers meer', () => {
+  const scan = (text, fuzzy = true) => [...api.scanFlavorTagsInText(text.toLowerCase(), { fuzzy })];
+  const cases = [
+    // [tekst, moet bevatten, mag niet bevatten]
+    ['Ethiopia Guji — Light roast. Jasmine, peach.', ['Jasmijn', 'Perzik'], ['Geroosterd']],
+    ['Roasted on 2024-05-01 by Friedhats Roasters. Filter roast.', [], ['Geroosterd']],
+    ['Roast date 12/03. Roasted in Amsterdam.', [], ['Geroosterd', 'Dadel']],
+    ['Medium-dark roast. Roasted almond.', ['Geroosterd', 'Amandel'], []],
+    ['Chocolade, geroosterde hazelnoot', ['Geroosterd', 'Hazelnoot', 'Chocolade'], ['Roos']],
+    ['grapefruit, bergamot', ['Grapefruit', 'Bergamot'], ['Druif']],
+    ['red grapes', ['Druif'], ['Grapefruit']],
+    ['tastes like chocolate, a sublime cup', ['Chocolade'], ['Limoen']],
+    ['lime, lemongrass', ['Limoen', 'Citroengras'], ['Citroen']],
+    ['great appearance this year', [], ['Peer']],
+    ['pear', ['Peer'], []],
+    ['harvest data, plus lots of fig', ['Vijg'], ['Pruim', 'Dadel']],
+    ['plums, cherries and dates', ['Pruim', 'Kers', 'Dadel'], []],
+    ['Colombia honey process. Red apple.', ['Appel'], ['Honing']],
+    ['Yellow honey. Apricot, honey.', ['Abrikoos', 'Honing'], []],
+    ['Milk chocolate, caramel', ['Melkchocolade'], ['Chocolade']],
+    ['Rosehip, cane sugar', ['Rozenbottel', 'Rietsuiker'], ['Roos']],
+    ['proeft naar kiwi en perziken', ['Kiwi', 'Perzik'], []]
+  ];
+  for (const [text, must, mustNot] of cases){
+    test(`"${text}"`, () => {
+      const tags = scan(text);
+      for (const t of must) assert.ok(tags.includes(t), `verwachtte ${t} in ${JSON.stringify(tags)}`);
+      for (const t of mustNot) assert.ok(!tags.includes(t), `${t} is een valse tag in ${JSON.stringify(tags)}`);
+    });
+  }
+
+  test('tikfouttolerantie: alleen woorden van 7+ letters (7-9: 1 letter, 10+: 2), korte woorden nooit', () => {
+    assert.equal(api.flavorFuzzyDistance(4), 0);
+    assert.equal(api.flavorFuzzyDistance(6), 0);
+    assert.equal(api.flavorFuzzyDistance(7), 1);
+    assert.equal(api.flavorFuzzyDistance(9), 1);
+    assert.equal(api.flavorFuzzyDistance(10), 2);
+    assert.ok(scan('raspbery').includes('Framboos'), 'OCR-tikfout in een lang woord wordt nog steeds herkend');
+    assert.ok(!scan('raspbery', false).includes('Framboos'), 'zonder fuzzy-optie (vrije tekst) geen tikfouttolerantie');
+    assert.ok(!scan('tastes like').includes('Limoen'), 'lime ~ like: te kort voor tikfouttolerantie');
+    assert.ok(!scan('roaster').includes('Geroosterd'), 'roaster is geen smaak');
+  });
+
+  test('de algemene matcher voor branddiepte/proces/land blijft ongewijzigd (OCR-hardening P3)', () => {
+    assert.equal(api.maxFuzzyDistance(4), 1);
+    assert.equal(api.maxFuzzyDistance(7), 2);
+  });
+
+  test('classifyProfile: "light roast" in vrije tekst geeft geen body-/vol_rond-punt meer', () => {
+    const cls = api.classifyProfile([], 'Roasted on 2024-05-01 by Friedhats Roasters. Filter roast.', null, false);
+    assert.deepEqual(Object.values(cls.scores), [0, 0, 0, 0, 0]);
   });
 });
