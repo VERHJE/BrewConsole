@@ -2180,6 +2180,55 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
+  // NIEUW (na de update-controle): de oude versie koppelde brouwsels via het advies soms aan
+  // geen of de verkeerde boon. Na de migratie kun je die nakijken; niets verandert vanzelf.
+  test('Oude brouwsels nakijken: verdachte gemigreerde brouwsels koppelen, ongedaan maken, "Klopt zo"', async () => {
+    const page = await newTrackedPage();
+    const day = 86400000, now = Date.now();
+    const beans = [
+      { id:'bean-eth', name:'Ethiopia Guji', roastLevel:'light', profileKey:'fruitig_clean', process:'washed', flavorNotes:[], addedAt: now - 30 * day, doseUsedG:0 },
+      { id:'bean-bra', name:'Brazil Cerrado', roastLevel:'medium', profileKey:'klassiek', process:'natural', flavorNotes:[], addedAt: now - 30 * day, doseUsedG:0 }
+    ];
+    const entry = (id, beanId, roast, snapRoast, note, t) => ({ id, schemaVersion: 5, timestamp: now - t * day, beanId, method:'v60', profile:'klassiek', roast, waterMl:300,
+      scores:{}, note, approved:true, beanSnapshot: snapRoast ? { roastLevel: snapRoast, process: 'natural', intendedUse: null, roastDate: null } : null });
+    const legacy = [
+      entry('log_a', '', 'light', null, 'geen boon', 3),
+      entry('log_b', 'bean-bra', 'light', 'medium', 'verkeerde boon', 2),
+      entry('log_c', 'bean-bra', 'medium', 'medium', 'klopt', 1)
+    ];
+    await page.addInitScript(([b, l]) => { if (sessionStorage.getItem('lr')) return; sessionStorage.setItem('lr', '1');
+      localStorage.setItem('brewconsole_beans', JSON.stringify(b)); localStorage.setItem('brewConsoleLog', JSON.stringify(l)); }, [beans, legacy]);
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.click('.navbar [data-nav="brewlog-history"]');
+    const box = page.locator('#legacy-review');
+    assert.equal(await box.isVisible(), true);
+    assert.match(await box.innerText(), /2 oude brouwsels om na te kijken/);
+    await page.click('#legacy-review-toggle');
+    const items = box.locator('.legacy-review-item');
+    assert.equal(await items.count(), 2);
+    const itemA = box.locator('[data-lr-id="log_a"]');
+    assert.match(await itemA.innerText(), /Zonder boon opgeslagen/);
+    assert.equal(await itemA.locator('select').inputValue(), 'bean-eth', 'voorstel: de enige lichte boon');
+    assert.match(await box.locator('[data-lr-id="log_b"]').innerText(), /Gebrand als Light, maar gekoppeld aan Brazil Cerrado \(Medium\) — mogelijk de verkeerde boon/);
+
+    await itemA.locator('[data-lr-save]').click();
+    let rec = await page.evaluate(() => { const r = getBrewRecord('log_a'); const v = brewLog.find(e => e.id === 'log_a'); return { bean: r.beanId, snap: r.beanSnapshot && r.beanSnapshot.roastLevel, reviewed: !!r.reviewedAt, viewBean: v.beanId, viewSnap: v.beanSnapshot && v.beanSnapshot.roastLevel }; });
+    assert.deepEqual(rec, { bean: 'bean-eth', snap: 'light', reviewed: true, viewBean: 'bean-eth', viewSnap: 'light' });
+    assert.match(await box.innerText(), /1 oud brouwsel om na te kijken/);
+    assert.match(await page.locator('#undo-bar').innerText(), /Gekoppeld aan Ethiopia Guji/);
+    await page.click('#undo-bar-btn');
+    rec = await page.evaluate(() => { const r = getBrewRecord('log_a'); return { bean: r.beanId, reviewed: !!r.reviewedAt }; });
+    assert.deepEqual(rec, { bean: null, reviewed: false }, 'ongedaan maken zet alles terug');
+    assert.match(await box.innerText(), /2 oude brouwsels om na te kijken/);
+
+    await box.locator('[data-lr-id="log_b"] [data-lr-ok]').click();
+    await itemA.locator('[data-lr-save]').click();
+    assert.equal(await box.isVisible(), false, 'alles nagekeken → melding weg');
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_brews')).map(r => [r.id, r.beanId, !!r.reviewedAt]));
+    assert.deepEqual(stored.sort(), [['log_a', 'bean-eth', true], ['log_b', 'bean-bra', true], ['log_c', 'bean-bra', false]]);
+    await page.close();
+  });
+
   // NIEUW (audit BC-10): blinde helder-proef; het recept verandert alleen als je dat na een
   // duidelijke uitslag zelf aanzet.
   test('BC-10: blinde proef bij Helder & fris — onthullen, opslaan, en pas na een duidelijke uitslag zelf aanzetten', async () => {

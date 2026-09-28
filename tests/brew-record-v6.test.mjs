@@ -758,3 +758,51 @@ describe('BC-10 — blinde helder-proef: oordeel', () => {
     assert.equal(v.n, 1);
   });
 });
+
+describe('Oude brouwsels nakijken — welke gemigreerde brouwsels zijn verdacht', () => {
+  const BEANS = [
+    { id: 'eth', name: 'Ethiopia', roastLevel: 'light', addedAt: T0 - 10 * 86400000 },
+    { id: 'bra', name: 'Brazil', roastLevel: 'medium', addedAt: T0 - 10 * 86400000 },
+    { id: 'new', name: 'Later gekocht', roastLevel: 'light', addedAt: T0 + 30 * 86400000 }
+  ];
+  const legacyRec = (id, beanId, roastId, extra = {}) => Object.assign({
+    id, lifecycle: 'logged', createdAt: T0, beanId, beanSnapshot: null, plan: { roastId }, legacy: { entry: {} }
+  }, extra);
+
+  test('zonder boon → verdacht, met de enige passende boon (die toen al bestond) als voorstel', () => {
+    const s = j(api.legacyBrewSuspects([legacyRec('a', null, 'light')], BEANS));
+    assert.equal(s.length, 1);
+    assert.equal(s[0].reason, 'no_bean');
+    assert.deepEqual(s[0].candidates, ['eth'], 'de later gekochte boon kan het niet zijn geweest');
+    assert.equal(s[0].suggested, 'eth');
+  });
+  test('branding past niet bij de gekoppelde boon (snapshot of huidige boon) → verdacht', () => {
+    const viaSnap = legacyRec('b', 'bra', 'light', { beanSnapshot: { roastLevel: 'medium' } });
+    const viaBean = legacyRec('c', 'bra', 'light');
+    const s = j(api.legacyBrewSuspects([viaSnap, viaBean], BEANS));
+    assert.deepEqual(s.map(x => x.reason), ['roast_mismatch', 'roast_mismatch']);
+    assert.equal(s[0].suggested, 'eth');
+  });
+  test('klopt, nieuw, verwijderd of al nagekeken → niet verdacht', () => {
+    const store = [
+      legacyRec('ok', 'eth', 'light'),
+      Object.assign(legacyRec('fresh', null, 'light'), { legacy: undefined }),
+      legacyRec('del', null, 'light', { deletedAt: T0 }),
+      legacyRec('rev', null, 'light', { reviewedAt: T0 }),
+      legacyRec('abandoned', null, 'light', { lifecycle: 'abandoned' }),
+      legacyRec('gone', 'weg', 'light')
+    ];
+    assert.deepEqual(j(api.legacyBrewSuspects(store, BEANS)), []);
+  });
+  test('meerdere passende bonen → geen voorstel, wel kandidaten', () => {
+    const beans = BEANS.concat([{ id: 'ken', name: 'Kenya', roastLevel: 'light', addedAt: T0 - 86400000 }]);
+    const s = j(api.legacyBrewSuspects([legacyRec('a', null, 'light')], beans));
+    assert.deepEqual(s[0].candidates.sort(), ['eth', 'ken']);
+    assert.equal(s[0].suggested, null);
+  });
+  test('beanSnapshotOf neemt precies de velden van een nieuw record over', () => {
+    assert.deepEqual(j(api.beanSnapshotOf({ id: 'x', name: 'X', process: 'washed', roastLevel: 'light', roastDate: '2026-09-01', extra: 1 })),
+      { process: 'washed', intendedUse: null, roastLevel: 'light', roastDate: '2026-09-01' });
+    assert.equal(api.beanSnapshotOf(null), null);
+  });
+});
