@@ -2187,9 +2187,9 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     const day = 86400000, now = Date.now();
     const beans = [
       { id:'bean-eth', name:'Ethiopia Guji', roastLevel:'light', profileKey:'fruitig_clean', process:'washed', flavorNotes:[], addedAt: now - 30 * day, doseUsedG:0 },
-      { id:'bean-bra', name:'Brazil Cerrado', roastLevel:'medium', profileKey:'klassiek', process:'natural', flavorNotes:[], addedAt: now - 30 * day, doseUsedG:0 }
+      { id:'bean-bra', name:'Brazil Cerrado', roastLevel:'medium', profileKey:'klassiek', process:'natural', flavorNotes:[], addedAt: now - 30 * day, doseUsedG:36, bagSizeG:250 }
     ];
-    const entry = (id, beanId, roast, snapRoast, note, t) => ({ id, schemaVersion: 5, timestamp: now - t * day, beanId, method:'v60', profile:'klassiek', roast, waterMl:300,
+    const entry = (id, beanId, roast, snapRoast, note, t) => ({ id, schemaVersion: 5, timestamp: now - t * day, beanId, method:'v60', profile:'klassiek', roast, waterMl:300, doseG:18,
       scores:{}, note, approved:true, beanSnapshot: snapRoast ? { roastLevel: snapRoast, process: 'natural', intendedUse: null, roastDate: null } : null });
     const legacy = [
       entry('log_a', '', 'light', null, 'geen boon', 3),
@@ -2221,11 +2221,48 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     assert.deepEqual(rec, { bean: null, reviewed: false }, 'ongedaan maken zet alles terug');
     assert.match(await box.innerText(), /2 oude brouwsels om na te kijken/);
 
+    // Voorraadcorrectie: de oude versie schreef log_b af van Brazil; opnieuw koppelen aan
+    // Ethiopia verplaatst die 18 g. Ongedaan maken zet beide zakken exact terug.
+    const usage = () => page.evaluate(() => Object.fromEntries(beanLibrary.map(b => [b.id, b.doseUsedG])));
+    assert.deepEqual(await usage(), { 'bean-eth': 0, 'bean-bra': 36 }, 'log_a (zonder boon) was nergens afgeschreven; undo van log_a zette eth terug');
+    await box.locator('[data-lr-id="log_b"] select').selectOption('bean-eth');
+    await box.locator('[data-lr-id="log_b"] [data-lr-save]').click();
+    assert.deepEqual(await usage(), { 'bean-eth': 18, 'bean-bra': 18 });
+    assert.match(await page.locator('#undo-bar').innerText(), /Gekoppeld aan Ethiopia Guji\. 18\sg voorraad verplaatst van Brazil Cerrado\./);
+    assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_beans')).map(b => b.doseUsedG)), [18, 18], 'ook opgeslagen');
+    await page.click('#undo-bar-btn');
+    assert.deepEqual(await usage(), { 'bean-eth': 0, 'bean-bra': 36 });
+    assert.equal(await page.evaluate(() => 'stockBeanId' in getBrewRecord('log_b')), false);
+
     await box.locator('[data-lr-id="log_b"] [data-lr-ok]').click();
     await itemA.locator('[data-lr-save]').click();
     assert.equal(await box.isVisible(), false, 'alles nagekeken → melding weg');
     const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_brews')).map(r => [r.id, r.beanId, !!r.reviewedAt]));
     assert.deepEqual(stored.sort(), [['log_a', 'bean-eth', true], ['log_b', 'bean-bra', true], ['log_c', 'bean-bra', false]]);
+    assert.deepEqual(await usage(), { 'bean-eth': 18, 'bean-bra': 36 }, 'log_a nu bij Ethiopia afgeschreven; "Klopt zo" verandert niets');
+    await page.close();
+  });
+
+  test('Oude brouwsels nakijken: al opnieuw gekoppeld vóór de voorraadcorrectie → gram één keer verplaatst bij opstarten', async () => {
+    const page = await newTrackedPage();
+    const day = 86400000, now = Date.now();
+    const beans = [
+      { id:'bean-eth', name:'Ethiopia Guji', roastLevel:'light', profileKey:'fruitig_clean', process:'washed', flavorNotes:[], addedAt: now - 30 * day, doseUsedG:0 },
+      { id:'bean-bra', name:'Brazil Cerrado', roastLevel:'medium', profileKey:'klassiek', process:'natural', flavorNotes:[], addedAt: now - 30 * day, doseUsedG:18 }
+    ];
+    const legacy = [{ id:'log_b', schemaVersion: 5, timestamp: now - day, beanId:'bean-bra', method:'v60', profile:'klassiek', roast:'light', waterMl:300, doseG:18, scores:{}, note:'', approved:true }];
+    await page.addInitScript(([b, l]) => { if (sessionStorage.getItem('lr2')) return; sessionStorage.setItem('lr2', '1');
+      localStorage.setItem('brewconsole_beans', JSON.stringify(b)); localStorage.setItem('brewConsoleLog', JSON.stringify(l)); }, [beans, legacy]);
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    // Zoals de vorige versie het opsloeg: wel opnieuw gekoppeld, geen voorraadcorrectie.
+    await page.evaluate(() => { const r = getBrewRecord('log_b'); r.beanId = 'bean-eth'; r.beanRelinkedAt = r.reviewedAt = Date.now(); persistBrewStore(); });
+    const usage = () => page.evaluate(() => Object.fromEntries(beanLibrary.map(b => [b.id, b.doseUsedG])));
+    assert.deepEqual(await usage(), { 'bean-eth': 0, 'bean-bra': 18 });
+    await page.reload({ waitUntil: 'load' });
+    assert.deepEqual(await usage(), { 'bean-eth': 18, 'bean-bra': 0 });
+    assert.equal(await page.evaluate(() => getBrewRecord('log_b').stockBeanId), 'bean-eth');
+    await page.reload({ waitUntil: 'load' });
+    assert.deepEqual(await usage(), { 'bean-eth': 18, 'bean-bra': 0 }, 'geen tweede keer');
     await page.close();
   });
 

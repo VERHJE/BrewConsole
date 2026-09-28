@@ -602,9 +602,12 @@
   .brewlog-entry-delete{background:none; border:none; color:var(--text-faint); font-size:12px; padding:6px 0 0; cursor:pointer; text-decoration:underline;}
   .undo-bar{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(96px + env(safe-area-inset-bottom)); z-index:60;
     display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--border);
-    border-radius:var(--radius-pill); padding:10px 16px; font-size:13px; color:var(--text); box-shadow:0 6px 24px rgba(0,0,0,.35); white-space:nowrap;}
+    border-radius:18px; padding:10px 16px; font-size:13px; color:var(--text); box-shadow:0 6px 24px rgba(0,0,0,.35);
+    /* Langere meldingen (bijv. met voorraadcorrectie) lopen over twee regels i.p.v. van het scherm af. */
+    width:max-content; max-width:calc(100vw - 32px); box-sizing:border-box; line-height:1.4;}
   .undo-bar[hidden]{display:none;}
-  .undo-bar button{background:none; border:none; color:var(--copper-light); font-weight:600; cursor:pointer; font-size:13px;}
+  .undo-bar button{background:none; border:none; color:var(--copper-light); font-weight:600; cursor:pointer; font-size:13px; white-space:nowrap; flex-shrink:0;}
+
   .prep-bean-line{font-size:13px; color:var(--text-dim); margin:-4px 0 8px;}
   .prep-bean-line[data-linked="false"]{color:var(--text-faint);}
 
@@ -9272,22 +9275,76 @@ function legacyBrewSuspects(store, beans){
   }
   return out;
 }
+/* Voorraadcorrectie bij opnieuw koppelen. De oude versie schreef bij Start de dosis af van
+   de boon die het brouwsel meekreeg (state.beanId → legacy.entry.beanId, bedrag = doseG);
+   bij "zonder boon" werd niets afgeschreven. rec.stockBeanId houdt bij waar die gram nu
+   staan (undefined = nog de oorspronkelijke boon). Een boon die pas ná het brouwsel is
+   toegevoegd krijgt niets: die zak bestond toen nog niet. Nooit onder 0. */
+function legacyStockBeanId(rec){
+  if (!rec || !rec.legacy) return null;
+  if (rec.stockBeanId !== undefined) return rec.stockBeanId;
+  return (rec.legacy.entry && rec.legacy.entry.beanId) || null;
+}
+function legacyStockMove(rec, toBeanId, beans){
+  if (!rec || !rec.legacy) return null;
+  const g = rec.plan && typeof rec.plan.doseG === 'number' && rec.plan.doseG > 0 ? rec.plan.doseG : null;
+  if (g == null) return null;
+  const list = beans || [];
+  const fromId = legacyStockBeanId(rec);
+  const to = toBeanId ? list.find(b => b.id === toBeanId) : null;
+  const eligible = to && (to.addedAt == null || rec.createdAt == null || to.addedAt <= rec.createdAt + 86400000);
+  const toId = eligible ? to.id : null;
+  if (fromId === toId) return null;
+  const from = fromId ? list.find(b => b.id === fromId) : null;
+  const takeG = from ? Math.min(g, Math.max(0, from.doseUsedG || 0)) : 0;
+  return { g, fromId, toId, takeG, addG: toId ? g : 0 };
+}
+function applyLegacyStockMove(rec, move){
+  if (!move) return;
+  const round = (n) => Math.round(n * 10) / 10;
+  const from = move.fromId ? beanLibrary.find(b => b.id === move.fromId) : null;
+  const to = move.toId ? beanLibrary.find(b => b.id === move.toId) : null;
+  if (from && move.takeG) from.doseUsedG = round((from.doseUsedG || 0) - move.takeG);
+  if (to && move.addG) to.doseUsedG = round((to.doseUsedG || 0) + move.addG);
+  rec.stockBeanId = move.toId;
+  saveBeansToStorage();
+}
+function reviewSnapshot(rec){
+  const usage = {};
+  beanLibrary.forEach(b => { usage[b.id] = b.doseUsedG; });
+  return { beanId: rec.beanId || null, beanSnapshot: rec.beanSnapshot ? cloneJson(rec.beanSnapshot) : null, reviewedAt: rec.reviewedAt || null, beanRelinkedAt: rec.beanRelinkedAt || null,
+    stockBeanId: rec.stockBeanId, usage };
+}
 function relinkBrewBean(id, beanId){
   const rec = getBrewRecord(id);
   if (!rec) return null;
-  const before = { beanId: rec.beanId || null, beanSnapshot: rec.beanSnapshot ? cloneJson(rec.beanSnapshot) : null, reviewedAt: rec.reviewedAt || null, beanRelinkedAt: rec.beanRelinkedAt || null };
+  const before = reviewSnapshot(rec);
   const bean = beanId ? beanLibrary.find(b => b.id === beanId) : null;
+  const move = legacyStockMove(rec, bean ? bean.id : null, beanLibrary);
+  applyLegacyStockMove(rec, move);
   rec.beanId = bean ? bean.id : null;
   rec.beanSnapshot = beanSnapshotOf(bean);
   rec.beanRelinkedAt = Date.now();
   rec.reviewedAt = Date.now();
   upsertBrewRecord(rec); persistBrewStore(); rebuildBrewLogView();
+  before.stockMove = move;
   return before;
+}
+// Inhaalslag: brouwsels die al opnieuw gekoppeld waren vóór de voorraadcorrectie bestond.
+function catchUpLegacyStockMoves(){
+  let changed = false;
+  brewStore.forEach(rec => {
+    if (!rec || !rec.legacy || !rec.beanRelinkedAt || rec.stockBeanId !== undefined || rec.deletedAt) return;
+    const move = legacyStockMove(rec, rec.beanId, beanLibrary);
+    if (move) applyLegacyStockMove(rec, move); else rec.stockBeanId = legacyStockBeanId(rec);
+    changed = true;
+  });
+  if (changed) persistBrewStore();
 }
 function markBrewReviewed(id){
   const rec = getBrewRecord(id);
   if (!rec) return null;
-  const before = { beanId: rec.beanId || null, beanSnapshot: rec.beanSnapshot ? cloneJson(rec.beanSnapshot) : null, reviewedAt: rec.reviewedAt || null, beanRelinkedAt: rec.beanRelinkedAt || null };
+  const before = reviewSnapshot(rec);
   rec.reviewedAt = Date.now();
   upsertBrewRecord(rec); persistBrewStore(); rebuildBrewLogView();
   return before;
@@ -9298,6 +9355,11 @@ function restoreBrewReview(id, before){
   rec.beanId = before.beanId; rec.beanSnapshot = before.beanSnapshot;
   if (before.reviewedAt) rec.reviewedAt = before.reviewedAt; else delete rec.reviewedAt;
   if (before.beanRelinkedAt) rec.beanRelinkedAt = before.beanRelinkedAt; else delete rec.beanRelinkedAt;
+  if (before.stockBeanId !== undefined) rec.stockBeanId = before.stockBeanId; else delete rec.stockBeanId;
+  if (before.usage){
+    beanLibrary.forEach(b => { if (Object.prototype.hasOwnProperty.call(before.usage, b.id)) b.doseUsedG = before.usage[b.id]; });
+    saveBeansToStorage();
+  }
   upsertBrewRecord(rec); persistBrewStore(); rebuildBrewLogView();
 }
 
@@ -9852,6 +9914,15 @@ function renderBrewLogHistory(beanId){
   showScreen('brewlog-history');
 }
 let legacyReviewOpen = false;
+function legacyStockMoveText(move){
+  if (!move || (!move.takeG && !move.addG)) return '';
+  const g = (n) => fmt(n, Number.isInteger(n) ? 0 : 1) + '\u00a0g'; // "18 g" nooit over twee regels
+  const name = (id) => { const b = beanLibrary.find(x => x.id === id); return (b && b.name) || 'boon'; };
+  // De doelboon staat al in de eerste zin ("Gekoppeld aan …").
+  if (move.takeG && move.addG) return ` ${g(move.addG)} voorraad verplaatst van ${name(move.fromId)}.`;
+  if (move.addG) return ` ${g(move.addG)} van de voorraad afgeschreven.`;
+  return ` ${g(move.takeG)} teruggezet bij ${name(move.fromId)}.`;
+}
 function renderLegacyReview(){
   const el = document.getElementById('legacy-review');
   if (!el) return;
@@ -9860,7 +9931,7 @@ function renderLegacyReview(){
   el.hidden = false;
   const n = suspects.length;
   const head = `<div class="legacy-review-head"><div><p class="legacy-review-title">${n} ${n === 1 ? 'oud brouwsel' : 'oude brouwsels'} om na te kijken</p>
-    <p class="legacy-review-sub">De vorige app-versie koppelde brouwsels via het advies soms aan geen of de verkeerde boon. Kies per brouwsel de juiste boon — er verandert niets vanzelf.</p></div>
+    <p class="legacy-review-sub">De vorige app-versie koppelde brouwsels via het advies soms aan geen of de verkeerde boon. Kies per brouwsel de juiste boon — er verandert niets vanzelf. Koppelen zet ook de afgeschreven gram bij de juiste zak.</p></div>
     <button type="button" class="advisor-link" id="legacy-review-toggle">${legacyReviewOpen ? 'Inklappen' : 'Nakijken'}</button></div>`;
   if (!legacyReviewOpen){ el.innerHTML = head; return; }
   const roastName = (k) => (ROAST_INFO[k] && ROAST_INFO[k].name) || k || 'onbekend';
@@ -9900,7 +9971,7 @@ function handleLegacyReviewClick(e){
     const bean = sel.value ? beanLibrary.find(b => b.id === sel.value) : null;
     const before = relinkBrewBean(id, sel.value || null);
     refresh();
-    showUndoBar(bean ? `Gekoppeld aan ${bean.name || 'boon'}.` : 'Zonder boon bewaard.', () => { restoreBrewReview(id, before); refresh(); });
+    showUndoBar((bean ? `Gekoppeld aan ${bean.name || 'boon'}.` : 'Zonder boon bewaard.') + legacyStockMoveText(before && before.stockMove), () => { restoreBrewReview(id, before); refresh(); });
   } else if (btn.dataset.lrOk){
     const id = btn.dataset.lrOk;
     const before = markBrewReviewed(id);
@@ -13428,6 +13499,7 @@ renderFlavorTagChips();
 loadBrewLog();
 loadBeans();
 recoverStaleActiveBrew(Date.now()); // Fase 1: na loadBeans(), zie loadBrewLog()
+catchUpLegacyStockMoves();
 rebuildBrewLogView();
 const brewlogOpenBtn = document.getElementById('brewlog-open-btn');
 if (brewlogOpenBtn) brewlogOpenBtn.addEventListener('click', openBrewLogEntry);

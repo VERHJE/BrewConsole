@@ -806,3 +806,44 @@ describe('Oude brouwsels nakijken — welke gemigreerde brouwsels zijn verdacht'
     assert.equal(api.beanSnapshotOf(null), null);
   });
 });
+
+describe('Oude brouwsels nakijken — voorraadcorrectie bij opnieuw koppelen', () => {
+  const BEANS = [
+    { id: 'eth', name: 'Ethiopia', roastLevel: 'light', addedAt: T0 - 10 * 86400000, doseUsedG: 0 },
+    { id: 'bra', name: 'Brazil', roastLevel: 'medium', addedAt: T0 - 10 * 86400000, doseUsedG: 40 },
+    { id: 'low', name: 'Bijna leeg geteld', roastLevel: 'medium', addedAt: T0 - 10 * 86400000, doseUsedG: 5 },
+    { id: 'new', name: 'Later gekocht', roastLevel: 'light', addedAt: T0 + 30 * 86400000, doseUsedG: 0 }
+  ];
+  // De oude versie schreef bij Start plan.doseG af van de boon in legacy.entry.beanId.
+  const rec = (entryBeanId, extra = {}) => Object.assign({
+    id: 'r', lifecycle: 'logged', createdAt: T0, beanId: entryBeanId, plan: { roastId: 'light', doseG: 18 },
+    legacy: { entry: { beanId: entryBeanId } }
+  }, extra);
+
+  test('verkeerde boon → de gram gaan van die boon naar de juiste', () => {
+    assert.deepEqual(j(api.legacyStockMove(rec('bra'), 'eth', BEANS)), { g: 18, fromId: 'bra', toId: 'eth', takeG: 18, addG: 18 });
+  });
+  test('zonder boon opgeslagen → er was niets afgeschreven, dus alleen bij de juiste boon erbij', () => {
+    assert.deepEqual(j(api.legacyStockMove(rec(''), 'eth', BEANS)), { g: 18, fromId: null, toId: 'eth', takeG: 0, addG: 18 });
+  });
+  test('terugboeken gaat nooit onder 0', () => {
+    assert.equal(j(api.legacyStockMove(rec('low'), 'eth', BEANS)).takeG, 5);
+  });
+  test('een boon die pas later is gekocht krijgt niets; "Geen boon" boekt alleen terug', () => {
+    assert.deepEqual(j(api.legacyStockMove(rec('bra'), 'new', BEANS)), { g: 18, fromId: 'bra', toId: null, takeG: 18, addG: 0 });
+    assert.deepEqual(j(api.legacyStockMove(rec('bra'), null, BEANS)), { g: 18, fromId: 'bra', toId: null, takeG: 18, addG: 0 });
+  });
+  test('geen dosis bekend, dezelfde boon of geen oud brouwsel → niets verplaatsen', () => {
+    assert.equal(api.legacyStockMove(rec('bra', { plan: { roastId: 'light' } }), 'eth', BEANS), null);
+    assert.equal(api.legacyStockMove(rec('bra'), 'bra', BEANS), null);
+    assert.equal(api.legacyStockMove(rec(''), null, BEANS), null);
+    assert.equal(api.legacyStockMove(rec('bra', { legacy: undefined }), 'eth', BEANS), null);
+  });
+  test('na een eerdere correctie telt waar de gram nu staan (stockBeanId), niet de oude koppeling', () => {
+    assert.equal(api.legacyStockBeanId(rec('bra')), 'bra');
+    assert.equal(api.legacyStockBeanId(rec('bra', { stockBeanId: 'eth' })), 'eth');
+    assert.equal(api.legacyStockBeanId(rec('bra', { stockBeanId: null })), null);
+    assert.deepEqual(j(api.legacyStockMove(rec('bra', { stockBeanId: 'eth' }), 'bra', BEANS)), { g: 18, fromId: 'eth', toId: 'bra', takeG: 0, addG: 18 },
+      'eth staat in deze lijst op 0 → er valt niets terug te boeken');
+  });
+});
