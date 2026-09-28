@@ -215,8 +215,10 @@ describe('Service worker registratie (bijlage A — bevinding F, opgelost)', () 
     await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
 
     const offlineLogCount = await page.evaluate(() => {
-      const raw = localStorage.getItem('brewConsoleLog');
-      return raw ? JSON.parse(raw).length : 0;
+      // BIJGEWERKT (Fase 1): loggings zijn v6-records onder 'brewconsole_brews'; tel de
+      // gelogde (niet alleen gestarte) records.
+      const raw = localStorage.getItem('brewconsole_brews');
+      return raw ? JSON.parse(raw).filter(r => r.lifecycle === 'logged' && !r.deletedAt).length : 0;
     });
     assert.equal(offlineLogCount, 1, 'de logging moet lokaal (localStorage) bewaard zijn, ook zonder netwerk — geen serverafhankelijke save');
 
@@ -225,8 +227,10 @@ describe('Service worker registratie (bijlage A — bevinding F, opgelost)', () 
     await ctx.setOffline(false);
     await page.reload({ waitUntil: 'load' });
     const onlineLogCount = await page.evaluate(() => {
-      const raw = localStorage.getItem('brewConsoleLog');
-      return raw ? JSON.parse(raw).length : 0;
+      // BIJGEWERKT (Fase 1): loggings zijn v6-records onder 'brewconsole_brews'; tel de
+      // gelogde (niet alleen gestarte) records.
+      const raw = localStorage.getItem('brewconsole_brews');
+      return raw ? JSON.parse(raw).filter(r => r.lifecycle === 'logged' && !r.deletedAt).length : 0;
     });
     assert.equal(onlineLogCount, 1, 'terug online + herladen mag de offline-aangemaakte logging niet dupliceren');
 

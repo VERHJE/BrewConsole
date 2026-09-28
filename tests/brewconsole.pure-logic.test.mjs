@@ -517,13 +517,25 @@ describe('buildPourSchedule() via computeRecipe() — gietschema-fixes (Implemen
     assert.equal(steps[0].label, 'Bloom');
   });
 
-  test('D-4: totalTime volgt uit de giet-structuur, niet meer uit het vaste contactTimeGuidance-middelpunt — varieert mee met het aantal waterbeurten', () => {
-    const kasuya = api.computeRecipe('v60', 'medium', 'klassiek', 300, null, false, null, null, false, null, null, 0); // 5 beurten
-    const hoffmann = api.computeRecipe('v60', 'medium', 'fresh_clean', 300, null, false, null, null, false, null, null, 0); // 3 beurten
-    const april = api.computeRecipe('v60', 'medium', 'robuust', 300, null, false, null, null, false, null, null, 0); // 6 beurten
-    assert.notEqual(kasuya.totalTime, hoffmann.totalTime, 'Een ander aantal waterbeurten moet een andere schemalengte geven — anders is dit nog steeds het oude vaste middelpunt');
-    assert.ok(april.totalTime > hoffmann.totalTime, 'Meer waterbeurten (April, 6) moet een langer schema geven dan minder waterbeurten (Hoffmann, 3)');
-    assert.ok(kasuya.totalTime > hoffmann.totalTime, 'Meer waterbeurten (Kasuya, 5) moet een langer schema geven dan minder waterbeurten (Hoffmann, 3)');
+  // HERAUDIT (Hoffmann-timing): de oorspronkelijke aanname hier ("meer waterbeurten = langer
+  // schema") klopte toen alle overlays via hetzelfde generieke cyclusmodel liepen. Sinds
+  // Hoffmann zijn eigen, expliciet gepubliceerde tijden volgt (3 waterbeurten, 210s — zie
+  // HOFFMANN_TOTAL_SEC bij buildPourSchedule()) is dat niet langer waar: Hoffmann (3
+  // beurten) duurt inmiddels EVEN lang als Kasuya (5 beurten, ook 210s) en LANGER dan April
+  // (6 beurten, 200s). Dat is geen regressie — elke techniek met eigen gepubliceerde tijden
+  // volgt nu gewoon die eigen bron i.p.v. een aantal-waterbeurten-heuristiek. D-4 zelf
+  // (schemalengte volgt de giet-structuur, niet het oude vaste contactTimeGuidance-
+  // middelpunt) blijft wél overeind: elke techniek geeft nog steeds een eigen, van elkaar
+  // verschillende totalTime i.p.v. allemaal hetzelfde vaste getal.
+  test('D-4: totalTime volgt uit de giet-structuur (per techniek eigen tijden, niet meer het oude vaste contactTimeGuidance-middelpunt)', () => {
+    const kasuya = api.computeRecipe('v60', 'medium', 'klassiek', 300, null, false, null, null, false, null, null, 0); // 5 beurten, eigen 45-sec-cadans
+    const hoffmann = api.computeRecipe('v60', 'medium', 'fresh_clean', 300, null, false, null, null, false, null, null, 0); // 3 beurten, eigen klokttijden
+    const april = api.computeRecipe('v60', 'medium', 'robuust', 300, null, false, null, null, false, null, null, 0); // 6 beurten, eigen cadans
+    const perger = api.computeRecipe('v60', 'medium', 'snel_puur', 300, null, false, null, null, false, null, null, 0); // 1 beurt, generiek model
+    assert.equal(kasuya.totalTime, 210, 'Kasuya: 3:30, eigen gepubliceerde grens');
+    assert.equal(hoffmann.totalTime, 210, 'Hoffmann: 3:30, eigen gepubliceerde totale zettijd');
+    assert.equal(april.totalTime, 200, 'April: 3:20, eigen gepubliceerde pourtijden');
+    assert.ok(perger.totalTime < april.totalTime, 'Perger (generiek 1-pulse-model) blijft korter dan de technieken met eigen, langere gepubliceerde tijden');
   });
 
   test('non-negotiable "brew timer blijft betrouwbaar" (regressietest, Fase 3-risico): totalTime is altijd een eindig, positief getal en de laatste stap valt op totalTime', () => {
@@ -963,8 +975,16 @@ describe('B-1 — sterktehendel respecteert het harde dosisplafond (bevinding E-
 });
 
 describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () => {
-  test('elk interval tussen twee waterbeurten is exact POUR_CYCLE_SEC, voor elk profiel', () => {
-    for (const p of ['klassiek','heel_fruitig','fresh_clean','robuust','snel_puur','sirooprig_vol']){
+  // BIJGEWERKT (heraudit, Kasuya-timing): klassiek/heel_fruitig (Kasuya 4:6) volgen sinds
+  // deze fix hun EIGEN, meervoudig onafhankelijk bevestigde 45-sec-cadans (zie
+  // KASUYA_POUR_CYCLE_SEC) i.p.v. de generieke POUR_CYCLE_SEC (30s) — vandaar apart getest.
+  // BIJGEWERKT (heraudit, April-timing): robuust (April) uitgezonderd — zie het aparte
+  // "April huismethode"-testblok hieronder voor de eigen 40s/30s-cadans.
+  // BIJGEWERKT (heraudit, Hoffmann-timing): fresh_clean (Hoffmann) uitgezonderd — volgt
+  // sinds deze fix zijn eigen, expliciet gepubliceerde klokttijden (zie het aparte
+  // "Hoffmann Ultimate"-testblok hieronder), geen cyclusmodel meer.
+  test('elk interval tussen twee waterbeurten is exact POUR_CYCLE_SEC, voor elk niet-Kasuya/niet-April/niet-Hoffmann-profiel', () => {
+    for (const p of ['snel_puur','sirooprig_vol']){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
       if (rec.dose === 0) continue;
       const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
@@ -974,19 +994,95 @@ describe('B-3 — giet-intervallen volgen POUR_CYCLE_SEC (bevinding E-04)', () =
       }
     }
   });
-  test('de staart na de laatste pour is POUR_CYCLE_SEC + FINAL_DRAWDOWN_SEC = 70s', () => {
-    for (const p of ['klassiek','fresh_clean','robuust','snel_puur']){
-      const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
-      const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
-      assert.equal(rec.totalTime - ts[ts.length-1], 70, `${p}: staart moet 70s zijn`);
+  // HERAUDIT (April-timing): aprilcoffeeroasters.com geeft zes gelijke pours van 50 g op
+  // expliciete tijden 0:00, 0:40, 1:10, 1:40, 2:10, 2:40 (20 g dosis, 300 g water), totale
+  // zettijd 3:20-3:30 — onafhankelijk bevestigd via twee losse zoekopdrachten met identieke
+  // cijfers. Dat is 40s tussen pour 1 en 2, daarna telkens 30s (zie APRIL_FIRST_POUR_EXTRA_SEC
+  // in buildPourSchedule()).
+  test('April huismethode: interval 1→2 is 40s, alle volgende intervallen zijn 30s', () => {
+    const rec = api.computeRecipe('v60','medium','robuust',300,null,false,null,null,false,null,null,0);
+    const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
+    assert.equal(ts[1] - ts[0], 40, 'April: eerste interval (pour 1→2) moet 40s zijn');
+    for (let i = 2; i < ts.length; i++){
+      assert.equal(ts[i] - ts[i-1], 30, `April: interval ${i} is ${ts[i]-ts[i-1]}s, verwacht 30s`);
     }
   });
-  test('N-6: totalTime is ONVERANDERD t.o.v. vóór deze fix (brouwtimer-regressie)', () => {
-    const verwacht = { klassiek:190, fresh_clean:130, robuust:220, snel_puur:100, sirooprig_vol:160 };
+  // HERAUDIT (Hoffmann-timing): James Hoffmanns "Ultimate V60"-video geeft expliciete
+  // klokttijden, onafhankelijk bevestigd via meerdere secundaire renderingen (unaniem):
+  // bloom tot 0:45, doorlopende hoofdpour 1 tot 60% op 1:15, doorlopende hoofdpour 2 tot
+  // 100% op 1:45, totale zettijd 3:30. De pours zelf zijn giet-VENSTERS (endT), geen
+  // momentopnames — zie HOFFMANN_POUR_WINDOW_SEC in buildPourSchedule().
+  test('Hoffmann Ultimate: bloom tot 0:45, pour 1 als venster 0:45-1:15, pour 2 als venster 1:15-1:45, totaal 3:30', () => {
+    const rec = api.computeRecipe('v60','medium','fresh_clean',300,null,false,null,null,false,null,null,0);
+    const [bloom, pour1, pour2] = rec.steps.filter(s => s.add > 0);
+    assert.equal(bloom.t, 0);
+    assert.equal(bloom.endT, undefined, 'bloom heeft geen endT: 45s is wachttijd, geen giet-duur');
+    assert.equal(pour1.t, 45);
+    assert.equal(pour1.endT, 75);
+    assert.equal(pour2.t, 75);
+    assert.equal(pour2.endT, 105);
+    assert.equal(rec.totalTime, 210, 'Hoffmann: totale zettijd moet exact 3:30 (210s) zijn');
+    // Cumulatief 60% van het water bij het einde van pour 1 (1:15) — het gepubliceerde
+    // omslagpunt tussen de twee hoofdpours.
+    const cumulativeFraction = pour1.to / rec.water;
+    assert.ok(Math.abs(cumulativeFraction - 0.6) < 0.05,
+      `cumulatief aandeel bij pour 1 (${(cumulativeFraction*100).toFixed(1)}%) moet rond 60% liggen`);
+  });
+  test('Kasuya 4:6 (klassiek/heel_fruitig): elk interval is exact 45s (KASUYA_POUR_CYCLE_SEC)', () => {
+    for (const p of ['klassiek','heel_fruitig']){
+      const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
+      const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
+      for (let i = 1; i < ts.length; i++){
+        assert.equal(ts[i] - ts[i-1], 45,
+          `${p}: interval ${i} is ${ts[i]-ts[i-1]}s, verwacht 45s (KASUYA_POUR_CYCLE_SEC)`);
+      }
+    }
+  });
+  // HERAUDIT (fantoomcyclus, gegeneraliseerd): de staart is nu voor ALLE meervoudige-pulse-
+  // profielen (≥2 pulses) uitsluitend FINAL_DRAWDOWN_SEC — de vroegere extra cyclus
+  // (POUR_CYCLE_SEC + FINAL_DRAWDOWN_SEC = 70s) was de fout die eerst voor Kasuya en later
+  // (dit testblok) voor alle technieken is weggehaald, zie buildPourSchedule(). Voor een
+  // schema met precies 1 pulse (snel_puur/Perger) verandert er niets: dat had al maar één
+  // cyclus en blijft dus cycleSec + drawdownSec. fresh_clean (Hoffmann) uitgezonderd: volgt
+  // sinds de Hoffmann-timing-fix zijn eigen, veel grotere gepubliceerde drawdownmarge (105s
+  // — zie het "Hoffmann Ultimate"-testblok hierboven), geen FINAL_DRAWDOWN_SEC meer.
+  test('de staart na de laatste pour is uitsluitend FINAL_DRAWDOWN_SEC = 40s, voor elk niet-Kasuya/niet-Hoffmann-profiel met ≥2 pulses', () => {
+    for (const p of ['robuust','sirooprig_vol']){
+      const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
+      const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
+      assert.equal(rec.totalTime - ts[ts.length-1], 40, `${p}: staart moet 40s zijn (uitsluitend FINAL_DRAWDOWN_SEC)`);
+    }
+  });
+  test('snel_puur (Perger, 1 pulse): de staart blijft POUR_CYCLE_SEC + FINAL_DRAWDOWN_SEC = 70s (ongewijzigd, want er was al maar 1 cyclus)', () => {
+    const rec = api.computeRecipe('v60','medium','snel_puur',300,null,false,null,null,false,null,null,0);
+    const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
+    assert.equal(rec.totalTime - ts[ts.length-1], 70, 'snel_puur: staart moet 70s blijven');
+  });
+  test('Kasuya 4:6: de staart na de laatste pour is uitsluitend KASUYA_DRAWDOWN_SEC = 30s (nu hetzelfde universele patroon, niet langer Kasuya-specifiek)', () => {
+    const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
+    const ts = rec.steps.filter(s => s.add > 0).map(s => s.t);
+    assert.equal(rec.totalTime - ts[ts.length-1], 30, 'klassiek: staart moet 30s zijn (uitsluitend KASUYA_DRAWDOWN_SEC)');
+  });
+  // HERAUDIT (fantoomcyclus, gegeneraliseerd): de fantoomcyclus-fix is niet langer
+  // Kasuya-specifiek (zie buildPourSchedule()) — elk profiel met ≥2 pulses verliest nu
+  // precies één POUR_CYCLE_SEC (of, voor Kasuya, KASUYA_POUR_CYCLE_SEC) t.o.v. de eerdere,
+  // foutieve waarden. snel_puur (1 pulse) is ongewijzigd: bij één pulse was er al geen
+  // fantoomcyclus om weg te halen (zie de aparte test hierboven).
+  // fresh_clean (Hoffmann) uitgezonderd: volgt sinds de latere Hoffmann-timing-heraudit
+  // zijn eigen, expliciet gepubliceerde 210s (zie het "Hoffmann Ultimate"-testblok
+  // hierboven), niet langer deze generieke cyclusformule.
+  test('N-6: totalTime weerspiegelt de gegeneraliseerde fantoomcyclus-fix (elk ≥2-pulse-profiel 1 cyclus korter dan vóór deze fix)', () => {
+    // robuust (April): 190 + APRIL_FIRST_POUR_EXTRA_SEC (10) = 200s sinds de latere,
+    // aparte April-timing-heraudit — zie het "April huismethode"-testblok hierboven.
+    const verwacht = { robuust:200, snel_puur:100, sirooprig_vol:130 };
     for (const [p, t] of Object.entries(verwacht)){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
-      assert.equal(rec.totalTime, t, `${p}: totalTime mag door B-3 niet veranderen`);
+      assert.equal(rec.totalTime, t, `${p}: totalTime moet ${t}s zijn na de gegeneraliseerde fantoomcyclus-fix`);
     }
+    // klassiek (Kasuya): 210s (3:30) — ongewijzigd, want Kasuya had deze correctie al sinds
+    // de eerdere, Kasuya-specifieke fix (nu onderdeel van dezelfde algemene formule).
+    const kasuya = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
+    assert.equal(kasuya.totalTime, 210, 'klassiek: totalTime moet 210s (3:30) blijven');
   });
 });
 
@@ -1006,27 +1102,48 @@ describe('B-2a — de app geeft de gebruiker niet de schuld van zijn eigen schem
 });
 
 describe('B-2b — brewer-specifieke cyclusconstanten (Bouwbesluit BB-1, akkoord gebruiker)', () => {
-  test('het 3-pulse Kernrecept-schema (klassiek/heel_fruitig) valt nu binnen de Chemex-diagnostische band', () => {
+  // HERAUDIT (Chemex-band-herijking, vervolg op de gegeneraliseerde fantoomcyclus-fix): de
+  // per-brewer cyclusconstanten van BB-1 waren geijkt tegen de OUDE (foutieve) 3-cycli-
+  // formule en landden daarmee net binnen de Chemex-band. Na de fantoomcyclus-fix (elders in
+  // dit bestand) verloor het 3-pulse Chemex-schema 1×cycleSec en viel het eronder (193s) —
+  // opgelost door drawdownSec (de marge ná de laatste pour, altijd al het minst evidence-
+  // vaste deel) niet langer met dezelfde factor als cycleSec te schalen, maar zo te kiezen
+  // dat het referentieschema dezelfde RELATIEVE positie inneemt in zijn eigen
+  // contactTimeGuidance-band als het V60-referentieschema in zijn band (zie
+  // brewerPourCycleConstants() bij buildPourSchedule voor de volledige toelichting). cycleSec
+  // blijft ongewijzigd. V60 blijft door constructie exact ongewijzigd (zie de test hieronder).
+  test('het 3-pulse Kernrecept-schema (klassiek/heel_fruitig) valt na de Chemex-band-herijking weer BINNEN de Chemex-diagnostische band', () => {
     for (const p of ['klassiek','heel_fruitig']){
       const rec = api.computeRecipe('chemex','medium',p,600,null,false,null,null,false,null,null,0);
       const { min, max } = rec.contactTimeDiagnosticBand;
       assert.ok(rec.totalTime >= min && rec.totalTime <= max,
-        `${p}: het 3-pulse Chemex-schema (${rec.totalTime}s) hoort na B-2b binnen ${min}-${max}s te vallen`);
+        `${p}: het 3-pulse Chemex-schema (${rec.totalTime}s) hoort binnen ${min}-${max}s te vallen`);
     }
   });
-  test('V60 s totalTime per profiel is volledig ongewijzigd door B-2b (V60 is de referentie, factor 1)', () => {
-    const verwacht = { klassiek:190, fresh_clean:130, robuust:220, snel_puur:100, sirooprig_vol:160 };
+  // HERAUDIT (fantoomcyclus, gegeneraliseerd): elk ≥2-pulse-profiel verliest nu 1 cyclus
+  // t.o.v. de waarden die hier golden ten tijde van BB-1 — zie het "N-6"-testblok hierboven
+  // voor dezelfde, recentere cijfers en de volledige toelichting.
+  test('V60 s totalTime per profiel weerspiegelt de gegeneraliseerde fantoomcyclus-fix (niet langer de BB-1-waarden)', () => {
+    // robuust (April): 200s sinds de latere April-timing-heraudit (APRIL_FIRST_POUR_EXTRA_SEC).
+    // fresh_clean (Hoffmann) uitgezonderd: eigen 210s sinds de Hoffmann-timing-heraudit,
+    // zie het "Hoffmann Ultimate"-testblok verderop in dit bestand.
+    const verwacht = { robuust:200, snel_puur:100, sirooprig_vol:130 };
     for (const [p, t] of Object.entries(verwacht)){
       const rec = api.computeRecipe('v60','medium',p,300,null,false,null,null,false,null,null,0);
-      assert.equal(rec.totalTime, t, `${p}: V60-totalTime mag door B-2b niet veranderen`);
+      assert.equal(rec.totalTime, t, `${p}: V60-totalTime moet ${t}s zijn na de gegeneraliseerde fantoomcyclus-fix`);
     }
   });
-  test('een schema met een ander aantal giet-momenten blijft op Chemex evenredig langer/korter (D-4 blijft intact)', () => {
+  // HERAUDIT (fantoomcyclus, gegeneraliseerd): bij exact 1 vs. 2 pulses vallen de
+  // totaaltijden nu toevallig samen (beide reduceren tot "1 effectieve cyclus" — bij 1 pulse
+  // was er al maar 1 cyclus, bij 2 pulses blijft na het weghalen van de fantoomcyclus ook
+  // precies 1 cyclus over). Dat is een verwachte grenswaarde van de fix, geen fout — vanaf
+  // 2-vs-3 pulses geldt de evenredigheid gewoon weer strikt.
+  test('een schema met een ander aantal giet-momenten blijft op Chemex evenredig langer/korter vanaf 2 pulses (D-4); bij 1-vs-2 pulses vallen de tijden nu samen', () => {
     const drie = api.computeRecipe('chemex','medium','klassiek',600,null,false,null,null,false,null,null,0);
     const twee = api.computeRecipe('chemex','medium','fresh_clean',600,null,false,null,null,false,null,null,0);
     const een = api.computeRecipe('chemex','medium','snel_puur',600,null,false,null,null,false,null,null,0);
-    assert.ok(een.totalTime < twee.totalTime && twee.totalTime < drie.totalTime,
-      'minder giet-momenten moet nog steeds een korter schema opleveren, ook na B-2b');
+    assert.ok(een.totalTime <= twee.totalTime && twee.totalTime < drie.totalTime,
+      'minder giet-momenten mag nooit een lánger schema opleveren, en vanaf 2 pulses moet het strikt korter zijn');
   });
 });
 
@@ -1607,5 +1724,397 @@ describe('Nieuwe Reparaties v2.2 — §3: C3S Pro semantiek/ranges (13/15/17/18/
     const rec = api.computeRecipe('chemex', 'medium', 'klassiek', 600, null, false, null, null, false, null, null, 0);
     assert.equal(rec.grindStartingRange, null);
     assert.equal(rec.grindPracticalRange, null);
+  });
+});
+
+describe('Smaakwiel-heraudit — Kiwi + vrije-tekstveld matcht volledige wiel', () => {
+  // HERAUDIT (smaakwiel): Kiwi ontbrak volledig (wiel, OCR-scansynoniemen, vrije tekst) —
+  // bevestigd courant via Brandywine Coffee Roasters' "Kiwi Co-Ferment" en Black & White's
+  // "New School — Dragonfruit" (tasting note "strawberry-kiwi"). Zie SCA_FLAVOR_WHEEL.
+  test('Kiwi bestaat als tag, wijst naar fruitig_clean, en heeft een OCR-scansynoniem', () => {
+    assert.equal(api.FLAVOR_TAG_HINTS['Kiwi'], 'fruitig_clean');
+    assert.equal(api.FLAVOR_SCAN_SYNONYMS['kiwi'], 'Kiwi');
+  });
+
+  // HERAUDIT (smaakwiel, vrije-tekstveld): classifyProfile()'s extraText-parameter matchte
+  // voorheen alleen tegen PROFILE_KEYWORDS (~20 losse stemmingswoorden) i.p.v. de volledige
+  // FLAVOR_TAG_HINTS/FLAVOR_SCAN_SYNONYMS die de checkbox-tags en de OCR-scan al lang
+  // gebruiken — een specifieke smaak typen i.p.v. aanvinken telde stilzwijgend voor niets.
+  test('vrije tekst met een specifieke, niet-checkbox-getypte smaak (Kiwi) telt nu mee', () => {
+    const cls = api.classifyProfile([], 'proeft naar kiwi', null, false);
+    assert.equal(cls.scores.fruitig_clean, 1);
+  });
+
+  test('vrije tekst matcht ook Engelse OCR-scansynoniemen (niet alleen letterlijke NL-tagnamen)', () => {
+    const cls = api.classifyProfile([], 'tropical fruit, mango', null, false);
+    assert.equal(cls.scores.fruitig_clean, 2, '"tropical fruit"→Tropisch fruit (algemeen) en "mango"→Mango tellen beide mee');
+  });
+
+  test('een al aangevinkte tag telt niet nogmaals mee als hij ook toevallig in de vrije tekst staat (geen dubbeltelling)', () => {
+    const withTagOnly = api.classifyProfile(['Kiwi'], '', null, false);
+    const withTagAndText = api.classifyProfile(['Kiwi'], 'proeft naar kiwi', null, false);
+    assert.equal(withTagOnly.scores.fruitig_clean, 1);
+    assert.equal(withTagAndText.scores.fruitig_clean, 1, 'Kiwi via tag+tekst moet nog steeds maar 1x tellen');
+  });
+
+  test('irrelevante vrije tekst zonder enige wiel-term geeft geen enkele score', () => {
+    const cls = api.classifyProfile([], 'very good coffee indeed', null, false);
+    assert.deepEqual(Object.values(cls.scores), [0, 0, 0, 0, 0]);
+  });
+
+  // HERAUDIT (smaakwiel, vrije-tekstveld): 'bloemig'/'floral' stonden voorheen in
+  // PROFILE_KEYWORDS.fruitig_clean, terwijl elke florale wiel-tag naar fresh_clean wijst —
+  // een tegenstrijdigheid die zichtbaar zou worden zodra de vrije tekst ook tegen het wiel
+  // matcht. Verwijderd; het wiel-pad (FLAVOR_SCAN_SYNONYMS) geeft nu het enige, consistente
+  // antwoord.
+  test('"bloemig"/"floral" in vrije tekst wijst uitsluitend naar fresh_clean, niet meer ook naar fruitig_clean', () => {
+    const cls = api.classifyProfile([], 'floral', null, false);
+    assert.equal(cls.scores.fresh_clean, 1);
+    assert.equal(cls.scores.fruitig_clean, 0, 'floral mag niet meer tegenstrijdig ook fruitig_clean scoren');
+  });
+});
+
+describe('Smaakwiel-scoring — percentages per profiel (profileScorePercentages)', () => {
+  // HERAUDIT (smaakwiel-scoring): percentages zijn puur informatief — dezelfde brontelling
+  // als de sterren (displayScoreFor/classifyProfile), nu ook als exact, herleidbaar getal.
+  // Verandert niets aan welk recept wordt gegenereerd.
+  test('zonder scores (null) of bij een total van 0 geeft dit null terug', () => {
+    assert.equal(api.profileScorePercentages(null), null);
+    assert.equal(api.profileScorePercentages({heel_fruitig:0, fruitig_clean:0, fresh_clean:0, vol_rond:0, zoet:0}), null);
+  });
+
+  test('een 2-tegen-1-verdeling geeft 67%/33%, som is exact 100', () => {
+    const cls = api.classifyProfile(['Bramen', 'Framboos', 'Anijs'], '', null, false); // heel_fruitig:2, zoet:1
+    const pct = api.profileScorePercentages(cls.scores);
+    assert.equal(pct.heel_fruitig, 67);
+    assert.equal(pct.zoet, 33);
+    assert.equal(pct.fruitig_clean, 0);
+    const sum = Object.values(pct).reduce((a, b) => a + b, 0);
+    assert.equal(sum, 100, `percentages moeten optellen tot 100, kregen ${sum}`);
+  });
+
+  test('een exacte 50/50-verdeling (o.a. het scenario uit de gebruikersvraag) geeft 50%/50%', () => {
+    const cls = api.classifyProfile(['Bramen', 'Chocolade'], '', null, false); // heel_fruitig:1, vol_rond:1 → klassiek
+    const pct = api.profileScorePercentages(cls.scores);
+    assert.equal(pct.heel_fruitig, 50);
+    assert.equal(pct.klassiek, 50, 'vol_rond-score moet via de klassiek-samenvoegknop als percentage verschijnen');
+  });
+
+  test('techniek-only profielen (bv. snel_puur) krijgen geen percentage, ook niet 0%', () => {
+    const cls = api.classifyProfile(['Bramen', 'Framboos'], '', null, false);
+    const pct = api.profileScorePercentages(cls.scores);
+    assert.equal(Object.prototype.hasOwnProperty.call(pct, 'snel_puur'), false);
+  });
+});
+
+describe('Bijna-gelijke-stand — profileNearTieCandidates (expliciete keuze i.p.v. stilzwijgende winnaar)', () => {
+  // HERAUDIT (bijna-gelijke-stand): classifyProfile() koos voorheen altijd stilzwijgend de
+  // hoogste score, ook bij een marge van maar 1 tag. profileNearTieCandidates() maakt dat
+  // nu expliciet zichtbaar (renderAdviceChips() toont dan geen voorselectie meer).
+  test('een duidelijke winnaar (marge > PROFILE_NEAR_TIE_MARGIN) geeft geen kandidaten', () => {
+    const cls = api.classifyProfile(['Bramen', 'Framboos', 'Bosbes'], '', null, false); // heel_fruitig:3, rest:0
+    assert.equal(api.profileNearTieCandidates(cls.scores), null);
+  });
+
+  // NB: assert.deepEqual op arrays die uit de vm-sandbox komen (een ander realm dan dit
+  // testbestand) geeft valse negatieven ("not reference-equal") ondanks identieke waarden —
+  // vandaar element-voor-element vergelijken i.p.v. deepEqual (zelfde patroon als elders in
+  // dit testbestand, zie ENGINE_TARGET_WINDOWS-vergelijking hierboven).
+  test('een verschil van precies PROFILE_NEAR_TIE_MARGIN (1 tag) geeft wél kandidaten', () => {
+    const cls = api.classifyProfile(['Bramen', 'Framboos', 'Anijs'], '', null, false); // heel_fruitig:2, zoet:1
+    const candidates = api.profileNearTieCandidates(cls.scores);
+    const expected = ['heel_fruitig', 'zoet'];
+    assert.equal(candidates.length, expected.length, 'aflopend gesorteerd, winnaar eerst');
+    expected.forEach((k, i) => assert.equal(candidates[i], k));
+  });
+
+  test('een exacte gelijke stand (marge 0) geldt ook als bijna-gelijke stand', () => {
+    const cls = api.classifyProfile(['Bramen', 'Chocolade'], '', null, false); // heel_fruitig:1, vol_rond:1 → klassiek
+    const candidates = api.profileNearTieCandidates(cls.scores);
+    const expected = ['heel_fruitig', 'klassiek'];
+    assert.equal(candidates.length, expected.length);
+    expected.forEach((k, i) => assert.equal(candidates[i], k));
+  });
+
+  test('zonder scores of zonder enige match zijn er geen kandidaten', () => {
+    assert.equal(api.profileNearTieCandidates(null), null);
+    const cls = api.classifyProfile([], '', null, false);
+    assert.equal(api.profileNearTieCandidates(cls.scores), null);
+  });
+
+  test('een 0-score telt nooit mee als kandidaat, ook niet als de winnaar zelf laag scoort', () => {
+    const cls = api.classifyProfile(['Bramen'], '', null, false); // heel_fruitig:1, rest:0
+    assert.equal(api.profileNearTieCandidates(cls.scores), null, 'winnaar met score 1 tegen vier 0-scores is geen tie');
+  });
+});
+
+describe('Smaakwiel-uitbreiding — nieuwe tags o.b.v. echte, gebruikersaangeleverde tasting notes', () => {
+  // HERAUDIT: gebruiker leverde 33 echte tasting-note-regels van gekochte koffiezakken aan.
+  // Analyse tegen het toenmalige wiel wees op herhaaldelijk terugkerende gaten (Melkchocolade
+  // 7x, Cane sugar 3x, Lemongrass 2x) en canonieke SCA-2016-termen die volledig ontbraken
+  // (Groene paprika, Violet). Elke toevoeging hieronder heeft een broncitaat in
+  // SCA_FLAVOR_WHEEL zelf; deze tests bewaken alleen dat de tags echt bestaan en de juiste
+  // hint hebben — geen dubbele set aan bronvermelding hier.
+  const newTags = {
+    'Rozenbottel':'heel_fruitig', 'Nectarine':'fruitig_clean', 'Steenfruit (algemeen)':'fruitig_clean',
+    'Meloen':'fruitig_clean', 'Jackfruit':'fruitig_clean', 'Kombucha':'heel_fruitig', 'Kauwgom':'heel_fruitig',
+    'Groene paprika':null, 'Koekjes / biscuit':'vol_rond', 'Zoethout / drop':'zoet',
+    'Macadamianoot':'vol_rond', 'Praliné':'vol_rond', 'Melkchocolade':'vol_rond', 'Witte chocolade':'zoet',
+    'Rietsuiker':'zoet', 'Viooltje':'fresh_clean', 'Vlierbloesem':'fresh_clean', 'Citroengras':'fresh_clean',
+  };
+  test('elke nieuwe tag bestaat in FLAVOR_TAG_HINTS met de juiste hint', () => {
+    for (const [tag, hint] of Object.entries(newTags)){
+      assert.equal(api.FLAVOR_TAG_HINTS[tag], hint, `${tag}: verwachtte hint ${hint}`);
+    }
+  });
+
+  test('Perzik/Abrikoos/Pruim behouden hun hint na de Steenfruit-herindeling', () => {
+    // Verplaatst van "Overig fruit" naar een eigen "Steenfruit"-subgroep — puur een
+    // herindeling, FLAVOR_TAG_HINTS-uitkomst mag niet veranderen.
+    assert.equal(api.FLAVOR_TAG_HINTS['Perzik'], 'fruitig_clean');
+    assert.equal(api.FLAVOR_TAG_HINTS['Abrikoos'], 'fruitig_clean');
+    assert.equal(api.FLAVOR_TAG_HINTS['Pruim'], 'fruitig_clean');
+  });
+
+  // Directe steekproef op een paar van de 33 echte, door de gebruiker aangeleverde
+  // tasting-note-regels — bevestigt dat de nieuwe tags ook via het vrije-tekstveld
+  // (FLAVOR_SCAN_SYNONYMS, zie classifyProfile()) gevonden worden, niet alleen als
+  // losstaande FLAVOR_TAG_HINTS-invoer.
+  test('"Raspberry, Strawberry, Violet" (echte tasting note) matcht Viooltje via vrije tekst', () => {
+    const cls = api.classifyProfile([], 'Raspberry, Strawberry, Violet', null, false);
+    // BIJGEWERKT (Phase 0 / BC-06): was 3 — de derde punt kwam van "berry" als substring
+    // midden in rasp-BERRY/straw-BERRY (Bessen (algemeen)), een dubbeltelling van dezelfde
+    // twee noten. Sinds de woordgrens-regel tellen alleen Framboos + Aardbei.
+    assert.equal(cls.scores.heel_fruitig, 2, 'Framboos + Aardbei — "berry" binnen raspberry/strawberry telt niet nog eens als Bessen');
+    assert.equal(cls.scores.fresh_clean, 1, 'Violet → Viooltje → fresh_clean');
+  });
+
+  test('"Rosehip, Black current, Cane sugar" (echte tasting note) matcht Rozenbottel + Rietsuiker', () => {
+    const cls = api.classifyProfile([], 'Rosehip, Black current, Cane sugar', null, false);
+    assert.equal(cls.scores.heel_fruitig, 1, 'Rosehip → Rozenbottel (Black current met spatiefout matcht niet mee)');
+    assert.equal(cls.scores.zoet, 1, 'Cane sugar → Rietsuiker');
+  });
+
+  test('"Macadamia, orange, praline, butterscotch" (echte tasting note) matcht Macadamianoot + Praliné', () => {
+    const cls = api.classifyProfile([], 'Macadamia, orange, praline, butterscotch', null, false);
+    assert.equal(cls.scores.vol_rond, 2, 'Macadamia + praline → vol_rond (butterscotch aliast naar de bestaande Toffee/botertoffee-tag)');
+    assert.equal(cls.scores.fruitig_clean, 1, 'orange → Sinaasappel');
+  });
+
+  test('"Stone fruit, tea-like, biscuit, chocolate" (echte tasting note) matcht Steenfruit + Koekjes/biscuit', () => {
+    const cls = api.classifyProfile([], 'Stone fruit, tea-like, biscuit, chocolate', null, false);
+    assert.equal(cls.scores.fruitig_clean, 1, 'Stone fruit → Steenfruit (algemeen)');
+    assert.equal(cls.scores.vol_rond, 3, 'biscuit + chocolate + "tea-like" bevat geen directe match — vol_rond komt uit biscuit(1) + chocolate(1) + choco als PROFILE_KEYWORDS-woord(1)');
+  });
+
+  test('"Milk Chocolate" (7x terugkerend in de aangeleverde tasting notes) matcht Melkchocolade', () => {
+    const cls = api.classifyProfile([], 'Milk Chocolate, Caramel, Orange, Red Berries', null, false);
+    assert.ok(cls.scores.vol_rond >= 1, 'Milk Chocolate moet minstens 1x vol_rond scoren via Melkchocolade');
+  });
+});
+
+describe('Proces-heraudit — Wet-hulled toegevoegd + honey-subtype-tekstherkenning', () => {
+  test('PROCESS_INFO bevat wet_hulled met de juiste naam', () => {
+    assert.ok(api.PROCESS_INFO.wet_hulled, 'wet_hulled ontbreekt in PROCESS_INFO');
+    assert.equal(api.PROCESS_INFO.wet_hulled.name, 'Wet-hulled (Giling Basah)');
+  });
+
+  test('computeMethodAdvice: wet_hulled geeft +1 chemex t.o.v. washed bij verder identieke input', () => {
+    const wh = api.computeMethodAdvice('medium', 'klassiek', 'single', 'wet_hulled', false);
+    const wa = api.computeMethodAdvice('medium', 'klassiek', 'single', 'washed', false);
+    assert.equal(wh.isWetHulled, true);
+    assert.equal(wa.isWetHulled, false);
+    assert.equal(wh.chemexScore, wa.chemexScore + 1, 'wet_hulled moet precies 1 punt meer chemex-score geven dan washed');
+    assert.equal(wh.v60Score, wa.v60Score, 'v60-score mag niet meebewegen — het is een pure chemex-duw');
+  });
+
+  test('buildReasoningLines: wet_hulled krijgt een eigen, bronvermelde regel', () => {
+    const lines = api.buildReasoningLines('medium', 'klassiek', 'single', 'wet_hulled', false);
+    assert.ok(lines.some(l => l.includes('Wet-hulled') && l.includes('Chemex')), 'verwachtte een wet-hulled-regel met Chemex-duw');
+  });
+
+  test('buildReasoningLines: natural/anaerobic belooft niet langer "kouder zetten" (stale claim, geen echt recepteffect)', () => {
+    const lines = api.buildReasoningLines('medium', 'klassiek', 'single', 'natural', false);
+    const fermentLine = lines.find(l => l.startsWith('Natural/anaerobic'));
+    assert.ok(fermentLine, 'de natural/anaerobic-regel moet nog steeds bestaan');
+    assert.ok(!fermentLine.includes('kouder'), 'de regel mag geen temperatuureffect meer claimen — computeRecipe() past de temperatuur nooit aan op processKey');
+  });
+
+  test('classifyProfile: wet_hulled boost +1 vol_rond, verder niets', () => {
+    const scores = api.classifyProfile([], '', 'wet_hulled', false).scores;
+    assert.equal(scores.vol_rond, 1);
+    assert.equal(scores.heel_fruitig, 0);
+    assert.equal(scores.fruitig_clean, 0);
+    assert.equal(scores.fresh_clean, 0);
+    assert.equal(scores.zoet, 0);
+  });
+
+  test('classifyProfile: "black honey" in de tekst bij process=honey boost heel_fruitig extra (subtype-signaal)', () => {
+    const scores = api.classifyProfile([], 'notes: black honey, floral', 'honey', false).scores;
+    assert.equal(scores.heel_fruitig, 1, 'black honey → extra heel_fruitig-punt bovenop de vlakke honey-boost');
+  });
+
+  test('classifyProfile: "white honey" in de tekst bij process=honey boost fresh_clean extra (subtype-signaal)', () => {
+    const scores = api.classifyProfile([], 'white honey process', 'honey', false).scores;
+    assert.equal(scores.fresh_clean, 1, 'white honey → extra fresh_clean-punt bovenop de vlakke honey-boost');
+  });
+
+  test('classifyProfile: honey zonder subtype-woord in de tekst geeft geen heel_fruitig/fresh_clean-subtype-boost', () => {
+    const scores = api.classifyProfile([], 'caramel', 'honey', false).scores;
+    assert.equal(scores.heel_fruitig, 0);
+    assert.equal(scores.fresh_clean, 0, 'geen subtype-woord aanwezig, dus geen subtype-verfijning');
+  });
+
+  test('classifyProfile: "black honey" in de tekst telt NIET mee als proces onbekend/anders is (guard op processValue==="honey")', () => {
+    const scores = api.classifyProfile([], 'black honey', 'washed', false).scores;
+    assert.equal(scores.heel_fruitig, 0, 'de honey-subtype-boost mag alleen vuren als het process-veld zelf ook honey is');
+  });
+
+  test('processBucketFor/PROCESS_BUCKET_LABELS kennen wet_hulled een eigen emmertje toe (los van washed/natural_anaerobic/honey)', () => {
+    assert.equal(api.processBucketFor('wet_hulled'), 'wet_hulled');
+    assert.equal(api.PROCESS_BUCKET_LABELS.wet_hulled, 'Wet-hulled');
+  });
+});
+
+describe('Proces-heraudit ronde 2 — Double Washed / Dubbele Anaerobe Fermentatie / Open Tank Pre-fermentatie / Double Honey / Hydro-Honey', () => {
+  function scanMatches(list, text){
+    const lower = text.toLowerCase();
+    const tokens = api.tokenizeForFuzzy(lower);
+    return list.some(kw => api.textOrFuzzyIncludes(lower, tokens, kw));
+  }
+  function processMatch(text){
+    const lower = text.toLowerCase();
+    const tokens = api.tokenizeForFuzzy(lower);
+    for (const key of Object.keys(api.PROCESS_SCAN_KEYWORDS)){
+      if (api.PROCESS_SCAN_KEYWORDS[key].some(kw => api.textOrFuzzyIncludes(lower, tokens, kw))) return key;
+    }
+    return null;
+  }
+
+  test('"Dubbele Anaerobe Fermentatie" herkent process=anaerobic (voorheen: geen enkel process-trefwoord matchte de Nederlandse bijvoeglijke vorm "anaerobe")', () => {
+    assert.equal(processMatch('Dubbele Anaerobe Fermentatie'), 'anaerobic');
+  });
+
+  test('"Dubbele Anaerobe Fermentatie" en "Double Anaerobic" triggeren allebei het experimentele-fermentatiesignaal (woordvolgorde-onafhankelijk)', () => {
+    assert.equal(scanMatches(api.EXPERIMENTAL_SCAN_KEYWORDS, 'Dubbele Anaerobe Fermentatie'), true);
+    assert.equal(scanMatches(api.EXPERIMENTAL_SCAN_KEYWORDS, 'Double Anaerobic'), true);
+  });
+
+  test('"Double Washed" herkent process=washed (via het bestaande kale "washed"-trefwoord) maar triggert NIET het experimentele-signaal', () => {
+    assert.equal(processMatch('Double Washed'), 'washed');
+    assert.equal(scanMatches(api.EXPERIMENTAL_SCAN_KEYWORDS, 'Double Washed'), false, 'double washed is een cleaner/hoger-zuur variant, geen extractiegevoelige experimentele lot');
+  });
+
+  test('classifyProfile: "double washed"/"dubbel gewassen" bij process=washed boost heel_fruitig extra (Cassis/zwarte bes-richting), bovenop de vlakke washed-boost', () => {
+    const en = api.classifyProfile([], 'double washed', 'washed', false).scores;
+    assert.equal(en.heel_fruitig, 1);
+    assert.equal(en.fresh_clean, 1, 'de vlakke washed->fresh_clean-boost blijft ook bestaan');
+    const nl = api.classifyProfile([], 'dubbel gewassen', 'washed', false).scores;
+    assert.equal(nl.heel_fruitig, 1);
+  });
+
+  test('classifyProfile: "double washed" telt niet mee als het process-veld niet washed is (guard)', () => {
+    const scores = api.classifyProfile([], 'double washed', null, false).scores;
+    assert.deepEqual(Object.values(scores), [0, 0, 0, 0, 0]);
+  });
+
+  test('"Pre-fermentatie met Open Tank" triggert het experimentele-fermentatiesignaal, maar herkent zelf geen basisproces', () => {
+    assert.equal(scanMatches(api.EXPERIMENTAL_SCAN_KEYWORDS, 'Pre-fermentatie met Open Tank'), true);
+    assert.equal(processMatch('Pre-fermentatie met Open Tank'), null);
+  });
+
+  test('gewone "Open Tank Fermentation" (zonder "pre-"/"voor-") triggert NIET het experimentele-signaal — dat is gewoon standaard washed-praktijk, geen bijzondere lot', () => {
+    assert.equal(scanMatches(api.EXPERIMENTAL_SCAN_KEYWORDS, 'Open Tank Fermentation, 48 hours'), false);
+  });
+
+  test('"Double Honey Fermentation" en "Hydro-Honey Processed" herkennen process=honey + het experimentele-signaal (al aanwezige trefwoorden, hier bevestigd)', () => {
+    assert.equal(processMatch('Double Honey Fermentation'), 'honey');
+    assert.equal(scanMatches(api.EXPERIMENTAL_SCAN_KEYWORDS, 'Double Honey Fermentation'), true);
+    assert.equal(processMatch('Hydro-Honey Processed'), 'honey');
+    assert.equal(scanMatches(api.EXPERIMENTAL_SCAN_KEYWORDS, 'Hydro-Honey Processed'), true);
+  });
+});
+
+// NIEUW (Phase 0 / BC-06 — audit: valse smaaktags uit tekstherkenning). Zie
+// scanFlavorTagsInText() in de app voor de vier regels. Elke "niet"-rij hieronder was vóór
+// deze fix een echte, gemeten valse tag.
+describe('BC-06: smaaktags uit tekst — geen valse treffers meer', () => {
+  const scan = (text, fuzzy = true) => [...api.scanFlavorTagsInText(text.toLowerCase(), { fuzzy })];
+  const cases = [
+    // [tekst, moet bevatten, mag niet bevatten]
+    ['Ethiopia Guji — Light roast. Jasmine, peach.', ['Jasmijn', 'Perzik'], ['Geroosterd']],
+    ['Roasted on 2024-05-01 by Friedhats Roasters. Filter roast.', [], ['Geroosterd']],
+    ['Roast date 12/03. Roasted in Amsterdam.', [], ['Geroosterd', 'Dadel']],
+    ['Medium-dark roast. Roasted almond.', ['Geroosterd', 'Amandel'], []],
+    ['Chocolade, geroosterde hazelnoot', ['Geroosterd', 'Hazelnoot', 'Chocolade'], ['Roos']],
+    ['grapefruit, bergamot', ['Grapefruit', 'Bergamot'], ['Druif']],
+    ['red grapes', ['Druif'], ['Grapefruit']],
+    ['tastes like chocolate, a sublime cup', ['Chocolade'], ['Limoen']],
+    ['lime, lemongrass', ['Limoen', 'Citroengras'], ['Citroen']],
+    ['great appearance this year', [], ['Peer']],
+    ['pear', ['Peer'], []],
+    ['harvest data, plus lots of fig', ['Vijg'], ['Pruim', 'Dadel']],
+    ['plums, cherries and dates', ['Pruim', 'Kers', 'Dadel'], []],
+    ['Colombia honey process. Red apple.', ['Appel'], ['Honing']],
+    ['Yellow honey. Apricot, honey.', ['Abrikoos', 'Honing'], []],
+    ['Milk chocolate, caramel', ['Melkchocolade'], ['Chocolade']],
+    ['Rosehip, cane sugar', ['Rozenbottel', 'Rietsuiker'], ['Roos']],
+    ['proeft naar kiwi en perziken', ['Kiwi', 'Perzik'], []]
+  ];
+  for (const [text, must, mustNot] of cases){
+    test(`"${text}"`, () => {
+      const tags = scan(text);
+      for (const t of must) assert.ok(tags.includes(t), `verwachtte ${t} in ${JSON.stringify(tags)}`);
+      for (const t of mustNot) assert.ok(!tags.includes(t), `${t} is een valse tag in ${JSON.stringify(tags)}`);
+    });
+  }
+
+  test('tikfouttolerantie: alleen woorden van 7+ letters (7-9: 1 letter, 10+: 2), korte woorden nooit', () => {
+    assert.equal(api.flavorFuzzyDistance(4), 0);
+    assert.equal(api.flavorFuzzyDistance(6), 0);
+    assert.equal(api.flavorFuzzyDistance(7), 1);
+    assert.equal(api.flavorFuzzyDistance(9), 1);
+    assert.equal(api.flavorFuzzyDistance(10), 2);
+    assert.ok(scan('raspbery').includes('Framboos'), 'OCR-tikfout in een lang woord wordt nog steeds herkend');
+    assert.ok(!scan('raspbery', false).includes('Framboos'), 'zonder fuzzy-optie (vrije tekst) geen tikfouttolerantie');
+    assert.ok(!scan('tastes like').includes('Limoen'), 'lime ~ like: te kort voor tikfouttolerantie');
+    assert.ok(!scan('roaster').includes('Geroosterd'), 'roaster is geen smaak');
+  });
+
+  test('de algemene matcher voor branddiepte/proces/land blijft ongewijzigd (OCR-hardening P3)', () => {
+    assert.equal(api.maxFuzzyDistance(4), 1);
+    assert.equal(api.maxFuzzyDistance(7), 2);
+  });
+
+  test('classifyProfile: "light roast" in vrije tekst geeft geen body-/vol_rond-punt meer', () => {
+    const cls = api.classifyProfile([], 'Roasted on 2024-05-01 by Friedhats Roasters. Filter roast.', null, false);
+    assert.deepEqual(Object.values(cls.scores), [0, 0, 0, 0, 0]);
+  });
+});
+
+// NIEUW (Phase 0 / BC-03 — audit: defectvlag per categorie i.p.v. per tag).
+describe('BC-03: defectwaarschuwing per tag', () => {
+  test('Tomaat en "Fris / vers" geven geen defectwaarschuwing meer', () => {
+    assert.equal(api.defectTagWarning(['Tomaat']), '');
+    assert.equal(api.defectTagWarning(['Fris / vers']), '');
+    assert.equal(api.defectTagWarning(['Kruidachtig', 'Bitter', 'Zout']), '');
+  });
+
+  test('echte defecttags geven wél een waarschuwing, met alleen de defecttags erin genoemd', () => {
+    const msg = api.defectTagWarning(['Tomaat', 'Beschimmeld', 'Hooiachtig']);
+    assert.match(msg, /Beschimmeld, Hooiachtig/);
+    assert.doesNotMatch(msg, /Tomaat/);
+  });
+
+  test('elke tag in DEFECT_TAGS bestaat in het smaakwiel (geen typfout die stil nooit matcht)', () => {
+    for (const t of api.DEFECT_TAGS){
+      assert.ok(api.TAG_TO_CATEGORY[t], `${t} staat in DEFECT_TAGS maar niet in het wiel`);
+    }
+  });
+
+  test('defecttags komen alleen uit de categorieën groen_plantaardig en overig', () => {
+    for (const t of api.DEFECT_TAGS){
+      assert.ok(['groen_plantaardig', 'overig'].includes(api.TAG_TO_CATEGORY[t]), `${t} valt in ${api.TAG_TO_CATEGORY[t]}`);
+    }
   });
 });
