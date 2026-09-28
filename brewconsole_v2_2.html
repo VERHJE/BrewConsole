@@ -540,6 +540,8 @@
     margin-bottom:10px;
   }
   .summary-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+  .prep-bean-line{font-size:13px; color:var(--text-dim); margin:-4px 0 8px;}
+  .prep-bean-line[data-linked="false"]{color:var(--text-faint);}
 
   .technique-line{
     font-size:13px; color:var(--copper-light);
@@ -2233,6 +2235,8 @@
       </div>
       <div class="summary-tag" id="summary-tag"></div>
       <h1 class="title">Jouw recept</h1>
+      <!-- Phase 0 / BC-01: laat vóór Start zien bij welke boon dit brouwsel gelogd wordt. -->
+      <p class="prep-bean-line" id="prep-bean-line"></p>
       <p class="technique-line" id="technique-line"></p>
       <p class="technique-tasting" id="technique-tasting"></p>
       <p class="profile-twin-banner" id="prep-twin-note" hidden></p>
@@ -5909,18 +5913,7 @@ function applyAdvice(){
 function brewAgain(id){
   const bean = beanLibrary.find(b=>b.id===id);
   if (!bean || !bean.lastBrew){ useBeanForAdvice(id); return; }
-  adviceState.roast = bean.roastLevel;
-  adviceState.profile = bean.profileKey;
-  adviceState.process = PROCESS_INFO[bean.process] ? bean.process : null;
-  adviceState.experimental = !!bean.experimental;
-  adviceState.roastDate = bean.roastDate || null;
-  adviceState.openedDate = bean.openedDate || null;
-  adviceState.intendedUse = bean.intendedUse || null;
-  adviceState.altitude = bean.altitude != null ? bean.altitude : null;
-  adviceState.flavorScores = bean.flavorScores || null;
-  adviceState.fermentEvidence = !!bean.fermentEvidence;
-  adviceState.flavorTags = bean.flavorNotes || null;
-  adviceState.beanId = id;
+  loadBeanIntoAdvice(bean);
 
   state.method = (bean.lastBrew.method === 'v60' || bean.lastBrew.method === 'chemex') ? bean.lastBrew.method : 'v60';
   state.roast = adviceState.roast;
@@ -5933,7 +5926,6 @@ function brewAgain(id){
   state.altitude = adviceState.altitude;
   state.flavorScores = adviceState.flavorScores;
   state.fermentEvidence = adviceState.fermentEvidence;
-  state.beanId = id;
   state.bypass = !!bean.lastBrew.bypass;
   // BP-2 punt 6: een lastBrew van vóór deze wijziging heeft geen bypassPct — dan is 30%
   // een UI-beginstand, nooit met terugwerkende kracht in bean.lastBrew geschreven.
@@ -7475,6 +7467,7 @@ function renderHomeScreen(){
   }
 }
 document.getElementById('home-start-brew-btn').addEventListener('click', ()=>{
+  setActiveBean(null); // BC-01: een nieuwe handmatige start hoort bij geen boon, tot je er een kiest
   renderMethodGrid();
   showScreen('method');
 });
@@ -9033,9 +9026,19 @@ function exitEditMode(){
   if (cancelBtn) cancelBtn.style.display = 'none';
 }
 
-function useBeanForAdvice(id){
-  const bean = beanLibrary.find(b=>b.id===id);
-  if (!bean) return;
+/* Phase 0 / BC-01 (audit: boonkoppeling). Eén plek die bepaalt bij welke boon het
+   volgende brouwsel hoort. Voorheen zette alleen useBeanForAdvice()/brewAgain() de
+   beanId; de bonenchip in het advies-scherm en "nieuwe boon opslaan" vanuit het advies
+   deden dat niet, en niets wiste hem ooit — waardoor een brouwsel stilzwijgend bij de
+   boon van een EERDERE sessie (of bij geen boon) in het logboek belandde. */
+function setActiveBean(id){
+  adviceState.beanId = id || null;
+  state.beanId = id || null;
+}
+// Kopieert de boonkenmerken naar het advies én koppelt de boon. Vervangt drie identieke,
+// los onderhouden kopieerblokken (useBeanForAdvice, useBeanChipInline, opslaan-vanuit-
+// advies) — precies het soort duplicatie waardoor de beanId in twee ervan ontbrak.
+function loadBeanIntoAdvice(bean){
   adviceState.roast = bean.roastLevel;
   adviceState.profile = bean.profileKey;
   adviceState.process = PROCESS_INFO[bean.process] ? bean.process : null;
@@ -9047,11 +9050,17 @@ function useBeanForAdvice(id){
   adviceState.flavorScores = bean.flavorScores || null;
   adviceState.fermentEvidence = !!bean.fermentEvidence;
   adviceState.flavorTags = bean.flavorNotes || null;
-  adviceState.beanId = id;
   // HERAUDIT (bijna-gelijke-stand): elke nieuw geladen boon start opnieuw onopgelost —
   // een eerder gemaakte keuze voor een ANDERE boon mag een tie hier niet stilzwijgend
   // overslaan.
   adviceState.tieResolved = false;
+  setActiveBean(bean.id);
+}
+
+function useBeanForAdvice(id){
+  const bean = beanLibrary.find(b=>b.id===id);
+  if (!bean) return;
+  loadBeanIntoAdvice(bean);
   showScreen('advice');
   renderAdviceChips();
   renderBeanChipsInAdvice();
@@ -9074,7 +9083,9 @@ function renderBeanChipsInAdvice(){
   if (divider) divider.style.display = 'flex';
   if (intro) intro.textContent = 'Kies een opgeslagen boon voor een advies in 1 tap, of vul zelf de kenmerken in.';
   el.innerHTML = beanLibrary.slice().reverse().map(b=>{
-    const isSelected = adviceState.roast===b.roastLevel && adviceState.profile===b.profileKey;
+    // BC-01: geselecteerd = gekoppeld. Voorheen "zelfde roast + profiel", waardoor twee
+    // bonen met dezelfde kenmerken allebei oplichtten en de chip niets zei over de koppeling.
+    const isSelected = adviceState.beanId === b.id;
     const r = ROAST_INFO[b.roastLevel] || ROAST_INFO.medium;
     const p = PROFILE_INFO[b.profileKey] || PROFILE_INFO.klassiek;
     const proc = PROCESS_INFO[b.process] ? PROCESS_INFO[b.process].name : null;
@@ -9093,18 +9104,10 @@ function renderBeanChipsInAdvice(){
 function useBeanChipInline(id){
   const bean = beanLibrary.find(b=>b.id===id);
   if (!bean) return;
-  adviceState.roast = bean.roastLevel;
-  adviceState.profile = bean.profileKey;
-  adviceState.process = PROCESS_INFO[bean.process] ? bean.process : null;
-  adviceState.experimental = !!bean.experimental;
-  adviceState.roastDate = bean.roastDate || null;
-  adviceState.openedDate = bean.openedDate || null;
-  adviceState.intendedUse = bean.intendedUse || null;
-  adviceState.altitude = bean.altitude != null ? bean.altitude : null;
-  adviceState.flavorScores = bean.flavorScores || null;
-  adviceState.fermentEvidence = !!bean.fermentEvidence;
-  adviceState.flavorTags = bean.flavorNotes || null;
-  adviceState.tieResolved = false; // HERAUDIT (bijna-gelijke-stand): nieuwe boon, opnieuw onopgelost
+  // BC-01: nogmaals tikken ontkoppelt (zelfde patroon als de proces-chip). De ingevulde
+  // kenmerken blijven staan; alleen de koppeling aan deze boon vervalt.
+  if (adviceState.beanId === id) setActiveBean(null);
+  else loadBeanIntoAdvice(bean);
   renderAdviceChips();
   renderBeanChipsInAdvice();
   maybeShowAdviceResult();
@@ -9772,6 +9775,18 @@ function renderPrep(){
   document.getElementById('summary-tag').innerHTML =
     `<span class="summary-dot" style="background:${p.color}"></span>${m.name} · ${r.name} · ${p.name}`;
 
+  // BC-01: een beanId die naar een verwijderde boon wijst, telt als "geen boon" — anders
+  // logt saveBrewLogEntry() een wees-verwijzing die in geen enkele bonengeschiedenis opduikt.
+  const activeBean = state.beanId ? beanLibrary.find(b=>b.id===state.beanId) : null;
+  if (state.beanId && !activeBean) setActiveBean(null);
+  const beanLineEl = document.getElementById('prep-bean-line');
+  if (beanLineEl){
+    beanLineEl.textContent = activeBean
+      ? `Boon: ${activeBean.name || 'Naamloze boon'}`
+      : 'Geen boon gekoppeld — dit brouwsel komt in geen bonengeschiedenis';
+    beanLineEl.dataset.linked = activeBean ? 'true' : 'false';
+  }
+
   document.getElementById('technique-line').textContent = `${rec.technique} · ${rec.author}`;
   document.getElementById('technique-tasting').textContent = p.desc;
 
@@ -10354,6 +10369,7 @@ document.getElementById('serving-plus').addEventListener('click', ()=>{
 });
 
 document.getElementById('advisor-link').addEventListener('click', ()=>{
+  setActiveBean(null); // BC-01: vanaf het methodescherm is dit een verse start; kies hier opnieuw een boon
   showScreen('advice');
   renderAdviceChips();
   renderBeanChipsInAdvice();
@@ -10487,17 +10503,7 @@ document.getElementById('bean-form').addEventListener('submit', (e)=>{
   renderBeanChipsInAdvice();
 
   if (beanAddReturnTo === 'advice'){
-    adviceState.roast = bean.roastLevel;
-    adviceState.profile = bean.profileKey;
-    adviceState.process = PROCESS_INFO[bean.process] ? bean.process : null;
-    adviceState.experimental = !!bean.experimental;
-    adviceState.roastDate = bean.roastDate || null;
-    adviceState.openedDate = bean.openedDate || null;
-    adviceState.intendedUse = bean.intendedUse || null;
-    adviceState.altitude = bean.altitude != null ? bean.altitude : null;
-    adviceState.flavorScores = bean.flavorScores || null;
-    adviceState.fermentEvidence = !!bean.fermentEvidence;
-    adviceState.tieResolved = false; // HERAUDIT (bijna-gelijke-stand): nieuwe boon, opnieuw onopgelost
+    loadBeanIntoAdvice(bean); // BC-01: de zojuist opgeslagen boon is meteen de gekoppelde boon
     showScreen('advice');
     renderAdviceChips();
     renderBeanChipsInAdvice();
@@ -11254,7 +11260,7 @@ document.querySelectorAll('.navbar [data-nav]').forEach(btn=>{
     const dest = btn.getAttribute('data-nav');
     if (dest === 'home'){ renderHomeScreen(); showScreen('home'); }
     else if (dest === 'beans'){ renderBeanLibraryScreen(); showScreen('beans'); }
-    else if (dest === 'method'){ renderMethodGrid(); showScreen('method'); }
+    else if (dest === 'method'){ setActiveBean(null); renderMethodGrid(); showScreen('method'); } // BC-01: verse start
     else if (dest === 'settings'){ showScreen('settings'); }
     else if (dest === 'brewlog-history'){ renderBrewLogHistory(); }
   });

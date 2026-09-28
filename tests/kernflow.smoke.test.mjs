@@ -1230,6 +1230,116 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
+  // NIEUW (Phase 0 / BC-01 — audit: boonkoppeling). Voorheen koppelde de bonenchip in het
+  // advies-scherm de boon niet, en wiste niets ooit een eerdere koppeling: een brouwsel
+  // belandde dan stilzwijgend bij de boon van een vorige sessie (of bij geen boon).
+  describe('BC-01: elk brouwsel hoort bij de boon die je koos — of bij geen boon', () => {
+    const SEED_BEANS = [
+      { id:'bean-a', name:'Boon A', roastLevel:'medium', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:0 },
+      { id:'bean-b', name:'Boon B', roastLevel:'light', profileKey:'klassiek', process:'natural', flavorNotes:[], addedAt:2, doseUsedG:0 }
+    ];
+    async function seededPage(){
+      const page = await newTrackedPage();
+      await page.addInitScript((beans) => {
+        if (!sessionStorage.getItem('bc01-seeded')){
+          localStorage.setItem('brewconsole_beans', JSON.stringify(beans));
+          sessionStorage.setItem('bc01-seeded', '1');
+        }
+      }, SEED_BEANS);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      return page;
+    }
+    async function openAdviceFresh(page){
+      await page.click('.navbar [data-nav="method"]');
+      await assertBecomesActive(page, '#screen-method');
+      await page.click('#advisor-link');
+      await assertBecomesActive(page, '#screen-advice');
+    }
+    async function adviceToPrep(page){
+      await page.click('#advice-batch [data-adv-batch="single"]');
+      await page.waitForFunction(() => getComputedStyle(document.getElementById('advice-result')).display !== 'none');
+      await page.click('#advice-cta');
+      await assertBecomesActive(page, '#screen-prep');
+    }
+    async function brewAndLog(page){
+      await page.click('#start-btn');
+      await assertBecomesActive(page, '#screen-brew');
+      await page.clock.fastForward(FAST_FORWARD);
+      await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
+      await page.click('#brewlog-open-btn');
+      await assertBecomesActive(page, '#screen-brewlog');
+      await page.click('#brewlog-save-btn');
+      await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
+      return page.evaluate(() => {
+        const log = JSON.parse(localStorage.getItem('brewConsoleLog') || '[]');
+        return log.slice().sort((a, b) => b.timestamp - a.timestamp)[0];
+      });
+    }
+    const beanLine = (page) => page.locator('#prep-bean-line').textContent();
+
+    test('bonenchip → brouwsel hoort bij die boon; daarna een handmatige start hoort bij géén boon', async () => {
+      const page = await seededPage();
+      await openAdviceFresh(page);
+      await page.click('[data-bean-pick="bean-a"]');
+      assert.equal(await page.getAttribute('[data-bean-pick="bean-a"]', 'data-selected'), 'true');
+      assert.equal(await page.getAttribute('[data-bean-pick="bean-b"]', 'data-selected'), 'false');
+      await adviceToPrep(page);
+      assert.match(await beanLine(page), /Boon: Boon A/);
+      const first = await brewAndLog(page);
+      assert.equal(first.beanId, 'bean-a', 'brouwsel via de bonenchip moet bij Boon A gelogd worden');
+
+      // Verse handmatige start via Home: de vorige koppeling mag niet meeliften.
+      await page.click('.navbar [data-nav="home"]');
+      await assertBecomesActive(page, '#screen-home');
+      await page.click('#home-start-brew-btn');
+      await assertBecomesActive(page, '#screen-method');
+      await page.click('[data-method="v60"]');
+      await page.click('#roast-grid [data-roast] >> nth=0');
+      await page.click('#profile-grid [data-profile="klassiek"]');
+      await assertBecomesActive(page, '#screen-prep');
+      assert.match(await beanLine(page), /Geen boon gekoppeld/);
+      const second = await brewAndLog(page);
+      assert.equal(second.beanId, null, 'een handmatige start zonder boonkeuze mag niet bij de vorige boon belanden');
+      await page.close();
+    });
+
+    test('van boon wisselen koppelt de laatst gekozen boon; nogmaals tikken ontkoppelt', async () => {
+      const page = await seededPage();
+      await openAdviceFresh(page);
+      await page.click('[data-bean-pick="bean-a"]');
+      await page.click('[data-bean-pick="bean-b"]');
+      await adviceToPrep(page);
+      assert.match(await beanLine(page), /Boon: Boon B/);
+      assert.equal(await page.evaluate(() => state.beanId), 'bean-b');
+
+      await openAdviceFresh(page);
+      assert.equal(await page.evaluate(() => state.beanId), null, 'advies openen vanaf het methodescherm is een verse start');
+      await page.click('[data-bean-pick="bean-a"]');
+      await page.click('[data-bean-pick="bean-a"]'); // nogmaals = ontkoppelen
+      assert.equal(await page.getAttribute('[data-bean-pick="bean-a"]', 'data-selected'), 'false');
+      await adviceToPrep(page);
+      assert.match(await beanLine(page), /Geen boon gekoppeld/);
+      assert.equal(await page.evaluate(() => state.beanId), null);
+      await page.close();
+    });
+
+    test('een nieuwe boon opslaan vanuit het advies koppelt meteen die nieuwe boon', async () => {
+      const page = await seededPage();
+      await openAdviceFresh(page);
+      await page.click('[data-bean-pick="bean-a"]');
+      await page.click('#advice-scan-new');
+      await assertBecomesActive(page, '#screen-bean-add');
+      await page.fill('#f-name', 'Verse Boon');
+      await page.click('#save-bean-btn');
+      await assertBecomesActive(page, '#screen-advice');
+      await adviceToPrep(page);
+      assert.match(await beanLine(page), /Boon: Verse Boon/);
+      const newId = await page.evaluate(() => beanLibrary.find(b => b.name === 'Verse Boon').id);
+      assert.equal(await page.evaluate(() => state.beanId), newId);
+      await page.close();
+    });
+  });
+
   test('Geen console- of pageerrors opgetreden tijdens de hele kernflow', () => {
     assert.deepEqual(consoleErrors, [], 'Onverwachte console.error()-aanroepen tijdens de kernflow');
     assert.deepEqual(pageErrors, [], 'Onverwachte onafgevangen JS-fouten tijdens de kernflow');
