@@ -2043,7 +2043,7 @@
         <p class="advice-q-label">Proces</p>
         <div class="chip-row" id="f-process-chips" style="margin-bottom:6px;"></div>
         <div class="chip-row" id="f-experimental-chip" style="margin-bottom:6px;"></div>
-        <p style="font-size:11.5px; color:var(--text-faint); margin:0 0 20px;">Natural/anaerobic? Dat verfijnt het advies (verstoppingsrisico Chemex, iets lagere temperatuur).</p>
+        <p style="font-size:11.5px; color:var(--text-faint); margin:0 0 20px;">Natural/anaerobic? Dat weegt mee in de methodekeuze (V60 of Chemex) en het voorgestelde profiel; dosis, maling en temperatuur veranderen er niet door.</p>
 
         <details class="flavor-category">
           <summary style="color:var(--copper-light)">
@@ -2173,7 +2173,7 @@
             <label class="form-label">Zak geopend op <span style="text-transform:none; letter-spacing:0; color:var(--text-faint);">(optioneel — los van branddatum: waarschuwt voor oxidatie/verschalen na openen)</span>
               <input type="date" id="f-opened-date" class="form-input">
             </label>
-            <label class="form-label">Hoogteligging <span style="text-transform:none; letter-spacing:0; color:var(--text-faint);">(optioneel, m.a.s.l. — voor grind-advies)</span>
+            <label class="form-label">Hoogteligging <span style="text-transform:none; letter-spacing:0; color:var(--text-faint);">(optioneel, m.a.s.l. — ter info, verandert het recept niet)</span>
               <input type="number" id="f-altitude" class="form-input" placeholder="bijv. 1900" min="0" max="3000" step="1">
             </label>
             <label class="form-label" style="margin-bottom:0;">Zakgrootte <span style="text-transform:none; letter-spacing:0; color:var(--text-faint);">(optioneel, gram — voor voorraadtracking)</span>
@@ -2221,7 +2221,7 @@
     <section class="screen" id="screen-profile" data-screen="profile">
       <button class="back-btn" data-back="roast">← Roast</button>
       <h1 class="title">Wat wordt het smaakprofiel?</h1>
-      <p class="subtitle">Bepaalt dosis, maling en schenkschema — een paar profielen delen vandaag nog hetzelfde recept, dat zie je hieronder per profiel.</p>
+      <p class="subtitle">Bepaalt vooral het schenkschema. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding. Een paar profielen delen vandaag nog hetzelfde recept — dat zie je hieronder per profiel.</p>
       <div class="choice-grid choice-grid--1" id="profile-grid"></div>
     </section>
 
@@ -4392,16 +4392,13 @@ function intendedUseNote(intendedUse){
 }
 
 /* ============================================================
-   HOOGTELIGGING/DICHTHEID — hoger gelegen bonen groeien langzamer en
-   worden daardoor dichter (tegen minerale, "hardere" celstructuur),
-   wat ze taaier maakt om te extraheren; laaggelegen bonen zijn
-   zachter/poreuzer en extraheren sneller. Vuistregel uit de specialty-
-   wereld (o.a. Scott Rao's dichtheid-notities, Barista Hustle's
-   grind-density stukken): hoog gelegen (>1700 masl — de meeste
-   Ethiopische, Keniaanse en Colombiaanse hooglandlots) iets fijner
-   malen, laag gelegen (<1200 masl) iets grover om over-extractie te
-   vermijden. Middenzone (1200-1700 masl) is de dichtheid waar de
-   poster-recepten al van uitgaan — geen aanpassing.
+   HOOGTELIGGING/DICHTHEID — alleen genoteerd, stuurt GEEN receptgetal
+   (FORBIDDEN edge, zie de FIX hieronder en tests/forbidden-edges.test.mjs).
+   Achtergrond: hoger gelegen bonen worden vaak dichter en zouden taaier
+   extraheren (o.a. Scott Rao's dichtheid-notities, Barista Hustle). Een
+   eerdere versie maalde daarom hoog (>1700 masl) fijner en laag (<1200
+   masl) grover; die aanpassing is verwijderd omdat er geen gevalideerde
+   hoogte-naar-maalgraad-relatie is gevonden.
    ============================================================ */
 /* FIX (project-brede audit, vinding H7/altitudeNudge): hoogte gaf hier voorheen een
    klik-/µm-correctie op de maling — een FORBIDDEN edge (types/coffee.ts: "no function
@@ -4415,7 +4412,9 @@ function altitudeNudge(masl){
     note:`Hoogte genoteerd (${m} m) — past de maling hierboven niet aan. Er is geen gevalideerde hoogte-naar-maalgraad-aanpassing gevonden in het eigen onderzoek van dit project; hoogte mag dat structureel niet meer beïnvloeden.` };
 }
 
-/* Waterhardheid → temperatuurcorrectie. De SCA Water Quality Standard (Standard 310-2021 /
+/* Waterhardheid — alleen genoteerd, GEEN temperatuurcorrectie meer (FORBIDDEN edge, zie
+   de FIX vlak boven hardnessNudge() en tests/forbidden-edges.test.mjs). De rest van dit
+   blok is de historische onderbouwing van de verwijderde correctie. De SCA Water Quality Standard (Standard 310-2021 /
    SCAE-waterrapport, al gebruikt in METHOD_INFO.tips hierboven) geeft als doelrange voor
    algemene hardheid 50–175 mg/L CaCO3. Gepubliceerd onderzoek van Christopher Hendon &
    Maxwell Colonna-Dashwood (Journal of Agricultural and Food Chemistry, 2014; later het boek
@@ -4425,8 +4424,8 @@ function altitudeNudge(masl){
    zachter → langzamer/zwakker). NIET gebrond: er bestaat geen gepubliceerde tabel die mg/L
    rechtstreeks naar graden Celsius vertaalt — de concrete stapgrootte hieronder is een eigen,
    voorzichtige toepassing van dat extractieprincipe, net als bij altitudeNudge()/
-   freshnessTierForDays() hierboven: harder water iets kouder zetten om over-extractie te
-   compenseren, zachter water iets heter om onder-extractie te compenseren.
+   freshnessTierForDays() hierboven. (Vroeger: harder water iets kouder zetten, zachter water
+   iets heter — die correctie bestaat niet meer.)
 
    C6 (koffie-expertpanel, Petra): bewuste vereenvoudiging — dit modelleert alleen algemene
    hardheid (calcium/magnesium), niet alkaliniteit (bicarbonaat, de bufferende werking tegen
@@ -7089,7 +7088,8 @@ function classifyProfile(selectedTags, extraText, processValue, experimentalFlag
      fermentatieproces was — een subtiele anaerobic-lot en een dubbel-gefermenteerde
      experimentele lot scoorden identiek. experimentalFlag is dezelfde vlag die elders in de
      app (bypassAdvice/bypassGrindTempAdjust) al als het sterkste fermentatie-intensiteit-
-     signaal geldt (loopt door naar 37,5% bypass i.p.v. 30%) — hergebruikt hier voor dezelfde
+     signaal gold (vóór audit H7 liep het door naar 37,5% bypass; het bypass-percentage is
+     sindsdien een expliciete gebruikerskeuze van 20/30/40%) — hergebruikt hier voor dezelfde
      onderscheiding i.p.v. een nieuw, ongebrond wegingsmodel te verzinnen. */
   if (PROCESS_PROFILE_BOOST[processValue]) scores[PROCESS_PROFILE_BOOST[processValue]] += experimentalFlag ? 2 : 1;
   // Honey-subtype-verfijning (proces-heraudit, zie HONEY_SUBTYPE_TEXT_HINTS hierboven):
