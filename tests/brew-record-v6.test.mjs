@@ -213,3 +213,130 @@ describe('Fase 1 — zachte verwijdering en herstel na onderbreking', () => {
     assert.equal(api.staleBrewingOutcome(api.applyBrewEvent(rec, 'abandon', T0).rec, T0 + 1e9), 'none');
   });
 });
+
+// ---------------------------------------------------------------------------------------
+// NIEUW (Brew Intelligence v2, Fase 2): brouwscherm, bed droog, herstel.
+// ---------------------------------------------------------------------------------------
+describe('Fase 2 — verstreken tijd uit gebeurtenissen (herstel na herladen)', () => {
+  test('zonder pauze: wandklok sinds start', () => {
+    const r = api.elapsedFromEvents([{ type: 'start', at: T0 }], T0 + 95_400);
+    assert.deepEqual(j(r), { elapsedSec: 95, paused: false });
+  });
+  test('pauzes tellen niet mee; een gesloten app wel', () => {
+    const ev = [
+      { type: 'start', at: T0 }, { type: 'pause', at: T0 + 30_000 },
+      { type: 'resume', at: T0 + 90_000 }, { type: 'recovered', at: T0 + 200_000 }
+    ];
+    assert.equal(api.elapsedFromEvents(ev, T0 + 200_000).elapsedSec, 30 + 110);
+  });
+  test('op pauze gesloten: de tijd blijft staan en paused = true', () => {
+    const ev = [{ type: 'start', at: T0 }, { type: 'pause', at: T0 + 42_000 }];
+    assert.deepEqual(j(api.elapsedFromEvents(ev, T0 + 999_000)), { elapsedSec: 42, paused: true });
+  });
+});
+
+describe('Fase 2 — brouwfase: giet tot / wacht / laten doorlopen', () => {
+  const rec = api.computeRecipe('v60', 'medium', 'klassiek', 300, 'washed', false, 10, null, false, false, null, 0);
+  const phase = (t) => j(api.brewPhaseAt(rec.steps, rec.totalTime, t));
+  test('tijdens een giet: het DOEL op de weegschaal, niet een geschat "toegevoegd"-getal', () => {
+    const p = phase(5);
+    assert.equal(p.kind, 'pour');
+    assert.equal(p.targetG, 60);
+    assert.equal(p.pourIndex, 1);
+    assert.equal(p.pourCount, 5);
+    for (const k of Object.keys(p)) assert.doesNotMatch(k, /poured|added|current(?!Target)|sofar/i, `fase bevat een geschatte hoeveelheid: ${k}`);
+  });
+  test('tussen gieten: wachten met aftellen tot de volgende giet', () => {
+    const p = phase(15);
+    assert.equal(p.kind, 'wait');
+    assert.equal(p.remainingSec, 30);
+    assert.equal(p.nextTargetG, 120);
+  });
+  test('na de laatste giet: laten doorlopen; na de schatting telt de klok door', () => {
+    assert.equal(phase(185).kind, 'pour');
+    assert.equal(phase(185).targetG, 300);
+    assert.equal(phase(195).kind, 'drawdown');
+    assert.equal(phase(195).overPlanSec, 0);
+    assert.equal(phase(222).overPlanSec, 12);
+  });
+  test('gieten met een expliciet eindmoment (endT) blijven "giet" tot dat moment', () => {
+    const fc = api.computeRecipe('v60', 'medium', 'fresh_clean', 300, 'washed', false, 10, null, false, false, null, 0);
+    const p = j(api.brewPhaseAt(fc.steps, fc.totalTime, 70));
+    assert.equal(p.kind, 'pour');
+    assert.equal(p.targetG, 180);
+  });
+  test('elke methode × profiel: fasen volgen elkaar logisch op en eindigen in drawdown', () => {
+    for (const m of ['v60', 'chemex']){
+      for (const prof of Object.keys(api.ENGINE_PROFILE_MAP)){
+        const only = api.PROFILE_INFO[prof].methodOnly;
+        if (only && only !== m) continue;
+        const r = api.computeRecipe(m, 'medium', prof, m === 'v60' ? 300 : 600, 'washed', false, 10, null, false, false, null, 0);
+        let lastTarget = 0;
+        for (let t = 0; t <= r.totalTime + 30; t++){
+          const p = api.brewPhaseAt(r.steps, r.totalTime, t);
+          if (p.kind === 'pour'){ assert.ok(p.targetG >= lastTarget, `${m}/${prof} t=${t}: doel daalt`); lastTarget = p.targetG; }
+        }
+        assert.equal(api.brewPhaseAt(r.steps, r.totalTime, r.totalTime + 30).kind, 'drawdown', `${m}/${prof}`);
+        assert.equal(lastTarget, r.steps.at(-1).to, `${m}/${prof}: laatste doel = totaal water`);
+      }
+    }
+  });
+  test('Einde: vóór het doorlopen = afgebroken, tijdens het doorlopen = voltooid', () => {
+    assert.equal(api.endBrewDecision('pour'), 'abandon');
+    assert.equal(api.endBrewDecision('wait'), 'abandon');
+    assert.equal(api.endBrewDecision('drawdown'), 'complete');
+  });
+});
+
+describe('Fase 2 — voltooien met bed droog', () => {
+  test('met tik: bedDrySec gemeten (M) en het verschil met de schatting afgeleid', () => {
+    const rec = sampleRecord();
+    const r = api.completeWithBedDry(rec, T0 + 230_000, 224, 'bed_dry');
+    assert.equal(r.ok, true);
+    assert.equal(r.rec.lifecycle, 'completed');
+    assert.equal(r.rec.actual.bedDrySec, 224);
+    assert.equal(r.rec.derived.drainResidualSec, 224 - rec.plan.expectedDrainEndSec);
+    const types = r.rec.actual.events.map(e => e.type);
+    assert.deepEqual(j(types.slice(-2)), ['bed_dry', 'complete']);
+    assert.equal(r.rec.actual.events.at(-2).source, 'M');
+  });
+  test('zonder tik: bed droog blijft null, geen afgeleid verschil, geen bed_dry-gebeurtenis', () => {
+    const r = api.completeWithBedDry(sampleRecord(), T0 + 1e6, null, 'end');
+    assert.equal(r.rec.actual.bedDrySec, null);
+    assert.equal(r.rec.derived.drainResidualSec, null);
+    assert.ok(!r.rec.actual.events.some(e => e.type === 'bed_dry'));
+  });
+  test('een afgebroken of al voltooid brouwsel kan niet (nog eens) bed droog krijgen', () => {
+    const abandoned = api.applyBrewEvent(sampleRecord(), 'abandon', T0).rec;
+    assert.equal(api.completeWithBedDry(abandoned, T0 + 1, 200, 'bed_dry').ok, false);
+    const done = api.completeWithBedDry(sampleRecord(), T0 + 1, 200, 'bed_dry').rec;
+    assert.equal(api.completeWithBedDry(done, T0 + 2, 210, 'bed_dry').ok, false);
+  });
+  test('de logboekweergave draagt de gemeten bed-droog-tijd mee', () => {
+    let rec = api.completeWithBedDry(sampleRecord(), T0 + 230_000, 224, 'bed_dry').rec;
+    rec = api.applyBrewEvent(rec, 'log', T0 + 300_000).rec;
+    rec.tasting = { at: T0 + 300_000, scores: {}, note: '', approved: false };
+    const v = api.brewRecordToLogView(rec);
+    assert.equal(v.bedDrySec, 224);
+    assert.equal(v.drainResidualSec, 224 - rec.plan.expectedDrainEndSec);
+  });
+});
+
+describe('Fase 2 — recept terugrekenen voor herstel', () => {
+  test('met bewaarde invoer: exact hetzelfde recept als bij Start', () => {
+    const inputs = { method: 'v60', roast: 'medium', profile: 'klassiek', waterMl: 300, process: 'washed', experimental: false,
+      roastDays: 10, altitude: null, bypass: false, fermentEvidence: false, waterHardnessMgL: null, strengthAdjust: 0, bypassPct: 30, bypassMoment: 'achteraf' };
+    const recipe = api.computeRecipe('v60', 'medium', 'klassiek', 300, 'washed', false, 10, null, false, false, null, 0, 30);
+    const rec = sampleRecord({ recipe, inputs });
+    assert.deepEqual(j(api.recipeInputsFromRecord(rec)), inputs);
+    const again = api.recomputeRecipeForRecord(rec);
+    assert.deepEqual(j(again.steps), j(recipe.steps));
+    assert.equal(again.dose, recipe.dose);
+  });
+  test('Fase 1-record zonder bewaarde invoer: gereconstrueerd uit het plan, zelfde schema', () => {
+    const rec = sampleRecord();
+    rec.plan.inputs = null;
+    const again = api.recomputeRecipeForRecord(rec);
+    assert.deepEqual(j(again.steps.map(s => ({ t: s.t, add: s.add }))), j(rec.plan.steps));
+  });
+});

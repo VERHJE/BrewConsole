@@ -119,7 +119,9 @@ export function loadApp(){
       DEFECT_TAGS, defectTagWarning, TAG_TO_CATEGORY,
       BREW_RECORD_SCHEMA_VERSION, BREW_TRANSITIONS, SOFT_DELETE_RETENTION_MS, STALE_BREWING_GRACE_SEC,
       createBrewRecord, applyBrewEvent, migrateLegacyLogEntry, brewRecordToLogView, isBrewInLogView,
-      purgeDeletedBrews, staleBrewingOutcome
+      purgeDeletedBrews, staleBrewingOutcome,
+      elapsedFromEvents, brewPhaseAt, endBrewDecision, completeWithBedDry, recipeInputsFromRecord, recomputeRecipeForRecord,
+      ASSUMED_SINGLE_POUR_SEC
     };`,
     sandbox,
     { filename: 'test-exports-shim.js' }

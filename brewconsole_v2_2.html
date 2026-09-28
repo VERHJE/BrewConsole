@@ -540,6 +540,31 @@
     margin-bottom:10px;
   }
   .summary-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+  /* Fase 2: herstelpaneel + Home-banner. */
+  .brew-recovery{position:relative; z-index:3; background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:18px; margin:0 0 16px; display:flex; flex-direction:column; gap:10px;}
+  .brew-recovery[hidden]{display:none;}
+  .brew-recovery-title{font-size:18px; font-weight:700; margin:0; color:var(--text);}
+  .brew-recovery-text{font-size:13.5px; color:var(--text-dim); margin:0 0 4px;}
+  .home-active-brew{display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; text-align:left; cursor:pointer;
+    background:var(--surface); border:1px solid var(--copper-light); border-radius:16px; padding:12px 16px; margin:0 0 14px; color:var(--text);}
+  .home-active-brew[hidden]{display:none;}
+  .home-active-brew-title{font-weight:700; font-size:15px;}
+  .home-active-brew-desc{font-size:12.5px; color:var(--text-dim);}
+  /* Fase 2: brouwscherm — dominante actie + Bed droog. */
+  .brew-action{text-align:center; margin:4px 0 10px;}
+  .brew-action-main{font-size:34px; line-height:1.1; font-weight:700; color:var(--text); letter-spacing:-.01em; font-variant-numeric:tabular-nums;}
+  .brew-action[data-kind="wait"] .brew-action-main{color:var(--text); opacity:.88;}
+  .brew-action-main, .brew-action-sub{text-shadow:0 1px 12px rgba(0,0,0,.55);}
+  #pause-btn:disabled{opacity:.35; cursor:default;}
+  .brew-action[data-kind="drawdown"] .brew-action-main, .brew-action[data-kind="done"] .brew-action-main{color:var(--copper-light);}
+  .brew-action-sub{font-size:13.5px; color:var(--text-dim); margin-top:6px;}
+  .bed-dry-btn{display:block; width:100%; min-height:64px; margin:6px 0 8px; border:none; border-radius:var(--radius-pill);
+    background:var(--copper-light); color:#1a120c; font-size:20px; font-weight:700; letter-spacing:.02em; cursor:pointer;
+    box-shadow:0 6px 24px rgba(212,165,116,.28);}
+  .bed-dry-btn[hidden]{display:none;}
+  .bed-dry-btn:active{transform:translateY(1px) scale(.99);}
+  .bed-dry-hint{font-size:12px; color:var(--text-faint); text-align:center; margin:0 0 10px;}
+  .bed-dry-hint[hidden]{display:none;}
   /* Fase 1: verwijderen van een logging + "Ongedaan maken"-balk. */
   .brewlog-entry-delete{background:none; border:none; color:var(--text-faint); font-size:12px; padding:6px 0 0; cursor:pointer; text-decoration:underline;}
   .undo-bar{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(96px + env(safe-area-inset-bottom)); z-index:60;
@@ -1798,6 +1823,11 @@
          (data-has-photo="true"); zonder foto zou hetzelfde neutrale .photo-slot-vlak tonen. -->
     <section class="screen active" id="screen-home" data-screen="home">
       <h1 class="title" data-screen-heading tabindex="-1">Welkom terug</h1>
+      <!-- Fase 2 (§20): een lopend of nog niet geproefd brouwsel blijft zichtbaar als je wegnavigeert. -->
+      <button type="button" class="home-active-brew" id="home-active-brew" hidden>
+        <span class="home-active-brew-title" id="home-active-brew-title"></span>
+        <span class="home-active-brew-desc" id="home-active-brew-desc"></span>
+      </button>
       <div class="photo-slot photo-slot--hero" data-has-photo="true" aria-hidden="true">
         <img class="photo-slot-img" src="photos/home-hero.jpg" alt="" loading="lazy" style="object-position:center 60%;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 8h13v5a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6V8Z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/></svg>
@@ -2460,6 +2490,14 @@
         <div class="brew-hero-scrim"></div>
       </div>
       <div class="brew-fg">
+        <!-- Fase 2 (§20): herstel na herladen/crash/iOS die de app sloot. -->
+        <div class="brew-recovery" id="brew-recovery" role="dialog" aria-labelledby="brew-recovery-title" hidden>
+          <p class="brew-recovery-title" id="brew-recovery-title">Brouwsel bezig</p>
+          <p class="brew-recovery-text" id="brew-recovery-text"></p>
+          <button type="button" class="start-btn" id="recovery-continue-btn">Doorgaan</button>
+          <button type="button" class="advisor-primary" id="recovery-bed-dry-btn">Bed was al droog</button>
+          <button type="button" class="link-secondary" id="recovery-end-btn">Beëindigen</button>
+        </div>
         <div class="brew-hero" id="brew-hero">
           <div class="brew-hero-header">
             <div class="brew-hero-title" id="brew-hero-title"></div>
@@ -2500,6 +2538,14 @@
              functionaliteit — #next-info is hetzelfde element als voorheen (zelfde aria-live),
              alleen herplaatst en met een toegevoegde resultaattotaal-zin. -->
         <div class="brew-focus-info">
+          <!-- Fase 2 (Brew Intelligence v2, §19): de dominante instructie — "Giet tot 240 g",
+               "Wacht · 0:18" of "Laten doorlopen" — met daaronder één regel context. -->
+          <div class="brew-action" id="brew-action" data-kind="pour">
+            <div class="brew-action-main mono" id="brew-action-main"></div>
+            <div class="brew-action-sub" id="brew-action-sub"></div>
+          </div>
+          <button type="button" class="bed-dry-btn" id="bed-dry-btn" hidden>Bed droog</button>
+          <p class="bed-dry-hint" id="bed-dry-hint" hidden>Bed droog = het moment dat er geen water meer óp het koffiebed staat: het oppervlak wordt mat en het druppelen wordt dun. Tik dan — elke keer op hetzelfde moment, zodat de tijden vergelijkbaar zijn.</p>
           <div class="brew-pour-badge" id="brew-pour-badge"></div>
           <div class="brew-pour-progress"><div class="brew-pour-progress-fill" id="brew-pour-progress-fill"></div></div>
           <p class="brew-cumulative" id="brew-cumulative"></p>
@@ -4553,7 +4599,7 @@ const INTENDED_USE_INFO = {
   espresso: { name:'Espresso', desc:'Ontworpen voor druk-extractie — kan via filter vlakker/minder helder proeven' },
   omni:     { name:'Omni',     desc:'Bewust ontworpen voor zowel filter als espresso' }
 };
-const timer = { elapsed:0, running:false, intervalId:null, lastStepIndex:-1, preAlertedFor:-1, startTs:0 };
+const timer = { elapsed:0, running:false, intervalId:null, lastStepIndex:-1, preAlertedFor:-1, startTs:0, finished:false };
 
 /* ============================================================
    HELPERS
@@ -7515,6 +7561,7 @@ function renderBeanLibraryScreen(){
    dit per boon een eigen src krijgen i.p.v. de huidige gedeelde foto.
    ============================================================ */
 function renderHomeScreen(){
+  renderHomeActiveBrewBanner(); // Fase 2
   const chipRow = document.getElementById('home-chip-row');
   if (chipRow){
     const chips = [];
@@ -8236,7 +8283,13 @@ function createBrewRecord(input){
       } : null,
       technique: rec.technique || null,
       steps: Array.isArray(rec.steps) ? rec.steps.map(s => ({ t: s.t, add: s.add })) : null,
-      expectedTotalSec: typeof rec.totalTime === 'number' ? rec.totalTime : null
+      expectedTotalSec: typeof rec.totalTime === 'number' ? rec.totalTime : null,
+      // Fase 2: de verwachte eindtijd van het uitlopen volgens de engine (E = geschat) —
+      // de maatlat voor derived.drainResidualSec zodra er een echte bed-droog-tik is.
+      expectedDrainEndSec: typeof rec.totalTime === 'number' ? rec.totalTime : null,
+      // Fase 2: de exacte computeRecipe()-invoer bij Start, zodat het recept na herladen
+      // of een crash precies zo terug te rekenen is (recomputeRecipeForRecord()).
+      inputs: input.inputs ? cloneJson(input.inputs) : null
     },
     actual: {
       doseG: null, doseSource: null, grindClick: null, grindSource: null, confirmed: false,
@@ -8363,7 +8416,10 @@ function brewRecordToLogView(rec){
     approved: !!t.approved,
     beanSnapshot: rec.beanSnapshot ? cloneJson(rec.beanSnapshot) : null,
     waterProfileSnapshot: rec.waterSnapshot ? cloneJson(rec.waterSnapshot) : null,
-    scheduledTimeSec: plan.expectedTotalSec
+    scheduledTimeSec: plan.expectedTotalSec,
+    // Fase 2: de enige gemeten tijd — de bed-droog-tik (null = niet vastgelegd).
+    bedDrySec: a.bedDrySec != null ? a.bedDrySec : null,
+    drainResidualSec: rec.derived && rec.derived.drainResidualSec != null ? rec.derived.drainResidualSec : null
   };
   if (t.cuppingSuggestion) v.suggestion = cloneJson(t.cuppingSuggestion);
   if (rec.favorite) v.favorite = true;
@@ -8387,6 +8443,90 @@ function staleBrewingOutcome(rec, nowMs){
   const planSec = (rec.plan && rec.plan.expectedTotalSec) || 0;
   const gapSec = Math.floor((nowMs - lastAt) / 1000);
   return gapSec > planSec + STALE_BREWING_GRACE_SEC ? 'complete' : 'keep';
+}
+
+/* ---- Fase 2: brouwscherm, bed droog, herstel (pure functies) ---- */
+
+// Verstreken brouwtijd uit de gebeurtenissen, op de wandklok: pauzes tellen niet mee, een
+// gesloten app wel (de ketel stond niet stil). Basis voor "Doorgaan" na herladen.
+function elapsedFromEvents(events, nowMs){
+  let elapsedMs = 0, runningSince = null, paused = false;
+  for (const ev of (events || [])){
+    if (ev.type === 'start'){ runningSince = ev.at; paused = false; }
+    else if (ev.type === 'pause'){ if (runningSince != null){ elapsedMs += ev.at - runningSince; runningSince = null; } paused = true; }
+    else if (ev.type === 'resume'){ if (runningSince == null) runningSince = ev.at; paused = false; }
+  }
+  if (runningSince != null) elapsedMs += nowMs - runningSince;
+  return { elapsedSec: Math.max(0, Math.floor(elapsedMs / 1000)), paused };
+}
+
+// Wat moet je NU doen? Eén dominante instructie, afgeleid van het schema:
+//   pour     — "Giet tot X g" (het doel op je weegschaal; de app weet niet hoeveel er al in zit)
+//   wait     — "Wacht · 0:18" tot de volgende giet
+//   drawdown — na de laatste giet: laten doorlopen, "Bed droog" is de enige hoofdknop;
+//              overPlanSec telt door na de verwachte eindtijd ("+0:12 na schema").
+function brewPhaseAt(steps, totalSec, tSec){
+  const list = Array.isArray(steps) ? steps : [];
+  const pours = list.filter(s => s.add > 0);
+  let idx = 0;
+  for (let i = 0; i < list.length; i++){ if (tSec >= list[i].t) idx = i; }
+  const cur = list[idx];
+  const pourDur = (s) => s.endT != null ? Math.max(1, s.endT - s.t) : ASSUMED_SINGLE_POUR_SEC;
+  if (cur && cur.add > 0 && tSec < cur.t + pourDur(cur)){
+    return { kind: 'pour', targetG: cur.to, addG: cur.add, pourIndex: pours.indexOf(cur) + 1, pourCount: pours.length, label: cur.label, stepIndex: idx };
+  }
+  const next = list.slice(idx + 1).find(s => s.add > 0);
+  if (next){
+    const doneTo = cur ? cur.to : 0;
+    return { kind: 'wait', remainingSec: Math.max(0, next.t - tSec), nextTargetG: next.to, currentTargetG: doneTo, pourIndex: pours.indexOf(next) + 1, pourCount: pours.length, stepIndex: idx };
+  }
+  const finalG = pours.length ? pours[pours.length - 1].to : 0;
+  return { kind: 'drawdown', finalG, overPlanSec: Math.max(0, tSec - (totalSec || 0)), stepIndex: idx };
+}
+
+// Einde-knop: vóór het uitlopen is het een afgebroken brouwsel; tijdens het uitlopen is het
+// voltooid, alleen zonder bed-droog-tijd (die blijft null — nooit ingevuld vanuit het schema).
+function endBrewDecision(phaseKind){
+  return phaseKind === 'drawdown' ? 'complete' : 'abandon';
+}
+
+// Pure: voltooi een brewing-record met een gemeten bed-droog-tik (tSec) of zonder (null).
+function completeWithBedDry(rec, nowMs, bedDrySec, how){
+  const withTap = bedDrySec != null
+    ? applyBrewEvent(rec, 'bed_dry', nowMs, { tSec: bedDrySec })
+    : { ok: true, rec };
+  if (!withTap.ok) return withTap;
+  const done = applyBrewEvent(withTap.rec, 'complete', nowMs, { source: bedDrySec != null ? 'M' : (how === 'cap' ? 'I' : 'M'), tSec: bedDrySec, data: { by: how || 'bed_dry' } });
+  if (!done.ok) return done;
+  const next = done.rec;
+  next.actual.bedDrySec = bedDrySec != null ? bedDrySec : null;
+  const expected = next.plan && next.plan.expectedDrainEndSec;
+  next.derived = Object.assign({}, next.derived, {
+    drainResidualSec: (bedDrySec != null && typeof expected === 'number') ? bedDrySec - expected : null
+  });
+  return { ok: true, rec: next };
+}
+
+// De invoer voor computeRecipe() om het recept van een record terug te rekenen. Records
+// vanaf Fase 2 bewaren die invoer letterlijk (plan.inputs); oudere v6-records worden zo
+// goed mogelijk gereconstrueerd uit het plan — zonder iets te verzinnen dat het plan niet had.
+function recipeInputsFromRecord(rec){
+  const plan = (rec && rec.plan) || {};
+  if (plan.inputs) return cloneJson(plan.inputs);
+  const bp = plan.bypass;
+  return {
+    method: plan.methodId, roast: plan.roastId, profile: plan.profileId, waterMl: plan.waterMl,
+    process: rec.beanSnapshot ? rec.beanSnapshot.process : null, experimental: false, roastDays: null,
+    altitude: null, bypass: !!bp, fermentEvidence: false,
+    waterHardnessMgL: rec.waterSnapshot ? rec.waterSnapshot.hardnessMgL : null,
+    strengthAdjust: plan.strengthStep || 0,
+    bypassPct: bp && bp.pct != null ? bp.pct : 30, bypassMoment: bp && bp.moment ? bp.moment : 'achteraf',
+    roastDate: rec.beanSnapshot ? rec.beanSnapshot.roastDate || null : null, openedDate: null, intendedUse: null
+  };
+}
+function recomputeRecipeForRecord(rec){
+  const i = recipeInputsFromRecord(rec);
+  return computeRecipe(i.method, i.roast, i.profile, i.waterMl, i.process, i.experimental, i.roastDays, i.altitude, i.bypass, i.fermentEvidence, i.waterHardnessMgL, i.strengthAdjust, i.bypassPct);
 }
 
 let brewStore = [];
@@ -8482,7 +8622,15 @@ function beginBrewRecord(){
     method: state.method, profile: state.profile, roast: state.roast, waterMl: state.waterMl,
     recipe: state.recipe, strengthAdjust: state.strengthAdjust,
     bypass: state.bypass, bypassPct: state.bypassPct, bypassMoment: state.bypassMoment,
-    water: currentWaterSnapshot()
+    water: currentWaterSnapshot(),
+    inputs: {
+      method: state.method, roast: state.roast, profile: state.profile, waterMl: state.waterMl,
+      process: state.process, experimental: !!state.experimental, roastDays: daysSinceRoast(state.roastDate),
+      altitude: state.altitude, bypass: !!state.bypass, fermentEvidence: !!state.fermentEvidence,
+      waterHardnessMgL: waterHardnessMgL, strengthAdjust: state.strengthAdjust || 0,
+      bypassPct: state.bypassPct, bypassMoment: state.bypassMoment,
+      roastDate: state.roastDate || null, openedDate: state.openedDate || null, intendedUse: state.intendedUse || null
+    }
   });
   upsertBrewRecord(rec);
   setActiveBrewId(rec.id);
@@ -8502,13 +8650,20 @@ function isActiveBrewBrewing(){
   const cur = activeBrewRecord();
   return !!(cur && cur.lifecycle === 'brewing');
 }
-function completeActiveBrew(){
+// Fase 2: voltooien gebeurt met een bed-droog-tik (bedDrySec = gemeten tijd), of zonder
+// (bedDrySec = null): Einde tijdens het uitlopen, "bed was al droog" na herstel, of de
+// veiligheidslimiet (schema + 15 min). Nooit een tijd invullen die niet gemeten is.
+function completeActiveBrewWithBedDry(bedDrySec, how){
   if (!isActiveBrewBrewing()) return null;
-  const tSec = timer.elapsed;
-  recordActiveBrewEvent('schedule_end', { source: 'I', tSec });
-  const done = recordActiveBrewEvent('complete', { source: 'I', tSec, data: { by: 'schedule_end' } });
-  if (done) applyCompletionSideEffects(done, Date.now());
-  return done;
+  const r = completeWithBedDry(activeBrewRecord(), Date.now(), bedDrySec, how);
+  if (!r.ok) return null;
+  upsertBrewRecord(r.rec);
+  persistBrewStore();
+  applyCompletionSideEffects(r.rec, Date.now());
+  return r.rec;
+}
+function completeActiveBrew(how){
+  return completeActiveBrewWithBedDry(null, how || 'end');
 }
 function abandonActiveBrew(reason){
   if (!isActiveBrewBrewing()) return null;
@@ -8567,7 +8722,7 @@ function openBrewLogEntry(){
   const metaEl = document.getElementById('brewlog-complete-meta');
   if (metaEl && state.recipe && m){
     metaEl.innerHTML = `
-      <div class="brewlog-complete-stat"><div class="stat-label">Totale tijd</div><div class="stat-value">${fmtTime(timer.elapsed)}</div></div>
+      <div class="brewlog-complete-stat"><div class="stat-label">Bed droog</div><div class="stat-value">${activeBedDrySec() != null ? fmtTime(activeBedDrySec()) : '—'}</div></div>
       <div class="brewlog-complete-stat"><div class="stat-label">Totaal water</div><div class="stat-value">${state.waterMl} ml</div></div>
       <div class="brewlog-complete-stat"><div class="stat-label">Temperatuur</div><div class="stat-value">${state.recipe.temp}°C</div></div>
     `;
@@ -8580,22 +8735,29 @@ function openBrewLogEntry(){
 // kwaliteitscijfer — puur wat al écht bekend is uit dít brouwsel (tijd t.o.v. het eigen
 // recepttarget, het kernrecept-ratio, het temperatuurbereik), in dezelfde eerlijke toon
 // als de rest van de app (RESEARCH_GAP/UNKNOWN i.p.v. schijnprecisie).
+// Fase 2: de gemeten bed-droog-tijd van het actieve record (null = niet vastgelegd).
+function activeBedDrySec(){
+  const rec = activeBrewRecord();
+  return rec && rec.actual && rec.actual.bedDrySec != null ? rec.actual.bedDrySec : null;
+}
 function renderBrewLogHonestSummary(){
   const el = document.getElementById('brewlog-honest-summary');
   if (!el) return;
   const rec = state.recipe;
   if (!rec){ el.innerHTML = ''; return; }
   const targetTime = rec.totalTime;
-  const actualTime = (timer && timer.elapsed != null) ? timer.elapsed : null;
+  // Fase 2: alleen de bed-droog-tik is een gemeten tijd. Zonder tik geen tijdsoordeel —
+  // de klok op het schema-einde zou hier anders weer als "brouwtijd" gaan tellen.
+  const actualTime = activeBedDrySec();
   let timeLine;
   if (targetTime == null || actualTime == null){
-    timeLine = 'Brouwtijd: niet gelogd.';
+    timeLine = 'Bed droog: niet vastgelegd — dus geen tijdsvergelijking met het schema.';
   } else {
     const diff = actualTime - targetTime;
     if (Math.abs(diff) <= 15){
-      timeLine = `Brouwtijd ${fmtTime(actualTime)} — binnen het recepttarget van ${fmtTime(targetTime)}.`;
+      timeLine = `Bed droog na ${fmtTime(actualTime)} — rond de schatting van het schema (${fmtTime(targetTime)}).`;
     } else {
-      timeLine = `Brouwtijd ${fmtTime(actualTime)} — ${Math.round(Math.abs(diff))}s ${diff > 0 ? 'langer dan' : 'korter dan'} het recepttarget van ${fmtTime(targetTime)}.`;
+      timeLine = `Bed droog na ${fmtTime(actualTime)} — ${Math.round(Math.abs(diff))}s ${diff > 0 ? 'later dan' : 'eerder dan'} de schatting van het schema (${fmtTime(targetTime)}).`;
     }
   }
   const ratioLine = `Kernrecept-ratio ${rec.ratioText} (${fmt(rec.dose,1)} g op ${state.waterMl} ml).`;
@@ -8624,12 +8786,14 @@ function renderBrewLogHonestSummary(){
   // hier iets beweren dat niet onderbouwd is. Kanttekening in plaats van een oordeel.
   if (state.bypass){
     diagnosticLine = 'De diagnostische contacttijd-band hierboven is afgeleid voor een zetting met het volledige watervolume door het bed — bij de concentraat-methode gaat er minder water door het bed dan die band veronderstelt, dus geen in/buiten-oordeel hier.';
-  } else if (rec.contactTimeDiagnosticBand && actualTime != null){
+  } else if (rec.contactTimeDiagnosticBand){
+    // Fase 2: het oordeel over het SCHEMA kan altijd; het oordeel over jouw uitvoering
+    // alleen met een gemeten bed-droog-tijd.
     const { min, max } = rec.contactTimeDiagnosticBand;
     const scheduleWithinBand = rec.totalTime >= min && rec.totalTime <= max;
     if (!scheduleWithinBand){
       diagnosticLine = `Het schema dat deze app je hierboven gaf (${fmtTime(rec.totalTime)}) valt zelf al buiten de gangbare band voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — deze giet-structuur heeft nu eenmaal ${rec.steps.filter(s=>s.add>0).length} waterbeurten. De band is daarom géén zinvolle controle op jouw uitvoering; hij zegt hier iets over het recept, niet over jou. Geregistreerd als openstaand punt (bevinding E-03).`;
-    } else {
+    } else if (actualTime != null){
       const within = actualTime >= min && actualTime <= max;
       diagnosticLine = within
         ? `Totale contacttijd ${fmtTime(actualTime)} valt binnen de gangbare diagnostische band voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — geen doel, puur een plausibiliteitscontrole achteraf.`
@@ -8736,6 +8900,7 @@ function renderBrewLogEntryCard(e, beanId){
   // Fase 1: de timer stopte altijd op het schema-einde, dus dit was nooit een gemeten
   // brouwtijd. Eerlijk gelabeld; een echte meting (bed droog) komt in Fase 2.
   if (e.scheduledTimeSec != null) actualBits.push(`schema-tijd ${fmtTime(e.scheduledTimeSec)} (niet gemeten)`);
+  if (e.bedDrySec != null) actualBits.push(`bed droog ${fmtTime(e.bedDrySec)}`); // Fase 2: gemeten
   if (e.cupWeightG != null) actualBits.push(`kopgewicht ${e.cupWeightG} g`);
   // NIEUW (Fase 7): alleen tonen als het veld bestaat (schemaVersion 3+) — geen "nee"
   // verzinnen voor oudere loggingen die dit onderscheid nog niet konden maken.
@@ -11147,19 +11312,30 @@ function startBrew(){
   // BC-05: vangnet — zonder berekend recept valt er niets te brouwen (voorheen een crash
   // in renderDialTicks() op state.recipe.totalTime). Terug naar het begin van de keuze.
   if (!state.recipe){ renderMethodGrid(); showScreen('method'); return; }
-  timer.elapsed = 0; timer.running = false; timer.lastStepIndex = -1; timer.preAlertedFor = -1; timer.startTs = 0;
+  clearInterval(timer.intervalId); // Fase 2: een vorig brouwsel kan nog op de achtergrond lopen (Home stopt het niet meer)
+  timer.elapsed = 0; timer.running = false; timer.lastStepIndex = -1; timer.preAlertedFor = -1; timer.startTs = 0; timer.finished = false;
+  hideBrewRecovery();
+  setPauseBtnEnabled(true);
   unlockAudioForIOS(); // binnen deze user-gesture, zodat latere beeps op iOS altijd geluid geven
   /* Fase 1 (Brew Intelligence v2): het brouwsel bestaat vanaf nu als v6-record, meteen
      bewaard. De bijwerkingen die hier vroeger stonden (bean.lastBrew = "brouw opnieuw"-
      keuzes, voorraadverbruik) gebeuren nu pas bij COMPLETED — zie
      applyCompletionSideEffects(). Een afgebroken brouwsel verbruikt dus geen voorraad. */
-  beginBrewRecord();
+  const rec = beginBrewRecord();
+  timer.recordId = rec.id;
+  prepareBrewScreen();
+  setPauseBtnLabel(true);
+  showScreen('brew');
+  updateDial();
+  runTimer();
+}
+// Het brouwscherm opbouwen voor state.recipe — gedeeld door Start en herstel (Fase 2).
+function prepareBrewScreen(){
   renderDialTicks();
   renderBrewStepsList();
   document.getElementById('finish-note').style.display = 'none';
   const logBtnStart = document.getElementById('brewlog-open-btn');
   if (logBtnStart) logBtnStart.style.display = 'none';
-  setPauseBtnLabel(true);
   // NIEUW (focus-herontwerp): hero-foto + kop bij het starten van een brouw — zelfde
   // METHOD_PHOTO-mapping als het methodescherm (geen nieuwe fotografie), boonnaam alleen
   // als er daadwerkelijk een boon aan deze sessie hangt (state.beanId).
@@ -11171,17 +11347,20 @@ function startBrew(){
     const bean = state.beanId ? beanLibrary.find(b=>b.id===state.beanId) : null;
     heroTitle.textContent = `${mInfo ? mInfo.name : state.method}${bean ? ' · ' + bean.name : ''}`;
   }
-  showScreen('brew');
-  updateDial();
-  runTimer();
 }
 
 function runTimer(){
-  if (timer.running) return;
+  if (timer.running || timer.finished) return; // Fase 2: na bed droog/einde loopt de klok niet meer door
+  // Fase 2: ▶ op het herstelpaneel betekent hetzelfde als "Doorgaan".
+  const recoveryEl = document.getElementById('brew-recovery');
+  if (recoveryEl && !recoveryEl.hidden){ recoveryContinue(); return; }
   // Fase 1: hervatten na pauze is een gebeurtenis op het lopende record; opnieuw starten na
   // een reset (timer op 0, vorig record afgebroken) is een nieuw brouwsel.
   if (timer.elapsed > 0 && isActiveBrewBrewing()) recordActiveBrewEvent('resume', { tSec: timer.elapsed });
-  else if (timer.elapsed === 0 && !isActiveBrewBrewing() && state.recipe) beginBrewRecord();
+  else if (timer.elapsed === 0 && !isActiveBrewBrewing() && state.recipe){ const r = beginBrewRecord(); timer.recordId = r.id; }
+  startTimerLoop();
+}
+function startTimerLoop(){
   timer.running = true;
   timer.startTs = Date.now() - timer.elapsed * 1000;
   setPauseBtnLabel(true);
@@ -11201,7 +11380,8 @@ function pauseTimer(){
 function resetTimer(){
   abandonActiveBrew('reset'); // Fase 1: reset = dit brouwsel afgebroken; opnieuw starten maakt een nieuw record
   clearInterval(timer.intervalId);
-  timer.elapsed = 0; timer.running = false; timer.lastStepIndex = -1; timer.preAlertedFor = -1; timer.startTs = 0;
+  timer.elapsed = 0; timer.running = false; timer.lastStepIndex = -1; timer.preAlertedFor = -1; timer.startTs = 0; timer.finished = false;
+  setPauseBtnEnabled(true);
   // FIX (bestaand gedrag gecorrigeerd tijdens icoon-omzetting): na reset staat de timer
   // stil (running=false) — de knop start 'm dus weer op, net als runTimer(). De oude
   // tekstversie zei hier nog "Pauze" (leek te impliceren dat de knop iets zou pauzeren),
@@ -11226,22 +11406,200 @@ function tick(){
   if (timer.running){
     timer.elapsed = Math.floor((Date.now() - timer.startTs) / 1000);
   }
-  if (timer.elapsed >= state.recipe.totalTime){
-    timer.elapsed = state.recipe.totalTime;
-    if (timer.running){
-      clearInterval(timer.intervalId);
-      timer.running = false;
-      setDialRunning(false);
-      completeActiveBrew(); // Fase 1: schema-einde → COMPLETED (bron I: afgeleid uit het schema, geen bed-droog-meting)
-      document.getElementById('finish-note').style.display = 'block';
-      const logBtn = document.getElementById('brewlog-open-btn');
-      if (logBtn) logBtn.style.display = 'block';
-      releaseWakeLock();
-    }
+  /* Fase 2 (Brew Intelligence v2): de timer stopt NIET meer op het schema-einde — dat was
+     een schatting, geen meting, en daardoor was elke "werkelijke tijd" in feite het schema.
+     Hij loopt door ("+0:12 na schema") tot je Bed droog tikt of Einde kiest. Alleen een
+     vergeten brouwsel stopt vanzelf, na schema + 15 min — dan voltooid zonder bed-droog-tijd. */
+  if (timer.running && timer.elapsed >= state.recipe.totalTime + STALE_BREWING_GRACE_SEC){
+    finishBrew(null, 'cap');
+    return;
   }
   updateDial();
   checkPreAlert();
   checkStepChange();
+}
+
+// Fase 2: één afronding voor alle routes (Bed droog, Einde tijdens het uitlopen, limiet).
+function finishBrew(bedDrySec, how){
+  clearInterval(timer.intervalId);
+  timer.running = false;
+  timer.finished = true;
+  setDialRunning(false);
+  setPauseBtnLabel(false);
+  releaseWakeLock();
+  completeActiveBrewWithBedDry(bedDrySec, how);
+  const note = document.getElementById('finish-note');
+  if (note){
+    // De actie-regel toont al "Klaar · Bed droog na m:ss"; deze notitie legt alleen uit
+    // waarom er soms geen tijd is (dan is er ook geen tijdsvergelijking op het Klaar-scherm).
+    note.textContent = bedDrySec != null ? '' : 'Zonder bed-droog-tik bewaren we geen brouwtijd — die zou anders gewoon het schema zijn.';
+    note.style.display = bedDrySec != null ? 'none' : 'block';
+  }
+  setPauseBtnEnabled(false);
+  const logBtn = document.getElementById('brewlog-open-btn');
+  if (logBtn) logBtn.style.display = 'block';
+  updateDial();
+}
+// Na bed droog/einde is er niets meer te pauzeren of hervatten; ↻ start een nieuw brouwsel.
+function setPauseBtnEnabled(enabled){
+  const btn = document.getElementById('pause-btn');
+  if (!btn) return;
+  btn.disabled = !enabled;
+  btn.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+}
+function currentBrewPhase(){
+  return brewPhaseAt(state.recipe.steps, state.recipe.totalTime, timer.elapsed);
+}
+function tapBedDry(){
+  if (!isActiveBrewBrewing() || timer.finished) return;
+  if (timer.running) timer.elapsed = Math.floor((Date.now() - timer.startTs) / 1000);
+  bumpBedDryHintCount();
+  finishBrew(timer.elapsed, 'bed_dry');
+}
+// "Bed droog" betekent elke keer hetzelfde moment — de eerste drie keer een uitleg erbij.
+const BED_DRY_HINT_KEY = 'brewconsole_bed_dry_hint_count';
+const BED_DRY_HINT_MAX = 3;
+function bedDryHintCount(){
+  try{ return Number(localStorage.getItem(BED_DRY_HINT_KEY)) || 0; } catch(e){ return 0; }
+}
+function bumpBedDryHintCount(){
+  try{ localStorage.setItem(BED_DRY_HINT_KEY, String(bedDryHintCount() + 1)); } catch(e){ /* alleen deze sessie */ }
+}
+
+/* ---- Fase 2: herstel en terugkeren naar een lopend brouwsel ---- */
+// Zet state (en het recept) terug zoals ze bij Start van dit record waren.
+function restoreStateFromRecord(rec){
+  const i = recipeInputsFromRecord(rec);
+  Object.assign(state, {
+    method: i.method, roast: i.roast, profile: i.profile, waterMl: i.waterMl,
+    process: i.process || null, experimental: !!i.experimental, altitude: i.altitude != null ? i.altitude : null,
+    bypass: !!i.bypass, bypassPct: i.bypassPct != null ? i.bypassPct : 30, bypassMoment: i.bypassMoment || 'achteraf',
+    fermentEvidence: !!i.fermentEvidence, strengthAdjust: i.strengthAdjust || 0,
+    roastDate: i.roastDate || null, openedDate: i.openedDate || null, intendedUse: i.intendedUse || null
+  });
+  setActiveBean(rec.beanId);
+  state.recipe = recomputeRecipeForRecord(rec);
+  const planSteps = rec.plan && rec.plan.steps;
+  if (planSteps && JSON.stringify(planSteps) !== JSON.stringify(state.recipe.steps.map(s => ({ t: s.t, add: s.add })))){
+    // De engine is sinds Start veranderd: het brouwsel loopt verder op het nieuwe schema,
+    // en het record onthoudt dat (het plan zelf blijft ongewijzigd).
+    rec.flags = Object.assign({}, rec.flags, { recipeChangedOnRecovery: true });
+    upsertBrewRecord(rec);
+    persistBrewStore();
+  }
+}
+// Brouwen-tab / Home-banner: terug naar het actieve brouwsel. Loopt het in deze sessie,
+// dan gewoon het brouwscherm; na herladen eerst het herstelpaneel.
+function openActiveBrew(){
+  const rec = activeBrewRecord();
+  if (!rec || rec.lifecycle !== 'brewing') return false;
+  if (timer.recordId === rec.id && state.recipe){
+    showScreen('brew');
+    updateDial();
+    return true;
+  }
+  showBrewRecovery(rec);
+  return true;
+}
+function showBrewRecovery(rec){
+  restoreStateFromRecord(rec);
+  const nowMs = Date.now();
+  const el = elapsedFromEvents(rec.actual.events, nowMs);
+  clearInterval(timer.intervalId);
+  timer.running = false; timer.finished = false; timer.recordId = rec.id;
+  timer.elapsed = el.elapsedSec;
+  timer.startTs = nowMs - timer.elapsed * 1000;
+  timer.lastStepIndex = currentStepIndex(); // geen piepjes-inhaalslag voor gemiste stappen
+  timer.preAlertedFor = timer.lastStepIndex;
+  timer.recoveryPaused = el.paused;
+  prepareBrewScreen();
+  setPauseBtnEnabled(true);
+  setPauseBtnLabel(false);
+  setDialRunning(false);
+  const startedAgo = Math.max(0, Math.floor((nowMs - rec.createdAt) / 1000));
+  document.getElementById('brew-recovery-text').textContent =
+    `Gestart ${fmtTime(startedAgo)} geleden${el.paused ? ', stond op pauze bij ' + fmtTime(el.elapsedSec) : ' — de klok staat nu op ' + fmtTime(el.elapsedSec)}.`;
+  document.getElementById('brew-recovery').hidden = false;
+  showScreen('brew');
+  updateDial();
+}
+function hideBrewRecovery(){
+  const el = document.getElementById('brew-recovery');
+  if (el) el.hidden = true;
+}
+function recoveryGapEvent(){
+  const rec = activeBrewRecord();
+  if (!rec) return;
+  const events = rec.actual.events;
+  const lastAt = events.length ? events[events.length - 1].at : rec.createdAt;
+  recordActiveBrewEvent('recovered', { data: { gapSec: Math.floor((Date.now() - lastAt) / 1000) } });
+}
+function recoveryContinue(){
+  hideBrewRecovery();
+  recoveryGapEvent();
+  unlockAudioForIOS();
+  if (timer.recoveryPaused){ updateDial(); return; } // stond op pauze: blijft op pauze, ▶ hervat
+  // De ketel stond niet stil terwijl het paneel openstond: opnieuw van de wandklok aflezen.
+  const rec = activeBrewRecord();
+  if (rec) timer.elapsed = elapsedFromEvents(rec.actual.events, Date.now()).elapsedSec;
+  timer.lastStepIndex = currentStepIndex();
+  timer.preAlertedFor = timer.lastStepIndex;
+  startTimerLoop();
+}
+function recoveryBedWasDry(){
+  hideBrewRecovery();
+  recoveryGapEvent();
+  finishBrew(null, 'recovery_bed_dry_unknown'); // het moment zelf is gemist — niet invullen
+}
+function recoveryEnd(){
+  hideBrewRecovery();
+  recoveryGapEvent();
+  if (endBrewDecision(currentBrewPhase().kind) === 'complete'){
+    finishBrew(null, 'end');
+  } else {
+    abandonActiveBrew('stopped');
+    timer.recordId = null;
+    renderHomeScreen();
+    showScreen('home');
+  }
+}
+// Home-banner: "Brouwsel bezig" of "Proef je brouwsel van 08:40" (voltooid, < 24 uur, nog niet gelogd).
+const TASTE_BANNER_WINDOW_MS = 24 * 60 * 60 * 1000;
+function renderHomeActiveBrewBanner(){
+  const el = document.getElementById('home-active-brew');
+  if (!el) return;
+  const rec = activeBrewRecord();
+  const nowMs = Date.now();
+  let title = '', desc = '', action = null;
+  if (rec && !rec.deletedAt && rec.lifecycle === 'brewing'){
+    const running = timer.recordId === rec.id && (timer.running || timer.elapsed > 0);
+    const elapsed = running ? timer.elapsed : elapsedFromEvents(rec.actual.events, nowMs).elapsedSec;
+    title = `☕ Brouwsel bezig · ${fmtTime(elapsed)}`;
+    desc = 'Tik om terug te gaan naar je brouwsel.';
+    action = 'brew';
+  } else if (rec && !rec.deletedAt && rec.lifecycle === 'completed' && rec.actual.completedAt && nowMs - rec.actual.completedAt < TASTE_BANNER_WINDOW_MS){
+    const d = new Date(rec.actual.completedAt);
+    title = `Proef je brouwsel van ${d.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' })}`;
+    desc = 'Leg vast hoe het smaakte — het brouwsel zelf is al bewaard.';
+    action = 'taste';
+  }
+  el.hidden = !action;
+  if (!action) return;
+  document.getElementById('home-active-brew-title').textContent = title;
+  document.getElementById('home-active-brew-desc').textContent = desc;
+  el.dataset.action = action;
+}
+function openTastingForActiveBrew(){
+  const rec = activeBrewRecord();
+  if (!rec || rec.lifecycle !== 'completed') return;
+  if (timer.recordId !== rec.id || !state.recipe){
+    restoreStateFromRecord(rec);
+    timer.recordId = rec.id;
+    timer.finished = true;
+    timer.running = false;
+    timer.elapsed = rec.actual.bedDrySec != null ? rec.actual.bedDrySec : 0;
+  }
+  openBrewLogEntry();
 }
 
 function currentStepIndex(){
@@ -11256,99 +11614,103 @@ function updateDial(){
   const fraction = clamp(timer.elapsed/total, 0, 1);
   document.getElementById('dial-fill').style.strokeDashoffset = (CIRC*(1-fraction)).toFixed(2);
   document.getElementById('dial-time').textContent = fmtTime(timer.elapsed);
-  // NIEUW: "van {totaal}" — puur state.recipe.totalTime, niets nieuws berekend.
+  // "van {totaal}" tot het verwachte einde; daarna loopt de klok door (Fase 2).
   const totalEl = document.getElementById('dial-total');
-  if (totalEl) totalEl.textContent = `van ${fmtTime(total)}`;
+  if (totalEl) totalEl.textContent = timer.elapsed <= total ? `van ${fmtTime(total)}` : `+${fmtTime(timer.elapsed - total)} na schema`;
 
   const idx = currentStepIndex();
   const steps = state.recipe.steps;
   const current = steps[idx];
-  const stepLabel = timer.elapsed >= total ? 'Klaar' : current.label;
-  document.getElementById('dial-step').textContent = stepLabel;
+  const phase = currentBrewPhase();
+  const finishedRec = timer.finished ? activeBrewRecord() : null;
+
+  // Screenreader-aankondiging (aria-live) — alleen bij een fasewissel, niet elke seconde.
+  const stepLabel = timer.finished ? 'Klaar'
+    : phase.kind === 'pour' ? `Giet tot ${phase.targetG} gram`
+    : phase.kind === 'wait' ? `Wacht, daarna giet tot ${phase.nextTargetG} gram`
+    : 'Laten doorlopen — tik Bed droog zodra het bed droog is';
+  const stepEl = document.getElementById('dial-step');
+  if (stepEl.textContent !== stepLabel) stepEl.textContent = stepLabel;
 
   const waterEl = document.getElementById('dial-water');
-  if (timer.elapsed >= total){
-    waterEl.textContent = `${current.to} g totaal`;
-  } else if (current.add > 0){
-    waterEl.textContent = `+${current.add} g → ${current.to} g`;
-  } else {
-    waterEl.textContent = `${current.to} g totaal`;
-  }
+  waterEl.textContent = phase.kind === 'pour' ? `+${phase.addG} g → ${phase.targetG} g` : `${current.to} g totaal`;
 
   const flowEl = document.getElementById('dial-flow');
-  if (flowEl) flowEl.textContent = (timer.elapsed < total && current.flow) ? current.flow : '';
+  if (flowEl) flowEl.textContent = (phase.kind === 'pour' && current.flow) ? current.flow : '';
 
-  /* Live grammenteller — interpoleert lineair binnen de pour-window van de huidige stap
-     (exacte endT indien bekend, anders dezelfde ASSUMED_SINGLE_POUR_SEC-aanname als
-     pourRateLabel() op het prep-scherm — zie de toelichting daar voor de bron). Dit
-     visualiseert de bedoelde giet-snelheid: loopt je eigen schaal duidelijk voor of
-     achter op dit getal, dan giet je sneller/langzamer dan het recept bedoelt. Alleen
-     zichtbaar tijdens een actieve pour (add > 0 én binnen de pour-window) — daarbuiten
-     (bloom-wachttijd, na de laatste pour) voegt een meelopend getal niets toe.
-     HERZIEN (focus-herontwerp): dial-live-grams zelf is nu via CSS verborgen (vervangen
-     door #brew-cumulative hieronder), maar prevTo/duration/pourEnd/progress worden ook
-     door #brew-cumulative/#brew-pour-progress-fill hergebruikt — vandaar dat deze
-     berekening hier blijft staan i.p.v. verwijderd. */
+  /* Fase 2 (§19): de app kan niet weten hoeveel water er al in zit — de weegschaal is de
+     bron van waarheid. Daarom alleen het DOEL ("Giet tot 240 g"), nooit een meelopend
+     "toegevoegd"-getal (dat was een lineaire schatting die als meting oogde). */
   const liveEl = document.getElementById('dial-live-grams');
-  const prevTo = idx > 0 ? steps[idx-1].to : 0;
-  const duration = current.endT != null ? Math.max(1, current.endT - current.t) : ASSUMED_SINGLE_POUR_SEC;
-  const pourEnd = current.t + duration;
-  const inActivePour = timer.elapsed < total && current.add > 0 && timer.elapsed >= current.t && timer.elapsed < pourEnd;
-  const cumulativeNow = inActivePour
-    ? prevTo + clamp((timer.elapsed - current.t) / duration, 0, 1) * current.add
-    : current.to;
-  if (liveEl){
-    if (inActivePour){
-      liveEl.textContent = `↗ ${fmt(cumulativeNow,0)} g`;
-      liveEl.hidden = false;
+  if (liveEl){ liveEl.textContent = ''; liveEl.hidden = true; }
+
+  const actionMain = document.getElementById('brew-action-main');
+  const actionSub = document.getElementById('brew-action-sub');
+  const actionEl = document.getElementById('brew-action');
+  if (actionMain && actionSub && actionEl){
+    let main, sub, kind;
+    if (timer.finished){
+      kind = 'done';
+      main = 'Klaar';
+      const bd = finishedRec && finishedRec.actual ? finishedRec.actual.bedDrySec : null;
+      sub = bd != null ? `Bed droog na ${fmtTime(bd)}` : 'Bed-droog-tijd niet vastgelegd';
+    } else if (phase.kind === 'pour'){
+      kind = 'pour';
+      main = `Giet tot ${phase.targetG} g`;
+      sub = `+${phase.addG} g · ${current.label}`;
+    } else if (phase.kind === 'wait'){
+      kind = 'wait';
+      main = `Wacht · ${fmtTime(phase.remainingSec)}`;
+      sub = `Daarna giet tot ${phase.nextTargetG} g`;
     } else {
-      liveEl.textContent = '';
-      liveEl.hidden = true;
+      kind = 'drawdown';
+      main = 'Laten doorlopen';
+      sub = phase.overPlanSec > 0
+        ? `+${fmtTime(phase.overPlanSec)} na schema · tik Bed droog zodra er geen water meer op het bed staat`
+        : 'Tik Bed droog zodra er geen water meer op het bed staat';
     }
+    actionEl.dataset.kind = kind;
+    actionMain.textContent = main;
+    actionSub.textContent = sub;
   }
 
-  /* NIEUW: giet-badge (welke stap, hoeveelste giet van hoeveel) + voortgangsbalk +
-     lopend totaal — telt alleen stappen met add > 0 mee als "giet", zodat een
-     tussenliggende wacht-/laatste-druppelstap niet als eigen giet meetelt. Puur afgeleid
-     van state.recipe.steps, niets nieuws berekend of geschat. */
+  const bedDryBtn = document.getElementById('bed-dry-btn');
+  const showBedDry = !timer.finished && phase.kind === 'drawdown' && isActiveBrewBrewing();
+  if (bedDryBtn) bedDryBtn.hidden = !showBedDry;
+  const hintEl = document.getElementById('bed-dry-hint');
+  if (hintEl) hintEl.hidden = !(showBedDry && bedDryHintCount() < BED_DRY_HINT_MAX);
+
+  // Giet-badge + voortgang per giet (discreet: begonnen gieten / totaal), geen grammen-schatting.
   const pourSteps = steps.filter(s=>s.add>0);
   const badgeEl = document.getElementById('brew-pour-badge');
   if (badgeEl){
-    if (timer.elapsed >= total){
-      badgeEl.textContent = '';
-    } else if (current.add > 0 && pourSteps.length){
-      const pourPos = pourSteps.indexOf(current) + 1;
-      badgeEl.textContent = `${current.label} · giet ${pourPos}/${pourSteps.length}`;
-    } else {
-      badgeEl.textContent = current.label;
-    }
+    badgeEl.textContent = timer.finished ? ''
+      : phase.kind === 'pour' ? `giet ${phase.pourIndex}/${phase.pourCount}`
+      : phase.kind === 'wait' ? `${phase.pourIndex - 1}/${phase.pourCount} gegoten`
+      : `${pourSteps.length}/${pourSteps.length} gegoten`;
   }
-  const targetTotalG = steps.length ? steps[steps.length-1].to : 0;
   const fillEl = document.getElementById('brew-pour-progress-fill');
   if (fillEl){
-    const pourFraction = targetTotalG > 0 ? clamp((timer.elapsed >= total ? targetTotalG : cumulativeNow) / targetTotalG, 0, 1) : 0;
+    const started = phase.kind === 'pour' ? phase.pourIndex : phase.kind === 'wait' ? phase.pourIndex - 1 : pourSteps.length;
+    const pourFraction = pourSteps.length ? clamp(started / pourSteps.length, 0, 1) : 0;
     fillEl.style.width = (pourFraction*100).toFixed(1) + '%';
   }
   const cumEl = document.getElementById('brew-cumulative');
-  if (cumEl){
-    cumEl.textContent = timer.elapsed >= total
-      ? (targetTotalG > 0 ? `${targetTotalG} g totaal toegevoegd` : '')
-      : `${fmt(cumulativeNow,0)} g toegevoegd`;
-  }
+  if (cumEl) cumEl.textContent = '';
 
-  const next = steps[idx+1];
   const nextInfo = document.getElementById('next-info');
-  if (timer.elapsed >= total){
-    nextInfo.textContent = 'Klaar met schenken — laat volledig doorlopen.';
-  } else if (next){
-    // UITGEBREID (expliciet gevraagd): naast de toe te voegen hoeveelheid ook het
-    // resulterende totaal na die volgende giet — was voorheen alleen "+40 g", nu ook
-    // duidelijk "tot hoeveel gram bijgevuld wordt".
-    const nextWater = next.add > 0 ? ` · +${next.add} g → ${next.to} g totaal` : '';
-    nextInfo.textContent = `Volgende: ${next.label} over ${fmtTime(next.t - timer.elapsed)}${nextWater}`;
-  } else {
-    nextInfo.textContent = '';
+  let nextText = '';
+  if (!timer.finished){
+    const nextPour = steps.slice(idx + 1).find(s => s.add > 0 && s.t > timer.elapsed);
+    if (phase.kind !== 'drawdown' && nextPour){
+      nextText = `Volgende: giet tot ${nextPour.to} g om ${fmtTime(nextPour.t)}`;
+    } else if (phase.kind !== 'drawdown'){
+      nextText = `Daarna laten doorlopen — verwacht klaar rond ${fmtTime(total)} (schatting)`;
+    } else if (timer.elapsed < total){
+      nextText = `Verwacht bed droog rond ${fmtTime(total)} (schatting)`;
+    }
   }
+  if (nextInfo.textContent !== nextText) nextInfo.textContent = nextText;
 }
 
 function flashDial(){
@@ -11525,7 +11887,7 @@ function showConfirmModal(message, opts){
    verplaatst, plus een aanroeper-specifieke boodschap. Geeft true terug als de brew
    daadwerkelijk gestopt is (of er nooit een liep), false bij annuleren. */
 async function stopBrewTimer(confirmMessage){
-  const inProgress = state.recipe && timer.elapsed > 0 && timer.elapsed < state.recipe.totalTime;
+  const inProgress = !!(state.recipe && isActiveBrewBrewing() && !timer.finished && timer.elapsed > 0); // Fase 2: ook na het schema kan het nog lopen
   if (inProgress){
     const ok = await showConfirmModal(confirmMessage, { confirmLabel:'Ja, stoppen', cancelLabel:'Nee, doorgaan' });
     if (!ok) return false;
@@ -11540,15 +11902,33 @@ async function stopBrewTimer(confirmMessage){
 document.getElementById('start-btn').addEventListener('click', startBrew);
 document.getElementById('pause-btn').addEventListener('click', ()=>{ timer.running ? pauseTimer() : runTimer(); });
 document.getElementById('reset-btn').addEventListener('click', resetTimer);
+document.getElementById('bed-dry-btn').addEventListener('click', tapBedDry);
+document.getElementById('recovery-continue-btn').addEventListener('click', recoveryContinue);
+document.getElementById('recovery-bed-dry-btn').addEventListener('click', recoveryBedWasDry);
+document.getElementById('recovery-end-btn').addEventListener('click', recoveryEnd);
+document.getElementById('home-active-brew').addEventListener('click', (e)=>{
+  const action = e.currentTarget.dataset.action;
+  if (action === 'brew') openActiveBrew();
+  else if (action === 'taste') openTastingForActiveBrew();
+});
 document.getElementById('stop-btn').addEventListener('click', async ()=>{
+  // Fase 2: tijdens het uitlopen is Einde "voltooid zonder bed-droog-tijd"; daarvóór blijft
+  // het de bestaande stop-flow (bevestigen → afgebroken → terug naar het recept).
+  if (isActiveBrewBrewing() && !timer.finished && state.recipe && endBrewDecision(currentBrewPhase().kind) === 'complete'){
+    const ok = await showConfirmModal('Brouwsel beëindigen zonder bed-droog-tijd? Het wordt bewaard als voltooid; de tijd blijft "niet vastgelegd".', { confirmLabel:'Ja, beëindigen', cancelLabel:'Nee, doorgaan' });
+    if (!ok) return;
+    finishBrew(null, 'end');
+    return;
+  }
   const stopped = await stopBrewTimer('Brew stoppen? De lopende timer wordt gereset.');
   if (!stopped) return;
   renderPrep();
   showScreen('prep');
 });
-document.getElementById('home-btn').addEventListener('click', async ()=>{
-  const stopped = await stopBrewTimer('Brew stoppen en naar home gaan? De lopende timer wordt gereset.');
-  if (!stopped) return;
+// Fase 2 (§20): naar Home gaan stopt het brouwsel niet meer — het loopt door (met piepjes),
+// Home toont een banner "Brouwsel bezig" en de Brouwen-tab brengt je terug. Stoppen doe je
+// bewust met × Stop.
+document.getElementById('home-btn').addEventListener('click', ()=>{
   renderHomeScreen();
   showScreen('home');
 });
@@ -11776,7 +12156,7 @@ document.querySelectorAll('.navbar [data-nav]').forEach(btn=>{
     const dest = btn.getAttribute('data-nav');
     if (dest === 'home'){ renderHomeScreen(); showScreen('home'); }
     else if (dest === 'beans'){ renderBeanLibraryScreen(); showScreen('beans'); }
-    else if (dest === 'method'){ setActiveBean(null); renderMethodGrid(); showScreen('method'); } // BC-01: verse start
+    else if (dest === 'method'){ if (isActiveBrewBrewing() && openActiveBrew()) return; setActiveBean(null); renderMethodGrid(); showScreen('method'); } // BC-01: verse start; Fase 2: lopend brouwsel gaat voor
     else if (dest === 'settings'){ showScreen('settings'); }
     else if (dest === 'brewlog-history'){ renderBrewLogHistory(); }
   });
@@ -11784,6 +12164,9 @@ document.querySelectorAll('.navbar [data-nav]').forEach(btn=>{
 
 renderHomeScreen();
 showScreen('home');
+// Fase 2 (§20): opent de app met een lopend brouwsel (herladen, crash, iOS die de app sloot),
+// dan meteen het herstelpaneel — "Doorgaan", "Bed was al droog" of "Beëindigen".
+if (isActiveBrewBrewing()) openActiveBrew();
 </script>
 </body>
 </html>

@@ -1584,6 +1584,212 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     });
   });
 
+  // NIEUW (Brew Intelligence v2, Fase 2): brouwscherm met "Giet tot / Wacht / Laten
+  // doorlopen", een timer die na het schema doorloopt, Bed droog als gemeten einde, herstel
+  // na herladen, en een Home-banner voor een lopend of nog niet geproefd brouwsel.
+  describe('Fase 2: brouwscherm, bed droog, herstel', () => {
+    async function toBrewV60Klassiek(page){
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('[data-method="v60"]');
+      await page.click('#roast-grid [data-roast] >> nth=0');
+      await page.click('#profile-grid [data-profile="klassiek"]');
+      await assertBecomesActive(page, '#screen-prep');
+      await page.click('#start-btn');
+      await assertBecomesActive(page, '#screen-brew');
+    }
+    const store = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_brews') || '[]'));
+    const action = async (page) => (await page.locator('#brew-action-main').textContent()).trim();
+
+    test('Giet tot / Wacht / Laten doorlopen — en nergens een geschat "toegevoegd"-getal', async () => {
+      const page = await newTrackedPage();
+      await toBrewV60Klassiek(page);
+      await page.clock.fastForward('00:05');
+      assert.equal(await action(page), 'Giet tot 60 g');
+      await page.clock.fastForward('00:15'); // 0:20
+      assert.match(await action(page), /^Wacht · 0:2[45]$/);
+      assert.match(await page.locator('#brew-action-sub').textContent(), /Daarna giet tot 120 g/);
+      assert.match(await page.locator('#next-info').textContent(), /Volgende: giet tot 120 g om 0:45/);
+      const brewText = await page.locator('#screen-brew').innerText();
+      assert.doesNotMatch(brewText, /toegevoegd/i, 'het brouwscherm mag geen geschatte toegevoegde hoeveelheid tonen');
+      assert.equal(await page.locator('#bed-dry-btn').isVisible(), false, 'Bed droog pas na de laatste giet');
+      await page.close();
+    });
+
+    test('na het schema loopt de klok door; Bed droog legt de gemeten tijd vast', async () => {
+      const page = await newTrackedPage();
+      await toBrewV60Klassiek(page);
+      await page.clock.fastForward('03:15');
+      assert.equal(await action(page), 'Laten doorlopen');
+      assert.equal(await page.locator('#bed-dry-btn').isVisible(), true);
+      assert.equal(await page.locator('#bed-dry-hint').isVisible(), true, 'uitleg de eerste keren');
+      await page.clock.fastForward('00:25'); // 3:40 — 10 s na de schatting van 3:30
+      assert.match(await page.locator('#dial-total').textContent(), /\+0:1\d na schema/);
+      let s = await store(page);
+      assert.equal(s[0].lifecycle, 'brewing', 'na het schema is het brouwsel nog niet klaar');
+      assert.equal(await page.locator('#brewlog-open-btn').isVisible(), false);
+
+      await page.click('#bed-dry-btn');
+      s = await store(page);
+      assert.equal(s[0].lifecycle, 'completed');
+      assert.ok(s[0].actual.bedDrySec >= 219 && s[0].actual.bedDrySec <= 221, `bed droog ~3:40, kreeg ${s[0].actual.bedDrySec}`);
+      assert.equal(s[0].derived.drainResidualSec, s[0].actual.bedDrySec - 210);
+      assert.equal(await action(page), 'Klaar');
+      assert.equal(await page.locator('#pause-btn').isDisabled(), true);
+      const t1 = await page.locator('#dial-time').textContent();
+      await page.clock.fastForward('00:10');
+      assert.equal(await page.locator('#dial-time').textContent(), t1, 'na bed droog staat de klok stil');
+
+      await page.click('#brewlog-open-btn');
+      await assertBecomesActive(page, '#screen-brewlog');
+      assert.match(await page.locator('#brewlog-complete-meta').innerText(), /bed droog\s*3:4\d/i);
+      assert.match(await page.locator('#brewlog-honest-summary').innerText(), /Bed droog na 3:4\d — rond de schatting van het schema \(3:30\)/);
+      await page.click('#brewlog-save-btn');
+      await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
+      await page.click('.navbar [data-nav="brewlog-history"]');
+      await assertBecomesActive(page, '#screen-brewlog-history');
+      assert.match(await page.locator('.brewlog-entry-card').first().innerText(), /bed droog 3:4\d/);
+      await page.close();
+    });
+
+    test('Einde tijdens het doorlopen = voltooid zonder bed-droog-tijd (nooit ingevuld vanuit het schema)', async () => {
+      const page = await newTrackedPage();
+      await toBrewV60Klassiek(page);
+      await page.clock.fastForward('03:20');
+      await page.click('#stop-btn');
+      await page.click('#confirm-modal-ok');
+      const s = await store(page);
+      assert.equal(s[0].lifecycle, 'completed');
+      assert.equal(s[0].actual.bedDrySec, null);
+      assert.equal(await page.locator('#brewlog-open-btn').isVisible(), true);
+      await page.click('#brewlog-open-btn');
+      assert.match(await page.locator('#brewlog-honest-summary').innerText(), /Bed droog: niet vastgelegd/);
+      await page.close();
+    });
+
+    test('naar Home laat het brouwsel doorlopen; de banner en de Brouwen-tab brengen je terug', async () => {
+      const page = await newTrackedPage();
+      await toBrewV60Klassiek(page);
+      await page.clock.fastForward('00:30');
+      await page.click('#home-btn');
+      await assertBecomesActive(page, '#screen-home');
+      assert.equal(await page.locator('#home-active-brew').isVisible(), true);
+      assert.match(await page.locator('#home-active-brew-title').textContent(), /Brouwsel bezig · 0:3\d/);
+      assert.equal((await store(page))[0].lifecycle, 'brewing');
+      await page.clock.fastForward('00:30');
+      await page.click('.navbar [data-nav="method"]');
+      await assertBecomesActive(page, '#screen-brew');
+      assert.match(await page.locator('#dial-time').textContent(), /^1:0\d$/, 'de klok liep door terwijl je weg was');
+      await page.click('#home-btn');
+      await page.click('#home-active-brew');
+      await assertBecomesActive(page, '#screen-brew');
+      await page.close();
+    });
+
+    test('herladen midden in een brouwsel → herstelpaneel; Doorgaan loopt verder op de wandklok', async () => {
+      const page = await newTrackedPage();
+      await toBrewV60Klassiek(page);
+      await page.clock.fastForward('01:00');
+      await page.reload({ waitUntil: 'load' });
+      await assertBecomesActive(page, '#screen-brew');
+      assert.equal(await page.locator('#brew-recovery').isVisible(), true);
+      assert.match(await page.locator('#brew-recovery-text').textContent(), /Gestart 1:0\d geleden/);
+      await page.clock.fastForward('00:20'); // de ketel stond niet stil
+      await page.click('#recovery-continue-btn');
+      assert.equal(await page.locator('#brew-recovery').isVisible(), false);
+      assert.match(await page.locator('#dial-time').textContent(), /^1:2\d$/);
+      const s = await store(page);
+      assert.equal(s.length, 1, 'herstel maakt geen nieuw record');
+      assert.equal(s[0].actual.events.filter(e => e.type === 'start').length, 1);
+      assert.ok(s[0].actual.events.some(e => e.type === 'recovered'));
+      await page.close();
+    });
+
+    test('herstel: "Bed was al droog" voltooit zonder tijd; "Beëindigen" tijdens het gieten breekt af', async () => {
+      const page = await newTrackedPage();
+      await toBrewV60Klassiek(page);
+      await page.clock.fastForward('03:20');
+      await page.reload({ waitUntil: 'load' });
+      await page.click('#recovery-bed-dry-btn');
+      let s = await store(page);
+      assert.equal(s[0].lifecycle, 'completed');
+      assert.equal(s[0].actual.bedDrySec, null, 'het moment is gemist — niet invullen');
+      assert.equal(await page.locator('#brewlog-open-btn').isVisible(), true);
+
+      await page.click('#reset-btn');
+      await page.click('#pause-btn'); // nieuw brouwsel
+      await page.clock.fastForward('00:40');
+      await page.reload({ waitUntil: 'load' });
+      await page.click('#recovery-end-btn');
+      await assertBecomesActive(page, '#screen-home');
+      s = await store(page);
+      assert.equal(s[1].lifecycle, 'abandoned');
+      await page.close();
+    });
+
+    test('Home-banner "Proef je brouwsel": een voltooid, nog niet gelogd brouwsel kun je later proeven', async () => {
+      const page = await newTrackedPage();
+      await toBrewV60Klassiek(page);
+      await page.clock.fastForward('03:20');
+      await page.click('#bed-dry-btn');
+      await page.reload({ waitUntil: 'load' });
+      await assertBecomesActive(page, '#screen-home');
+      assert.match(await page.locator('#home-active-brew-title').textContent(), /Proef je brouwsel van \d\d:\d\d/);
+      await page.click('#home-active-brew');
+      await assertBecomesActive(page, '#screen-brewlog');
+      assert.match(await page.locator('#brewlog-honest-summary').innerText(), /Bed droog na 3:2\d/);
+      await page.click('#brewlog-save-btn');
+      await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
+      const s = await store(page);
+      assert.equal(s.length, 1);
+      assert.equal(s[0].lifecycle, 'logged');
+      await page.click('.navbar [data-nav="home"]');
+      assert.equal(await page.locator('#home-active-brew').isVisible(), false, 'na proeven verdwijnt de banner');
+      await page.close();
+    });
+
+    test('een nieuw brouwsel starten terwijl er een op de achtergrond loopt: het oude wordt afgebroken, de klok begint opnieuw', async () => {
+      const page = await newTrackedPage();
+      await toBrewV60Klassiek(page);
+      await page.clock.fastForward('00:50');
+      await page.click('#home-btn');
+      await page.click('#home-start-brew-btn');
+      await page.click('[data-method="v60"]');
+      await page.click('#roast-grid [data-roast] >> nth=0');
+      await page.click('#profile-grid [data-profile="klassiek"]');
+      await page.click('#start-btn');
+      await page.clock.fastForward('00:05');
+      assert.match(await page.locator('#dial-time').textContent(), /^0:0[45]$/, 'geen restant van de oude klok');
+      const s = await store(page);
+      assert.equal(s[0].lifecycle, 'abandoned');
+      assert.equal(s[0].actual.events.at(-1).reason, 'superseded');
+      assert.equal(s[1].lifecycle, 'brewing');
+      await page.close();
+    });
+
+    test('▶ op het herstelpaneel werkt als Doorgaan', async () => {
+      const page = await newTrackedPage();
+      await toBrewV60Klassiek(page);
+      await page.clock.fastForward('01:00');
+      await page.reload({ waitUntil: 'load' });
+      await page.clock.fastForward('00:10');
+      await page.click('#pause-btn');
+      assert.equal(await page.locator('#brew-recovery').isVisible(), false);
+      assert.match(await page.locator('#dial-time').textContent(), /^1:1\d$/);
+      await page.close();
+    });
+
+    test('de bed-droog-uitleg verdwijnt na drie keer', async () => {
+      const page = await newTrackedPage();
+      await page.addInitScript(() => localStorage.setItem('brewconsole_bed_dry_hint_count', '3'));
+      await toBrewV60Klassiek(page);
+      await page.clock.fastForward('03:15');
+      assert.equal(await page.locator('#bed-dry-btn').isVisible(), true);
+      assert.equal(await page.locator('#bed-dry-hint').isVisible(), false);
+      await page.close();
+    });
+  });
+
   test('Geen console- of pageerrors opgetreden tijdens de hele kernflow', () => {
     assert.deepEqual(consoleErrors, [], 'Onverwachte console.error()-aanroepen tijdens de kernflow');
     assert.deepEqual(pageErrors, [], 'Onverwachte onafgevangen JS-fouten tijdens de kernflow');
