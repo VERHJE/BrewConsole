@@ -1502,6 +1502,30 @@
   @media (min-width:700px) and (orientation:landscape){
     .app{ --app-max:920px; }
   }
+  /* Audit BC-19: groter scherm = meer overzicht, niet een uitgerekte telefoon. */
+  @media (min-width:700px){
+    #screen-prep .photo-slot--banner{ aspect-ratio:auto; height:190px; }
+    #screen-prep .stats-grid{ grid-template-columns:repeat(3,1fr); }
+  }
+  /* iPad op het aanrecht ("counter mode"): grotere dial en giet-instructie, leesbaar op afstand. */
+  @media (min-width:700px) and (min-height:900px){
+    .dial-wrap{ width:380px; height:380px; }
+    .dial-time{ font-size:64px; }
+    .brew-action-main{ font-size:52px; }
+    .brew-action-sub{ font-size:17px; }
+    .brew-hero{ padding-top:72px; }
+  }
+  @media (min-width:1100px){
+    #screen-prep.active{ display:grid; grid-template-columns:minmax(0,1fr) 370px; column-gap:28px; align-items:start; }
+    #screen-prep > .back-btn, #screen-prep > .photo-slot{ grid-column:1 / -1; }
+    #screen-prep .prep-main{ grid-column:1; min-width:0; }
+    #screen-prep .prep-side{ grid-column:2; position:sticky; top:max(18px, var(--safe-t)); display:flex; flex-direction:column; }
+    #screen-prep .prep-side .prep-cta-row{ order:-1; margin:0 0 14px; }
+    #screen-prep .stat-value{ white-space:nowrap; }
+    #screen-prep .recipe-table{ font-size:13px; }
+  }
+  /* Schermtitels krijgen programmatisch focus (voor schermlezers); geen zichtbaar kader daarom. */
+  [data-screen-heading]:focus, .screen > h1.title:focus, .screen .prep-main > h1.title:focus{ outline:none; }
 
   /* ============================================================
      NAVIGATIESHELL (vervolgplan v2.3, Fase 3) — vijf bestemmingen
@@ -2312,6 +2336,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 8h13v5a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6V8Z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/></svg>
         <div class="photo-scrim"></div>
       </div>
+      <!-- Audit BC-19: twee wrappers zodat een breed scherm recept (links) en schema + Start
+           (rechts, blijft in beeld) naast elkaar kan tonen. Op een telefoon verandert er niets. -->
+      <div class="prep-main">
       <div class="summary-tag" id="summary-tag"></div>
       <h1 class="title">Jouw recept</h1>
       <!-- Phase 0 / BC-01: laat vóór Start zien bij welke boon dit brouwsel gelogd wordt. -->
@@ -2472,7 +2499,8 @@
           <p class="process-note" id="bypass-note" hidden></p>
         </div>
       </details>
-
+      </div>
+      <div class="prep-side">
       <table class="recipe-table" id="recipe-table">
         <thead>
           <tr><th>Stap</th><th>Tijd</th><th>Water erbij</th><th>Totaal</th></tr>
@@ -2510,6 +2538,7 @@
           <p class="freshness-readout" id="personal-calibration-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
         </div>
       </details>
+      </div>
     </section>
 
     <!-- STEP 5: BREW / TIMER -->
