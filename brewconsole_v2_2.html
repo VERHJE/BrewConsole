@@ -540,6 +540,21 @@
     margin-bottom:10px;
   }
   .summary-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+  /* Fase 4: advies-paneel + klaargezette stap. */
+  .reco-card{background:var(--surface); border:1px solid var(--copper); border-radius:16px; padding:16px; margin:14px 0 8px; display:flex; flex-direction:column; gap:8px;}
+  .reco-card[hidden]{display:none;}
+  .reco-card[data-type="KEEP"]{border-color:var(--border);}
+  .reco-kicker{margin:0; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--text-faint); display:flex; align-items:center; gap:8px;}
+  .reco-title{margin:0; font-size:19px; font-weight:700; color:var(--copper-light);}
+  .reco-card[data-type="KEEP"] .reco-title{color:var(--text);}
+  .reco-body{margin:0; font-size:13.5px; color:var(--text-dim);}
+  .reco-note{margin:0; font-size:12px; color:var(--text-faint);}
+  .reco-status{margin:4px 0 0; font-size:13px; color:var(--copper-light);}
+  .prep-next-adjust{background:var(--surface); border:1px solid var(--copper); border-radius:14px; padding:12px 14px; margin:0 0 14px;}
+  .prep-next-adjust[hidden]{display:none;}
+  .prep-next-adjust-title{margin:0 0 4px; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--text-faint);}
+  .prep-next-adjust-text{margin:0; font-size:15px; font-weight:600; color:var(--copper-light);}
+  .prep-next-adjust-note{margin:6px 0 0; font-size:12px; color:var(--text-faint);}
   /* Fase 3: proefkaart + doel op het receptscherm. */
   .tasting-card{display:flex; flex-direction:column; gap:14px; margin:14px 0 16px;}
   .tasting-block{display:flex; flex-direction:column; gap:8px;}
@@ -2294,6 +2309,8 @@
       <!-- Fase 3: optioneel doel voor deze kop. Stuurt (nog) geen receptgetal; na het proeven
            vraagt de proefkaart of het gehaald is — dat bepaalt mee of het een geslaagde kop is. -->
       <div class="prep-goal" id="prep-goal" role="group" aria-label="Doel voor deze kop"></div>
+      <!-- Fase 4: de stap die je na je vorige kop koos ("Gebruik voor volgende kop"). -->
+      <div class="prep-next-adjust" id="prep-next-adjust" hidden></div>
       <p class="technique-line" id="technique-line"></p>
       <p class="technique-tasting" id="technique-tasting"></p>
       <p class="profile-twin-banner" id="prep-twin-note" hidden></p>
@@ -2664,6 +2681,8 @@
       </label>
       <button class="advisor-primary" id="brewlog-save-btn" style="margin-top:14px;">Loggen opslaan</button>
       <p class="empty-hint" id="brewlog-saved-msg" hidden>Opgeslagen ✓ — terug te vinden via de bonenkaart.</p>
+      <!-- Fase 4: diagnose + één advies, na opslaan. Adviserend — niets verandert vanzelf. -->
+      <div class="reco-card" id="reco-card" aria-live="polite" hidden></div>
     </section>
 
     <!-- BREW LOG HISTORY -->
@@ -5963,6 +5982,7 @@ function applyAdvice(){
   const baseWater = defaultWaterMlFor(state.method, state.profile);
   const factor = adviceState.batch === 'multi' ? 1.5 : 1;
   state.waterMl = Math.round(baseWater * factor / 50) * 50;
+  applyPendingAdjustToState(); // Fase 4
   updateServingBounds();
   renderMethodGrid();
   renderRoastGrid();
@@ -6000,6 +6020,7 @@ function brewAgain(id){
   state.bypassPct = BYPASS_PCT_OPTIONS.includes(bean.lastBrew.bypassPct) ? bean.lastBrew.bypassPct : 30;
   state.bypassMoment = 'achteraf'; // niet onthouden per boon, altijd de standaard-weeginstructie
   state.waterMl = bean.lastBrew.waterMl || defaultWaterMlFor(state.method, state.profile);
+  applyPendingAdjustToState(); // Fase 4
   updateServingBounds();
   renderMethodGrid();
   renderRoastGrid();
@@ -8303,7 +8324,14 @@ function createBrewRecord(input){
       expectedDrainEndSec: typeof rec.totalTime === 'number' ? rec.totalTime : null,
       // Fase 2: de exacte computeRecipe()-invoer bij Start, zodat het recept na herladen
       // of een crash precies zo terug te rekenen is (recomputeRecipeForRecord()).
-      inputs: input.inputs ? cloneJson(input.inputs) : null
+      inputs: input.inputs ? cloneJson(input.inputs) : null,
+      // Fase 4: de stap uit een vorige proefkaart die in DEZE kop getest wordt ("Gebruik voor
+      // volgende kop"), en de maalstand die daaruit volgt. Het engine-recept zelf blijft
+      // ongewijzigd; grindStartingPoint blijft de basis voor de leerlus.
+      appliedAdjust: input.appliedAdjust ? cloneJson(input.appliedAdjust) : null,
+      grindTarget: input.appliedAdjust && input.appliedAdjust.lever === 'grind' && typeof input.appliedAdjust.toValue === 'number'
+        ? input.appliedAdjust.toValue
+        : (typeof rec.grindStartingPoint === 'number' ? rec.grindStartingPoint : null)
     },
     actual: {
       doseG: null, doseSource: null, grindClick: null, grindSource: null, confirmed: false,
@@ -8441,6 +8469,15 @@ function brewRecordToLogView(rec){
     bedDrySec: a.bedDrySec != null ? a.bedDrySec : null,
     drainResidualSec: rec.derived && rec.derived.drainResidualSec != null ? rec.derived.drainResidualSec : null,
     goal: rec.goal || null,
+    // Fase 4: het advies bij deze kop, met status (voorgesteld / toegepast / getest).
+    recommendation: rec.recommendation ? {
+      type: rec.recommendation.type, lever: rec.recommendation.lever || null, delta: rec.recommendation.delta || null,
+      fromValue: rec.recommendation.fromValue != null ? rec.recommendation.fromValue : null,
+      toValue: rec.recommendation.toValue != null ? rec.recommendation.toValue : null,
+      reasonKey: rec.recommendation.reasonKey || null, confidence: rec.recommendation.confidence || null,
+      status: rec.recommendation.status || null, outcome: rec.recommendation.outcome || null,
+      missing: rec.recommendation.missing || null
+    } : null,
     // Fase 3: de antwoorden van de proefkaart (null voor oudere loggingen met schuifregelaars).
     tasting: (t.strength || t.acidity || t.liking || (Array.isArray(t.finish) && t.finish.length)) ? {
       strength: t.strength || null, acidity: t.acidity || null, finish: Array.isArray(t.finish) ? t.finish.slice() : [],
@@ -8636,7 +8673,9 @@ function buildTasting(answers, nowMs, completedAt, goal){
 function applyActuals(actual, plan, mode, edited){
   const next = Object.assign({}, actual);
   const planDose = plan && typeof plan.doseG === 'number' ? plan.doseG : null;
-  const planGrind = plan && typeof plan.grindStartingPoint === 'number' ? plan.grindStartingPoint : null;
+  // Fase 4: is er een eigen maalstap toegepast (plan.grindTarget), dan is dát "gepland".
+  const planGrind = plan && typeof plan.grindTarget === 'number' ? plan.grindTarget
+    : plan && typeof plan.grindStartingPoint === 'number' ? plan.grindStartingPoint : null;
   if (mode === 'planned'){
     next.doseG = planDose; next.doseSource = planDose != null ? 'U' : null;
     next.grindClick = planGrind; next.grindSource = planGrind != null ? 'U' : null;
@@ -8667,6 +8706,223 @@ function findPreviousComparableBrew(store, rec){
     if (!best || r.createdAt > best.createdAt) best = r;
   }
   return best;
+}
+
+/* ---- Fase 4: diagnose + één advies per kop (pure functies) ----
+   Brew Intelligence Architecture v2, §4 (diagnose) en §7 (aanbeveling). Adviserend: niets
+   verandert vanzelf; "Gebruik voor volgende kop" is een bewuste handeling.
+   Diagnose: sterkte komt rechtstreeks uit de sterktevraag; extractie (onder / goed / over)
+   uit punten per antwoord — eerste schattingen, te valideren (studie 1–4):
+     scherp zuur → onder 2 · zoet & schoon → goed 2 · bitter → over 1 (donker: 0,5)
+     droog/wrang → over 1 + ongelijkmatig · leeg bij goede sterkte → onder 1
+   De bed-droog-afwijking telt (nog) niet mee: dat mag pas als studie 1 laat zien dat die
+   tik herhaalbaar genoeg is. Zekerheid: "waarschijnlijk" = ≥2 punten voorsprong uit ≥2
+   vragen; "mogelijk" = ≥1 voorsprong; anders "onzeker" → herhalen i.p.v. veranderen.
+   Volgorde: NONE → KEEP (gate) → CHECK (geldigheid) → terugdraaien na "slechter" →
+   matrix-hendel met trajectregels (niet heen-en-weer, insluiten) → haalbaarheid → ADJUST,
+   anders REPEAT. Eén hendel per kop; stap 1 klik of 8% dosis (2 klikken alleen bij
+   "veel te …" met overeenstemmend extractiebewijs). */
+const DIAGNOSIS_RULESET_VERSION = 'diag-2026.1';
+const KH_HIGH_CACO3 = 70; // bovengrens SCA-richtwaarde alkaliniteit (mg/L CaCO3)
+const CONFIDENCE_LABELS = { likely: 'Waarschijnlijk', possible: 'Mogelijk', uncertain: 'Onzeker' };
+
+function diagnoseTasting(t, ctx){
+  const a = t || {};
+  const c = ctx || {};
+  const dark = c.roastId === 'dark' || c.roastId === 'medium_dark';
+  const pts = { under: 0, ok: 0, over: 0 };
+  const sources = { under: new Set(), ok: new Set(), over: new Set() };
+  const evidence = [];
+  let uneven = false;
+  const add = (state, n, source, key) => { pts[state] += n; sources[state].add(source); evidence.push(key); };
+  const s = a.strength;
+  const weak = s === 'too_weak' || s === 'much_too_weak';
+  const strong = s === 'too_strong' || s === 'much_too_strong';
+  const finish = Array.isArray(a.finish) ? a.finish : [];
+  if (a.acidity === 'sharp') add('under', 2, 'acidity', 'sour');
+  if (finish.includes('sweet_clean')) add('ok', 2, 'finish', 'sweet_clean');
+  if (finish.includes('bitter')) add('over', dark ? 0.5 : 1, 'finish', dark ? 'bitter_dark' : 'bitter');
+  if (finish.includes('drying')){ uneven = true; add('over', 1, 'finish', 'drying'); }
+  if (finish.includes('hollow')){
+    if (s === 'just_right') add('under', 1, 'finish', 'hollow_right_strength');
+    else if (weak) evidence.push('hollow_weak'); // leeg + slap = sterkte, niet extractie
+  }
+  if (a.acidity === 'flat') evidence.push('flat');
+  const ranked = ['under', 'ok', 'over'].map(k => ({ k, p: pts[k] })).sort((x, y) => y.p - x.p);
+  const lead = ranked[0].p - ranked[1].p;
+  const state = ranked[0].p === 0 ? 'unknown' : lead === 0 ? 'uncertain' : ranked[0].k;
+  const nSources = (state === 'under' || state === 'ok' || state === 'over') ? sources[state].size : 0;
+  const confidence = (state === 'unknown' || state === 'uncertain') ? 'uncertain'
+    : (lead >= 2 && nSources >= 2) ? 'likely'
+    : lead >= 1 ? 'possible' : 'uncertain';
+  return {
+    rulesetVersion: DIAGNOSIS_RULESET_VERSION,
+    strength: { state: weak ? 'weak' : strong ? 'strong' : s === 'just_right' ? 'ok' : 'unknown', much: s === 'much_too_weak' || s === 'much_too_strong' },
+    extraction: { state, points: Object.assign({}, pts), lead },
+    uneven, confidence, evidence
+  };
+}
+
+// De 3×3-matrix: welke ENE hendel past bij sterkte × extractie (richting: grind −1 = fijner).
+function leverFromMatrix(strengthState, extractionState, dark){
+  const E = extractionState, S = strengthState;
+  if (E === 'under'){
+    if (S === 'strong') return { lever: 'dose', dir: -1, basis: 'both' };
+    return { lever: 'grind', dir: -1, basis: 'extraction' };
+  }
+  if (E === 'over'){
+    if (S === 'weak') return { lever: 'dose', dir: +1, basis: 'both' };
+    if (S === 'strong' && dark) return { lever: 'dose', dir: -1, basis: 'both' }; // donker: liever de dosis
+    return { lever: 'grind', dir: +1, basis: 'extraction' };
+  }
+  if (S === 'weak') return { lever: 'dose', dir: +1, basis: 'strength' };
+  if (S === 'strong') return { lever: 'dose', dir: -1, basis: 'strength' };
+  return null;
+}
+
+// Haalbaarheid: maalstand binnen het praktische bereik; sterktestap binnen −1…+1 en met
+// werkelijk effect (dosisplafond 15–22 g). Geeft {ok, toValue, blockedKey}.
+function adjustFeasibility(lever, delta, ctx){
+  const c = ctx || {};
+  if (lever === 'grind'){
+    const g = c.grind || {};
+    const from = typeof g.current === 'number' ? g.current : null;
+    const to = from != null ? from + delta : null;
+    if (to != null && typeof g.min === 'number' && to < g.min) return { ok: false, blockedKey: 'grind_floor', fromValue: from, toValue: to };
+    if (to != null && typeof g.max === 'number' && to > g.max) return { ok: false, blockedKey: 'grind_ceiling', fromValue: from, toValue: to };
+    return { ok: true, fromValue: from, toValue: to };
+  }
+  const st = c.strength || {};
+  const from = typeof st.current === 'number' ? st.current : 0;
+  const to = from + delta;
+  const feasible = to >= -1 && to <= 1 && !(st.blocked && st.blocked[String(to)]);
+  return feasible ? { ok: true, fromValue: from, toValue: to } : { ok: false, blockedKey: 'dose_limit', fromValue: from, toValue: to };
+}
+
+function recommendNext(input){
+  const t = (input && input.tasting) || {};
+  const goal = input && input.goal;
+  const d = (input && input.diagnosis) || diagnoseTasting(t, input && input.ctx);
+  const ctx = (input && input.ctx) || {};
+  const lastApplied = input && input.lastApplied;   // de stap die in DEZE kop getest werd
+  const prevApplied = input && input.prevApplied;   // de stap die in de kop daarvoor getest werd
+  const notes = [];
+  const base = { rulesetVersion: DIAGNOSIS_RULESET_VERSION, notes, evidence: d.evidence };
+  const out = (o) => Object.assign({}, base, o);
+  const gate = tastingGate(t, goal);
+  if (!gate.complete) return out({ type: 'NONE', reasonKey: 'incomplete', missing: gate.missing, confidence: null });
+  if (!ctx.actualsConfirmed) notes.push('actuals_unconfirmed');
+  if (gate.passed) return out({ type: 'KEEP', reasonKey: 'gate_passed', confidence: null });
+
+  // Geldigheid eerst: een recept aanpassen helpt niet als iets anders de kop bepaalt.
+  if (ctx.freshnessKey === 'too_fresh') return out({ type: 'CHECK', reasonKey: 'very_fresh', confidence: null });
+  if (t.acidity === 'flat' && typeof ctx.alkalinityCaCO3 === 'number' && ctx.alkalinityCaCO3 > KH_HIGH_CACO3){
+    return out({ type: 'CHECK', reasonKey: 'water_buffering', confidence: null, alkalinityCaCO3: ctx.alkalinityCaCO3 });
+  }
+
+  const feasibleAdjust = (lever, delta, reasonKey, confidence) => {
+    let f = adjustFeasibility(lever, delta, ctx);
+    if (!f.ok && Math.abs(delta) === 2){ delta = Math.sign(delta); f = adjustFeasibility(lever, delta, ctx); }
+    if (!f.ok) return out({ type: 'CHECK', reasonKey: f.blockedKey, lever, delta, fromValue: f.fromValue, toValue: f.toValue, confidence: null });
+    return out({ type: 'ADJUST', lever, delta, fromValue: f.fromValue, toValue: f.toValue, reasonKey, confidence });
+  };
+
+  // Mislukte stap: deze kop testte een wijziging en smaakte slechter → die stap terugdraaien.
+  if (lastApplied && t.vsLast === 'worse'){
+    return feasibleAdjust(lastApplied.lever, -lastApplied.delta, 'revert_worse', 'possible');
+  }
+
+  const dark = ctx.roastId === 'dark' || ctx.roastId === 'medium_dark';
+  if (d.uneven && d.confidence !== 'likely') return out({ type: 'CHECK', reasonKey: 'uneven', confidence: null });
+  const cand = leverFromMatrix(d.strength.state, d.extraction.state, dark);
+  if (!cand) return out({ type: 'REPEAT', reasonKey: d.extraction.state === 'uncertain' ? 'uncertain' : 'no_clear_lever', confidence: d.extraction.state === 'uncertain' ? 'uncertain' : null });
+  let confidence = cand.basis === 'strength' ? (d.strength.much ? 'likely' : 'possible') : d.confidence;
+  if (confidence === 'uncertain') return out({ type: 'REPEAT', reasonKey: 'uncertain', confidence: 'uncertain' });
+  if (!ctx.actualsConfirmed && confidence === 'likely') confidence = 'possible';
+
+  // Trajectregels: niet heen-en-weer op één kop, en stoppen als je al aan beide kanten zat.
+  if (lastApplied && lastApplied.lever === cand.lever && Math.sign(lastApplied.delta) === -cand.dir && confidence !== 'likely'){
+    return out({ type: 'REPEAT', reasonKey: 'hysteresis', confidence });
+  }
+  if (cand.lever === 'grind' && lastApplied && prevApplied && lastApplied.lever === 'grind' && prevApplied.lever === 'grind'
+      && Math.sign(lastApplied.delta) === -Math.sign(prevApplied.delta)){
+    return out({ type: 'REPEAT', reasonKey: 'bracketed', confidence });
+  }
+
+  const agrees = cand.lever === 'grind' && d.strength.much &&
+    ((cand.dir < 0 && d.strength.state === 'weak' && d.extraction.state === 'under') ||
+     (cand.dir > 0 && d.strength.state === 'strong' && d.extraction.state === 'over'));
+  return feasibleAdjust(cand.lever, cand.dir * (agrees ? 2 : 1), 'matrix', confidence);
+}
+
+// Sjablonen — geen vrije tekst; elke zin hangt aan een reasonKey of evidence-sleutel.
+const EVIDENCE_PHRASES = {
+  sour: 'scherp zuur', sweet_clean: 'zoet en schoon', bitter: 'bitter', bitter_dark: 'bitter (bij donker branden minder zwaar gewogen)',
+  drying: 'droog/wrang', hollow_right_strength: 'leeg bij een goede sterkte', hollow_weak: 'leeg en slap', flat: 'vlak zuur'
+};
+function recommendationTexts(reco, diag, extra){
+  const r = reco || {}, x = extra || {};
+  const n = Math.abs(r.delta || 0);
+  const clicks = (k) => `${k} klik${k === 1 ? '' : 'ken'}`;
+  const range = x.grindRange ? `${x.grindRange.min}–${x.grindRange.max}` : '';
+  const why = (diag && diag.evidence && diag.evidence.length)
+    ? diag.evidence.map(k => EVIDENCE_PHRASES[k]).filter(Boolean).join(', ') : '';
+  const strengthWord = diag && diag.strength ? ({ weak: 'te slap', strong: 'te sterk', ok: 'sterkte goed' })[diag.strength.state] : null;
+  const diagWord = diag && diag.extraction ? ({ under: 'wijst op onderextractie', over: 'wijst op overextractie', ok: 'extractie lijkt in orde' })[diag.extraction.state] : null;
+  const matrixWhy = [strengthWord, why].filter(Boolean).join(' · ') + (diagWord ? ` — ${diagWord}.` : '.');
+  let title = '', body = '', expect = '';
+  const leverTitle = () => {
+    if (r.lever === 'grind'){
+      const dir = r.delta < 0 ? 'fijner' : 'grover';
+      const fromTo = (r.fromValue != null && r.toValue != null) ? ` (klik ${r.fromValue} → ${r.toValue})` : ' dan je vorige kop';
+      return `Maal ${clicks(n)} ${dir}${fromTo}`;
+    }
+    const dose = (x.doseFrom != null && x.doseTo != null) ? ` (${fmt(x.doseFrom, 1)} → ${fmt(x.doseTo, 1)} g)` : '';
+    return r.delta > 0 ? `Een stap sterker: ~8% meer koffie${dose}` : `Een stap lichter: ~8% minder koffie${dose}`;
+  };
+  const leverExpect = () => r.lever === 'grind'
+    ? (r.delta < 0 ? 'Verwacht: meer zoetheid en minder scherp zuur, bij ongeveer dezelfde sterkte.' : 'Verwacht: minder bitter en droog, iets lichter van smaak.')
+    : (r.delta > 0 ? 'Verwacht: voller en sterker, zonder dat het bitterder hoeft te worden.' : 'Verwacht: lichter en helderder.');
+  switch (r.type){
+    case 'NONE': title = 'Nog geen advies'; body = `Beantwoord eerst: ${(r.missing || []).join(', ')}.`; break;
+    case 'KEEP': title = 'Houd dit recept zo'; body = 'Geslaagde kop: alles beantwoord, minstens 4 van 5, en geen "veel te …". Niets veranderen is hier het beste advies.'; break;
+    case 'REPEAT':
+      title = r.reasonKey === 'hysteresis' ? 'Herhaal deze stand eerst' : r.reasonKey === 'bracketed' ? 'Je zit ertussen — herhaal de beste stand' : 'Herhaal deze kop precies';
+      body = ({
+        uncertain: 'De antwoorden wijzen niet duidelijk één kant op. Nog een keer precies hetzelfde zetten geeft meer zekerheid dan nu iets veranderen.',
+        no_clear_lever: 'Sterkte en extractie lijken in orde; wat er niet beviel, is geen duidelijke receptkwestie. Herhaal, of noteer wat je miste.',
+        hysteresis: 'Vorige keer ging je de andere kant op. Eén kop is te weinig bewijs om meteen terug te draaien.',
+        bracketed: 'Je bent al beide kanten op gegaan met de maling. Herhaal de stand die het lekkerst was.'
+      })[r.reasonKey] || '';
+      break;
+    case 'CHECK':
+      title = ({ very_fresh: 'Check eerst: heel vers gebrand', water_buffering: 'Check eerst je water', uneven: 'Check eerst je gieten',
+        grind_floor: 'Fijner malen kan hier niet verder', grind_ceiling: 'Grover malen kan hier niet verder', dose_limit: 'De dosis zit aan de grens' })[r.reasonKey] || 'Check eerst';
+      body = ({
+        very_fresh: 'De boon is hooguit 2 dagen gebrand en zit nog vol CO₂; dat geeft een onrustige doorloop. Laat hem een paar dagen rusten voordat je het recept aanpast.',
+        water_buffering: `Vlak zuur én hoge alkaliniteit${x.alkalinity != null ? ` (${Math.round(x.alkalinity)} mg/L CaCO₃)` : ''}: je water buffert de zuren. Probeer eerst ander of verdund water.`,
+        uneven: 'Een droge, wrange afdronk wijst vaak op ongelijkmatige extractie (kanaalvorming of veel fijn poeder). Giet rustig, houd het bed vlak — en verander het recept nog niet.',
+        grind_floor: `Klik ${r.toValue} valt onder het praktische bereik${range ? ` (${range})` : ''}. Check eerst giettechniek en versheid voordat je nog fijner gaat.`,
+        grind_ceiling: `Klik ${r.toValue} valt boven het praktische bereik${range ? ` (${range})` : ''}. Check eerst giettechniek en water.`,
+        dose_limit: 'Een extra stap zou bij deze hoeveelheid water niets meer veranderen (dosisgrens 15–22 g). Pas liever de waterhoeveelheid aan.'
+      })[r.reasonKey] || '';
+      break;
+    case 'ADJUST':
+      title = leverTitle();
+      {
+        const eState = diag && diag.extraction ? diag.extraction.state : null;
+        const strengthOnly = r.lever === 'dose' && eState !== 'under' && eState !== 'over';
+        body = r.reasonKey === 'revert_worse'
+          ? 'Deze kop testte een wijziging en smaakte slechter dan de vorige. Draai die stap terug.'
+          : strengthOnly
+            ? `${r.delta > 0 ? 'Te slap' : 'Te sterk'}, zonder duidelijk signaal over de extractie — de sterkte stuur je met de hoeveelheid koffie, niet met de maling.`
+            : matrixWhy;
+      }
+      expect = r.reasonKey === 'revert_worse' ? '' : leverExpect();
+      break;
+  }
+  const notes = (r.notes || []).map(k => ({ actuals_unconfirmed: 'Dosis en maling waren niet bevestigd — dit advies gaat uit van het plan.' })[k]).filter(Boolean);
+  return { title, body, expect, confidence: r.confidence ? CONFIDENCE_LABELS[r.confidence] : null, notes };
 }
 
 let brewStore = [];
@@ -8763,6 +9019,7 @@ function beginBrewRecord(){
     recipe: state.recipe, strengthAdjust: state.strengthAdjust,
     bypass: state.bypass, bypassPct: state.bypassPct, bypassMoment: state.bypassMoment,
     goal: state.goal,
+    appliedAdjust: pendingAdjustForState(), // Fase 4: de stap die deze kop test
     water: currentWaterSnapshot(),
     inputs: {
       method: state.method, roast: state.roast, profile: state.profile, waterMl: state.waterMl,
@@ -8854,6 +9111,7 @@ function openBrewLogEntry(){
   }
   const savedMsg = document.getElementById('brewlog-saved-msg');
   if (savedMsg) savedMsg.hidden = true;
+  renderRecommendationPanel(null); // Fase 4: het advies verschijnt pas na opslaan
   const bean = state.beanId ? beanLibrary.find(b=>b.id===state.beanId) : null;
   const p = PROFILE_INFO[state.profile], m = METHOD_INFO[state.method], r = ROAST_INFO[state.roast];
   document.getElementById('brewlog-context').textContent =
@@ -8885,7 +9143,7 @@ function renderTastingCard(){
   const prev = rec ? findPreviousComparableBrew(brewStore, rec) : null;
   const plannedBits = [
     plan.doseG != null ? `${fmt(plan.doseG, 1)} g` : null,
-    plan.grindStartingPoint != null ? `klik ${plan.grindStartingPoint}` : null
+    plan.grindTarget != null ? `klik ${plan.grindTarget}` : plan.grindStartingPoint != null ? `klik ${plan.grindStartingPoint}` : null
   ].filter(Boolean).join(' · ');
   const chips = (q, opts) => opts.map(o =>
     `<button type="button" class="chip" data-t-q="${q}" data-t-v="${o.v}">${escapeHtml(o.label)}</button>`).join('');
@@ -8960,8 +9218,9 @@ function handleTastingCardClick(e){
       const plan = (rec && rec.plan) || {};
       const doseEl = document.getElementById('brewlog-actual-dose');
       const grindEl = document.getElementById('brewlog-actual-grind');
+      const plannedGrind = plan.grindTarget != null ? plan.grindTarget : plan.grindStartingPoint;
       if (doseEl && doseEl.value === '' && plan.doseG != null) doseEl.value = plan.doseG;
-      if (grindEl && grindEl.value === '' && plan.grindStartingPoint != null) grindEl.value = plan.grindStartingPoint;
+      if (grindEl && grindEl.value === '' && plannedGrind != null) grindEl.value = plannedGrind;
     }
   } else {
     const btn = e.target.closest('[data-t-q]');
@@ -9095,11 +9354,13 @@ function saveBrewLogEntry(){
     vsLast: prev ? tastingDraft.vsLast : null,
     vsLastBrewId: prev ? prev.id : null
   }), nowMs, completedAt, next.goal);
+  attachDiagnosisAndRecommendation(next, prev, nowMs); // Fase 4
   upsertBrewRecord(next);
   persistBrewStore();
   rebuildBrewLogView();
   const savedMsg = document.getElementById('brewlog-saved-msg');
   if (savedMsg) savedMsg.hidden = false;
+  renderRecommendationPanel(getBrewRecord(next.id)); // Fase 4
 }
 // NIEUW (Visual Design 2.0 fase 2, Geschiedenis-tabs): het per-entry-kaartje uit
 // renderBrewLogHistory() hieronder losgetrokken naar een eigen functie, zodat zowel de
@@ -9154,6 +9415,14 @@ function renderBrewLogEntryCard(e, beanId){
     <div class="brewlog-entry-scores">${scoresHtml}</div>
     ${e.note ? `<div class="brewlog-entry-note">"${escapeHtml(e.note)}"</div>` : ''}
     ${suggestionHtml}
+    ${e.recommendation && e.recommendation.type !== 'NONE' ? (() => {
+      // Fase 4: het advies bij deze kop + wat ermee gebeurde.
+      const r = e.recommendation;
+      const title = recommendationTexts(r, null, {}).title;
+      const statusText = r.status === 'applied' ? ' · klaargezet' : r.status === 'ignored' ? ' · niet toegepast'
+        : r.status === 'tested' ? ` · getest${r.outcome ? ': ' + ({ better: 'beter', same: 'hetzelfde', worse: 'slechter' })[r.outcome] : ''}` : '';
+      return `<div class="brewlog-entry-note">Advies: ${escapeHtml(title)}${escapeHtml(statusText)}</div>`;
+    })() : ''}
     <button type="button" class="brewlog-entry-delete" data-delete-brew="${e.id}">Verwijderen</button>
   </div>`;
 }
@@ -10694,6 +10963,163 @@ function selectPrepGoal(k){
   if (bean){ bean.goal = state.goal; saveBeansToStorage(); }
   renderPrepGoal();
 }
+/* ---- Fase 4: advies koppelen aan de flow ---- */
+// De stap die klaarstaat voor de volgende kop met deze boon (+ methode).
+function pendingAdjustForState(){
+  const bean = state.beanId ? beanLibrary.find(b => b.id === state.beanId) : null;
+  const p = bean && bean.pendingAdjust;
+  return p && p.method === state.method ? p : null;
+}
+// Een klaargezette dosisstap wordt meteen ingesteld (bewust gekozen door de gebruiker);
+// een maalstap is iets wat je zelf aan de molen doet — die toont het receptscherm.
+function applyPendingAdjustToState(){
+  const p = pendingAdjustForState();
+  if (p && p.lever === 'dose' && typeof p.toValue === 'number') state.strengthAdjust = p.toValue;
+}
+// Context voor diagnose en advies, volledig afgeleid uit het record (dus ook na herladen).
+function diagnosisContextForRecord(rec){
+  const plan = rec.plan || {}, a = rec.actual || {};
+  const inputs = recipeInputsFromRecord(rec);
+  const tier = typeof inputs.roastDays === 'number' ? freshnessTierForDays(inputs.roastDays) : null;
+  const alk = rec.waterSnapshot && rec.waterSnapshot.alkalinity;
+  const alkCaCO3 = alk && typeof alk.value === 'number' ? (alk.unit === 'HCO3' ? alk.value * HCO3_TO_CACO3_FACTOR : alk.value) : null;
+  let recipe = null;
+  try { recipe = recomputeRecipeForRecord(rec); } catch(e){ recipe = null; }
+  const pr = recipe && recipe.grindPracticalRange;
+  const grindCurrent = (a.grindSource === 'U' && typeof a.grindClick === 'number') ? a.grindClick
+    : (typeof plan.grindTarget === 'number' ? plan.grindTarget : null);
+  const cur = plan.strengthStep || 0;
+  const blocked = {};
+  const d0 = doseForRecordAt(rec, cur);
+  [-1, 0, 1].forEach(st => {
+    if (st === cur) return;
+    const dd = doseForRecordAt(rec, st);
+    if (dd == null || d0 == null || !(dd > 0) || Math.abs(dd - d0) < 0.15) blocked[String(st)] = true;
+  });
+  return {
+    roastId: plan.roastId, freshnessKey: tier ? tier.key : null, alkalinityCaCO3: alkCaCO3,
+    actualsConfirmed: !!a.confirmed,
+    grind: { current: grindCurrent, min: pr ? pr.clicksMin : null, max: pr ? pr.clicksMax : null },
+    strength: { current: cur, blocked }
+  };
+}
+function doseForRecordAt(rec, strengthStep){
+  try {
+    const i = recipeInputsFromRecord(rec);
+    return computeRecipe(i.method, i.roast, i.profile, i.waterMl, i.process, i.experimental, i.roastDays, i.altitude, i.bypass, i.fermentEvidence, i.waterHardnessMgL, strengthStep, i.bypassPct).dose;
+  } catch(e){ return null; }
+}
+function recommendationExtraForRecord(rec){
+  const r = rec.recommendation || {};
+  const ctx = diagnosisContextForRecord(rec);
+  const extra = { grindRange: ctx.grind.min != null ? { min: ctx.grind.min, max: ctx.grind.max } : null, alkalinity: r.alkalinityCaCO3 != null ? r.alkalinityCaCO3 : null };
+  if (r.lever === 'dose' && typeof r.fromValue === 'number' && typeof r.toValue === 'number'){
+    extra.doseFrom = doseForRecordAt(rec, r.fromValue);
+    extra.doseTo = doseForRecordAt(rec, r.toValue);
+  }
+  return extra;
+}
+// Na opslaan: diagnose + één advies op het record, en de uitkomst van een geteste stap
+// terugschrijven op de kop die hem voorstelde (proposed → applied → tested).
+function attachDiagnosisAndRecommendation(next, prev, nowMs){
+  const ctx = diagnosisContextForRecord(next);
+  const diag = diagnoseTasting(next.tasting, ctx);
+  const reco = recommendNext({
+    tasting: next.tasting, goal: next.goal, diagnosis: diag, ctx,
+    lastApplied: next.plan.appliedAdjust || null,
+    prevApplied: prev && prev.plan ? prev.plan.appliedAdjust || null : null
+  });
+  next.diagnosis = diag;
+  next.recommendation = Object.assign({}, reco, { status: reco.type === 'ADJUST' ? 'proposed' : null, outcome: null, createdAt: nowMs });
+  const bean = next.beanId ? beanLibrary.find(b => b.id === next.beanId) : null;
+  let beansChanged = false;
+  // Opnieuw opslaan = opnieuw beoordelen: een eerder klaargezette stap van déze kop vervalt.
+  if (bean && bean.pendingAdjust && bean.pendingAdjust.fromBrewId === next.id){ delete bean.pendingAdjust; beansChanged = true; }
+  const applied = next.plan.appliedAdjust;
+  if (applied && applied.fromBrewId){
+    const src = getBrewRecord(applied.fromBrewId);
+    if (src && src.recommendation){
+      src.recommendation.status = 'tested';
+      src.recommendation.outcome = next.tasting && next.tasting.vsLast ? next.tasting.vsLast : null;
+      src.recommendation.testedByBrewId = next.id;
+      upsertBrewRecord(src);
+    }
+    if (bean && bean.pendingAdjust && bean.pendingAdjust.fromBrewId === applied.fromBrewId){ delete bean.pendingAdjust; beansChanged = true; }
+  }
+  if (beansChanged) saveBeansToStorage();
+}
+function renderRecommendationPanel(rec){
+  const el = document.getElementById('reco-card');
+  if (!el) return;
+  if (!rec || !rec.recommendation){ el.hidden = true; el.innerHTML = ''; return; }
+  const r = rec.recommendation;
+  const tx = recommendationTexts(r, rec.diagnosis, recommendationExtraForRecord(rec));
+  const bean = rec.beanId ? beanLibrary.find(b => b.id === rec.beanId) : null;
+  let actions = '';
+  if (r.type === 'ADJUST'){
+    if (r.status === 'applied') actions = `<p class="reco-status">✓ Staat klaar voor je volgende kop met deze boon.</p><button type="button" class="link-secondary" id="reco-undo-btn">Ongedaan maken</button>`;
+    else if (!bean) actions = `<p class="reco-status">Koppel een boon aan je brouwsel om een stap mee te nemen naar de volgende kop.</p>`;
+    else if (r.status === 'ignored') actions = `<p class="reco-status">Niet toegepast.</p><button type="button" class="link-secondary" id="reco-apply-btn">Toch gebruiken</button>`;
+    else actions = `<button type="button" class="advisor-primary" id="reco-apply-btn">Gebruik voor volgende kop</button><button type="button" class="link-secondary" id="reco-ignore-btn">Niet nu</button>`;
+  }
+  el.dataset.type = r.type;
+  el.innerHTML =
+    `<p class="reco-kicker">Advies voor je volgende kop${tx.confidence ? ` <span class="badge" data-tone="info">${escapeHtml(tx.confidence)}</span>` : ''}</p>` +
+    `<p class="reco-title">${escapeHtml(tx.title)}</p>` +
+    (tx.body ? `<p class="reco-body">${escapeHtml(tx.body)}</p>` : '') +
+    (tx.expect ? `<p class="reco-body">${escapeHtml(tx.expect)}</p>` : '') +
+    tx.notes.map(n => `<p class="reco-note">${escapeHtml(n)}</p>`).join('') +
+    actions;
+  el.hidden = false;
+}
+function handleRecommendationClick(e){
+  const rec = activeBrewRecord();
+  if (!rec || !rec.recommendation || rec.recommendation.type !== 'ADJUST') return;
+  const r = rec.recommendation;
+  const bean = rec.beanId ? beanLibrary.find(b => b.id === rec.beanId) : null;
+  if (e.target.closest('#reco-apply-btn') && bean){
+    r.status = 'applied';
+    bean.pendingAdjust = { fromBrewId: rec.id, lever: r.lever, delta: r.delta, fromValue: r.fromValue, toValue: r.toValue, method: rec.plan.methodId, createdAt: Date.now() };
+  } else if (e.target.closest('#reco-ignore-btn')){
+    r.status = 'ignored';
+    if (bean && bean.pendingAdjust && bean.pendingAdjust.fromBrewId === rec.id) delete bean.pendingAdjust;
+  } else if (e.target.closest('#reco-undo-btn')){
+    r.status = 'proposed';
+    if (bean && bean.pendingAdjust && bean.pendingAdjust.fromBrewId === rec.id) delete bean.pendingAdjust;
+  } else return;
+  upsertBrewRecord(rec);
+  persistBrewStore();
+  rebuildBrewLogView();
+  if (bean) saveBeansToStorage();
+  renderRecommendationPanel(rec);
+}
+function renderPrepNextAdjust(){
+  const el = document.getElementById('prep-next-adjust');
+  if (!el) return;
+  const p = pendingAdjustForState();
+  if (!p){ el.hidden = true; el.innerHTML = ''; return; }
+  const n = Math.abs(p.delta);
+  const text = p.lever === 'grind'
+    ? (p.toValue != null
+        ? `Maal op klik ${p.toValue} — ${n} klik${n === 1 ? '' : 'ken'} ${p.delta < 0 ? 'fijner' : 'grover'} dan je vorige kop (klik ${p.fromValue}).`
+        : `Maal ${n} klik${n === 1 ? '' : 'ken'} ${p.delta < 0 ? 'fijner' : 'grover'} dan je vorige kop.`)
+    : `${p.delta > 0 ? 'Een stap sterker (~8% meer koffie)' : 'Een stap lichter (~8% minder koffie)'} — hieronder al ingesteld.`;
+  el.innerHTML = `<p class="prep-next-adjust-title">Jouw stap uit de vorige proefkaart</p>
+    <p class="prep-next-adjust-text">${escapeHtml(text)}</p>
+    <p class="prep-next-adjust-note">Het recept hieronder toont het algemene startpunt; jouw stap gaat voor. Na het proeven vraagt de kaart of het beter was.</p>
+    <button type="button" class="link-secondary" id="prep-next-adjust-cancel">Toch niet</button>`;
+  el.hidden = false;
+}
+function cancelPendingAdjust(){
+  const p = pendingAdjustForState();
+  if (!p) return;
+  const bean = beanLibrary.find(b => b.id === state.beanId);
+  if (p.lever === 'dose' && typeof p.fromValue === 'number') state.strengthAdjust = p.fromValue;
+  const src = getBrewRecord(p.fromBrewId);
+  if (src && src.recommendation && src.recommendation.status === 'applied'){ src.recommendation.status = 'ignored'; upsertBrewRecord(src); persistBrewStore(); rebuildBrewLogView(); }
+  if (bean){ delete bean.pendingAdjust; saveBeansToStorage(); }
+  renderPrep();
+}
 function renderPrep(){
   const m = METHOD_INFO[state.method], r = ROAST_INFO[state.roast], p = PROFILE_INFO[state.profile];
   state.recipe = computeRecipe(state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL, state.strengthAdjust, state.bypassPct);
@@ -10720,6 +11146,7 @@ function renderPrep(){
     beanLineEl.dataset.linked = activeBean ? 'true' : 'false';
   }
   renderPrepGoal();
+  renderPrepNextAdjust(); // Fase 4
 
   document.getElementById('technique-line').textContent = `${rec.technique} · ${rec.author}`;
   document.getElementById('technique-tasting').textContent = p.desc;
@@ -12164,6 +12591,11 @@ document.getElementById('reset-btn').addEventListener('click', resetTimer);
 document.getElementById('bed-dry-btn').addEventListener('click', tapBedDry);
 // Fase 3: proefkaart + doel op het receptscherm (event-delegatie: de inhoud wordt opnieuw opgebouwd).
 document.getElementById('tasting-card').addEventListener('click', handleTastingCardClick);
+// Fase 4: advies-paneel + klaargezette stap op het receptscherm.
+document.getElementById('reco-card').addEventListener('click', handleRecommendationClick);
+document.getElementById('prep-next-adjust').addEventListener('click', (e)=>{
+  if (e.target.closest('#prep-next-adjust-cancel')) cancelPendingAdjust();
+});
 document.getElementById('prep-goal').addEventListener('click', (e)=>{
   const btn = e.target.closest('[data-goal]');
   if (btn) selectPrepGoal(btn.getAttribute('data-goal'));

@@ -448,3 +448,184 @@ describe('Fase 3 — vergelijking met de vorige kop', () => {
     assert.equal(api.findPreviousComparableBrew([], logged('n', 'b1', 'v60', 300)), null);
   });
 });
+
+// ---------------------------------------------------------------------------------------
+// NIEUW (Brew Intelligence v2, Fase 4): diagnose + één advies per kop.
+// ---------------------------------------------------------------------------------------
+describe('Fase 4 — diagnose', () => {
+  const diag = (t, ctx) => j(api.diagnoseTasting(t, ctx || {}));
+  test('scherp zuur + leeg bij goede sterkte → onderextractie, waarschijnlijk (2 vragen, 3 punten voorsprong)', () => {
+    const d = diag({ strength: 'just_right', acidity: 'sharp', finish: ['hollow'], liking: 2 });
+    assert.equal(d.extraction.state, 'under');
+    assert.equal(d.extraction.lead, 3);
+    assert.equal(d.confidence, 'likely');
+    assert.equal(d.strength.state, 'ok');
+  });
+  test('alleen scherp zuur → onder, maar uit één vraag: mogelijk', () => {
+    assert.equal(diag({ strength: 'just_right', acidity: 'sharp', finish: ['bitter'], liking: 2 }).extraction.state, 'under');
+    assert.equal(diag({ strength: 'just_right', acidity: 'sharp', finish: ['sweet_clean'], liking: 3 }).confidence, 'uncertain', 'scherp (onder 2) tegen zoet & schoon (goed 2) = gelijkspel');
+  });
+  test('bitter weegt bij donker branden half', () => {
+    const light = diag({ strength: 'just_right', acidity: 'lively', finish: ['bitter'], liking: 3 }, { roastId: 'light' });
+    const dark = diag({ strength: 'just_right', acidity: 'lively', finish: ['bitter'], liking: 3 }, { roastId: 'dark' });
+    assert.equal(light.extraction.points.over, 1);
+    assert.equal(dark.extraction.points.over, 0.5);
+    assert.equal(dark.confidence, 'uncertain', '0,5 punt is te weinig voor een advies');
+  });
+  test('droog/wrang → ongelijkmatig + over; leeg + slap → sterkte, geen extractiepunt', () => {
+    const d = diag({ strength: 'just_right', acidity: 'lively', finish: ['drying'], liking: 2 });
+    assert.equal(d.uneven, true);
+    assert.equal(d.extraction.points.over, 1);
+    const w = diag({ strength: 'too_weak', acidity: 'lively', finish: ['hollow'], liking: 2 });
+    assert.equal(w.extraction.state, 'unknown');
+    assert.ok(w.evidence.includes('hollow_weak'));
+  });
+});
+
+describe('Fase 4 — advies: volgorde en regels', () => {
+  const base = { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: 4 };
+  const ctx = { actualsConfirmed: true, roastId: 'medium', grind: { current: 15, min: 13, max: 18 }, strength: { current: 0, blocked: {} } };
+  const reco = (t, extra) => j(api.recommendNext(Object.assign({ tasting: t, goal: null, ctx }, extra || {})));
+  test('onvolledig → NONE met wat er ontbreekt', () => {
+    const r = reco({ strength: 'just_right' });
+    assert.equal(r.type, 'NONE');
+    assert.deepEqual(r.missing, ['zuur', 'afdronk', 'hoe lekker']);
+  });
+  test('gate gehaald → KEEP (niets veranderen), ook als er iets te verbeteren lijkt', () => {
+    assert.equal(reco(base).type, 'KEEP');
+    assert.equal(reco(Object.assign({}, base, { acidity: 'sharp', liking: 4 })).type, 'KEEP');
+  });
+  test('heel vers gebrand → CHECK vóór enige receptstap', () => {
+    const r = api.recommendNext({ tasting: Object.assign({}, base, { acidity: 'sharp', finish: ['hollow'], liking: 2 }), ctx: Object.assign({}, ctx, { freshnessKey: 'too_fresh' }) });
+    assert.equal(r.type, 'CHECK');
+    assert.equal(r.reasonKey, 'very_fresh');
+  });
+  test('vlak zuur + hoge alkaliniteit → CHECK water; zonder bekende alkaliniteit niet', () => {
+    const t = Object.assign({}, base, { acidity: 'flat', finish: ['hollow'], liking: 2 });
+    assert.equal(api.recommendNext({ tasting: t, ctx: Object.assign({}, ctx, { alkalinityCaCO3: 120 }) }).reasonKey, 'water_buffering');
+    assert.notEqual(api.recommendNext({ tasting: t, ctx }).reasonKey, 'water_buffering');
+  });
+  test('onder + goede sterkte → 1 klik fijner, met van/naar', () => {
+    const r = reco({ strength: 'just_right', acidity: 'sharp', finish: ['hollow'], liking: 2 });
+    assert.deepEqual([r.type, r.lever, r.delta, r.fromValue, r.toValue, r.confidence], ['ADJUST', 'grind', -1, 15, 14, 'likely']);
+  });
+  test('veel te slap + onder (overeenstemmend) → 2 klikken fijner', () => {
+    const r = reco({ strength: 'much_too_weak', acidity: 'sharp', finish: ['hollow'], liking: 1 });
+    assert.equal(r.lever, 'grind');
+    assert.equal(r.delta, -2);
+  });
+  test('te slap zonder extractiesignaal → een stap sterker (dosis); te sterk → lichter', () => {
+    assert.deepEqual([reco({ strength: 'too_weak', acidity: 'lively', finish: ['hollow'], liking: 3 }).lever, reco({ strength: 'too_weak', acidity: 'lively', finish: ['hollow'], liking: 3 }).delta], ['dose', 1]);
+    const r = reco({ strength: 'too_strong', acidity: 'lively', finish: ['sweet_clean'], liking: 3 });
+    assert.deepEqual([r.lever, r.delta], ['dose', -1]);
+  });
+  test('over + te sterk: grover, maar bij donker branden liever de dosis (matrix)', () => {
+    assert.deepEqual(j(api.leverFromMatrix('strong', 'over', false)), { lever: 'grind', dir: 1, basis: 'extraction' });
+    assert.deepEqual(j(api.leverFromMatrix('strong', 'over', true)), { lever: 'dose', dir: -1, basis: 'both' });
+    const r = reco({ strength: 'too_strong', acidity: 'lively', finish: ['bitter'], liking: 2 });
+    assert.deepEqual([r.type, r.lever, r.delta], ['ADJUST', 'grind', 1]);
+  });
+  test('de volledige matrix', () => {
+    const M = (s, e) => { const x = api.leverFromMatrix(s, e, false); return x ? `${x.lever}${x.dir > 0 ? '+' : '-'}` : '—'; };
+    assert.deepEqual(['weak', 'ok', 'strong'].map(s => ['under', 'ok', 'over'].map(e => M(s, e))), [
+      ['grind-', 'dose+', 'dose+'],
+      ['grind-', '—', 'grind+'],
+      ['dose-', 'dose-', 'grind+']
+    ]);
+  });
+  test('onzeker → REPEAT, geen stap', () => {
+    const r = reco({ strength: 'just_right', acidity: 'sharp', finish: ['sweet_clean'], liking: 3 });
+    assert.deepEqual([r.type, r.reasonKey], ['REPEAT', 'uncertain']);
+  });
+  test('droog/wrang zonder duidelijk beeld → CHECK gieten', () => {
+    const r = reco({ strength: 'just_right', acidity: 'lively', finish: ['drying'], liking: 2 });
+    assert.deepEqual([r.type, r.reasonKey], ['CHECK', 'uneven']);
+  });
+  test('onbevestigde actuals: waarschijnlijk → mogelijk, met notitie', () => {
+    const r = api.recommendNext({ tasting: { strength: 'just_right', acidity: 'sharp', finish: ['hollow'], liking: 2 }, ctx: Object.assign({}, ctx, { actualsConfirmed: false }) });
+    assert.equal(r.confidence, 'possible');
+    assert.ok(r.notes.includes('actuals_unconfirmed'));
+  });
+});
+
+describe('Fase 4 — haalbaarheid en trajectregels', () => {
+  const ctx = { actualsConfirmed: true, roastId: 'medium', grind: { current: 13, min: 13, max: 18 }, strength: { current: 0, blocked: {} } };
+  const under = { strength: 'just_right', acidity: 'sharp', finish: ['hollow'], liking: 2 };
+  test('fijner onder het praktische bereik → CHECK, nooit een onhaalbare stap', () => {
+    const r = api.recommendNext({ tasting: under, ctx });
+    assert.deepEqual([r.type, r.reasonKey, r.toValue], ['CHECK', 'grind_floor', 12]);
+  });
+  test('2 klikken passen niet, 1 wel → 1 klik', () => {
+    const r = api.recommendNext({ tasting: { strength: 'much_too_weak', acidity: 'sharp', finish: ['hollow'], liking: 1 }, ctx: Object.assign({}, ctx, { grind: { current: 14, min: 13, max: 18 } }) });
+    assert.deepEqual([r.type, r.delta, r.toValue], ['ADJUST', -1, 13]);
+  });
+  test('sterkere stap zonder effect (dosisplafond) → CHECK dose_limit', () => {
+    const r = api.recommendNext({ tasting: { strength: 'too_weak', acidity: 'lively', finish: ['hollow'], liking: 3 }, ctx: Object.assign({}, ctx, { strength: { current: 0, blocked: { '1': true } } }) });
+    assert.deepEqual([r.type, r.reasonKey], ['CHECK', 'dose_limit']);
+    const atMax = api.recommendNext({ tasting: { strength: 'too_weak', acidity: 'lively', finish: ['hollow'], liking: 3 }, ctx: Object.assign({}, ctx, { strength: { current: 1, blocked: {} } }) });
+    assert.equal(atMax.reasonKey, 'dose_limit');
+  });
+  test('de geteste stap maakte het slechter → terugdraaien', () => {
+    const r = api.recommendNext({ tasting: Object.assign({}, under, { vsLast: 'worse' }), ctx: Object.assign({}, ctx, { grind: { current: 14, min: 13, max: 18 } }), lastApplied: { lever: 'grind', delta: -1 } });
+    assert.deepEqual([r.type, r.lever, r.delta, r.toValue, r.reasonKey], ['ADJUST', 'grind', 1, 15, 'revert_worse']);
+  });
+  test('niet heen-en-weer: omkeren na één kop alleen bij "waarschijnlijk"', () => {
+    const over = { strength: 'just_right', acidity: 'lively', finish: ['bitter'], liking: 2 }; // over, mogelijk
+    const c = Object.assign({}, ctx, { grind: { current: 14, min: 13, max: 18 } });
+    assert.equal(api.recommendNext({ tasting: over, ctx: c, lastApplied: { lever: 'grind', delta: -1 } }).reasonKey, 'hysteresis');
+    const overLikely = { strength: 'just_right', acidity: 'flat', finish: ['bitter', 'drying'], liking: 2 };
+    const r = api.recommendNext({ tasting: overLikely, ctx: c, lastApplied: { lever: 'grind', delta: -1 } });
+    assert.notEqual(r.reasonKey, 'hysteresis');
+  });
+  test('insluiten: al beide kanten op gemaald → herhaal de beste stand', () => {
+    const c = Object.assign({}, ctx, { grind: { current: 15, min: 13, max: 18 } });
+    const r = api.recommendNext({ tasting: under, ctx: c, lastApplied: { lever: 'grind', delta: 1 }, prevApplied: { lever: 'grind', delta: -1 } });
+    assert.equal(r.reasonKey, 'bracketed');
+  });
+});
+
+describe('Fase 4 — eigenschappen over alle proefkaart-combinaties (v2 §15)', () => {
+  const STRENGTHS = ['much_too_weak', 'too_weak', 'just_right', 'too_strong', 'much_too_strong'];
+  const ACIDITIES = ['flat', 'lively', 'sharp'];
+  const FINISHES = [['sweet_clean'], ['bitter'], ['drying'], ['hollow'], ['bitter', 'drying'], ['bitter', 'hollow'], ['drying', 'hollow'], ['bitter', 'drying', 'hollow']];
+  const all = [];
+  for (const strength of STRENGTHS) for (const acidity of ACIDITIES) for (const finish of FINISHES) for (let liking = 1; liking <= 5; liking++) all.push({ strength, acidity, finish, liking });
+  const contexts = [
+    { actualsConfirmed: true, roastId: 'medium', grind: { current: 15, min: 13, max: 18 }, strength: { current: 0, blocked: {} } },
+    { actualsConfirmed: false, roastId: 'dark', grind: { current: 13, min: 13, max: 18 }, strength: { current: 1, blocked: {} } },
+    { actualsConfirmed: true, roastId: 'light', grind: { current: null, min: null, max: null }, strength: { current: -1, blocked: { '0': true } } }
+  ];
+  test(`${all.length} combinaties × ${contexts.length} contexten: hooguit één hendel, en een ADJUST is altijd haalbaar`, () => {
+    for (const ctx of contexts) for (const t of all){
+      const r = api.recommendNext({ tasting: t, ctx });
+      assert.ok(['NONE', 'KEEP', 'CHECK', 'REPEAT', 'ADJUST'].includes(r.type));
+      if (r.type === 'ADJUST'){
+        assert.ok(['grind', 'dose'].includes(r.lever));
+        assert.ok(Math.abs(r.delta) >= 1 && Math.abs(r.delta) <= 2);
+        assert.ok(api.adjustFeasibility(r.lever, r.delta, ctx).ok, `onhaalbare stap bij ${JSON.stringify(t)}`);
+        if (r.lever === 'dose') assert.equal(Math.abs(r.delta), 1, 'dosis altijd één stap (8%)');
+      }
+    }
+  });
+  test('gate gehaald → nooit ADJUST', () => {
+    for (const ctx of contexts) for (const t of all){
+      if (api.tastingGate(t, null).passed) assert.equal(api.recommendNext({ tasting: t, ctx }).type, 'KEEP');
+    }
+  });
+  test('zuurder (alles verder gelijk) geeft nooit "grover"', () => {
+    for (const ctx of contexts) for (const t of all){
+      if (t.acidity !== 'sharp') continue;
+      const r = api.recommendNext({ tasting: t, ctx });
+      assert.ok(!(r.type === 'ADJUST' && r.lever === 'grind' && r.delta > 0), `scherp zuur gaf grover bij ${JSON.stringify(t)}`);
+    }
+  });
+  test('elk advies heeft een titel en (behalve KEEP/NONE) een uitleg — alleen sjablonen', () => {
+    for (const t of all){
+      const r = api.recommendNext({ tasting: t, ctx: contexts[0] });
+      const tx = api.recommendationTexts(r, api.diagnoseTasting(t, contexts[0]), { grindRange: { min: 13, max: 18 } });
+      assert.ok(tx.title && tx.title.length > 3, `geen titel voor ${r.type}/${r.reasonKey}`);
+      if (r.type !== 'KEEP' && r.type !== 'NONE') assert.ok(tx.body && tx.body.length > 10, `geen uitleg voor ${r.type}/${r.reasonKey}`);
+      assert.doesNotMatch(tx.title + tx.body, /undefined|null|NaN/, `lege plek in sjabloon: ${tx.title} ${tx.body}`);
+    }
+  });
+});
