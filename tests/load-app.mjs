@@ -115,7 +115,8 @@ export function loadApp(){
       FLAVOR_TAG_HINTS, FLAVOR_SCAN_SYNONYMS, SCA_FLAVOR_WHEEL, profileScorePercentages,
       profileNearTieCandidates, PROFILE_NEAR_TIE_MARGIN,
       PROCESS_SCAN_KEYWORDS, EXPERIMENTAL_SCAN_KEYWORDS,
-      scanFlavorTagsInText, stripFlavorContextPhrases, flavorFuzzyDistance
+      scanFlavorTagsInText, stripFlavorContextPhrases, flavorFuzzyDistance,
+      DEFECT_TAGS, defectTagWarning, TAG_TO_CATEGORY
     };`,
     sandbox,
     { filename: 'test-exports-shim.js' }

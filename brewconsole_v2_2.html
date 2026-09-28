@@ -6370,9 +6370,29 @@ function flavorTagChipsHtml(tags){
    van een boon. Bij een cupping-score zou dit een waarschuwing/disqualificatie triggeren;
    hier is het minimaal een zichtbare hint dat dit eerder op een beschadigde boon of
    verkeerde opslag wijst dan op een smaakvoorkeur. */
-const DEFECT_CATEGORY_KEYS = ['overig', 'groen_plantaardig'];
+/* Phase 0 / BC-03 (audit: defectvlag per categorie). Voorheen gold ELKE tag in de
+   categorieën 'groen_plantaardig' en 'overig' als defect — ook "Fris / vers" (juist een
+   positieve noot, h:'fresh_clean') en "Tomaat" (een Keniaanse SL28/SL34-signatuurnoot, zie
+   het wiel). Nu een expliciete lijst per tag. Bewust NIET in deze lijst, hoewel ze in die
+   twee categorieën staan:
+   - Fris / vers: positieve helderheidsnoot.
+   - Tomaat: herkomstkarakter (Kenia), geen beschadiging.
+   - Kruidachtig: veelgebruikte, positieve "herbal"-descriptor op specialty-zakken.
+   - Bitter, Zout: basissmaken die vooral op extractie wijzen (over- resp. onder-
+     extractie), niet op een beschadigde boon of verkeerde opslag — de melding hieronder
+     zou daar de verkeerde oorzaak noemen.
+   Alle overige tags in beide categorieën blijven een defectsignaal (SCA/WCR: green/
+   vegetative-, papery/musty- en chemical-taints). De test controleert dat elke tag hier
+   ook echt in het wiel bestaat. */
+const DEFECT_TAGS = new Set([
+  'Olijfolie', 'Rauw', 'Onrijp', 'Erwtenpeul', 'Donkergroen', 'Plantaardig', 'Hooiachtig',
+  'Groene paprika', 'Bonig',
+  'Verschaald', 'Kartonachtig', 'Papierachtig', 'Houtachtig', 'Beschimmeld', 'Stoffig / muf',
+  'Aards / muf', 'Dierlijk', 'Vlezig / bouillonachtig', 'Fenolisch',
+  'Medicinaal', 'Petroleum', 'Rokerig-chemisch', 'Rubberachtig'
+]);
 function defectTagWarning(tags){
-  const hit = (tags || []).filter(t => DEFECT_CATEGORY_KEYS.includes(TAG_TO_CATEGORY[t]));
+  const hit = (tags || []).filter(t => DEFECT_TAGS.has(t));
   if (!hit.length) return '';
   return `⚠️ ${hit.join(', ')}: dit zijn defect-smaken, geen smaakprofiel-signaal — wijst eerder op een beschadigde boon, verkeerde opslag of te oude bonen dan op hoe deze koffie hoort te smaken. Ze tellen bewust niet mee voor het profieladvies hieronder.`;
 }

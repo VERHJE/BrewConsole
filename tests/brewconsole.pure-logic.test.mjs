@@ -2091,3 +2091,30 @@ describe('BC-06: smaaktags uit tekst — geen valse treffers meer', () => {
     assert.deepEqual(Object.values(cls.scores), [0, 0, 0, 0, 0]);
   });
 });
+
+// NIEUW (Phase 0 / BC-03 — audit: defectvlag per categorie i.p.v. per tag).
+describe('BC-03: defectwaarschuwing per tag', () => {
+  test('Tomaat en "Fris / vers" geven geen defectwaarschuwing meer', () => {
+    assert.equal(api.defectTagWarning(['Tomaat']), '');
+    assert.equal(api.defectTagWarning(['Fris / vers']), '');
+    assert.equal(api.defectTagWarning(['Kruidachtig', 'Bitter', 'Zout']), '');
+  });
+
+  test('echte defecttags geven wél een waarschuwing, met alleen de defecttags erin genoemd', () => {
+    const msg = api.defectTagWarning(['Tomaat', 'Beschimmeld', 'Hooiachtig']);
+    assert.match(msg, /Beschimmeld, Hooiachtig/);
+    assert.doesNotMatch(msg, /Tomaat/);
+  });
+
+  test('elke tag in DEFECT_TAGS bestaat in het smaakwiel (geen typfout die stil nooit matcht)', () => {
+    for (const t of api.DEFECT_TAGS){
+      assert.ok(api.TAG_TO_CATEGORY[t], `${t} staat in DEFECT_TAGS maar niet in het wiel`);
+    }
+  });
+
+  test('defecttags komen alleen uit de categorieën groen_plantaardig en overig', () => {
+    for (const t of api.DEFECT_TAGS){
+      assert.ok(['groen_plantaardig', 'overig'].includes(api.TAG_TO_CATEGORY[t]), `${t} valt in ${api.TAG_TO_CATEGORY[t]}`);
+    }
+  });
+});
