@@ -818,6 +818,17 @@
   .prep-cta-row .start-btn{flex:1.8;}
   .style-more-body:not([hidden]){display:block; margin-top:6px;}
   .scan-review-summary{margin:0 0 8px;}
+  .legacy-review{background:var(--surface); border:1px solid var(--copper-dim, var(--border)); border-radius:var(--radius-md); padding:12px 14px; margin:0 0 14px;}
+  .legacy-review[hidden]{display:none;}
+  .legacy-review-head{display:flex; gap:12px; align-items:flex-start; justify-content:space-between;}
+  .legacy-review-title{margin:0; font-weight:600; color:var(--copper-light); font-size:14px;}
+  .legacy-review-sub{margin:4px 0 0; font-size:12px; color:var(--text-dim); line-height:1.45;}
+  .legacy-review-list{display:grid; gap:10px; margin-top:12px;}
+  .legacy-review-item{border-top:1px solid var(--border); padding-top:10px;}
+  .legacy-review-meta{margin:0; font-size:12.5px; color:var(--text);}
+  .legacy-review-why{margin:3px 0 8px; font-size:12px; color:var(--text-dim);}
+  .legacy-review-actions{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+  .legacy-review-select{flex:1 1 180px; min-width:0;}
   .ab-trial{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px 14px; margin:10px 0 14px;}
   .ab-trial[hidden]{display:none;}
   .ab-title{margin:0 0 6px; font-weight:600; color:var(--copper-light); font-size:14px;}
@@ -2735,6 +2746,9 @@
       <button class="back-btn" data-back="beans">← Mijn bonen</button>
       <h1 class="title" data-screen-heading tabindex="-1">Geschiedenis</h1>
       <p class="subtitle" id="brewlog-history-subtitle"></p>
+
+      <!-- Oude brouwsels nakijken: alleen zichtbaar als er verdachte gemigreerde brouwsels zijn. -->
+      <div class="legacy-review" id="legacy-review" hidden></div>
 
       <div class="detail-tabs" id="history-tabs" role="tablist" aria-label="Geschiedenis-weergave">
         <button type="button" class="detail-tab" data-tab="alle" role="tab" aria-selected="true">Alle</button>
@@ -8639,6 +8653,7 @@ function brewRecordToLogView(rec){
     if (rec.legacy.scheduledSec != null) v.scheduledTimeSec = rec.legacy.scheduledSec;
     v.id = rec.id;
     v.beanId = rec.beanId || null;
+    if (rec.beanRelinkedAt) v.beanSnapshot = rec.beanSnapshot ? cloneJson(rec.beanSnapshot) : null; // nagekeken en opnieuw gekoppeld
     if (rec.favorite) v.favorite = true; else delete v.favorite;
     return v;
   }
@@ -9223,6 +9238,69 @@ function rebuildBrewLogView(){
   view.forEach(v => brewLog.push(v));
 }
 
+/* NIEUW (na de update-controle): de oude app-versie koppelde brouwsels via het advies soms
+   aan geen of aan de verkeerde boon (audit BC-01, sinds Phase 0 opgelost). De migratie nam
+   dat trouw over. Dit wijst alleen die oude brouwsels aan die verdacht zijn — zonder boon,
+   of met een branding die niet bij de gekoppelde boon past — en laat de gebruiker kiezen.
+   Er wordt nooit iets vanzelf veranderd. */
+function beanSnapshotOf(b){
+  return b ? {
+    process: b.process != null ? b.process : null,
+    intendedUse: b.intendedUse != null ? b.intendedUse : null,
+    roastLevel: b.roastLevel != null ? b.roastLevel : null,
+    roastDate: b.roastDate != null ? b.roastDate : null
+  } : null;
+}
+function legacyBrewSuspects(store, beans){
+  const list = beans || [];
+  const byId = new Map(list.map(b => [b.id, b]));
+  const out = [];
+  for (const r of store || []){
+    if (!r || !r.legacy || r.deletedAt || r.lifecycle !== 'logged' || r.reviewedAt) continue;
+    const roast = r.plan && r.plan.roastId ? r.plan.roastId : null;
+    let reason = null;
+    if (!r.beanId) reason = 'no_bean';
+    else if (byId.has(r.beanId)){
+      const linkedRoast = (r.beanSnapshot && r.beanSnapshot.roastLevel) || byId.get(r.beanId).roastLevel || null;
+      if (roast && linkedRoast && roast !== linkedRoast) reason = 'roast_mismatch';
+    }
+    if (!reason) continue;
+    // Kandidaten: zelfde branding, en de boon bestond al toen het brouwsel gezet werd.
+    const candidates = list.filter(b => roast && b.roastLevel === roast && b.id !== r.beanId &&
+      (b.addedAt == null || r.createdAt == null || b.addedAt <= r.createdAt + 86400000)).map(b => b.id);
+    out.push({ id: r.id, reason, roast, beanId: r.beanId || null, candidates, suggested: candidates.length === 1 ? candidates[0] : null });
+  }
+  return out;
+}
+function relinkBrewBean(id, beanId){
+  const rec = getBrewRecord(id);
+  if (!rec) return null;
+  const before = { beanId: rec.beanId || null, beanSnapshot: rec.beanSnapshot ? cloneJson(rec.beanSnapshot) : null, reviewedAt: rec.reviewedAt || null, beanRelinkedAt: rec.beanRelinkedAt || null };
+  const bean = beanId ? beanLibrary.find(b => b.id === beanId) : null;
+  rec.beanId = bean ? bean.id : null;
+  rec.beanSnapshot = beanSnapshotOf(bean);
+  rec.beanRelinkedAt = Date.now();
+  rec.reviewedAt = Date.now();
+  upsertBrewRecord(rec); persistBrewStore(); rebuildBrewLogView();
+  return before;
+}
+function markBrewReviewed(id){
+  const rec = getBrewRecord(id);
+  if (!rec) return null;
+  const before = { beanId: rec.beanId || null, beanSnapshot: rec.beanSnapshot ? cloneJson(rec.beanSnapshot) : null, reviewedAt: rec.reviewedAt || null, beanRelinkedAt: rec.beanRelinkedAt || null };
+  rec.reviewedAt = Date.now();
+  upsertBrewRecord(rec); persistBrewStore(); rebuildBrewLogView();
+  return before;
+}
+function restoreBrewReview(id, before){
+  const rec = getBrewRecord(id);
+  if (!rec || !before) return;
+  rec.beanId = before.beanId; rec.beanSnapshot = before.beanSnapshot;
+  if (before.reviewedAt) rec.reviewedAt = before.reviewedAt; else delete rec.reviewedAt;
+  if (before.beanRelinkedAt) rec.beanRelinkedAt = before.beanRelinkedAt; else delete rec.beanRelinkedAt;
+  upsertBrewRecord(rec); persistBrewStore(); rebuildBrewLogView();
+}
+
 function loadBrewLog(){
   const nowMs = Date.now();
   let loaded = null;
@@ -9773,7 +9851,65 @@ function renderBrewLogHistory(beanId){
   renderBrewLogHistoryLists(beanId);
   showScreen('brewlog-history');
 }
+let legacyReviewOpen = false;
+function renderLegacyReview(){
+  const el = document.getElementById('legacy-review');
+  if (!el) return;
+  const suspects = legacyBrewSuspects(brewStore, beanLibrary);
+  if (!suspects.length){ el.hidden = true; el.innerHTML = ''; legacyReviewOpen = false; return; }
+  el.hidden = false;
+  const n = suspects.length;
+  const head = `<div class="legacy-review-head"><div><p class="legacy-review-title">${n} ${n === 1 ? 'oud brouwsel' : 'oude brouwsels'} om na te kijken</p>
+    <p class="legacy-review-sub">De vorige app-versie koppelde brouwsels via het advies soms aan geen of de verkeerde boon. Kies per brouwsel de juiste boon — er verandert niets vanzelf.</p></div>
+    <button type="button" class="advisor-link" id="legacy-review-toggle">${legacyReviewOpen ? 'Inklappen' : 'Nakijken'}</button></div>`;
+  if (!legacyReviewOpen){ el.innerHTML = head; return; }
+  const roastName = (k) => (ROAST_INFO[k] && ROAST_INFO[k].name) || k || 'onbekend';
+  const items = suspects.map(sus => {
+    const rec = getBrewRecord(sus.id);
+    const date = rec.createdAt ? new Date(rec.createdAt).toLocaleDateString('nl-NL', { day:'numeric', month:'short', year:'numeric' }) : 'onbekende datum';
+    const method = METHOD_INFO[rec.plan.methodId] ? METHOD_INFO[rec.plan.methodId].name : (rec.plan.methodId || '');
+    const linked = sus.beanId ? beanLibrary.find(b => b.id === sus.beanId) : null;
+    const why = sus.reason === 'no_bean'
+      ? 'Zonder boon opgeslagen.'
+      : `Gebrand als ${roastName(sus.roast)}, maar gekoppeld aan ${linked ? linked.name : 'een boon'} (${roastName((rec.beanSnapshot && rec.beanSnapshot.roastLevel) || (linked && linked.roastLevel))}) — mogelijk de verkeerde boon.`;
+    const preselect = sus.suggested || sus.beanId || '';
+    const ordered = beanLibrary.slice().sort((a, b) => (sus.candidates.includes(b.id) ? 1 : 0) - (sus.candidates.includes(a.id) ? 1 : 0));
+    const options = `<option value="">Geen boon</option>` + ordered.map(b =>
+      `<option value="${escapeHtml(b.id)}"${b.id === preselect ? ' selected' : ''}>${escapeHtml(b.name || 'Naamloze boon')} · ${escapeHtml(roastName(b.roastLevel))}${sus.candidates.includes(b.id) ? ' — past bij de branding' : ''}${b.id === sus.beanId ? ' (nu gekoppeld)' : ''}</option>`).join('');
+    const note = rec.tasting && rec.tasting.note ? ` · “${escapeHtml(rec.tasting.note.slice(0, 60))}”` : '';
+    return `<div class="legacy-review-item" data-lr-id="${escapeHtml(sus.id)}">
+      <p class="legacy-review-meta">${escapeHtml(date)} · ${escapeHtml(method)} · ${escapeHtml(roastName(sus.roast))}${note}</p>
+      <p class="legacy-review-why">${escapeHtml(why)}</p>
+      <div class="legacy-review-actions">
+        <select class="form-input legacy-review-select" aria-label="Boon voor dit brouwsel">${options}</select>
+        <button type="button" class="advisor-primary" data-lr-save="${escapeHtml(sus.id)}">Koppelen</button>
+        <button type="button" class="link-secondary" data-lr-ok="${escapeHtml(sus.id)}">Klopt zo</button>
+      </div>
+    </div>`;
+  }).join('');
+  el.innerHTML = head + `<div class="legacy-review-list">${items}</div>`;
+}
+function handleLegacyReviewClick(e){
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  if (btn.id === 'legacy-review-toggle'){ legacyReviewOpen = !legacyReviewOpen; renderLegacyReview(); return; }
+  const refresh = () => { renderBrewLogHistoryLists(historyBeanIdShown); if (typeof renderInsightsScreen === 'function' && document.getElementById('history-stats-body')) renderInsightsScreen('history-stats-body'); };
+  if (btn.dataset.lrSave){
+    const id = btn.dataset.lrSave;
+    const sel = btn.closest('.legacy-review-item').querySelector('select');
+    const bean = sel.value ? beanLibrary.find(b => b.id === sel.value) : null;
+    const before = relinkBrewBean(id, sel.value || null);
+    refresh();
+    showUndoBar(bean ? `Gekoppeld aan ${bean.name || 'boon'}.` : 'Zonder boon bewaard.', () => { restoreBrewReview(id, before); refresh(); });
+  } else if (btn.dataset.lrOk){
+    const id = btn.dataset.lrOk;
+    const before = markBrewReviewed(id);
+    refresh();
+    showUndoBar('Gemarkeerd als nagekeken.', () => { restoreBrewReview(id, before); refresh(); });
+  }
+}
 function renderBrewLogHistoryLists(beanId){
+  renderLegacyReview();
   // NIEUW (vervolgplan v2.3, Fase 5 — Historie als bestemming): tot nu toe werd deze
   // functie alleen met een concrete beanId aangeroepen (vanaf een boonkaart); een leeg/
   // undefined beanId toont voortaan ALLE loggings, zodat #screen-brewlog-history ook als
@@ -13099,6 +13235,7 @@ document.getElementById('bed-dry-btn').addEventListener('click', tapBedDry);
 // Fase 3: proefkaart + doel op het receptscherm (event-delegatie: de inhoud wordt opnieuw opgebouwd).
 document.getElementById('tasting-card').addEventListener('click', handleTastingCardClick);
 document.getElementById('ab-trial').addEventListener('click', handleAbTrialClick); // BC-10
+document.getElementById('legacy-review').addEventListener('click', handleLegacyReviewClick);
 // Fase 4: advies-paneel + klaargezette stap op het receptscherm.
 document.getElementById('reco-card').addEventListener('click', handleRecommendationClick);
 document.getElementById('prep-next-adjust').addEventListener('click', (e)=>{
