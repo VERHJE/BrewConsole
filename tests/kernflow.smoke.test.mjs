@@ -561,9 +561,9 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
   });
 
   // NIEUW (Reparatieplan v4.0, A-1 — bevinding E-07a): het doelvenster (TDS/EY) en zijn
-  // herkomst (G-CONTROL-CHART-01) moeten daadwerkelijk in de UI staan, niet alleen in de
-  // disclaimer-tekst beweerd worden.
-  test('A-1: het doelvenster-blok toont de TDS/EY-getallen en de G-CONTROL-CHART-01-herkomst', async () => {
+  // herkomst (openstaande onderzoeksvraag) moeten daadwerkelijk in de UI staan, niet alleen in de
+  // disclaimer-tekst beweerd worden. Audit BC-12: in gewone woorden, zonder de interne gap-code.
+  test('A-1: het doelvenster-blok toont de TDS/EY-getallen en de herkomst (openstaande onderzoeksvraag)', async () => {
     const page = await newTrackedPage();
     await page.goto(FILE_URL, { waitUntil: 'load' });
     await page.click('.navbar [data-nav="method"]');
@@ -577,7 +577,9 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await assert.ok(await windowNote.isVisible(), '#target-window-note moet zichtbaar zijn op het Prep-scherm');
     const windowText = (await windowNote.textContent()).trim();
     assert.match(windowText, /%TDS/, 'moet de %TDS-grenzen noemen');
-    assert.match(windowText, /G-CONTROL-CHART-01/, 'moet de herkomst (research gap) noemen');
+    assert.match(windowText, /openstaande onderzoeksvraag/, 'moet de herkomst (research gap) noemen');
+    assert.match(windowText, /productaanname/, 'moet zeggen dat het een productaanname is');
+    assert.doesNotMatch(windowText, /G-CONTROL-CHART|APP_ASSUMED/, 'geen interne codes in de UI');
 
     await page.close();
   });
@@ -1465,6 +1467,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('#pause-btn');
       await page.click('#pause-btn'); // hervat
       await page.click('#reset-btn');
+      await page.click('#confirm-modal-ok'); // BC-14: lopend brouwsel → eerst bevestigen
       await page.click('#pause-btn'); // start opnieuw vanaf 0
       const s = await store(page);
       assert.equal(s.length, 2);
@@ -1541,7 +1544,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await toPrepWithBean(page);
       await page.click('#start-btn');
       await page.clock.fastForward('00:10');
-      await page.click('#reset-btn'); // één abandoned record
+      await page.click('#reset-btn');
+      await page.click('#confirm-modal-ok'); // één abandoned record
       const exported = await page.evaluate(() => ({ app:'brew-console', backupVersion:3, beans: beanLibrary, brews: brewStore, brewLog }));
       assert.equal(exported.brews.length, 1);
       await page.evaluate(() => { localStorage.removeItem('brewconsole_brews'); localStorage.removeItem('brewconsole_active_brew'); });
@@ -2052,6 +2056,100 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.match(text, /1× houd zo/);
       assert.equal(await page.locator('#advice-outcome [data-advice-gate]').getAttribute('data-advice-gate'), 'insufficient');
       assert.match(text, /Nog 19 geteste stappen tot een betrouwbaar oordeel/);
+      await page.close();
+    });
+  });
+
+  // NIEUW (audit BC-14/BC-25): geen stille verliezen en een eerlijke eerste indruk.
+  describe('Audit: bevestigen, ongedaan maken en eerste start', () => {
+    const BEAN = { id:'bean-au', name:'Audit Boon', roastLevel:'medium', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:0 };
+    async function seeded(beans){
+      const page = await newTrackedPage();
+      await page.addInitScript((beans) => {
+        if (sessionStorage.getItem('au')) return;
+        sessionStorage.setItem('au', '1');
+        if (beans) localStorage.setItem('brewconsole_beans', JSON.stringify(beans));
+      }, beans || null);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      return page;
+    }
+
+    test('eerste start zegt "Welkom", met een boon "Welkom terug"', async () => {
+      let page = await seeded(null);
+      assert.equal((await page.locator('#home-title').textContent()).trim(), 'Welkom');
+      await page.close();
+      page = await seeded([BEAN]);
+      assert.equal((await page.locator('#home-title').textContent()).trim(), 'Welkom terug');
+      await page.close();
+    });
+
+    test('Reset tijdens een lopend brouwsel vraagt eerst; "Nee" laat het brouwsel doorlopen', async () => {
+      const page = await seeded(null);
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('[data-method="v60"]');
+      await page.click('#roast-grid [data-roast] >> nth=0');
+      await page.click('#profile-grid [data-profile="klassiek"]');
+      await page.click('#start-btn');
+      await page.clock.fastForward('00:20');
+      await page.click('#reset-btn');
+      assert.equal(await page.locator('#confirm-modal').isVisible(), true);
+      await page.click('#confirm-modal-cancel');
+      const st = await page.evaluate(() => ({ brewing: isActiveBrewBrewing(), elapsed: timer.elapsed }));
+      assert.equal(st.brewing, true, 'annuleren breekt het brouwsel niet af');
+      assert.ok(st.elapsed >= 20);
+      await page.close();
+    });
+
+    test('boon verwijderen kan ongedaan worden gemaakt, op dezelfde plek', async () => {
+      const B2 = Object.assign({}, BEAN, { id:'bean-au2', name:'Tweede Boon' });
+      const page = await seeded([BEAN, B2]);
+      await page.click('.navbar [data-nav="beans"]');
+      await page.click('[data-del="bean-au"]');
+      assert.match(await page.locator('#undo-bar').innerText(), /Audit Boon verwijderd/);
+      assert.deepEqual(await page.evaluate(() => beanLibrary.map(b => b.id)), ['bean-au2']);
+      await page.click('#undo-bar-btn');
+      assert.deepEqual(await page.evaluate(() => beanLibrary.map(b => b.id)), ['bean-au', 'bean-au2']);
+      assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_beans')).map(b => b.id)), ['bean-au', 'bean-au2'], 'ook opgeslagen');
+      await page.close();
+    });
+  });
+
+  // NIEUW (audit BC-12/BC-25): interne codes, bestandsnamen en functienamen horen niet in de
+  // UI. Loopt elk profiel × branding × methode langs (V60 ook met bypass), inclusief
+  // ingeklapte uitleg (textContent i.p.v. innerText).
+  describe('Audit: geen interne codes of Engelse labels op het receptscherm', () => {
+    const LEAKS = [
+      [/\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b/, 'engine-code (bv. RESEARCH_GAP)'],
+      [/bevinding\s+[A-Z]-\d/i, 'auditbevinding-ID'],
+      [/\b[a-z]+[A-Z][A-Za-z]*\(\)/, 'JS-functienaam'],
+      [/\bG-[A-Z-]+-\d+/, 'gap-ID'],
+      [/\.md\b/, 'bestandsnaam'],
+      [/\bPour \d|\bHoofdpour\b|\bmedium fine\b/i, 'Engels stap-/maallabel']
+    ];
+    test('alle profielen, brandingen en methodes', async () => {
+      const page = await newTrackedPage();
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      const combos = await page.evaluate(() => {
+        const out = [];
+        for (const m of ['v60', 'chemex']) for (const r of ['light', 'medium', 'dark'])
+          for (const p of Object.keys(PROFILE_INFO)) if (!PROFILE_INFO[p].methodOnly || PROFILE_INFO[p].methodOnly === m) out.push([m, r, p]);
+        return out;
+      });
+      const problems = [];
+      for (const [m, r, p] of combos){
+        const texts = await page.evaluate(([m, r, p]) => {
+          selectMethod(m); selectRoast(r); selectProfile(p);
+          const t = [document.getElementById('screen-prep').textContent];
+          const byp = document.querySelector('[data-bypass-pct="30"]');
+          if (m === 'v60' && byp){ byp.click(); t.push(document.getElementById('screen-prep').textContent); document.querySelector('[data-bypass-pct="0"]').click(); }
+          return t;
+        }, [m, r, p]);
+        for (const text of texts) for (const [re, what] of LEAKS){
+          const hit = text.match(re);
+          if (hit) problems.push(`${m}/${r}/${p}: ${what} "${hit[0]}"`);
+        }
+      }
+      assert.deepEqual([...new Set(problems)], []);
       await page.close();
     });
   });

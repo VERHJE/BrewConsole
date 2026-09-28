@@ -475,7 +475,8 @@ describe('buildPourSchedule() via computeRecipe() — gietschema-fixes (Implemen
       assert.equal(rec.technique, 'Kasuya 4:6', `${profileKey} zou de Kasuya-overlay moeten krijgen`);
       const steps = pourSteps(rec);
       assert.equal(steps.length, 5, `Kasuya (${profileKey}) hoort precies 5 waterbeurten te hebben (bloom is pour 1), kreeg ${steps.length}`);
-      assert.equal(steps[0].label, 'Bloom', 'De eerste waterbeurt moet de bloom zijn, geen aparte extra stap ervoor');
+      // Audit BC-25: in 4:6 is de eerste beurt een smaakbeurt die tegelijk bloeit, geen losse bloom.
+      assert.equal(steps[0].label, 'Giet 1 (bloom)', 'De eerste waterbeurt is giet 1 (die ook bloeit), geen aparte extra stap ervoor');
     }
   });
 
