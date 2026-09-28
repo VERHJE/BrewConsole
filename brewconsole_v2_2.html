@@ -2324,7 +2324,7 @@
     <section class="screen" id="screen-profile" data-screen="profile">
       <button class="back-btn" data-back="roast">← Roast</button>
       <h1 class="title">Wat wordt het smaakprofiel?</h1>
-      <p class="subtitle">Bepaalt vooral het schenkschema. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding. Een paar profielen delen vandaag nog hetzelfde recept — dat zie je hieronder per profiel.</p>
+      <p class="subtitle">Bepaalt vooral het schenkschema. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding (een heel kort schema start één klik fijner). Een paar profielen delen vandaag nog hetzelfde recept — dat zie je hieronder per profiel.</p>
       <div class="choice-grid choice-grid--1" id="profile-grid"></div>
     </section>
 
@@ -4099,6 +4099,8 @@ const ROAST_TEMP_ANCHOR = {
 // brandt grof. Voegt geen nieuwe claim toe, positioneert alleen binnen een bereik dat er
 // al staat (§2c).
 const ROAST_GRIND_ANCHOR_FRACTION = { light:0, light_medium:0.25, medium:0.5, medium_dark:0.75, dark:1 };
+// Audit BC-11: schema's van hooguit 2:00 (vandaag alleen Perger 80/20 op V60, 1:40) starten één klik fijner.
+const SHORT_CONTACT_MAX_SEC = 120;
 
 const PROFILE_INFO = {
   heel_fruitig:  { name:'Heel fruitig',    desc:'Bessen, wijnachtig, bijna gefermenteerd', color:'#C2445C', icon:'berries' },
@@ -5251,7 +5253,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
 function buildFallbackRecipe(reason, waterMl){
   return {
     dose:0, water: waterMl, pourWaterMl: waterMl, bypassMl:0, temp:0, tempClamped:false,
-    grindMicron:null, grindStand:null, grindClamped:false, grindConfidence:'INSUFFICIENT', grindBandLabel:'', grindStartingRange:null, grindPracticalRange:null, grindStartingPoint:null, grindMicronContest:null, grindMechanicalMicron:null,
+    grindMicron:null, grindStand:null, grindClamped:false, grindConfidence:'INSUFFICIENT', grindBandLabel:'', grindStartingRange:null, grindPracticalRange:null, grindStartingPoint:null, grindRoastPoint:null, grindShortContact:false, grindMicronContest:null, grindMechanicalMicron:null,
     tempBandNote:'', tempBand:{min:0,max:0}, tempInstruction:'', deviceTempBand:{min:0,max:0},
     totalTime:0, steps:[],
     technique:'Geen geldig recept bij dit watervolume', author:'—',
@@ -5504,7 +5506,7 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // brandt fijn/ondergrens, donker brandt grof/bovengrens). Voegt geen nieuwe claim toe
   // en verlegt de range zelf niet; alleen INSUFFICIENT/RESEARCH_GAP-molens (grindStartingRange
   // === null) krijgen terecht geen enkel startpunt, net als hierboven.
-  const grindStartingPoint = grindStartingRange
+  const grindRoastPoint = grindStartingRange
     ? Math.round(grindStartingRange.clicksMin + (ROAST_GRIND_ANCHOR_FRACTION[roastKey] != null ? ROAST_GRIND_ANCHOR_FRACTION[roastKey] : 0.5) * (grindStartingRange.clicksMax - grindStartingRange.clicksMin))
     : null;
   // BIJGEWERKT (Implementatieplan v3.0 / C3S Pro Technische Deep-Dive, §11): het
@@ -5530,6 +5532,15 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // B-2b: cyclus-/doorloopconstanten per brewer (V60 blijft exact de referentie, 30/40s).
   const pourCycleConstants = brewerPourCycleConstants(brewerScopeKey);
   const { steps, totalTime } = buildPourSchedule(dose, pourWaterMl, overlayId, overlayMeta, freshTier ? freshTier.bloomExtraSec : 0, pourCycleConstants.cycleSec, pourCycleConstants.drawdownSec);
+  // NIEUW (audit BC-11, akkoord gebruiker): de klikrange past bij gangbare contacttijden
+  // (~2:30-3:30). Een schema van hooguit SHORT_CONTACT_MAX_SEC laat het water korter met de
+  // koffie in contact en extraheert bij dezelfde maling minder — daarom één klik fijner,
+  // nooit buiten de praktische range. Vertrekpunt, geen gemeten getal; de proefkaart en
+  // het advies corrigeren het als het voor jou niet klopt.
+  const grindShortContact = grindRoastPoint != null && totalTime <= SHORT_CONTACT_MAX_SEC;
+  const grindFloor = grindPracticalRange ? grindPracticalRange.clicksMin : (grindStartingRange ? grindStartingRange.clicksMin : null);
+  const grindStartingPoint = grindRoastPoint == null ? null
+    : grindShortContact ? Math.max(grindFloor, grindRoastPoint - 1) : grindRoastPoint;
   // FIX (Implementatieplan Zetadvies v3.0, Fase 3c/D-4): contactTimeGuidance stuurt de
   // schemalengte niet langer (die volgt nu uit de giet-structuur, zie buildPourSchedule()
   // hierboven) — het blijft precies wat de registry het al noemde: een gemonitorde
@@ -5637,7 +5648,7 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   return {
     dose, water: Math.round(water), pourWaterMl, bypassMl, temp, tempClamped:false,
     grindMicron: grindResolvedNum, grindStand: grindResolvedNum, grindClamped:false,
-    grindConfidence, grindBandLabel, grindStartingRange, grindPracticalRange, grindStartingPoint, grindMicronContest, grindMechanicalMicron, tempBandNote, tempBand:{min:tMin,max:tMax}, tempInstruction, deviceTempBand:{min:deviceTMin,max:deviceTMax},
+    grindConfidence, grindBandLabel, grindStartingRange, grindPracticalRange, grindStartingPoint, grindRoastPoint, grindShortContact: grindShortContact && grindStartingPoint < grindRoastPoint, grindMicronContest, grindMechanicalMicron, tempBandNote, tempBand:{min:tMin,max:tMax}, tempInstruction, deviceTempBand:{min:deviceTMin,max:deviceTMax},
     totalTime, steps,
     technique, author,
     notes, ratioText, processNote, freshnessNote, altitudeNote, hardnessNote, bypassNote, strengthNote,
@@ -11546,8 +11557,13 @@ function renderPrep(){
   if (rec.grindPracticalRange){
     grindMoreNotes.push(`Practical V60 range: klik ${rec.grindPracticalRange.clicksMin}–${rec.grindPracticalRange.clicksMax} vanaf het nulpunt — een bredere, zinvolle werkzone; het startgebied hierboven ligt daarbinnen.`);
   }
+  if (rec.grindShortContact){
+    grindMoreNotes.push(`Dit schema duurt maar ${fmtTime(rec.totalTime)}. Korter contact tussen water en koffie haalt bij dezelfde maling minder uit de boon, daarom start je hier één klik fijner dan normaal voor deze branding. Een vertrekpunt, geen gemeten getal — is de kop bitter of loopt hij traag, ga dan terug.`);
+  }
   if (rec.grindStartingPoint != null){
-    grindMoreNotes.push(`Maalrichting bij deze branddiepte: begin rond klik ${rec.grindStartingPoint} binnen het startgebied (lichter brandt fijner/lager, donkerder brandt grover/hoger) — een positie binnen de bestaande range hierboven, geen nieuw maalgetal.`);
+    grindMoreNotes.push(rec.grindShortContact
+      ? `Maalrichting: de branding bepaalt de positie binnen het startgebied (lichter brandt fijner/lager, donkerder grover/hoger); het korte schema zet daar één klik fijner op — klik ${rec.grindStartingPoint}, binnen de praktische range.`
+      : `Maalrichting bij deze branddiepte: begin rond klik ${rec.grindStartingPoint} binnen het startgebied (lichter brandt fijner/lager, donkerder brandt grover/hoger) — een positie binnen de bestaande range hierboven, geen nieuw maalgetal.`);
   }
   if (rec.grindMechanicalMicron != null){
     grindMoreNotes.push(`Mechanische resolutie: ${fmt(rec.grindMechanicalMicron,1)} µm mechanische verstelling per click (S2C660, 38 mm, SUS420 — sourced fabrikantspecificatie, herhaald over meerdere onafhankelijke retailers). Dit is géén particle-size-/deeltjesgrootte-meting. Een eerder afwijkende 50 µm-claim (één bron, niet onderbouwd) staat niet meer gelijkwaardig in deze UI.`);
@@ -11591,6 +11607,7 @@ function renderPrep(){
     <div class="stat-block stat-block--secondary">
       <div class="stat-label">Maalgraad</div>
       <div class="stat-value">${escapeHtml(grindHeadline)}</div>
+      ${rec.grindShortContact ? `<div class="stat-sub">1 klik fijner: kort schema (${fmtTime(rec.totalTime)})</div>` : ''}
       ${rec.grindMicron == null && rec.grindStartingPoint != null && rec.grindStartingRange ? `<div class="stat-sub">start hier · klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} is het startgebied</div><div class="stat-sub">zuur en snel door? fijner · bitter en traag? grover</div>` : ''}
       ${rec.grindMicron == null && rec.grindStartingPoint == null && rec.grindBandLabel ? `<div class="stat-sub">${escapeHtml(rec.grindBandLabel)}</div>` : ''}
       <div class="stat-sub">${rec.grindMicron != null ? `stand ${rec.grindStand} · Timemore C3S Pro` : `Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}`}</div>

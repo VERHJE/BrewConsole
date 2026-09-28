@@ -52,3 +52,25 @@ describe('FORBIDDEN edges — proces/hoogte/hardheid veranderen geen receptgetal
       `${mismatches.length} combinatie(s) veranderen een receptgetal via een FORBIDDEN edge:\n  ${mismatches.slice(0, 20).join('\n  ')}`);
   });
 });
+
+// NIEUW (audit BC-11): contacttijd — alleen een heel kort V60-schema start één klik fijner,
+// nooit buiten de praktische range; dosis, ratio, temperatuur en schema blijven gelijk.
+describe('BC-11: kort schema start één klik fijner', () => {
+  test('Perger (1:40) één klik fijner dan de branding-positie; lange schema\'s ongewijzigd', () => {
+    for (const roast of ['light', 'medium', 'dark']){
+      const perger = api.computeRecipe('v60', roast, 'snel_puur', 300, null, false, null, null, false, null, null, 0);
+      const kasuya = api.computeRecipe('v60', roast, 'klassiek', 300, null, false, null, null, false, null, null, 0);
+      assert.ok(perger.totalTime <= 120, `Perger duurt ${perger.totalTime}s`);
+      assert.equal(perger.grindStartingPoint, kasuya.grindStartingPoint - 1, `${roast}: Perger één klik fijner`);
+      assert.equal(perger.grindShortContact, true);
+      assert.equal(kasuya.grindShortContact, false);
+      assert.ok(perger.grindStartingPoint >= perger.grindPracticalRange.clicksMin, 'nooit onder de praktische range');
+      assert.equal(perger.temp, kasuya.temp, 'temperatuur ongewijzigd');
+    }
+  });
+  test('Chemex heeft geen klikrange — daar verandert niets', () => {
+    const r = api.computeRecipe('chemex', 'medium', 'snel_puur', 600, null, false, null, null, false, null, null, 0);
+    assert.equal(r.grindStartingPoint, null);
+    assert.ok(!r.grindShortContact);
+  });
+});

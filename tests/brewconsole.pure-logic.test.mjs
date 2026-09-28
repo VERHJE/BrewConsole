@@ -1672,7 +1672,14 @@ describe('Nieuwe Reparaties v2.2 — §2: bewijs dat er maar één winnaarspad i
           assert.equal(r.water, first.r.water, `water moet gelijk zijn tussen ${first.p} en ${p}`);
           assert.equal(r.ratioText, first.r.ratioText, `ratio moet gelijk zijn tussen ${first.p} en ${p}`);
           assert.equal(r.temp, first.r.temp, `temp moet gelijk zijn tussen ${first.p} en ${p}`);
-          assert.equal(r.grindStartingPoint, first.r.grindStartingPoint, `grind-startpunt moet gelijk zijn tussen ${first.p} en ${p}`);
+          // Audit BC-11: de kernpositie (uit de branding) blijft binnen een cluster gelijk; de
+          // enige toegestane afwijking is de expliciete, gelabelde contacttijdregel (−1 klik
+          // bij een heel kort schema).
+          assert.equal(r.grindRoastPoint, first.r.grindRoastPoint, `grind-kernpositie moet gelijk zijn tussen ${first.p} en ${p}`);
+          for (const x of [first.r, r]){
+            if (x.grindRoastPoint == null){ assert.equal(x.grindStartingPoint, null); continue; }
+            assert.equal(x.grindStartingPoint, x.grindRoastPoint - (x.grindShortContact ? 1 : 0), 'alleen de contacttijdregel mag het startpunt verschuiven');
+          }
         }
       });
     }
