@@ -700,6 +700,10 @@
     padding:14px;
     box-shadow:var(--shadow-card);
   }
+  /* NIEUW (meetoverzicht adviezen): drie tegels altijd op één rij, ook op een smalle telefoon
+     en ook boven de 4-koloms breakpoint verderop (vandaar de dubbele class). */
+  .stats-grid.stats-grid--three{ grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-bottom:0; }
+  .stats-grid--three .stat-block{ padding:12px 10px; }
   .stat-label{
     font-family:var(--font-mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
     color:var(--text-muted); margin-bottom:6px;
@@ -7680,12 +7684,14 @@ function renderAdviceOutcomeSection(st){
       : st.gate === 'passed'
         ? `✓ De adviezen werken voor jou: ${pct(st.successRate)} gelukt, ${pct(st.harmRate)} slechter (drempel ≥${Math.round(ADVICE_GATE_SUCCESS_MIN * 100)}% / ≤${Math.round(ADVICE_GATE_HARM_MAX * 100)}%). Leren van jouw koppen is nu verantwoord.`
         : `De adviezen halen de drempel (nog) niet: ${pct(st.successRate)} gelukt, ${pct(st.harmRate)} slechter (nodig ≥${Math.round(ADVICE_GATE_SUCCESS_MIN * 100)}% / ≤${Math.round(ADVICE_GATE_HARM_MAX * 100)}%). Eerst de adviesregels bijstellen — nog niet leren.`;
-    body = `<div class="stats-grid">
-        <div class="stat-block"><div class="stat-label">Stappen getest</div><div class="stat-value">${st.tested}</div><div class="stat-sub">${st.applied} klaargezet · ${st.proposed + st.ignored} niet gebruikt</div></div>
+    const untested = st.applied + st.proposed + st.ignored;
+    body = `<div class="stats-grid stats-grid--three">
+        <div class="stat-block"><div class="stat-label">Getest</div><div class="stat-value">${st.tested}</div><div class="stat-sub">${st.tested === 1 ? 'stap' : 'stappen'}</div></div>
         <div class="stat-block"><div class="stat-label">Gelukt</div><div class="stat-value">${pct(st.successRate)}</div><div class="stat-sub">${st.success} van ${st.tested}</div></div>
         <div class="stat-block"><div class="stat-label">Slechter</div><div class="stat-value">${pct(st.harmRate)}</div><div class="stat-sub">${st.worse} van ${st.tested}</div></div>
       </div>
-      <p class="insights-note" data-advice-gate="${st.gate}" style="margin:10px 0 0;">${escapeHtml(verdict)}</p>`;
+      <p class="insights-note" data-advice-gate="${st.gate}" style="margin:10px 0 0;">${escapeHtml(verdict)}</p>
+      ${untested ? `<p class="insights-note" style="margin:6px 0 0;">Nog niet getest: ${st.applied} klaargezet · ${st.proposed + st.ignored} niet gebruikt.</p>` : ''}`;
   }
   return `<div class="bean-detail-section" id="advice-outcome" style="margin-top:18px;">
       <p class="bean-detail-section-label">Hoe goed werken de adviezen?</p>

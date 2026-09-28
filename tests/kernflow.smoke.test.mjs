@@ -2022,7 +2022,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('#history-tabs [data-tab="statistieken"]');
       let text = await page.locator('#advice-outcome').innerText();
       assert.match(text, /Hoe goed werken de adviezen\?/i);
-      assert.match(text, /Stappen getest\s*0/i);
+      assert.match(text, /Getest\s*0/i);
       assert.match(text, /1× een stap/);
       assert.match(text, /Nog 20 geteste stappen tot een betrouwbaar oordeel/);
 
@@ -2043,7 +2043,10 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('.navbar [data-nav="brewlog-history"]');
       await page.click('#history-tabs [data-tab="statistieken"]');
       text = await page.locator('#advice-outcome').innerText();
-      assert.match(text, /Stappen getest\s*1/i);
+      assert.match(text, /Getest\s*1\s*stap/i);
+      const tops = await page.locator('#advice-outcome .stat-block').evaluateAll(els => els.map(e => Math.round(e.getBoundingClientRect().top)));
+      assert.equal(tops.length, 3);
+      assert.equal(new Set(tops).size, 1, `tegels niet op één rij: ${tops}`);
       assert.match(text, /Gelukt\s*100%\s*1 van 1/i);
       assert.match(text, /Slechter\s*0%\s*0 van 1/i);
       assert.match(text, /1× houd zo/);
