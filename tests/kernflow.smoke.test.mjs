@@ -2329,6 +2329,33 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
+  // NIEUW (BP-A/BP-C, onderzoek_maling_dosis_bypass.md §3.6): stappenplan op de bypass-kaart,
+  // en een klaargezette stap uit een bypass-kop zet bypass terug zodat de test eerlijk is.
+  test('BP-A/BP-C: stappenplan bij bypass; stap uit een bypass-kop zet bypass terug, anders een waarschuwing', async () => {
+    const page = await newTrackedPage();
+    const bean = { id:'bean-bp', name:'Bypass Boon', roastLevel:'medium', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt: 1, doseUsedG: 0,
+      lastBrew: { method:'v60', waterMl:300, bypass:false, bypassPct:null },
+      pendingAdjust: { fromBrewId:'log_bp', lever:'grind', delta:-1, fromValue:16, toValue:15, method:'v60', createdAt: 1, bypassPct: 30, waterMl: 300 } };
+    await page.addInitScript((b) => { if (sessionStorage.getItem('bp')) return; sessionStorage.setItem('bp', '1');
+      localStorage.setItem('brewconsole_beans', JSON.stringify([b])); }, bean);
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.evaluate(() => brewAgain('bean-bp'));
+    await assertBecomesActive(page, '#screen-prep');
+    assert.deepEqual(await page.evaluate(() => [state.bypass, state.bypassPct]), [true, 30], 'de stap kwam uit een 30%-bypass-kop');
+    assert.equal(await page.locator('#prep-next-adjust-setup').count(), 0, 'zelfde opzet → geen waarschuwing');
+
+    await page.evaluate(() => { document.getElementById('refine-details').open = true; });
+    const howto = page.locator('#bypass-howto');
+    assert.equal(await howto.isVisible(), true);
+    await howto.locator('summary').click();
+    assert.equal(await howto.locator('li').count(), 6);
+    assert.match(await howto.innerText(), /Begin met 20%[\s\S]*Te dun of zuur\? Eerst Sterkte een stap omhoog[\s\S]*tellen apart/);
+
+    await page.evaluate(() => { state.bypass = false; renderPrep(); });
+    assert.match(await page.locator('#prep-next-adjust-setup').innerText(), /kop met 30% bypass .* telt deze test niet mee/);
+    await page.close();
+  });
+
   // NIEUW (audit BC-10): blinde helder-proef; het recept verandert alleen als je dat na een
   // duidelijke uitslag zelf aanzet.
   test('BC-10: blinde proef bij Helder & fris — onthullen, opslaan, en pas na een duidelijke uitslag zelf aanzetten', async () => {

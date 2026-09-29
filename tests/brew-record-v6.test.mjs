@@ -734,6 +734,46 @@ describe('Meetoverzicht — hoe goed werken de adviezen? (gate voor fase 5–7)'
   });
 });
 
+describe('BP-B — alleen gelijke koppen vergelijken; bypass apart van de poort', () => {
+  const kop = (id, createdAt, plan = {}) => ({ id, beanId: 'b1', lifecycle: 'logged', deletedAt: null, createdAt,
+    plan: Object.assign({ methodId: 'v60', waterMl: 300, bypass: null }, plan) });
+  const bp = (pct) => ({ bypass: { pct } });
+
+  test('isComparableSetup: bypass aan/uit en percentage moeten gelijk zijn', () => {
+    assert.equal(api.isComparableSetup(kop('a', 1), kop('b', 2)), true);
+    assert.equal(api.isComparableSetup(kop('a', 1), kop('b', 2, bp(20))), false);
+    assert.equal(api.isComparableSetup(kop('a', 1, bp(20)), kop('b', 2, bp(20))), true);
+    assert.equal(api.isComparableSetup(kop('a', 1, bp(20)), kop('b', 2, bp(30))), false);
+    assert.equal(api.isComparableSetup(kop('a', 1, bp(null)), kop('b', 2, bp(null))), true, 'oud onbekend percentage: alleen gelijk aan zichzelf');
+    assert.equal(api.isComparableSetup(kop('a', 1, bp(null)), kop('b', 2, bp(30))), false);
+  });
+  test('isComparableSetup: water binnen ±40% (zelfde tolerantie als het leren)', () => {
+    assert.equal(api.isComparableSetup(kop('a', 1, { waterMl: 300 }), kop('b', 2, { waterMl: 400 })), true);
+    assert.equal(api.isComparableSetup(kop('a', 1, { waterMl: 250 }), kop('b', 2, { waterMl: 450 })), false);
+    assert.equal(api.isComparableSetup(kop('a', 1, { waterMl: null }), kop('b', 2, { waterMl: 450 })), true, 'onbekend volume blokkeert niet');
+  });
+  test('findPreviousComparableBrew slaat een bypass-kop over als vergelijking voor een gewone kop', () => {
+    const store = [kop('gewoon', 100), kop('bypass', 200, bp(30)), kop('groot', 250, { waterMl: 600 })];
+    assert.equal(api.findPreviousComparableBrew(store, kop('nu', 300)).id, 'gewoon');
+    assert.equal(api.findPreviousComparableBrew(store, kop('nu', 300, bp(30))).id, 'bypass');
+    assert.equal(api.findPreviousComparableBrew(store, kop('nu', 300, bp(20))), null);
+  });
+  test('adviceOutcomeStats: stappen bij bypass-koppen en op een andere opzet getest tellen apart, niet in de poort', () => {
+    const store = [
+      { id: 'g', plan: { bypass: null }, recommendation: { type: 'ADJUST', status: 'tested', outcome: 'better' } },
+      { id: 'b', plan: { bypass: { pct: 30 } }, recommendation: { type: 'ADJUST', status: 'tested', outcome: 'worse' } },
+      { id: 'b2', plan: { bypass: { pct: 20 } }, recommendation: { type: 'ADJUST', status: 'proposed' } },
+      { id: 'm', plan: { bypass: null }, recommendation: { type: 'ADJUST', status: 'tested', outcome: null, setupMismatch: true } }
+    ];
+    const s = j(api.adviceOutcomeStats(store));
+    assert.equal(s.tested, 1);
+    assert.equal(s.worse, 0, 'de "slechter" van de bypass-kop telt niet als schade van het gewone advies');
+    assert.equal(s.successRate, 1);
+    assert.deepEqual(s.apart, { bypass: 2, mismatch: 1 });
+    assert.equal(s.byType.ADJUST, 4, 'per type blijft alles zichtbaar');
+  });
+});
+
 describe('BC-10 — blinde helder-proef: oordeel', () => {
   const t = (preferred) => ({ preferred });
   test('antwoord per kop → arm (variant/controle/geen)', () => {

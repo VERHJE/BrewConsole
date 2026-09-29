@@ -1,6 +1,6 @@
 # Onderzoek — maalgraad × hoeveelheid, dosis × volume, en de bypass-methode
 
-*Status: onderzocht, wacht op beslissing. Er is geen code gewijzigd en geen receptgetal veranderd.*
+*Status: onderzocht. **BP-A, BP-B en BP-C zijn gebouwd** (zie §6); G-1, BP-D en BP-E niet. Geen receptgetal veranderd.*
 *Datum: 29 september 2026. Vervolg op `onderzoek_D2_D4.md`.*
 
 ---
@@ -181,3 +181,24 @@ BP-A, BP-B en BP-C zijn samen één kleine, goed testbare wijziging zonder recep
 - De tabellen in §3.2 en §3.3 zijn uitgerekend met de app-code zelf (`computeRecipe`) en de standaardformule TDS = EY × dosis / (water − 2 × dosis).
 - Het model in §1.2 is een eigen afleiding (Darcy/Kozeny-Carman), getoetst aan twee Chemex-referenties. Het is bedoeld voor orde-grootte-inzicht, niet voor een receptgetal.
 - De bronnen kon ik vanuit deze omgeving alleen via zoekresultaten lezen, niet als volledige pagina. Vooral de Royal Coffee-cupping en het Drip Roast-recept zijn het nalezen waard voordat BP-D ter sprake komt.
+
+---
+
+## 6. Wat er gebouwd is (29 september 2026)
+
+**BP-A: stappenplan op de bypass-kaart.** Een inklapbaar "Zo gebruik je het" in de bestaande experimenteel-kaart, met de zes stappen uit §3.6. Daarbij staat wanneer je bypass het meest probeert, en dat stappen bij bypass-koppen apart tellen. Alleen tekst.
+
+**BP-B: alleen gelijke koppen vergelijken.**
+- `isComparableSetup()`: gelijk betekent bypass aan of uit met hetzelfde percentage (een oud, onbekend percentage is alleen gelijk aan zichzelf), en water binnen ±40 %. Dat is dezelfde tolerantie als het leren (C-3).
+- `findPreviousComparableBrew()` (de vraag "beter of slechter dan vorige keer?") slaat andere opzetten over.
+- `adviceOutcomeStats()` houdt stappen bij bypass-koppen apart. Een stap die op een kop met een andere opzet getest is, krijgt `setupMismatch` en geen uitkomst. Geen van beide telt mee in de drempel voor fase 5.
+- Het meetoverzicht meldt hoeveel stappen apart gehouden zijn.
+
+**BP-C: een klaargezette stap onthoudt de opzet.**
+- "Gebruik voor volgende kop" bewaart het bypass-percentage en het volume van de kop die de stap voorstelde.
+- Bij de volgende kop met die boon zet de app bypass terug zoals het toen was.
+- Zet je het toch anders, dan waarschuwt het receptscherm dat deze test dan niet meetelt.
+
+**Tests** (641/641 groen):
+- rekentests voor `isComparableSetup()`, de vergelijking en de apart-telling in de poort;
+- Playwright voor het stappenplan en het terugzetten van bypass plus de waarschuwing (via "Brouw opnieuw").

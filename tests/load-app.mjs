@@ -128,7 +128,7 @@ export function loadApp(){
       extractBeanNameFromText, extractRoastDateFromText,
       abTrialVerdict, abArmForAnswer, AB_MIN_TRIALS, AB_WIN_SHARE,
       legacyBrewSuspects, beanSnapshotOf, legacyStockMove, legacyStockBeanId,
-      doseEdgeFor, batchScaleFor, BATCH_REFERENCE
+      doseEdgeFor, batchScaleFor, BATCH_REFERENCE, isComparableSetup, bypassKeyOfPlan
     };`,
     sandbox,
     { filename: 'test-exports-shim.js' }
