@@ -2271,7 +2271,10 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       { id:'bean-bra', name:'Brazil Cerrado', roastLevel:'medium', profileKey:'klassiek', process:'natural', flavorNotes:[], addedAt: now - 30 * day, doseUsedG:18 }
     ];
     const legacy = [{ id:'log_b', schemaVersion: 5, timestamp: now - day, beanId:'bean-bra', method:'v60', profile:'klassiek', roast:'light', waterMl:300, doseG:18, scores:{}, note:'', approved:true }];
-    await page.addInitScript(([b, l]) => { if (sessionStorage.getItem('lr2')) return; sessionStorage.setItem('lr2', '1');
+    // De bewaker staat in localStorage (niet sessionStorage): deze test herlaadt twee keer, en
+    // op de CI-browser bleef sessionStorage bij het herladen van een file://-pagina niet altijd
+    // bewaard — dan zette het init-script de beginvoorraad terug en leek de correctie dubbel.
+    await page.addInitScript(([b, l]) => { if (localStorage.getItem('lr2-seeded')) return; localStorage.setItem('lr2-seeded', '1');
       localStorage.setItem('brewconsole_beans', JSON.stringify(b)); localStorage.setItem('brewConsoleLog', JSON.stringify(l)); }, [beans, legacy]);
     await page.goto(FILE_URL, { waitUntil: 'load' });
     // Zoals de vorige versie het opsloeg: wel opnieuw gekoppeld, geen voorraadcorrectie.
