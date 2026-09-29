@@ -1028,6 +1028,40 @@
   .brewlog-open-btn{margin-top:14px;}
   /* Sprint 1 (UX-review F1): "Opgeslagen ✓" + advies komen in beeld, niet tegen de rand. */
   .brewlog-saved-msg{scroll-margin-top:16px;}
+  /* Sprint 4 (UX-review F1): proefkaart als stepper + adviesscherm. */
+  .tasting-progress{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:6px 0 4px; flex-wrap:wrap;}
+  .tasting-progress-label{font-family:var(--font-mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--copper-light); margin:0;}
+  .tasting-dots{display:flex; gap:0;}
+  .tasting-dot{width:44px; min-height:44px; background:none; border:none; padding:0; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;}
+  .tasting-dot span{display:block; width:18px; height:5px; border-radius:4px; background:var(--border);}
+  .tasting-dot[data-state="done"] span{background:var(--copper-dim);}
+  .tasting-dot[data-state="current"] span{background:var(--copper); width:24px;}
+  .tasting-step[hidden]{display:none;}
+  .tasting-step .tasting-q{font-size:19px;}
+  .tasting-step .chip-row .chip{min-height:48px; font-size:15px;}
+  .tasting-nav{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:6px 0 4px;}
+  .tasting-nav .link-secondary{width:auto; margin:0; padding:10px 4px; text-decoration:none; font-size:14px;}
+  .tasting-nav .advisor-primary{width:auto; margin:0 0 0 auto; min-height:44px; padding:10px 18px; font-size:14.5px;}
+  .tasting-nav [hidden]{display:none;}
+  .brewlog-more{margin-top:14px;}
+  .brewlog-more-sub{font-family:var(--font-body); font-weight:400; font-size:12px; color:var(--text-faint); margin-left:6px;}
+  .brewlog-result-actions{display:none;}
+  /* Sprint 4: de foto stond boven de proefkaart en duwde de eerste vraag onder de vouw;
+     het Klaar-vinkje en de meetwaarden blijven. */
+  #screen-brewlog > .photo-slot{display:none;}
+  #screen-brewlog[data-mode="result"] .brewlog-result-actions{display:block; margin-top:6px;}
+  #screen-brewlog[data-mode="result"] > .photo-slot,
+  #screen-brewlog[data-mode="result"] .brewlog-complete-stats,
+  #screen-brewlog[data-mode="result"] #tasting-card,
+  #screen-brewlog[data-mode="result"] #brewlog-more,
+  #screen-brewlog[data-mode="result"] #brewlog-save-btn{display:none;}
+  #screen-brewlog[data-mode="result"] .brewlog-complete-check{display:none;}
+  #screen-brewlog[data-mode="result"] .reco-title{font-size:24px;}
+  .reco-fromto{display:flex; align-items:stretch; gap:8px; margin:4px 0;}
+  .reco-fromto-tile{flex:1; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; display:flex; flex-direction:column; gap:2px;}
+  .reco-fromto-tile--next{border-color:var(--copper);}
+  .reco-fromto-val{font-family:var(--font-mono); font-weight:700; font-size:22px; color:var(--text);}
+  .reco-fromto-arrow{align-self:center; color:var(--copper-light); font-size:18px;}
   .brewlog-saved-msg:focus{outline:none;}
   /* Sprint 1 (UX-review F5): via de tabbalk geopend = hoofdscherm, geen terugknop. */
   .screen[data-tab-root] > .back-btn{display:none;}
@@ -1581,7 +1615,7 @@
     overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
   }
   .app-content{min-width:0;}
-  .app{ padding-bottom:calc(max(40px, var(--safe-b)) + 78px); }
+  .app{ padding-bottom:calc(max(40px, var(--safe-b)) + 102px); } /* Sprint 2: +24px voor de verhoogde Zet-knop */
   /* NIEUW (Visual Design 2.0, §16 BottomDock): "refined floating dock" — het referentie-
      beeld toont een gewone vlakke tabbalk (geen losstaande pil), dus dit blijft de
      bestaande, architectuur-compatibele fixed-bottom-balk (§16 "if compatible with
@@ -1616,6 +1650,19 @@
   }
   .navbar-btn:hover{color:var(--copper-light);}
   .navbar-btn:active{transform:scale(.94); transition:transform var(--motion-micro) var(--ease-out);}
+  /* Sprint 2 (UX-review F5): de zetknop als verhoogde, gevulde middenknop — met label, niet
+     alleen een icoon. Actief = een ring i.p.v. het streepje (de knop is al gevuld). */
+  @media (max-width:899px){
+    .navbar{align-items:flex-end;}
+    .navbar-btn--zet{color:var(--text);}
+    .navbar-btn--zet svg{
+      width:52px; height:52px; padding:13px; box-sizing:border-box; margin-top:-24px;
+      background:var(--copper); color:#1B1310; border-radius:50%;
+      box-shadow:0 6px 18px rgba(212,165,116,.35);
+    }
+    .navbar-btn--zet[aria-current="page"] svg{box-shadow:0 0 0 3px var(--bg), 0 0 0 5px var(--copper-light);}
+    .navbar-btn--zet[aria-current="page"] span:last-child::after{display:none;}
+  }
 
   /* Eén pil-badge-component (Bouwbesluit B5) — hergebruikt voor Evidence,
      versheid, voorraad en de Home-chip. Nooit alleen kleur: altijd een
@@ -1650,6 +1697,7 @@
   }
   .photo-slot svg{width:28px; height:28px; opacity:.5;}
   .photo-slot--hero{aspect-ratio:16/9; margin-bottom:16px;}
+  .photo-slot[hidden]{display:none;}
   .photo-slot--banner{aspect-ratio:21/9; margin-bottom:14px;}
   .photo-slot--strip{aspect-ratio:1/1; width:56px; height:56px; border-radius:10px; flex-shrink:0;}
   /* NIEUW (foto's methode/roast-keuzekaarten): zelfde neutraal-vlak-principe (Bouwbesluit B6)
@@ -1692,6 +1740,22 @@
   .home-strip-item:hover{transform:translateY(-2px);}
   .home-strip-item:active{transform:translateY(0) scale(.97);}
   .home-strip-name{font-size:12px; color:var(--text-dim);}
+  .home-strip-stock{display:block; font-size:11.5px; color:var(--text-faint); margin-top:2px;}
+  /* Sprint 2 (UX-review F3): "Je volgende kop" — het hoofdonderwerp van Home. */
+  .next-cup{
+    background:linear-gradient(180deg, rgba(212,165,116,.12), rgba(212,165,116,.03)), var(--surface);
+    border:1px solid var(--copper); border-radius:var(--radius-md); padding:16px; margin:0 0 16px;
+    box-shadow:var(--shadow-card);
+  }
+  .next-cup[hidden]{display:none;}
+  .next-cup-kicker{font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--copper-light); margin:0 0 6px;}
+  .next-cup-title{font-family:var(--font-display); font-weight:700; font-size:20px; line-height:1.25; margin:0 0 6px; color:var(--text);}
+  .next-cup-line{font-size:14px; color:var(--text); margin:0 0 4px;}
+  .next-cup-stock{font-size:13px; color:var(--text-dim); margin:0;}
+  .next-cup-go{margin-top:14px;}
+  .next-cup .link-secondary{margin-top:4px;}
+  .next-cup--compact{margin-bottom:18px;}
+  .next-cup--compact .next-cup-title{font-size:17px;}
 
   /* Bean Detail */
   .bean-detail-meta{font-size:13px; color:var(--text-dim); margin:0 0 14px;}
@@ -1797,6 +1861,7 @@
     }
     .navbar-btn{flex-direction:row; justify-content:flex-start; gap:10px; min-width:0; min-height:44px; font-size:12.5px; padding:10px 10px;}
     .navbar-btn[aria-current="page"]{background:var(--surface-2); border-radius:var(--radius-sm);}
+    .navbar-btn--zet{color:var(--copper-light); font-weight:700;}
     /* "Split view" (Bouwbesluit): de twee lijstschermen (Bonen, Historie) tonen hun
        kaarten in twee kolommen i.p.v. één, zodat de zijbalk-breedte goed benut wordt. */
     .bean-list{display:grid; grid-template-columns:repeat(2,1fr); gap:12px;}
@@ -1883,6 +1948,8 @@
        een onderbalk, vanaf 900px een zijbalk (zie CSS), en verborgen tijdens Brew Mode
        (showScreen() zet [hidden] op #screen-brew). -->
   <nav class="navbar" id="navbar" aria-label="Hoofdnavigatie">
+    <!-- Sprint 2 (UX-review F5): Home · Bonen · [Zet] · Logboek · Instellingen — de zetknop
+         in het midden (het hoofddoel van de app), Instellingen (zelden nodig) naar de rand. -->
     <button type="button" class="navbar-btn" data-nav="home" aria-current="page">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg>
       <span>Home</span>
@@ -1891,17 +1958,17 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c4 2 7 5.5 7 10a7 7 0 0 1-14 0c0-4.5 3-8 7-10Z"/><path d="M12 5.5C9.8 8 8.5 10.3 8.5 13"/></svg>
       <span>Bonen</span>
     </button>
-    <button type="button" class="navbar-btn" data-nav="method">
+    <button type="button" class="navbar-btn navbar-btn--zet" data-nav="method" aria-label="Zet een kop">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10h11v4a5.5 5.5 0 0 1-5.5 5.5H10A5.5 5.5 0 0 1 4.5 14v-4Z"/><path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5c-.6.8-.6 1.4 0 2.2M11.5 3.5c-.6.8-.6 1.4 0 2.2"/></svg>
-      <span>Brouwen</span>
+      <span>Zet</span>
+    </button>
+    <button type="button" class="navbar-btn" data-nav="brewlog-history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+      <span>Logboek</span>
     </button>
     <button type="button" class="navbar-btn" data-nav="settings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V19a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.98 17.3a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.62 13a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.7 6.98a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9.06 2.6a1.7 1.7 0 0 0 1.03-1.56V1a2 2 0 1 1 4 0v.09c0 .68.41 1.29 1.03 1.56.62.27 1.34.14 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87c.27.62.88 1.03 1.56 1.03H21a2 2 0 1 1 0 4h-.09c-.68 0-1.29.41-1.56 1.03Z"/></svg>
       <span>Instellingen</span>
-    </button>
-    <button type="button" class="navbar-btn" data-nav="brewlog-history">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
-      <span>Historie</span>
     </button>
   </nav>
   <!-- NIEUW: route-aankondiging voor screenreaders — showScreen() vult dit bij elke
@@ -1947,7 +2014,10 @@
         <span class="home-active-brew-title" id="home-active-brew-title"></span>
         <span class="home-active-brew-desc" id="home-active-brew-desc"></span>
       </button>
-      <div class="photo-slot photo-slot--hero" data-has-photo="true" aria-hidden="true">
+      <!-- Sprint 2 (UX-review F3): "Je volgende kop" — het klaargezette advies (of anders je
+           laatste boon) als hoofdonderwerp, met één startknop. Zie renderNextCupCard(). -->
+      <div class="next-cup" id="home-next-cup" hidden></div>
+      <div class="photo-slot photo-slot--hero" id="home-hero" data-has-photo="true" aria-hidden="true">
         <img class="photo-slot-img" src="photos/home-hero.jpg" alt="" loading="lazy" style="object-position:center 60%;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 8h13v5a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6V8Z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/></svg>
         <div class="photo-scrim"></div>
@@ -1957,12 +2027,6 @@
         <span class="home-cta-title">☕ Nieuw brouwsel starten →</span>
         <span class="home-cta-desc">Kies je zetmethode en ga direct naar een recept op maat.</span>
       </button>
-      <div id="home-continue-block" hidden>
-        <button type="button" class="home-cta" id="home-continue-btn">
-          <span class="home-cta-title">↻ Verder met je laatste boon</span>
-          <span class="home-cta-desc" id="home-continue-desc"></span>
-        </button>
-      </div>
       <p class="home-section-label" id="home-beans-label" hidden>Jouw bonen</p>
       <div class="home-strip" id="home-beans-strip"></div>
       <p class="empty-hint" id="home-empty-hint" hidden>Nog geen bonen opgeslagen — begin met een nieuw brouwsel of voeg een boon toe via de Bonen-tab.</p>
@@ -1970,6 +2034,7 @@
 
     <!-- STEP 1: METHOD -->
     <section class="screen" id="screen-method" data-screen="method">
+      <div class="next-cup next-cup--compact" id="method-next-cup" hidden></div>
       <h1 class="title">Kies je zetmethode</h1>
       <p class="subtitle">Bepaalt maling, temperatuur en schenkschema.</p>
       <div class="choice-grid choice-grid--2" id="method-grid"></div>
@@ -2754,34 +2819,51 @@
            sliders — zie renderBrewLogHonestSummary(). Geen #score-ring-value meer in de DOM. -->
       <!-- NIEUW (Visual Design 2.0, §19): zelfde redenering als #advice-result — platte
            strong/div-kinderen zonder eigen position, dus veilig voor .texture-grain. -->
-      <div class="brewlog-honest-summary texture-grain" id="brewlog-honest-summary"></div>
+      <!-- Sprint 4 (UX-review F1): alles wat niet nodig is om te proeven — de eerlijke
+           samenvatting, kopgewicht, bypass-water en notitie — achter "Meer meten". Bij een
+           bypass-kop staat hij open (het bijgevulde water telt mee voor de vergelijking). -->
+      <details class="flavor-category brewlog-more" id="brewlog-more">
+        <summary style="color:var(--copper-light)">
+          <span>Meer meten <span class="brewlog-more-sub">kopgewicht, notitie, wat we zeker weten</span></span>
+          <span class="flavor-category-arrow">+</span>
+        </summary>
+        <div class="flavor-category-body">
+        <div class="brewlog-honest-summary texture-grain" id="brewlog-honest-summary"></div>
 
-      <!-- NIEUW (Implementatieplan Zetadvies v3.0, Fase 5): het fundament onder Fase 6/7 —
-           zonder deze twee werkelijk-gemeten velden (i.p.v. het aanbevolen recept) is er
-           straks niets om een leerlus op te bouwen. Beide optioneel: een leeg veld wordt
-           NOOIT als 0 opgeslagen (zie saveBrewLogEntry()), puur weggelaten. -->
-      <label for="brewlog-cup-weight" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Kopgewicht na afloop <span style="text-transform:none; letter-spacing:0;">(optioneel, gram) — zo zie je hoeveel water er in het koffiedik achterblijft. Na 5 metingen staat je eigen gemiddelde op het receptscherm, naast de vaste aanname van 2,0 g/g; die wordt niet automatisch vervangen. Met bypass: weeg ná het bijvullen.</span></label>
-      <input type="number" id="brewlog-cup-weight" class="form-input" placeholder="bijv. 268" min="0" max="2000" step="1" style="max-width:220px;">
+        <!-- NIEUW (Implementatieplan Zetadvies v3.0, Fase 5): het fundament onder Fase 6/7 —
+             zonder deze twee werkelijk-gemeten velden (i.p.v. het aanbevolen recept) is er
+             straks niets om een leerlus op te bouwen. Beide optioneel: een leeg veld wordt
+             NOOIT als 0 opgeslagen (zie saveBrewLogEntry()), puur weggelaten. -->
+        <label for="brewlog-cup-weight" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Kopgewicht na afloop <span style="text-transform:none; letter-spacing:0;">(optioneel, gram) — zo zie je hoeveel water er in het koffiedik achterblijft. Na 5 metingen staat je eigen gemiddelde op het receptscherm, naast de vaste aanname van 2,0 g/g; die wordt niet automatisch vervangen. Met bypass: weeg ná het bijvullen.</span></label>
+        <input type="number" id="brewlog-cup-weight" class="form-input" placeholder="bijv. 268" min="0" max="2000" step="1" style="max-width:220px;">
 
-      <!-- NIEUW (Implementatieplan Bypass v1.0, Fase B/C, BP-5/"proef-en-vul"): wat er
-           écht is toegevoegd, voor de vergelijking met het geplande bedrag (rec.bypassMl)
-           — alleen zichtbaar als deze logging daadwerkelijk met bypass gezet is, zie
-           renderBrewLogHonestSummary()/openBrewLogEntry() voor de hidden-toggle. -->
-      <div id="brewlog-bypass-actual-block" hidden>
-        <label for="brewlog-bypass-actual" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Werkelijk toegevoegd bypass-water <span style="text-transform:none; letter-spacing:0;" id="brewlog-bypass-actual-hint">(optioneel, gram)</span></label>
-        <input type="number" id="brewlog-bypass-actual" class="form-input" min="0" max="2000" step="1" style="max-width:220px;">
-      </div>
+        <!-- NIEUW (Implementatieplan Bypass v1.0, Fase B/C, BP-5/"proef-en-vul"): wat er
+             écht is toegevoegd, voor de vergelijking met het geplande bedrag (rec.bypassMl)
+             — alleen zichtbaar als deze logging daadwerkelijk met bypass gezet is, zie
+             renderBrewLogHonestSummary()/openBrewLogEntry() voor de hidden-toggle. -->
+        <div id="brewlog-bypass-actual-block" hidden>
+          <label for="brewlog-bypass-actual" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Werkelijk toegevoegd bypass-water <span style="text-transform:none; letter-spacing:0;" id="brewlog-bypass-actual-hint">(optioneel, gram)</span></label>
+          <input type="number" id="brewlog-bypass-actual" class="form-input" min="0" max="2000" step="1" style="max-width:220px;">
+        </div>
 
-      <!-- Fase 3: de handmatige "geslaagd"-checkbox (Fase 7, vervuilingsregel 1) is vervangen
-           door de gate op de proefkaart — zie tastingGate() en #tasting-gate. -->
+        <!-- Fase 3: de handmatige "geslaagd"-checkbox (Fase 7, vervuilingsregel 1) is vervangen
+             door de gate op de proefkaart — zie tastingGate() en #tasting-gate. -->
 
-      <label class="form-label" style="margin-top:14px; display:block;">Notities
-        <textarea id="brewlog-note" class="form-input" rows="3" placeholder="bijv. iets wateriger dan normaal, minder fruitig"></textarea>
-      </label>
+        <label class="form-label" style="margin-top:14px; display:block;">Notities
+          <textarea id="brewlog-note" class="form-input" rows="3" placeholder="bijv. iets wateriger dan normaal, minder fruitig"></textarea>
+        </label>
+        </div>
+      </details>
       <button class="start-btn" id="brewlog-save-btn" style="margin-top:14px;">Loggen opslaan</button>
       <p class="empty-hint brewlog-saved-msg" id="brewlog-saved-msg" tabindex="-1" hidden>Opgeslagen ✓ — terug te vinden via de bonenkaart.</p>
       <!-- Fase 4: diagnose + één advies, na opslaan. Adviserend — niets verandert vanzelf. -->
       <div class="reco-card" id="reco-card" aria-live="polite" hidden></div>
+      <!-- Sprint 4 (UX-review F1): na opslaan met een echt advies vervangt het advies het
+           formulier (data-mode="result"); de proefkaart blijft één tik terug. -->
+      <div class="brewlog-result-actions" id="brewlog-result-actions">
+        <button type="button" class="advisor-primary" id="brewlog-home-btn">Naar Home</button>
+        <button type="button" class="link-secondary" id="brewlog-edit-btn">Proefkaart aanpassen</button>
+      </div>
     </section>
 
     <!-- BREW LOG HISTORY -->
@@ -7815,23 +7897,12 @@ function renderHomeScreen(){
     chipRow.innerHTML = chips.join('');
   }
 
-  // "Verder met je laatste boon": de boon achter de meest recente logging, mits die boon
-  // nog bestaat én een lastBrew heeft (nodig voor brewAgain()) — anders geen gok, gewoon
-  // verborgen (leeg-eerst, geen verzonnen aanbeveling).
-  const continueBlock = document.getElementById('home-continue-block');
-  const mostRecentEntry = brewLog.length ? brewLog.slice().sort((a,b)=>b.timestamp-a.timestamp)[0] : null;
-  const continueBean = mostRecentEntry ? beanLibrary.find(b=>b.id===mostRecentEntry.beanId && b.lastBrew) : null;
-  if (continueBlock){
-    if (continueBean){
-      continueBlock.hidden = false;
-      document.getElementById('home-continue-desc').textContent =
-        `${continueBean.name || 'Naamloze boon'} — ${METHOD_INFO[continueBean.lastBrew.method] ? METHOD_INFO[continueBean.lastBrew.method].name : continueBean.lastBrew.method}`;
-      const btn = document.getElementById('home-continue-btn');
-      btn.onclick = ()=>brewAgain(continueBean.id);
-    } else {
-      continueBlock.hidden = true;
-    }
-  }
+  // Sprint 2 (UX-review F3): "Je volgende kop" vervangt "Verder met je laatste boon". Staat
+  // er een kaart, dan is dat het hoofdonderwerp: de sfeerfoto wijkt en "Nieuw brouwsel" wordt
+  // een gewone tweede keuze.
+  const hasNext = renderNextCupCard('home-next-cup');
+  const hero = document.getElementById('home-hero');
+  if (hero) hero.hidden = hasNext;
 
   const label = document.getElementById('home-beans-label');
   const empty = document.getElementById('home-empty-hint');
@@ -7852,6 +7923,7 @@ function renderHomeScreen(){
           <div class="photo-scrim"></div>
         </div>
         <span class="home-strip-name">${escapeHtml(b.name || 'Naamloze boon')}</span>
+        ${beanStockLine(b) ? `<span class="home-strip-stock">${escapeHtml(beanStockLine(b))}</span>` : ''}
       </button>
     `).join('');
     strip.querySelectorAll('[data-open-detail]').forEach(btn=>{
@@ -7859,9 +7931,83 @@ function renderHomeScreen(){
     });
   }
 }
+/* Sprint 2 (UX-review F3): "Je volgende kop". Eerst een boon met een klaargezette stap
+   (nieuwste eerst) — mits die stap bij dezelfde methode hoort als de vorige kop, want
+   brewAgain() zet die methode terug. Anders de boon van je laatste brouwsel. Geen kop
+   gezet = geen kaart (leeg-eerst, niets verzonnen). */
+function nextCupTarget(){
+  const withAdjust = beanLibrary
+    .filter(b => b.pendingAdjust && b.lastBrew && b.pendingAdjust.method === b.lastBrew.method)
+    .sort((a, b) => (b.pendingAdjust.createdAt || 0) - (a.pendingAdjust.createdAt || 0))[0];
+  if (withAdjust) return { bean: withAdjust, adjust: withAdjust.pendingAdjust };
+  const recent = brewLog.slice().sort((a, b) => b.timestamp - a.timestamp)
+    .find(e => e.beanId && beanLibrary.some(b => b.id === e.beanId && b.lastBrew));
+  if (!recent) return null;
+  return { bean: beanLibrary.find(b => b.id === recent.beanId), adjust: null, entry: recent };
+}
+// Voorraad als koppen: grammen over ÷ de dosis van je laatste kop met deze boon. Zonder
+// zakgewicht of zonder eerdere kop alleen wat er wél bekend is.
+function beanLastDoseG(bean){
+  const recs = brewStore.filter(r => r.beanId === bean.id && r.plan && typeof r.plan.doseG === 'number' && r.plan.doseG > 0);
+  if (!recs.length) return null;
+  return recs.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0].plan.doseG;
+}
+function beanStockLine(bean){
+  if (!bean || !bean.bagSizeG) return '';
+  const remaining = Math.round((bean.bagSizeG - (bean.doseUsedG || 0)) * 10) / 10;
+  if (remaining <= 0) return 'Zak waarschijnlijk leeg';
+  const dose = beanLastDoseG(bean);
+  const cups = dose ? Math.floor(remaining / dose) : null;
+  return `${fmt(remaining, 0)} g over${cups != null ? ` · ± ${cups} ${cups === 1 ? 'kop' : 'koppen'}` : ''}`;
+}
+function renderNextCupCard(targetId){
+  const el = document.getElementById(targetId);
+  if (!el) return false;
+  const t = nextCupTarget();
+  if (!t){ el.hidden = true; el.innerHTML = ''; return false; }
+  const m = METHOD_INFO[t.bean.lastBrew.method];
+  const src = t.adjust ? getBrewRecord(t.adjust.fromBrewId) : null;
+  const adviceTitle = src && src.recommendation ? recommendationTexts(src.recommendation, null, {}).title : null;
+  const liking = t.entry && t.entry.tasting && t.entry.tasting.liking ? t.entry.tasting.liking : null;
+  const line = t.adjust
+    ? (adviceTitle ? `Advies uit je vorige kop: ${adviceTitle}` : 'Er staat een stap klaar uit je vorige kop.')
+    : (liking ? `Vorige kop: ${liking} van 5.` : 'Zet je vorige recept opnieuw.');
+  const stock = beanStockLine(t.bean);
+  el.innerHTML = `<p class="next-cup-kicker">Je volgende kop${t.adjust ? ' · advies klaar' : ''}</p>
+    <p class="next-cup-title">${escapeHtml(t.bean.name || 'Naamloze boon')} · ${escapeHtml(m ? m.name : t.bean.lastBrew.method)}</p>
+    <p class="next-cup-line">${escapeHtml(line)}</p>
+    ${stock ? `<p class="next-cup-stock">${escapeHtml(stock)}</p>` : ''}
+    <button type="button" class="start-btn next-cup-go" data-next-cup-go="${t.bean.id}">${t.adjust ? 'Zet met dit advies →' : 'Zet opnieuw →'}</button>
+    ${t.adjust ? `<button type="button" class="link-secondary" data-next-cup-skip="${t.bean.id}">Zonder deze stap zetten</button>` : ''}`;
+  el.hidden = false;
+  return true;
+}
+// Een klaargezette stap laten vallen zonder hem te testen — zelfde afhandeling als "Toch niet"
+// op het receptscherm (cancelPendingAdjust), maar vanaf een boon i.p.v. vanaf de state.
+function dropPendingAdjust(bean){
+  const p = bean && bean.pendingAdjust;
+  if (!p) return;
+  const src = getBrewRecord(p.fromBrewId);
+  if (src && src.recommendation && src.recommendation.status === 'applied'){ src.recommendation.status = 'ignored'; upsertBrewRecord(src); persistBrewStore(); rebuildBrewLogView(); }
+  delete bean.pendingAdjust;
+  saveBeansToStorage();
+}
+function handleNextCupClick(e){
+  const go = e.target.closest('[data-next-cup-go]');
+  const skip = e.target.closest('[data-next-cup-skip]');
+  if (go) brewAgain(go.getAttribute('data-next-cup-go'));
+  else if (skip){
+    const bean = beanLibrary.find(b => b.id === skip.getAttribute('data-next-cup-skip'));
+    dropPendingAdjust(bean);
+    if (bean) brewAgain(bean.id);
+  }
+}
+document.getElementById('home-next-cup').addEventListener('click', handleNextCupClick);
+document.getElementById('method-next-cup').addEventListener('click', handleNextCupClick);
 document.getElementById('home-start-brew-btn').addEventListener('click', ()=>{
   setActiveBean(null); // BC-01: een nieuwe handmatige start hoort bij geen boon, tot je er een kiest
   renderMethodGrid();
+  renderNextCupCard('method-next-cup');
   showScreen('method');
 });
 
@@ -9593,6 +9739,9 @@ function openBrewLogEntry(){
   const savedMsg = document.getElementById('brewlog-saved-msg');
   if (savedMsg) savedMsg.hidden = true;
   renderRecommendationPanel(null); // Fase 4: het advies verschijnt pas na opslaan
+  setBrewLogMode('form'); // Sprint 4
+  const moreEl = document.getElementById('brewlog-more');
+  if (moreEl) moreEl.open = !!(state.bypass && state.recipe && state.recipe.bypassMl != null);
   const bean = state.beanId ? beanLibrary.find(b=>b.id===state.beanId) : null;
   const p = PROFILE_INFO[state.profile], m = METHOD_INFO[state.method], r = ROAST_INFO[state.roast];
   document.getElementById('brewlog-context').textContent =
@@ -9657,7 +9806,47 @@ function renderTastingCard(){
   }
   html += `<p class="tasting-gate" id="tasting-gate" aria-live="polite"></p>`;
   el.innerHTML = html;
+  buildTastingStepper(el, goal && BREW_GOALS[goal], !!prev);
   refreshTastingCard();
+}
+/* Sprint 4 (UX-review F1): één vraag per stap. De vragen, hun volgorde en de gate blijven
+   precies dezelfde — alleen tonen we er één tegelijk, met voortgang, Vorige/Volgende en
+   automatisch door na een enkele keuze (afdronk is meerkeuze: daar zelf op Volgende). */
+const TASTING_STEP_LABELS = { strength: 'Sterkte', acidity: 'Zuur', finish: 'Afdronk', liking: 'Hoe lekker', goalHit: 'Doel', vsLast: 'Vorige kop' };
+let tastingSteps = [];
+let tastingStepIdx = 0;
+function buildTastingStepper(el, hasGoal, hasPrev){
+  tastingSteps = ['strength', 'acidity', 'finish', 'liking'].concat(hasGoal ? ['goalHit'] : [], hasPrev ? ['vsLast'] : []);
+  tastingStepIdx = 0;
+  const blocks = [...el.querySelectorAll('.tasting-block')].filter(b => !b.classList.contains('tasting-actuals'));
+  blocks.forEach((b, i) => { b.dataset.stepKey = tastingSteps[i]; b.classList.add('tasting-step'); });
+  const first = blocks[0];
+  if (!first) return;
+  const head = document.createElement('div');
+  head.className = 'tasting-progress';
+  head.innerHTML = `<p class="tasting-progress-label" id="tasting-progress-label" aria-live="polite"></p>
+    <div class="tasting-dots">${tastingSteps.map((k, i) =>
+      `<button type="button" class="tasting-dot" data-t-step="${k}" aria-label="Vraag ${i + 1}: ${TASTING_STEP_LABELS[k]}"><span></span></button>`).join('')}</div>`;
+  first.parentNode.insertBefore(head, first);
+  const nav = document.createElement('div');
+  nav.className = 'tasting-nav';
+  nav.innerHTML = `<button type="button" class="link-secondary" id="tasting-prev">‹ Vorige</button>
+    <button type="button" class="advisor-primary" id="tasting-next">Volgende ›</button>`;
+  blocks[blocks.length - 1].after(nav);
+}
+function tastingStepAnswered(key){
+  const d = tastingDraft;
+  return key === 'finish' ? d.finish.length > 0 : key === 'liking' ? !!d.liking : !!d[key];
+}
+function goToTastingStep(idx, focus){
+  if (!tastingSteps.length) return;
+  tastingStepIdx = Math.max(0, Math.min(tastingSteps.length - 1, idx));
+  refreshTastingCard();
+  if (focus){
+    const cur = document.querySelector(`#tasting-card .tasting-step[data-step-key="${tastingSteps[tastingStepIdx]}"]`);
+    const target = cur && (cur.querySelector('[data-t-q][data-selected="true"]') || cur.querySelector('[data-t-q]'));
+    if (target) try{ target.focus({ preventScroll:true }); } catch(e){ /* oudere browsers */ }
+  }
 }
 function refreshTastingCard(){
   const el = document.getElementById('tasting-card');
@@ -9669,6 +9858,20 @@ function refreshTastingCard(){
     btn.dataset.selected = String(sel);
     btn.setAttribute('aria-pressed', String(sel));
   });
+  // Sprint 4: alleen de huidige vraag zichtbaar; stippen tonen beantwoord/huidig.
+  const curKey = tastingSteps[tastingStepIdx];
+  el.querySelectorAll('.tasting-step').forEach(b => { b.hidden = b.dataset.stepKey !== curKey; });
+  el.querySelectorAll('[data-t-step]').forEach(dot => {
+    const k = dot.getAttribute('data-t-step');
+    dot.dataset.state = k === curKey ? 'current' : tastingStepAnswered(k) ? 'done' : 'open';
+    if (k === curKey) dot.setAttribute('aria-current', 'step'); else dot.removeAttribute('aria-current');
+  });
+  const progressEl = document.getElementById('tasting-progress-label');
+  if (progressEl && curKey) progressEl.textContent = `Vraag ${tastingStepIdx + 1} van ${tastingSteps.length} · ${TASTING_STEP_LABELS[curKey]}`;
+  const prevBtn = document.getElementById('tasting-prev');
+  const nextBtn = document.getElementById('tasting-next');
+  if (prevBtn) prevBtn.hidden = tastingStepIdx === 0;
+  if (nextBtn) nextBtn.hidden = tastingStepIdx >= tastingSteps.length - 1;
   const plannedBtn = document.getElementById('actuals-planned-btn');
   const editBtn = document.getElementById('actuals-edit-btn');
   if (plannedBtn) plannedBtn.dataset.selected = String(d.actualsMode === 'planned');
@@ -9689,6 +9892,10 @@ function refreshTastingCard(){
 }
 function handleTastingCardClick(e){
   const d = tastingDraft;
+  const stepDot = e.target.closest('[data-t-step]');
+  if (stepDot){ goToTastingStep(tastingSteps.indexOf(stepDot.getAttribute('data-t-step')), true); return; }
+  if (e.target.closest('#tasting-next')){ goToTastingStep(tastingStepIdx + 1, true); return; }
+  if (e.target.closest('#tasting-prev')){ goToTastingStep(tastingStepIdx - 1, true); return; }
   if (e.target.closest('#actuals-planned-btn')){
     d.actualsMode = d.actualsMode === 'planned' ? null : 'planned';
   } else if (e.target.closest('#actuals-edit-btn')){
@@ -9710,6 +9917,12 @@ function handleTastingCardClick(e){
     if (q === 'finish') d.finish = toggleFinish(d.finish, v);
     else if (q === 'liking') d.liking = d.liking === Number(v) ? null : Number(v);
     else d[q] = d[q] === v ? null : v;
+    // Sprint 4: een enkele keuze gemaakt (niet uitgezet) → door naar de volgende vraag.
+    const idx = tastingSteps.indexOf(q);
+    if (q !== 'finish' && idx === tastingStepIdx && tastingStepAnswered(q) && idx < tastingSteps.length - 1){
+      goToTastingStep(idx + 1, true);
+      return;
+    }
   }
   refreshTastingCard();
 }
@@ -9846,8 +10059,16 @@ function saveBrewLogEntry(){
   rebuildBrewLogView();
   const savedMsg = document.getElementById('brewlog-saved-msg');
   if (savedMsg) savedMsg.hidden = false;
-  renderRecommendationPanel(getBrewRecord(next.id)); // Fase 4
+  const saved = getBrewRecord(next.id);
+  renderRecommendationPanel(saved); // Fase 4
+  // Sprint 4: een echt advies krijgt het scherm; ontbreken er antwoorden, dan blijft het
+  // formulier staan (het advies zegt dan wat er nog open is).
+  setBrewLogMode(saved && saved.recommendation && saved.recommendation.type !== 'NONE' ? 'result' : 'form');
   revealSavedBrewLog();
+}
+function setBrewLogMode(mode){
+  const screen = document.getElementById('screen-brewlog');
+  if (screen) screen.dataset.mode = mode;
 }
 // Sprint 1 (UX-review F1): het advies verscheen onder de knop, half achter de tabbalk — wie
 // niet scrolde, zag het nooit. Na opslaan schuift "Opgeslagen ✓" + het advies in beeld en
@@ -11704,12 +11925,16 @@ function renderRecommendationPanel(rec){
     if (r.status === 'applied') actions = `<p class="reco-status">✓ Staat klaar voor je volgende kop met deze boon.</p><button type="button" class="link-secondary" id="reco-undo-btn">Ongedaan maken</button>`;
     else if (!bean) actions = `<p class="reco-status">Koppel een boon aan je brouwsel om een stap mee te nemen naar de volgende kop.</p>`;
     else if (r.status === 'ignored') actions = `<p class="reco-status">Niet toegepast.</p><button type="button" class="link-secondary" id="reco-apply-btn">Toch gebruiken</button>`;
-    else actions = `<button type="button" class="advisor-primary" id="reco-apply-btn">Gebruik voor volgende kop</button><button type="button" class="link-secondary" id="reco-ignore-btn">Niet nu</button>`;
+    else actions = `<button type="button" class="start-btn" id="reco-apply-btn">Gebruik voor volgende kop</button><button type="button" class="link-secondary" id="reco-ignore-btn">Niet nu</button>`; // Sprint 4: de hoofdactie van het adviesscherm
   }
   el.dataset.type = r.type;
   el.innerHTML =
     `<p class="reco-kicker">Advies voor je volgende kop${tx.confidence ? ` <span class="badge" data-tone="info">${escapeHtml(tx.confidence)}</span>` : ''}</p>` +
     `<p class="reco-title">${escapeHtml(tx.title)}</p>` +
+    // Sprint 4 (UX-review F1): bij een maalstap "Nu → Volgende" als twee tegels.
+    (r.type === 'ADJUST' && r.lever === 'grind' && r.fromValue != null && r.toValue != null
+      ? `<div class="reco-fromto"><div class="reco-fromto-tile"><span class="stat-label">Nu</span><span class="reco-fromto-val">klik ${escapeHtml(String(r.fromValue))}</span></div><span class="reco-fromto-arrow" aria-hidden="true">→</span><div class="reco-fromto-tile reco-fromto-tile--next"><span class="stat-label">Volgende</span><span class="reco-fromto-val">klik ${escapeHtml(String(r.toValue))}</span></div></div>`
+      : '') +
     (tx.body ? `<p class="reco-body">${escapeHtml(tx.body)}</p>` : '') +
     (tx.expect ? `<p class="reco-body">${escapeHtml(tx.expect)}</p>` : '') +
     tx.notes.map(n => `<p class="reco-note">${escapeHtml(n)}</p>`).join('') +
@@ -13371,6 +13596,13 @@ document.getElementById('ab-trial').addEventListener('click', handleAbTrialClick
 document.getElementById('legacy-review').addEventListener('click', handleLegacyReviewClick);
 // Fase 4: advies-paneel + klaargezette stap op het receptscherm.
 document.getElementById('reco-card').addEventListener('click', handleRecommendationClick);
+// Sprint 4: vanaf het adviesscherm terug naar de proefkaart, of naar Home (die de stap toont).
+document.getElementById('brewlog-edit-btn').addEventListener('click', () => {
+  setBrewLogMode('form');
+  const card = document.getElementById('tasting-card');
+  if (card && typeof card.scrollIntoView === 'function') card.scrollIntoView({ block:'start' });
+});
+document.getElementById('brewlog-home-btn').addEventListener('click', () => { renderHomeScreen(); showScreen('home'); });
 document.getElementById('prep-next-adjust').addEventListener('click', (e)=>{
   if (e.target.closest('#prep-next-adjust-cancel')) cancelPendingAdjust();
 });
@@ -13635,7 +13867,7 @@ document.querySelectorAll('.navbar [data-nav]').forEach(btn=>{
     const dest = btn.getAttribute('data-nav');
     if (dest === 'home'){ renderHomeScreen(); showScreen('home'); }
     else if (dest === 'beans'){ renderBeanLibraryScreen(); showScreen('beans', { tabRoot:true }); }
-    else if (dest === 'method'){ if (isActiveBrewBrewing() && openActiveBrew()) return; setActiveBean(null); renderMethodGrid(); showScreen('method'); } // BC-01: verse start; Fase 2: lopend brouwsel gaat voor
+    else if (dest === 'method'){ if (isActiveBrewBrewing() && openActiveBrew()) return; setActiveBean(null); renderMethodGrid(); renderNextCupCard('method-next-cup'); showScreen('method'); } // BC-01: verse start; Fase 2: lopend brouwsel gaat voor; Sprint 2: je volgende kop bovenaan
     else if (dest === 'settings'){ showScreen('settings'); }
     else if (dest === 'brewlog-history'){ renderBrewLogHistory(undefined, { tabRoot:true }); }
   });
