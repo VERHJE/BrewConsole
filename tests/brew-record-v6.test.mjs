@@ -887,3 +887,38 @@ describe('Oude brouwsels nakijken — voorraadcorrectie bij opnieuw koppelen', (
       'eth staat in deze lijst op 0 → er valt niets terug te boeken');
   });
 });
+
+// NIEUW (UX-review, Sprint 6): logboek per boon — beste kop, adviesketen, opzet van een kop.
+describe('Sprint 6: beste kop en adviesketen', () => {
+  const rec = (id, t, liking, extra) => Object.assign({ id, createdAt: t, plan: { methodId: 'v60', waterMl: 300, doseG: 17.3, grindStartingPoint: 15 }, actual: {}, tasting: liking == null ? null : { liking, approved: liking >= 4 } }, extra || {});
+
+  test('beste kop: hoogste "hoe lekker" vanaf 4/5, bij gelijk de geslaagde en dan de nieuwste', () => {
+    assert.equal(api.bestCupOf([rec('a', 1, 2), rec('b', 2, 3)]), null, 'onder 4/5 is er geen "beste"');
+    assert.equal(api.bestCupOf([rec('a', 1, 4), rec('b', 2, 5), rec('c', 3, 4)]).id, 'b');
+    const tie = [rec('a', 1, 5, { tasting: { liking: 5, approved: false } }), rec('b', 2, 5, { tasting: { liking: 5, approved: true } })];
+    assert.equal(api.bestCupOf(tie).id, 'b', 'geslaagd gaat voor');
+    assert.equal(api.bestCupOf([rec('a', 1, 5), rec('b', 2, 5)]).id, 'b', 'dan de nieuwste');
+    assert.equal(api.bestCupOf([rec('a', 1, null)]), null, 'zonder proefkaart geen beste kop');
+  });
+
+  test('adviesketen: alleen stap-adviezen, met kopnummer, status en uitkomst', () => {
+    const recs = [
+      rec('a', 1, 2, { recommendation: { type: 'ADJUST', lever: 'grind', delta: -1, fromValue: 15, toValue: 14, status: 'tested', outcome: 'better' } }),
+      rec('b', 2, 5, { recommendation: { type: 'KEEP' } }),
+      rec('c', 3, 3, { recommendation: { type: 'ADJUST', lever: 'dose', delta: 1, status: 'proposed' } })
+    ];
+    const chain = j(api.adviceChainOf(recs));
+    assert.equal(chain.length, 2);
+    assert.deepEqual(chain.map(c => [c.cupNo, c.liking, c.status, c.outcome]), [[1, 2, 'tested', 'better'], [3, 3, 'proposed', null]]);
+    assert.match(chain[0].title, /Maal 1 klik fijner \(klik 15 → 14\)/);
+  });
+
+  test('opzet van een kop: werkelijke maalstand gaat voor het plan; bypass en sterkte mee', () => {
+    assert.equal(api.cupSetupOf(rec('a', 1, 5)).grind, 15);
+    assert.equal(api.cupSetupOf(rec('a', 1, 5, { plan: { methodId: 'v60', waterMl: 300, grindTarget: 14, grindStartingPoint: 15 } })).grind, 14);
+    assert.equal(api.cupSetupOf(rec('a', 1, 5, { actual: { grindSource: 'U', grindClick: 13 } })).grind, 13);
+    const bp = j(api.cupSetupOf(rec('a', 1, 5, { plan: { methodId: 'v60', waterMl: 300, bypass: { pct: 20 }, strengthStep: 1 } })));
+    assert.deepEqual([bp.bypassPct, bp.strengthStep], [20, 1]);
+    assert.equal(api.cupSetupOf(rec('a', 1, 5)).bypassPct, null);
+  });
+});
