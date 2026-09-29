@@ -572,7 +572,6 @@
   .tasting-gate[data-state="passed"]{color:var(--copper-light);}
   .prep-goal{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 12px;}
   .prep-goal-label{font-size:12.5px; color:var(--text-dim); margin-right:2px;}
-  .prep-goal-opt{color:var(--text-faint);}
   /* Fase 2: herstelpaneel + Home-banner. */
   .brew-recovery{position:relative; z-index:3; background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:18px; margin:0 0 16px; display:flex; flex-direction:column; gap:10px;}
   .brew-recovery[hidden]{display:none;}
@@ -742,8 +741,21 @@
   .stat-block--secondary .stat-value{font-size:14px; color:var(--text-dim); font-variant-numeric:tabular-nums;}
   /* NIEUW (Visual Design 2.0 fase 3, detail-referentie recept-scherm): het waterhoeveelheid-
      statblok is nu tikbaar (opent #water-modal) — zelfde tactiele taal als .bean-card. */
-  #stats-water-block{ cursor:pointer; transition:transform var(--motion-micro) var(--ease-out); }
-  #stats-water-block:active{ transform:scale(.98); }
+  /* Sprint 3 (UX-review F4): −/+ in de watertegel; het getal zelf opent de modal. */
+  .stat-stepper{display:flex; align-items:center; justify-content:space-between; gap:4px;}
+  .stat-stepper button:not(.stat-value--btn){
+    width:44px; height:44px; flex-shrink:0; border-radius:var(--radius-sm); border:1px solid var(--border);
+    background:var(--surface-2); color:var(--copper-light); font-size:19px; line-height:1; cursor:pointer;
+  }
+  .stat-stepper button:not(.stat-value--btn):active{background:var(--copper-dim); transform:scale(.94);}
+  .stat-value--btn{background:none; border:none; padding:0; min-height:44px; cursor:pointer; flex:1; text-align:center; white-space:nowrap;}
+  .stat-value--btn:hover{text-decoration:underline; text-underline-offset:3px;}
+  .stat-block--hero .stat-value{font-size:22px;}
+  .stat-block--adjusted{border-color:var(--copper); background:linear-gradient(180deg, rgba(212,165,116,.10), rgba(212,165,116,.02)), var(--surface);}
+  .stat-block--adjusted .stat-label{color:var(--copper-light);}
+  .stat-sub--adjusted{color:var(--copper-light);}
+  .stat-block--wide{grid-column:1 / -1;}
+  #stats-grid{align-items:start;}
   .stat-block--secondary .stat-label{color:var(--text-faint);}
 
   .style-note{
@@ -1576,6 +1588,25 @@
   @media (min-width:700px) and (orientation:landscape){
     .app{ --app-max:920px; }
   }
+  /* Sprint 3 (UX-review F4): Start (+ Aanpassen) blijft onderaan in beeld, boven de tabbalk
+     (en de verhoogde Zet-knop). display:contents op .prep-side maakt het hele scherm het
+     bereik van sticky; vanaf 1100px staat de rechterkolom zelf al vast in beeld. */
+  @media (max-width:1099px){
+    #screen-prep .prep-side{display:contents;}
+    #screen-prep .prep-cta-row{
+      position:sticky; bottom:calc(max(6px, var(--safe-b)) + 76px); z-index:6;
+      margin:0 0 14px; padding:10px 0 6px;
+      background:linear-gradient(180deg, transparent, var(--bg) 30%);
+    }
+  }
+  @media (min-width:900px) and (max-width:1099px){
+    #screen-prep .prep-cta-row{bottom:max(12px, var(--safe-b));}
+  }
+  /* Sprint 3: de uitrustingsfoto duwde de getallen onder de vouw. */
+  #screen-prep > .photo-slot{display:none;}
+  /* Sprint 3: doelchips op één regel i.p.v. twee. */
+  #screen-prep .prep-goal{flex-wrap:nowrap; overflow-x:auto; gap:6px; margin-bottom:10px; scrollbar-width:none;}
+  #screen-prep .prep-goal .chip{white-space:nowrap; padding-left:12px; padding-right:12px; font-size:13px;}
   /* Audit BC-19: groter scherm = meer overzicht, niet een uitgerekte telefoon. */
   @media (min-width:700px){
     #screen-prep .photo-slot--banner{ aspect-ratio:auto; height:190px; }
@@ -2505,14 +2536,8 @@
         <span id="prep-learning-correction-text"></span>
       </div>
 
-      <div class="serving-row">
-        <span class="serving-label">Waterhoeveelheid</span>
-        <div class="stepper">
-          <button id="serving-minus" aria-label="Minder water">−</button>
-          <span id="serving-value" class="mono">250 ml</span>
-          <button id="serving-plus" aria-label="Meer water">+</button>
-        </div>
-      </div>
+      <!-- Sprint 3 (UX-review F4): de losse waterstepper stond dubbel met de watertegel; de
+           −/+ zitten nu ín de watertegel (#stats-grid, zie renderPrep()). -->
 
       <!-- NIEUW (Visual Design 2.0, §5 "Recipe: slightly warmer focal glow around primary
            recipe area"): #stats-grid is precies het dosis/maling/temperatuur/water-blok uit
@@ -2522,16 +2547,18 @@
            bestaande evidence-badge-row/style-note, nu in een kaart met icoon+titel i.p.v.
            losse elementen — geen enkele tekst/badge-waarde gewijzigd, puur omkadering.
            Zie Bouwbesluit B4 hierboven voor de badge-woordkeus zelf. -->
-      <div class="prep-intel-card">
-        <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.4M12 18.6V21M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M3 12h2.4M18.6 12H21M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg></div>
-        <div class="prep-intel-body">
-          <div class="prep-intel-header">
-            <span class="prep-intel-title">Waarom dit recept?</span>
-            <div id="evidence-badge-row" class="badge-row" style="margin:0;"></div>
-          </div>
+      <!-- Sprint 3 (UX-review F4): de techniekkaart op verzoek — zelfde badge-row/style-note,
+           nu achter "Waarom dit recept?" zodat de getallen en Start het scherm dragen. -->
+      <details class="flavor-category why-recipe-details" id="why-recipe-details">
+        <summary style="color:var(--copper-light)">
+          <span class="prep-intel-title">Waarom dit recept?</span>
+          <span class="flavor-category-arrow">+</span>
+        </summary>
+        <div class="flavor-category-body">
+          <div id="evidence-badge-row" class="badge-row" style="margin:0 0 8px;"></div>
           <p class="style-note" id="style-note" style="margin:0;"></p>
         </div>
-      </div>
+      </details>
 
       <!-- FIX (teamreview v2 — Midden bevinding, UX Designer/Professional Brewer): tot v2
            konden process-/freshness-/opened-/altitude-/hardness-/bypass-note allemaal
@@ -2643,10 +2670,19 @@
         </thead>
         <tbody id="recipe-body"></tbody>
       </table>
-      <p class="method-tips" id="method-tips"></p>
-
-      <button type="button" class="link-secondary" id="test-sound-btn" style="display:block; margin:0 auto 14px;">🔔 Test geluid &amp; trilling</button>
-      <p class="process-note" id="test-sound-result" hidden></p>
+      <!-- Sprint 3 (UX-review F4): de vaste zet-tips en de geluidstest op verzoek, niet als
+           alinea vóór de Start-knop. Zelfde elementen/ID's. -->
+      <details class="flavor-category prep-tips-details" id="prep-tips-details">
+        <summary style="color:var(--copper-light)">
+          <span>Tips voor het zetten</span>
+          <span class="flavor-category-arrow">+</span>
+        </summary>
+        <div class="flavor-category-body">
+          <p class="method-tips" id="method-tips"></p>
+          <button type="button" class="link-secondary" id="test-sound-btn" style="display:block; margin:0 auto 14px;">🔔 Test geluid &amp; trilling</button>
+          <p class="process-note" id="test-sound-result" hidden></p>
+        </div>
+      </details>
 
       <!-- NIEUW (Visual Design 2.0 fase 2, spec §12 "Start Brew is primary; Adjust
            secondary", detail-referentie scherm 06): een secundaire Aanpassen-knop naast
@@ -2656,7 +2692,7 @@
            bovenaan dit scherm, alleen hier als tweede CTA naast Start Brew. -->
       <div class="prep-cta-row">
         <button type="button" class="advisor-primary prep-adjust-btn" data-back="profile">Aanpassen</button>
-        <button class="start-btn" id="start-btn">Start →</button>
+        <button class="start-btn" id="start-btn">Start</button>
       </div>
       <!-- Audit BC-12: de onderbouwing blijft volledig, maar op verzoek i.p.v. als muur tekst
            onder de startknop. Zelfde elementen/ID's, alleen samen ingeklapt. -->
@@ -11698,7 +11734,7 @@ async function runBeanPhotoScan(file){
 function renderPrepGoal(){
   const el = document.getElementById('prep-goal');
   if (!el) return;
-  el.innerHTML = `<span class="prep-goal-label">Doel <span class="prep-goal-opt">(optioneel)</span></span>` +
+  el.innerHTML = `<span class="prep-goal-label">Doel</span>` + // Sprint 3: één regel; de chips zijn vrijblijvend aan/uit
     Object.entries(BREW_GOALS).map(([k, g]) =>
       `<button type="button" class="chip" data-goal="${k}" data-selected="${state.goal === k}" aria-pressed="${state.goal === k}">${escapeHtml(g.label)}</button>`
     ).join('');
@@ -11980,7 +12016,7 @@ function renderPrepNextAdjust(){
   el.innerHTML = `<p class="prep-next-adjust-title">Jouw stap uit de vorige proefkaart</p>
     <p class="prep-next-adjust-text">${escapeHtml(text)}</p>
     ${setupNote ? `<p class="prep-next-adjust-note" id="prep-next-adjust-setup">${escapeHtml(setupNote)}</p>` : ''}
-    <p class="prep-next-adjust-note">Het recept hieronder toont het algemene startpunt; jouw stap gaat voor. Na het proeven vraagt de kaart of het beter was.</p>
+    <p class="prep-next-adjust-note">Staat hieronder al in de tegel. Na het proeven vraagt de kaart of het beter was.</p>
     <button type="button" class="link-secondary" id="prep-next-adjust-cancel">Toch niet</button>`;
   el.hidden = false;
 }
@@ -12114,7 +12150,8 @@ function renderPrep(){
     }
   }
 
-  document.getElementById('serving-value').textContent = state.waterMl + ' ml';
+  const servingValueEl = document.getElementById('serving-value'); // Sprint 3: zit in de watertegel, die hieronder opnieuw wordt opgebouwd
+  if (servingValueEl) servingValueEl.textContent = state.waterMl + ' ml';
 
   /* Voorraadwaarschuwing (expertreview B6): alleen relevant als deze brouw via een
      opgeslagen boon loopt én die boon een zakgrootte heeft — vergelijkt de dosis van
@@ -12197,26 +12234,51 @@ function renderPrep(){
   } else if (batchScale.kind === 'groot'){
     batchHint = 'groot brouwsel: loopt trager door · traag en bitter? volgende keer iets grover';
   }
+  // Sprint 3 (UX-review F4): vier heldengetallen — koffie, water, maling, temperatuur — met
+  // elk één regel uitleg; ratio en brouwtijd daaronder, stiller. De −/+ voor het water zitten
+  // in de watertegel (geen dubbele waterregel meer). Een stap uit je vorige kop staat in de
+  // tegel zelf ("was 15"), zodat het advies zichtbaar in het recept zit. Receptgetallen en
+  // teksten komen uit dezelfde bronnen als voorheen.
+  const pAdj = pendingAdjustForState();
+  const grindAdjusted = !!(pAdj && pAdj.lever === 'grind' && pAdj.toValue != null && rec.grindMicron == null);
+  const doseAdjusted = !!(pAdj && pAdj.lever === 'dose');
+  const grindValue = grindAdjusted ? `Klik ${pAdj.toValue}` : grindHeadline;
   document.getElementById('stats-grid').innerHTML = `
-    <div class="stat-block"${stockWarning ? ' style="border-color:var(--danger);"' : ''}>
-      <div class="stat-label">${statIconDose}Gemalen koffie</div>
+    <div class="stat-block stat-block--hero${doseAdjusted ? ' stat-block--adjusted' : ''}"${stockWarning ? ' style="border-color:var(--danger);"' : ''}>
+      <div class="stat-label">${statIconDose}Gemalen koffie${doseAdjusted ? ' · jouw stap' : ''}</div>
       <div class="stat-value">${fmt(rec.dose,1)} g</div>
       <div class="stat-sub">voor ${rec.water} ml${state.strengthAdjust > 0 ? ' · een stap sterker' : state.strengthAdjust < 0 ? ' · een stap zwakker' : ''}${doseEdgeSub}</div>
       ${stockWarning}
     </div>
-    <div class="stat-block">
+    <div class="stat-block stat-block--hero" id="stats-water-block">
+      <div class="stat-label">${statIconWater}${state.bypass ? 'Water totaal' : 'Water'}</div>
+      <div class="stat-stepper">
+        <button type="button" id="serving-minus" aria-label="Minder water">−</button>
+        <button type="button" class="stat-value stat-value--btn" id="stats-water-open" aria-label="Waterhoeveelheid kiezen"><span id="serving-value">${state.waterMl} ml</span></button>
+        <button type="button" id="serving-plus" aria-label="Meer water">+</button>
+      </div>
+      <div class="stat-sub">${state.bypass ? `waarvan ${rec.pourWaterMl} ml door de koffie` : '± 50 ml per tik, of tik het getal'}</div>
+    </div>
+    <div class="stat-block stat-block--hero${grindAdjusted ? ' stat-block--adjusted' : ''}">
+      <div class="stat-label">Maalgraad${grindAdjusted ? ' · jouw stap' : ''}</div>
+      <div class="stat-value">${escapeHtml(grindValue)}</div>
+      ${grindAdjusted ? `<div class="stat-sub stat-sub--adjusted">was ${escapeHtml(String(pAdj.fromValue))} · stap uit je vorige kop</div>` : ''}
+      ${rec.grindShortContact ? `<div class="stat-sub">1 klik fijner: kort schema (${fmtTime(rec.totalTime)})</div>` : ''}
+      ${rec.grindMicron == null && rec.grindStartingPoint != null && rec.grindStartingRange ? `<div class="stat-sub">${grindAdjusted ? '' : 'start hier · '}klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} is het startgebied</div><div class="stat-sub">zuur en snel door? fijner · bitter en traag? grover</div>` : ''}
+      ${rec.grindMicron == null && rec.grindStartingPoint == null && rec.grindBandLabel ? `<div class="stat-sub">${escapeHtml(rec.grindBandLabel)}</div>` : ''}
+      ${batchHint ? `<div class="stat-sub" id="batch-hint">${escapeHtml(batchHint)}</div>` : ''}
+      ${rec.grindMicron != null ? `<div class="stat-sub">stand ${rec.grindStand} · Timemore C3S Pro</div>` : ''}
+      ${grindMoreNotes.length || rec.grindMicron == null ? `
+      <button type="button" class="stat-more-toggle" id="grind-more-toggle" aria-expanded="false">Meer over deze maalstand ↓</button>
+      <div class="stat-more-body" id="grind-more-body" hidden>${rec.grindMicron == null ? `<div class="stat-sub">Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}</div>` : ''}${grindMoreNotes.map(n=>`<div class="stat-sub">${n}</div>`).join('')}</div>` : ''}
+    </div>
+    <div class="stat-block stat-block--hero">
       <div class="stat-label">${statIconTemp}Watertemperatuur</div>
       <div class="stat-value">${rec.tempBand.min}–${rec.tempBand.max} °C</div>
       <div class="stat-sub">${escapeHtml(rec.tempInstruction || '')}</div>
     </div>
-    <div class="stat-block" id="stats-water-block" role="button" tabindex="0" aria-label="Waterhoeveelheid aanpassen">
-      <div class="stat-label">${statIconWater}${state.bypass ? 'Water dóór de koffie' : 'Waterhoeveelheid'}</div>
-      <div class="stat-value">${rec.pourWaterMl} ml</div>
-      ${state.bypass ? `<div class="stat-sub">van ${rec.water} ml totaal</div>` : ''}
-      <div class="stat-sub">Tik om aan te passen →</div>
-    </div>
     ${state.bypass ? `
-    <div class="stat-block" style="border-color:var(--copper-light);">
+    <div class="stat-block stat-block--wide" style="border-color:var(--copper-light);">
       <div class="stat-label">+ Toevoegen na het zetten</div>
       <div class="stat-value" style="color:var(--copper-light);">+${rec.bypassMl} ml</div>
       <div class="stat-sub">vers heet water — brengt het volume terug op ${rec.water} ml (niet gegarandeerd dezelfde sterkte, zie toelichting)</div>
@@ -12228,23 +12290,14 @@ function renderPrep(){
       ${ratioEdgeSub}
     </div>
     <div class="stat-block stat-block--secondary">
-      <div class="stat-label">Maalgraad</div>
-      <div class="stat-value">${escapeHtml(grindHeadline)}</div>
-      ${rec.grindShortContact ? `<div class="stat-sub">1 klik fijner: kort schema (${fmtTime(rec.totalTime)})</div>` : ''}
-      ${rec.grindMicron == null && rec.grindStartingPoint != null && rec.grindStartingRange ? `<div class="stat-sub">start hier · klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} is het startgebied</div><div class="stat-sub">zuur en snel door? fijner · bitter en traag? grover</div>` : ''}
-      ${rec.grindMicron == null && rec.grindStartingPoint == null && rec.grindBandLabel ? `<div class="stat-sub">${escapeHtml(rec.grindBandLabel)}</div>` : ''}
-      ${batchHint ? `<div class="stat-sub" id="batch-hint">${escapeHtml(batchHint)}</div>` : ''}
-      <div class="stat-sub">${rec.grindMicron != null ? `stand ${rec.grindStand} · Timemore C3S Pro` : `Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}`}</div>
-      ${grindMoreNotes.length ? `
-      <button type="button" class="stat-more-toggle" id="grind-more-toggle" aria-expanded="false">Meer over deze maalstand ↓</button>
-      <div class="stat-more-body" id="grind-more-body" hidden>${grindMoreNotes.map(n=>`<div class="stat-sub">${n}</div>`).join('')}</div>` : ''}
-    </div>
-    <div class="stat-block stat-block--secondary">
       <div class="stat-label">Brouwtijd</div>
       <div class="stat-value">${fmtTime(rec.totalTime)}</div>
       <div class="stat-sub">schema · tik "Bed droog" voor je echte tijd</div>
     </div>
   `;
+  // Sprint 3: de Start-knop noemt de schemalengte ("Start · 3:30").
+  const startBtnEl = document.getElementById('start-btn');
+  if (startBtnEl) startBtnEl.textContent = `Start · ${fmtTime(rec.totalTime)}`;
 
   // Audit BC-12: de techniek in één zin; de rest van de uitleg op verzoek.
   const styleNoteEl = document.getElementById('style-note');
@@ -12441,11 +12494,10 @@ function renderPrep(){
   // tikbaar maken na elke render (het element wordt via innerHTML vervangen, dus oude
   // listeners verdwijnen vanzelf mee — geen stapeling). syncWaterModal() ververst de al-
   // open modal als state.waterMl elders wijzigde (bypass/sterkte/±50-knoppen).
-  const waterBlock = document.getElementById('stats-water-block');
-  if (waterBlock){
-    waterBlock.addEventListener('click', openWaterModal);
-    waterBlock.addEventListener('keydown', (e)=>{ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openWaterModal(); } });
-  }
+  // Sprint 3: het getal in de watertegel opent de modal; −/+ ernaast (zie de gedelegeerde
+  // listener op #stats-grid) passen direct aan.
+  const waterOpenBtn = document.getElementById('stats-water-open');
+  if (waterOpenBtn) waterOpenBtn.addEventListener('click', openWaterModal);
   syncWaterModal();
 
   // NIEUW (visuele afstemming referentiebeeld): "Meer over deze maalstand"-toggle opnieuw
@@ -12697,15 +12749,14 @@ document.querySelectorAll('[data-back]').forEach(btn=>{
   });
 });
 
-document.getElementById('serving-minus').addEventListener('click', ()=>{
+// Sprint 3: −/+ zitten in de watertegel, die bij elke renderPrep() opnieuw wordt opgebouwd —
+// daarom één gedelegeerde listener op de vaste #stats-grid.
+document.getElementById('stats-grid').addEventListener('click', (e)=>{
+  const step = e.target.closest('#serving-minus') ? -50 : e.target.closest('#serving-plus') ? 50 : 0;
+  if (!step) return;
   // FIX (Implementatieplan Zetadvies v3.0, §1b): klem op het engine-geldige bereik.
   const range = engineValidVolumeRange(state.method, state.profile);
-  state.waterMl = clamp(state.waterMl - 50, range.min, range.max);
-  renderPrep();
-});
-document.getElementById('serving-plus').addEventListener('click', ()=>{
-  const range = engineValidVolumeRange(state.method, state.profile);
-  state.waterMl = clamp(state.waterMl + 50, range.min, range.max);
+  state.waterMl = clamp(state.waterMl + step, range.min, range.max);
   renderPrep();
 });
 

@@ -2156,6 +2156,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     }
     assert.equal(await page.locator('#disclaimer').isVisible(), false, 'onderbouwing standaard ingeklapt');
     assert.equal(await page.locator('#why-details').getAttribute('open'), null);
+    assert.equal(await page.locator('#why-recipe-details').getAttribute('open'), null, 'Sprint 3: techniekkaart standaard ingeklapt');
+    await page.click('#why-recipe-details > summary');
     const styleText = (await page.locator('#style-note').innerText()).trim();
     assert.ok(styleText.length < 400, `techniekkaart kort (${styleText.length} tekens)`);
     if (await page.locator('#style-more-toggle').count()){
@@ -2640,7 +2642,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       const prep = await page.locator('#screen-prep').innerText();
       assert.doesNotMatch(prep, /Brew Intelligence|Start brew/i);
       assert.match(prep, /Waarom dit recept\?/);
-      assert.equal((await page.locator('#start-btn').textContent()).trim(), 'Start →');
+      assert.match((await page.locator('#start-btn').textContent()).trim(), /^Start · \d+:\d\d$/, 'Sprint 3: Start noemt de schemalengte');
       await page.click('#start-btn');
       assert.doesNotMatch(await page.locator('#screen-brew').innerText(), /pour-over/i);
       await page.close();
@@ -2782,6 +2784,82 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.equal(await page.evaluate(() => beanLibrary.find(b => b.id === 'bean-s2').pendingAdjust || null), null);
       const recs = await page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_brews') || '[]'));
       assert.equal(recs[0].recommendation.status, 'ignored');
+      await page.close();
+    });
+  });
+
+  // NIEUW (UX-review, Sprint 3): het receptscherm — vier heldengetallen, water één keer (met
+  // −/+ in de tegel), een klaargezette stap zichtbaar in de tegel, en Start altijd in beeld.
+  describe('Sprint 3: receptscherm', () => {
+    const PHONE = { viewport: { width: 390, height: 844 } };
+    const BEAN = { id:'bean-s3', name:'Recept Boon', roastLevel:'light', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:0, bagSizeG:250 };
+    async function toPrep(){
+      const page = await newTrackedPage(PHONE);
+      await page.addInitScript((bean) => {
+        if (sessionStorage.getItem('s3')) return;
+        sessionStorage.setItem('s3', '1');
+        localStorage.setItem('brewconsole_beans', JSON.stringify([bean]));
+      }, BEAN);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('#advisor-link');
+      await page.click('[data-bean-pick="bean-s3"]');
+      await page.click('#advice-batch [data-adv-batch="single"]');
+      await page.click('#advice-cta');
+      await assertBecomesActive(page, '#screen-prep');
+      return page;
+    }
+
+    test('vier heldengetallen vooraan; water staat er één keer, met −/+ in de tegel', async () => {
+      const page = await toPrep();
+      const labels = await page.locator('#stats-grid .stat-block--hero .stat-label').allTextContents();
+      assert.deepEqual(labels.map(t => t.trim()), ['Gemalen koffie', 'Water', 'Maalgraad', 'Watertemperatuur']);
+      assert.equal(await page.locator('#screen-prep .serving-row').count(), 0, 'geen losse waterregel meer');
+      const before = await page.evaluate(() => state.waterMl);
+      await page.click('#serving-plus');
+      assert.equal(await page.evaluate(() => state.waterMl), before + 50);
+      assert.equal((await page.locator('#serving-value').textContent()).trim(), `${before + 50} ml`);
+      await page.click('#serving-minus');
+      assert.equal(await page.evaluate(() => state.waterMl), before);
+      await page.click('#stats-water-open');
+      assert.equal(await page.locator('#water-modal').isVisible(), true, 'het getal opent de water-modal');
+      await page.close();
+    });
+
+    test('Start is zonder scrollen zichtbaar, boven de tabbalk, en noemt de schemalengte', async () => {
+      const page = await toPrep();
+      const box = await page.evaluate(() => {
+        const s = document.getElementById('start-btn').getBoundingClientRect();
+        const z = document.querySelector('.navbar-btn--zet svg').getBoundingClientRect();
+        return { top: s.top, bottom: s.bottom, zetTop: z.top, vh: innerHeight };
+      });
+      assert.ok(box.top >= 0 && box.bottom <= box.zetTop, `Start in beeld boven de Zet-knop: ${JSON.stringify(box)}`);
+      const total = await page.evaluate(() => fmtTime(state.recipe.totalTime));
+      assert.equal((await page.locator('#start-btn').textContent()).trim(), `Start · ${total}`);
+      assert.equal(await page.locator('#why-recipe-details').getAttribute('open'), null);
+      assert.equal(await page.locator('#prep-tips-details').getAttribute('open'), null);
+      await page.close();
+    });
+
+    test('een klaargezette maalstap staat in de tegel: "Klik 14 · was 15", het engine-recept blijft gelijk', async () => {
+      const page = await toPrep();
+      const start = await page.evaluate(() => state.recipe.grindStartingPoint);
+      await page.click('#start-btn');
+      await page.clock.fastForward('03:20');
+      await page.click('#bed-dry-btn');
+      await page.click('#brewlog-open-btn');
+      await page.click('#actuals-planned-btn');
+      await answerTasting(page, { strength: 'just_right', acidity: 'sharp', finish: 'hollow', liking: '2' });
+      await page.click('#brewlog-save-btn');
+      await page.click('#reco-apply-btn');
+      await page.click('#brewlog-home-btn');
+      await page.click('[data-next-cup-go="bean-s3"]');
+      await assertBecomesActive(page, '#screen-prep');
+      const grind = page.locator('#stats-grid .stat-block', { hasText: 'Maalgraad' });
+      assert.ok(await grind.evaluate(el => el.classList.contains('stat-block--adjusted')));
+      assert.equal((await grind.locator('.stat-value').textContent()).trim(), `Klik ${start - 1}`);
+      assert.match(await grind.innerText(), new RegExp(`was ${start} · stap uit je vorige kop`));
+      assert.equal(await page.evaluate(() => state.recipe.grindStartingPoint), start, 'alleen de weergave, niet het engine-recept');
       await page.close();
     });
   });
