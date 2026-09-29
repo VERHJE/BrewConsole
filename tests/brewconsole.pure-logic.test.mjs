@@ -16,6 +16,8 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { loadApp, APP_HTML_PATH, extractScripts } from './load-app.mjs';
+// Cross-realm objecten (vm-sandbox) vergelijkbaar maken voor deepEqual.
+const j = (x) => JSON.parse(JSON.stringify(x));
 
 const { api, sandbox } = loadApp();
 
@@ -325,13 +327,16 @@ describe('computeRecipe() — retentieterm en volumeklem (Implementatieplan Zeta
     assert.equal(fuller.water, 300);
   });
 
-  test('grenswaarden rond het door D-1 verschoven geldige V60-volumebereik (260/265/300/385/390 ml, LOWER-cluster)', () => {
+  // BIJGEWERKT (D2-1, onderzoek_D2_D4.md §2): aan de randen van de dosisgrens mag de ratio
+  // tot de rand van het doelvenster schuiven, dus het geldige V60-bereik is nu dosisgrens ×
+  // ratiorand (LOWER: 15 × 15,85 ≈ 238 → 240 ml; 22 × 19,39 ≈ 427 → 425 ml).
+  test('grenswaarden rond het geldige V60-volumebereik (235/240/300/425/430 ml, LOWER-cluster)', () => {
     const cases = [
-      { ml: 260, expectValid: false },
-      { ml: 265, expectValid: true },
+      { ml: 235, expectValid: false },
+      { ml: 240, expectValid: true },
       { ml: 300, expectValid: true },
-      { ml: 385, expectValid: true },
-      { ml: 390, expectValid: false }
+      { ml: 425, expectValid: true },
+      { ml: 430, expectValid: false }
     ];
     for (const { ml, expectValid } of cases){
       const rec = api.computeRecipe('v60', 'medium', 'heel_fruitig', ml, null, false, null, null, false, null, null, 0);
@@ -346,12 +351,49 @@ describe('computeRecipe() — retentieterm en volumeklem (Implementatieplan Zeta
     }
   });
 
-  test('250 ml geeft een leesbare melding en géén stille substitutie naar een ander volume (D-2, kernscenario uit het plan)', () => {
+  // BIJGEWERKT (D2-1): 250 ml was geblokkeerd omdat de app altijd het venstermidden nam;
+  // 15 g op 250 ml (1:16,7 — Hoffmanns 1-kopsrecept) ligt binnen het doelvenster.
+  test('250 ml geeft 15 g op 1:16,7 (dosis op de ondergrens, ratio binnen het doelvenster) — en nog steeds exact 250 ml', () => {
     const rec = api.computeRecipe('v60', 'medium', 'klassiek', 250, null, false, null, null, false, null, null, 0);
-    assert.equal(rec.dose, 0, 'Bij 250 ml op v60/klassiek moet de dosisgrens dit eerlijk blokkeren, niet stil een ander volume verzinnen');
-    assert.equal(rec.water, 250, 'Het waterveld moet het gevraagde volume (250) blijven tonen, niet stilzwijgend bv. 289 of 300');
-    assert.ok(rec.notes.length > 20, 'Verwacht een leesbare, inhoudelijke uitleg, geen lege/korte placeholder');
-    assert.match(rec.notes, /dosis|15|22/i, 'De uitleg moet iets zeggen over de dosisgrens die dit blokkeert');
+    assert.equal(rec.dose, 15);
+    assert.equal(rec.water, 250, 'Geen stille substitutie naar een ander volume');
+    assert.equal(rec.ratioText, '1:16,7');
+    assert.deepEqual(j(rec.doseEdge), { side: 'min', dose: 15, ratio: 250 / 15 });
+    const sum = rec.steps.reduce((a, st) => a + (st.add || 0), 0);
+    assert.equal(sum, 250, 'het gietschema giet precies het gevraagde water');
+  });
+  test('onder de rand van het doelvenster blijft het eerlijk "geen recept" (230 ml), met uitleg over de dosisgrens', () => {
+    const rec = api.computeRecipe('v60', 'medium', 'klassiek', 230, null, false, null, null, false, null, null, 0);
+    assert.equal(rec.dose, 0);
+    assert.equal(rec.water, 230);
+    assert.match(rec.notes, /dosis|15|22/i);
+  });
+  test('D2-1 raakt geen bestaand recept: 265–380 ml houdt de ratio uit het venstermidden (doseEdge null)', () => {
+    for (const ml of [265, 300, 350, 380]){
+      const rec = api.computeRecipe('v60', 'medium', 'klassiek', ml, null, false, null, null, false, null, null, 0);
+      assert.equal(rec.doseEdge, null, `${ml} ml`);
+      assert.equal(rec.ratioText, '1:17,4', `${ml} ml`);
+    }
+  });
+  test('bovenrand: 400 ml geeft 22 g op een lichtere ratio binnen het venster', () => {
+    const rec = api.computeRecipe('v60', 'medium', 'klassiek', 400, null, false, null, null, false, null, null, 0);
+    assert.equal(rec.dose, 22);
+    assert.equal(rec.water, 400);
+    assert.equal(rec.doseEdge.side, 'max');
+    assert.equal(rec.ratioText, '1:18,2');
+  });
+  test('sterkteknop op de ondergrens: een stap zwakker kan de dosis niet onder 15 g duwen (B-1 blijft gelden)', () => {
+    const rec = api.computeRecipe('v60', 'medium', 'klassiek', 250, null, false, null, null, false, null, null, -1);
+    assert.equal(rec.dose, 15);
+    assert.match(rec.strengthNote, /Begrensd/);
+  });
+  test('doseEdgeFor(): alleen op de grens en alleen binnen het ratiobereik', () => {
+    const ceil = { min: 15, max: 22 }, rr = { min: 15.85, max: 19.39 };
+    assert.equal(api.doseEdgeFor(18, 300, ceil, rr), null, 'binnen de dosisgrens: niets');
+    assert.deepEqual(j(api.doseEdgeFor(14.2, 250, ceil, rr)), { side: 'min', dose: 15, ratio: 250 / 15 });
+    assert.equal(api.doseEdgeFor(13.5, 230, ceil, rr), null, '230/15 = 15,3 < 15,85: buiten het venster');
+    assert.deepEqual(j(api.doseEdgeFor(23, 420, ceil, rr)), { side: 'max', dose: 22, ratio: 420 / 22 });
+    assert.equal(api.doseEdgeFor(25, 440, ceil, rr), null, '440/22 = 20 > 19,39: buiten het venster');
   });
 
   test('een geldig, exact haalbaar volume geeft geen sizeConsistencyWarning (batchSize wordt teruggerekend uit het gevraagde volume)', () => {
@@ -359,9 +401,10 @@ describe('computeRecipe() — retentieterm en volumeklem (Implementatieplan Zeta
     assert.equal(rec.sizeWarning, '', 'Bij een normaal, intern consistent gevraagd volume hoort geen size-consistentiewaarschuwing');
   });
 
-  test('§5-testplaneis letterlijk: 250, 300 en 350 ml geven elk óf een recept met dat volume óf een leesbare uitleg, nooit iets anders', () => {
+  test('§5-testplaneis letterlijk: 230, 250, 300 en 350 ml geven elk óf een recept met dat volume óf een leesbare uitleg, nooit iets anders', () => {
     const cases = [
-      { ml: 250, expectValid: false }, // onder het dosisplafond (15g) voor v60/klassiek — leesbare uitleg
+      { ml: 230, expectValid: false }, // D2-1: onder 15 g × ratiorand — leesbare uitleg
+      { ml: 250, expectValid: true },  // D2-1: 15 g op 1:16,7, binnen het doelvenster
       { ml: 300, expectValid: true },
       { ml: 350, expectValid: true }
     ];

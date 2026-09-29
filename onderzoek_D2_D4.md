@@ -1,6 +1,6 @@
 # Onderzoek D-2 en D-4 — dosisgrens V60 en schalen met de hoeveelheid water
 
-*Status: onderzocht, wacht op beslissing. Er is geen code gewijzigd en geen receptgetal veranderd.*
+*Status: onderzocht. **D2-1, D4-1 en D4-2 zijn gebouwd** (zie §6); D2-2, D2-3, D4-3 en D4-4 niet. Bestaande recepten zijn onveranderd (golden fixtures gelijk).*
 *Datum: 29 september 2026. Hoort bij `bouwbesluiten_v4.md` (openstaande onderzoeksvragen D-2 en D-4).*
 
 ---
@@ -162,12 +162,15 @@ Wat nodig is:
 
 | Situatie | Wat de app doet | Wat er werkelijk gebeurt | Ernst |
 |---|---|---|---|
-| Chemex 700–850 ml | Schema 4:07, vaste maling, "buiten de gangbare band (4:00–5:00) — de moeite van opletten waard" als het bed pas op 5:45 droog is | Een langere tijd is **normaal** bij 40–50 g | Onterecht signaal; geen verkeerd advies (de diagnose gebruikt geen tijd) |
+| Chemex klein (300–430 ml, 17–25 g) | Beoordeelt de gemeten tijd tegen de band 4:00–5:00 | Die band hoort bij een **volle** 6-kops (±42 g / 680 ml, 4–5 min — zie bijstelling hieronder); een ondiep bed loopt sneller door | Onterecht "buiten de band"-signaal; geen verkeerd advies (de diagnose gebruikt geen tijd) |
+| Chemex groot (700–850 ml, 40–49 g) | Beoordeelt tegen 4:00–5:00 | Blue Bottle: ook een 8-kops hoort 4–5 min te duren; andere bronnen noemen 5–6 min | Bronnen spreken elkaar tegen, dus oordelen blijft verdedigbaar |
 | V60 22 g vs 15 g | Zelfde maalstand 16 | 22 g loopt trager (dieper bed) | Klein; het persoonlijke leren per volumeband (C-3) vangt het op zodra er data is |
 | V60 klein (na D-2 stap 1) | Zelfde maalstand | 15 g loopt sneller door, is minder warm | Klein; zie hint D-2 stap 2 |
 | Boven 22 g in de V60 | Geweigerd | Kan prima (Hoffmann 30 g), maar vraagt een grovere maling | Keuze; zie §3.5 stap 3 |
 
 **Positief:** Fase 4 (diagnose + advies) gebruikt de gemeten tijd (nog) niet voor zijn oordeel. Het leren (C-3) telt alleen brouwsels binnen ±40 % van het huidige volume mee (`LEARNING_VOLUME_TOLERANCE`). De niet-lineariteit veroorzaakt dus nu geen verkeerd advies, alleen een onterecht tijdsignaal op het Klaar-scherm bij grote Chemex-brouwsels.
+
+**Bijstelling tijdens het bouwen:** een extra bron ([Little Waves, Chemex 6-cup brew guide](https://littlewaves.coffee/products/chemex-6-cup-coffee-dripper-brew-guide)) geeft voor een volle 6-kops **42 g op ~680 ml in 4–5 minuten**. De Chemex-band hoort dus bij een vol brouwsel. Mijn eerste lezing, dat vooral grote Chemex-brouwsels een onterecht signaal krijgen, was onjuist: het onterechte signaal zit bij **kleine** Chemex-brouwsels, waaronder de standaard van 300 ml (17 g). Zie de tabel hierboven.
 
 ### 3.5 Voorstel D-4
 
@@ -228,3 +231,39 @@ D2-1, D4-1 en D4-2 samen zijn één kleine, goed testbare wijziging. Hij maakt d
 - Barista Hustle — [Towards a Common Coffee Control Chart](https://www.baristahustle.com/towards-a-common-coffee-control-chart/) (ratio als lijn door het strength/extraction-vlak)
 
 **Werkwijze en beperking:** de metingen in §1 en de ratiobereiken in §2.3 zijn uitgerekend met de app-code zelf (`computeRecipe`, `engineValidVolumeRange`, `ratioFromWindow`). De bronnen kon ik vanuit deze omgeving alleen via zoekresultaten lezen, niet als volledige pagina. Voordat een van de voorstellen wordt gebouwd, is het verstandig de Rao- en Gagné-artikelen van 2025 zelf na te lezen.
+
+---
+
+## 6. Wat er gebouwd is (29 september 2026)
+
+**D2-1: ratio aan de rand van het doelvenster.**
+- `doseEdgeFor()` in de app-laag; de engine-bundel is onveranderd.
+- Valt de dosis bij het venstermidden buiten 15–22 g, dan zet de app de dosis op de grens en rekent de ratio terug, zolang die binnen het ratiobereik van het doelvenster blijft.
+- `engineValidVolumeRange()` rekent met dosisgrens × ratiorand: V60 **240–415 ml** (LOWER tot 425 ml).
+- Voorbeelden:
+  - 250 ml geeft 15 g op 1:16,7;
+  - 400 ml geeft 22 g op 1:18,2;
+  - 265–380 ml is ongewijzigd.
+- Receptscherm:
+  - bij de dosis staat "ondergrens" of "bovengrens van dit toestel";
+  - bij de ratio staat "iets sterker/lichter dan het midden van je doel (nog binnen het doel)", maar niet als de sterkteknop aan staat.
+
+**D4-1: tijdsoordeel per hoeveelheid.**
+- `batchScaleFor()` met referentiedosis V60 18,5 g (midden van Rao's 15–22 g) en Chemex 42 g (volle 6-kops).
+- Het Klaar-scherm geeft alleen een binnen/buiten-oordeel als de dosis binnen ±40 % van die referentie ligt, dezelfde tolerantie als het leren (C-3).
+- Daarbuiten staat er: "loopt het bed normaal sneller/langzamer door … daarom hier geen oordeel over je tijd".
+- De B-2a-melding ("het schema zelf valt buiten de band") gaat voor.
+- In de praktijk: V60 altijd beoordeeld; Chemex onder ~25 g (~430 ml) niet.
+
+**D4-2: richting-hints op de maalgraadtegel** (tekst, geen getal).
+- V60 op 15 g: "kleine kop: loopt sneller door · begin aan de fijne kant · spoel de dripper heet voor".
+- Chemex ≤ 25 g: "klein brouwsel: loopt sneller door · zuur? iets fijner · spoel de Chemex heet voor".
+- Chemex boven 42 g: "groot brouwsel: loopt trager door · traag en bitter? volgende keer iets grover" (Blue Bottle).
+- V60 boven 22 g zou ook "groot" zijn, maar dat kan pas als D4-3 ooit doorgaat.
+
+**Bijvangst:** de toelichting bij `LEARNING_VOLUME_TOLERANCE` zei dat 265 en 380 ml "~40 % beddiepte" verschillen. Het is ~40 % dosis en ~13 % beddiepte (kegel). Tekst gecorrigeerd; het getal is ongewijzigd.
+
+**Tests** (636/636 groen):
+- rekentests voor `doseEdgeFor()`, de nieuwe grenzen (235/240/425/430 ml), 250 en 400 ml, de sterkteknop op de grens en het onveranderde bereik 265–380 ml;
+- Playwright voor de labels, de hints (V60 klein, Chemex klein/normaal/groot) en het Klaar-scherm bij een klein Chemex-brouwsel;
+- vier oudere tests die vastlegden dat 250 ml geweigerd moest worden, zijn bijgewerkt naar het nieuwe gedrag.
