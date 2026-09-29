@@ -2864,6 +2864,89 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     });
   });
 
+  // NIEUW (UX-review, Sprint 6): het logboek per boon — stippen per kop, wat je probeerde, en
+  // je beste kop met één knop opnieuw zetten.
+  describe('Sprint 6: logboek per boon', () => {
+    const PHONE = { viewport: { width: 390, height: 844 } };
+    const BEAN = { id:'bean-s6', name:'Logboek Boon', roastLevel:'light', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:0, bagSizeG:250 };
+    async function phonePage(){
+      const page = await newTrackedPage(PHONE);
+      await page.addInitScript((bean) => {
+        if (sessionStorage.getItem('s6')) return;
+        sessionStorage.setItem('s6', '1');
+        localStorage.setItem('brewconsole_beans', JSON.stringify([bean]));
+      }, BEAN);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      return page;
+    }
+    async function cup(page, answers, { apply = false, viaHome = false } = {}){
+      if (viaHome){
+        await page.click('.navbar [data-nav="home"]');
+        await page.click('[data-next-cup-go="bean-s6"]');
+      } else {
+        await page.click('.navbar [data-nav="method"]');
+        await page.click('#advisor-link');
+        await page.click('[data-bean-pick="bean-s6"]');
+        await page.click('#advice-batch [data-adv-batch="single"]');
+        await page.click('#advice-cta');
+      }
+      await assertBecomesActive(page, '#screen-prep');
+      await page.click('#start-btn');
+      await page.clock.fastForward('03:20');
+      await page.click('#bed-dry-btn');
+      await page.click('#brewlog-open-btn');
+      await page.click('#actuals-planned-btn');
+      await answerTasting(page, answers);
+      await page.click('#brewlog-save-btn');
+      if (apply) await page.click('#reco-apply-btn');
+    }
+
+    test('één groep per boon met stippen, de adviesketen en de beste kop', async () => {
+      const page = await phonePage();
+      await cup(page, { strength: 'just_right', acidity: 'sharp', finish: 'hollow', liking: '2' }, { apply: true });
+      await cup(page, { strength: 'just_right', acidity: 'lively', finish: 'sweet_clean', liking: '5', vsLast: 'better' }, { viaHome: true });
+      await page.click('.navbar [data-nav="brewlog-history"]');
+      await assertBecomesActive(page, '#screen-brewlog-history');
+      const group = page.locator('[data-history-group="bean-s6"]');
+      assert.equal(await group.count(), 1);
+      assert.match(await group.locator('.history-group-sub').textContent(), /V60 · 2 koppen/);
+      assert.deepEqual(await group.locator('.cup-dot').evaluateAll(els => els.map(e => e.dataset.l)), ['2', '5'], 'oud → nieuw');
+      const chain = await group.locator('.advice-chain').innerText();
+      assert.match(chain, /Kop 1 · 2\/5 → Maal 1 klik fijner/);
+      assert.match(chain, /getest: beter/);
+      assert.match(await group.locator('.history-best').innerText(), /Beste kop: 5\/5/);
+      assert.equal(await group.locator('.brewlog-entry-card').count(), 2, 'de koppen staan eronder');
+      await page.close();
+    });
+
+    test('"Zet je beste kop opnieuw" opent het recept met methode en water van die kop, plus de stand van toen', async () => {
+      const page = await phonePage();
+      await cup(page, { strength: 'just_right', acidity: 'lively', finish: 'sweet_clean', liking: '5' });
+      await page.click('.navbar [data-nav="brewlog-history"]');
+      const bestId = await page.getAttribute('[data-best-cup]', 'data-best-cup');
+      const rec = await page.evaluate((id) => getBrewRecord(id), bestId);
+      await page.click('[data-best-cup]');
+      await assertBecomesActive(page, '#screen-prep');
+      assert.equal(await page.evaluate(() => state.method), rec.plan.methodId);
+      assert.equal(await page.evaluate(() => state.waterMl), rec.plan.waterMl);
+      const ref = await page.locator('#prep-best-ref').innerText();
+      assert.match(ref, /Je beste kop \(5\/5/);
+      assert.match(ref, new RegExp(`klik ${rec.plan.grindStartingPoint}`));
+      await page.close();
+    });
+
+    test('geen "beste kop" onder 4/5; meer dan drie koppen → de oudere onder "Eerdere koppen"', async () => {
+      const page = await phonePage();
+      for (let i = 0; i < 4; i++) await cup(page, { strength: 'just_right', acidity: 'lively', finish: 'hollow', liking: '3' });
+      await page.click('.navbar [data-nav="brewlog-history"]');
+      const group = page.locator('[data-history-group="bean-s6"]');
+      assert.equal(await group.locator('.history-best').count(), 0);
+      assert.equal(await group.locator('.history-group-cups .brewlog-entry-card').count(), 3);
+      assert.match(await group.locator('.history-more > summary').textContent(), /Eerdere koppen \(1\)/);
+      await page.close();
+    });
+  });
+
   test('Geen console- of pageerrors opgetreden tijdens de hele kernflow', () => {
     assert.deepEqual(consoleErrors, [], 'Onverwachte console.error()-aanroepen tijdens de kernflow');
     assert.deepEqual(pageErrors, [], 'Onverwachte onafgevangen JS-fouten tijdens de kernflow');

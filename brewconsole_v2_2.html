@@ -598,6 +598,37 @@
   .bed-dry-hint{font-size:12px; color:var(--text-faint); text-align:center; margin:0 0 10px;}
   .bed-dry-hint[hidden]{display:none;}
   /* Fase 1: verwijderen van een logging + "Ongedaan maken"-balk. */
+  /* Sprint 6 (UX-review F5): logboek per boon. */
+  .history-group{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; margin:0 0 16px; box-shadow:var(--shadow-card);}
+  .history-group-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
+  .history-group-title{font-family:var(--font-display); font-weight:700; font-size:18px; margin:0; color:var(--text);}
+  .history-group-sub{font-size:12.5px; color:var(--text-dim); margin:0;}
+  .history-dots{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:4px 0 10px;}
+  .cup-dots{display:flex; gap:5px; flex-wrap:wrap;}
+  .cup-dot{width:14px; height:14px; border-radius:50%; background:transparent; border:1.5px solid var(--border);}
+  .cup-dot[data-l="1"]{background:#a3564a; border-color:#a3564a;}
+  .cup-dot[data-l="2"]{background:#b07a4a; border-color:#b07a4a;}
+  .cup-dot[data-l="3"]{background:#b39a58; border-color:#b39a58;}
+  .cup-dot[data-l="4"]{background:#86a86c; border-color:#86a86c;}
+  .cup-dot[data-l="5"]{background:#5fae7c; border-color:#5fae7c;}
+  .history-dots-label{font-size:11.5px; color:var(--text-faint);}
+  .advice-chain{border-left:2px solid var(--copper-dim); padding-left:12px; margin:0 0 12px;}
+  .advice-chain-title{font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); margin:0 0 6px;}
+  .advice-chain ol{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px;}
+  .advice-chain li{font-size:13px; color:var(--text); line-height:1.45;}
+  .advice-chain-cup{color:var(--text-dim);}
+  .advice-chain-status{display:inline-block; font-size:11.5px; padding:1px 8px; border-radius:999px; background:var(--surface-2); color:var(--text-dim); margin-left:2px;}
+  .advice-chain li[data-advice-outcome="better"] .advice-chain-status{color:#5fae7c;}
+  .advice-chain li[data-advice-outcome="worse"] .advice-chain-status{color:var(--danger);}
+  .history-best{background:linear-gradient(180deg, rgba(212,165,116,.10), rgba(212,165,116,.02)); border:1px solid var(--copper-dim); border-radius:var(--radius-sm); padding:12px; margin:0 0 12px;}
+  .history-best-title{font-weight:600; font-size:14px; color:var(--copper-light); margin:0 0 2px;}
+  .history-best-sub{font-size:12.5px; color:var(--text-dim); margin:0;}
+  .history-best-btn{margin-top:10px; font-size:15px; padding:12px;}
+  .history-group-cups .brewlog-entry-card:last-child{margin-bottom:0;}
+  .history-more{margin-top:10px;}
+  .history-more > summary{cursor:pointer; min-height:44px; display:flex; align-items:center; color:var(--copper-light); font-size:13.5px;}
+  .prep-best-ref{font-size:13px; color:var(--copper-light); background:var(--surface); border:1px solid var(--copper-dim); border-radius:var(--radius-sm); padding:10px 12px; margin:0 0 12px;}
+  .prep-best-ref[hidden]{display:none;}
   .brewlog-entry-delete{background:none; border:none; color:var(--text-faint); font-size:12px; padding:6px 0 0; cursor:pointer; text-decoration:underline;}
   .undo-bar{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(96px + env(safe-area-inset-bottom)); z-index:60;
     display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--border);
@@ -2499,6 +2530,8 @@
       <div class="ab-trial" id="ab-trial" hidden></div>
       <!-- Fase 4: de stap die je na je vorige kop koos ("Gebruik voor volgende kop"). -->
       <div class="prep-next-adjust" id="prep-next-adjust" hidden></div>
+      <!-- Sprint 6: vanuit "Zet je beste kop opnieuw" — wat die kop toen was. -->
+      <p class="prep-best-ref" id="prep-best-ref" hidden></p>
       <p class="technique-line" id="technique-line"></p>
       <p class="technique-tasting" id="technique-tasting"></p>
       <p class="profile-twin-banner" id="prep-twin-note" hidden></p>
@@ -2912,7 +2945,7 @@
          databronveld aangeraakt. -->
     <section class="screen" id="screen-brewlog-history" data-screen="brewlog-history">
       <button class="back-btn" data-back="beans">← Mijn bonen</button>
-      <h1 class="title" data-screen-heading tabindex="-1">Geschiedenis</h1>
+      <h1 class="title" data-screen-heading tabindex="-1">Logboek</h1>
       <p class="subtitle" id="brewlog-history-subtitle"></p>
 
       <!-- Oude brouwsels nakijken: alleen zichtbaar als er verdachte gemigreerde brouwsels zijn. -->
@@ -6293,12 +6326,15 @@ function applyAdvice(){
    en bypass-keuze zijn juist "sessie-keuzes" die vorige keer al eens gemaakt zijn. Die
    worden bij het starten van een brouwsel (zie startBrew()) op de boon zelf onthouden, en
    hier direct hergebruikt — rechtstreeks naar het prep-scherm, geen advies-stap nodig. */
-function brewAgain(id){
+// Sprint 6: `override` (alleen vanuit "Zet je beste kop opnieuw") neemt methode, water,
+// bypass en sterkte van die kop over i.p.v. van de laatste kop; zonder override ongewijzigd.
+function brewAgain(id, override){
   const bean = beanLibrary.find(b=>b.id===id);
-  if (!bean || !bean.lastBrew){ useBeanForAdvice(id); return; }
+  if (!bean || (!bean.lastBrew && !override)){ useBeanForAdvice(id); return; }
   loadBeanIntoAdvice(bean);
+  const last = Object.assign({}, bean.lastBrew || {}, override || {});
 
-  state.method = (bean.lastBrew.method === 'v60' || bean.lastBrew.method === 'chemex') ? bean.lastBrew.method : 'v60';
+  state.method = (last.method === 'v60' || last.method === 'chemex') ? last.method : 'v60';
   state.roast = adviceState.roast;
   state.profile = adviceState.profile;
   state.process = adviceState.process;
@@ -6309,12 +6345,14 @@ function brewAgain(id){
   state.altitude = adviceState.altitude;
   state.flavorScores = adviceState.flavorScores;
   state.fermentEvidence = adviceState.fermentEvidence;
-  state.bypass = !!bean.lastBrew.bypass;
+  state.bypass = !!last.bypass;
   // BP-2 punt 6: een lastBrew van vóór deze wijziging heeft geen bypassPct — dan is 30%
   // een UI-beginstand, nooit met terugwerkende kracht in bean.lastBrew geschreven.
-  state.bypassPct = BYPASS_PCT_OPTIONS.includes(bean.lastBrew.bypassPct) ? bean.lastBrew.bypassPct : 30;
+  state.bypassPct = BYPASS_PCT_OPTIONS.includes(last.bypassPct) ? last.bypassPct : 30;
   state.bypassMoment = 'achteraf'; // niet onthouden per boon, altijd de standaard-weeginstructie
-  state.waterMl = bean.lastBrew.waterMl || defaultWaterMlFor(state.method, state.profile);
+  state.waterMl = last.waterMl || defaultWaterMlFor(state.method, state.profile);
+  state.bestCupRef = override && override.bestRef ? override.bestRef : null; // Sprint 6
+  if (override && typeof override.strengthStep === 'number') state.strengthAdjust = override.strengthStep;
   applyPendingAdjustToState(); // Fase 4
   updateServingBounds();
   renderMethodGrid();
@@ -10323,6 +10361,102 @@ function handleLegacyReviewClick(e){
     showUndoBar('Gemarkeerd als nagekeken.', () => { restoreBrewReview(id, before); refresh(); });
   }
 }
+/* Sprint 6 (UX-review F5): het logboek per boon. Pure helpers op v6-records (oud → nieuw):
+   de beste kop (hoogste "hoe lekker", minstens 4/5 — anders geen "beste"), de adviesketen
+   (elk stap-advies met wat ermee gebeurde) en de opzet van een kop om hem opnieuw te zetten. */
+const BEST_CUP_MIN_LIKING = 4;
+function bestCupOf(recs){
+  const c = (recs || []).filter(r => r && r.tasting && typeof r.tasting.liking === 'number' && r.tasting.liking >= BEST_CUP_MIN_LIKING);
+  if (!c.length) return null;
+  return c.slice().sort((a, b) => (b.tasting.liking - a.tasting.liking)
+    || ((b.tasting.approved ? 1 : 0) - (a.tasting.approved ? 1 : 0))
+    || ((b.createdAt || 0) - (a.createdAt || 0)))[0];
+}
+function adviceChainOf(recs){
+  return (recs || []).map((r, i) => ({ r, cupNo: i + 1 }))
+    .filter(x => x.r && x.r.recommendation && x.r.recommendation.type === 'ADJUST')
+    .map(({ r, cupNo }) => ({
+      recId: r.id, cupNo,
+      liking: r.tasting && typeof r.tasting.liking === 'number' ? r.tasting.liking : null,
+      title: recommendationTexts(r.recommendation, null, {}).title,
+      status: r.recommendation.status || 'proposed',
+      outcome: r.recommendation.outcome || null
+    }));
+}
+function cupSetupOf(rec){
+  const plan = (rec && rec.plan) || {}, a = (rec && rec.actual) || {};
+  const grind = a.grindSource === 'U' && typeof a.grindClick === 'number' ? a.grindClick
+    : typeof plan.grindTarget === 'number' ? plan.grindTarget
+    : typeof plan.grindStartingPoint === 'number' ? plan.grindStartingPoint : null;
+  return {
+    method: plan.methodId || null, waterMl: typeof plan.waterMl === 'number' ? plan.waterMl : null,
+    doseG: typeof plan.doseG === 'number' ? plan.doseG : null, grind,
+    bypassPct: plan.bypass ? (plan.bypass.pct != null ? plan.bypass.pct : BYPASS_DEFAULT_PCT) : null,
+    strengthStep: typeof plan.strengthStep === 'number' ? plan.strengthStep : 0
+  };
+}
+function cupSetupLine(setup){
+  const m = METHOD_INFO[setup.method];
+  return [m ? m.name : setup.method, setup.grind != null ? `klik ${setup.grind}` : null,
+    setup.doseG != null ? `${fmt(setup.doseG, 1)} g` : null, setup.waterMl != null ? `${setup.waterMl} ml` : null,
+    setup.bypassPct != null ? `${setup.bypassPct}% bypass` : null].filter(Boolean).join(' · ');
+}
+function brewBestCup(recId){
+  const rec = getBrewRecord(recId);
+  const bean = rec && rec.beanId ? beanLibrary.find(b => b.id === rec.beanId) : null;
+  if (!rec || !bean) return;
+  const setup = cupSetupOf(rec);
+  const dateText = rec.createdAt ? new Date(rec.createdAt).toLocaleDateString('nl-NL', { day:'numeric', month:'short' }) : '';
+  brewAgain(bean.id, {
+    method: setup.method, waterMl: setup.waterMl, bypass: setup.bypassPct != null, bypassPct: setup.bypassPct,
+    strengthStep: setup.strengthStep,
+    bestRef: { beanId: bean.id, method: setup.method, liking: rec.tasting.liking, dateText, line: cupSetupLine(setup) }
+  });
+}
+const ADVICE_CHAIN_STATUS = { proposed: 'nog niet gekozen', applied: 'klaargezet', ignored: 'niet gebruikt' };
+const ADVICE_OUTCOME_LABEL = { better: 'beter', same: 'hetzelfde', worse: 'slechter' };
+function renderHistoryGroup(g, showAll){
+  const n = g.entries.length;
+  const latest = g.entries[0];
+  const m = latest ? METHOD_INFO[latest.method] : null;
+  const title = g.bean ? (g.bean.name || 'Naamloze boon') : 'Zonder boon';
+  const likings = g.recs.map(r => r && r.tasting && typeof r.tasting.liking === 'number' ? r.tasting.liking : null);
+  const dots = likings.some(v => v != null)
+    ? `<div class="history-dots"><div class="cup-dots" role="img" aria-label="Hoe lekker per kop, oud naar nieuw: ${likings.map(v => v == null ? 'niet beoordeeld' : v).join(', ')}">${likings.map(v => `<span class="cup-dot" data-l="${v == null ? '' : v}"></span>`).join('')}</div><span class="history-dots-label">lekker per kop · oud → nieuw</span></div>`
+    : '';
+  const chain = adviceChainOf(g.recs).slice(-4);
+  const chainHtml = chain.length ? `<div class="advice-chain"><p class="advice-chain-title">Wat je probeerde</p><ol>${chain.map(c => {
+      const st = c.status === 'tested' ? `getest: ${ADVICE_OUTCOME_LABEL[c.outcome] || 'onbekend'}` : (ADVICE_CHAIN_STATUS[c.status] || c.status);
+      return `<li data-advice-status="${escapeHtml(c.status)}"${c.outcome ? ` data-advice-outcome="${escapeHtml(c.outcome)}"` : ''}><span class="advice-chain-cup">Kop ${c.cupNo}${c.liking != null ? ` · ${c.liking}/5` : ''}</span> → ${escapeHtml(c.title)} <span class="advice-chain-status">${escapeHtml(st)}</span></li>`;
+    }).join('')}</ol></div>` : '';
+  const best = g.bean ? bestCupOf(g.recs) : null;
+  const bestHtml = best ? `<div class="history-best">
+      <p class="history-best-title">★ Beste kop: ${best.tasting.liking}/5${best.createdAt ? ` · ${escapeHtml(new Date(best.createdAt).toLocaleDateString('nl-NL', { day:'numeric', month:'short' }))}` : ''}</p>
+      <p class="history-best-sub">${escapeHtml(cupSetupLine(cupSetupOf(best)))}</p>
+      <button type="button" class="start-btn history-best-btn" data-best-cup="${escapeHtml(best.id)}">Zet je beste kop opnieuw</button>
+    </div>` : '';
+  const shown = showAll ? g.entries : g.entries.slice(0, 3);
+  const rest = showAll ? [] : g.entries.slice(3);
+  return `<section class="history-group" data-history-group="${escapeHtml(g.beanId || 'none')}">
+    <div class="history-group-head"><p class="history-group-title">${escapeHtml(title)}</p><p class="history-group-sub">${m ? escapeHtml(m.name) + ' · ' : ''}${n} ${n === 1 ? 'kop' : 'koppen'}</p></div>
+    ${dots}${chainHtml}${bestHtml}
+    <div class="history-group-cups">${shown.map(e => renderBrewLogEntryCard(e, g.beanId || null)).join('')}</div>
+    ${rest.length ? `<details class="history-more"><summary>Eerdere koppen (${rest.length})</summary>${rest.map(e => renderBrewLogEntryCard(e, g.beanId || null)).join('')}</details>` : ''}
+  </section>`;
+}
+function historyGroupsOf(entries){
+  const byBean = new Map();
+  entries.forEach(e => {
+    const key = e.beanId && beanLibrary.some(b => b.id === e.beanId) ? e.beanId : null;
+    if (!byBean.has(key)) byBean.set(key, []);
+    byBean.get(key).push(e);
+  });
+  return [...byBean.entries()].map(([beanId, list]) => {
+    const entriesNewest = list.slice().sort((a, b) => b.timestamp - a.timestamp);
+    const recs = entriesNewest.slice().reverse().map(e => getBrewRecord(e.id)).filter(Boolean);
+    return { beanId, bean: beanId ? beanLibrary.find(b => b.id === beanId) : null, entries: entriesNewest, recs };
+  }).sort((a, b) => (b.beanId ? 1 : 0) - (a.beanId ? 1 : 0) || b.entries[0].timestamp - a.entries[0].timestamp);
+}
 function renderBrewLogHistoryLists(beanId){
   renderLegacyReview();
   // NIEUW (vervolgplan v2.3, Fase 5 — Historie als bestemming): tot nu toe werd deze
@@ -10337,11 +10471,14 @@ function renderBrewLogHistoryLists(beanId){
   const favEntries = allEntries.filter(e=>e.favorite);
   document.getElementById('brewlog-history-subtitle').textContent = bean ? bean.name : 'Alle brouwsels';
 
+  // Sprint 6 (UX-review F5): gegroepeerd per boon — stippen per kop, wat je probeerde, je
+  // beste kop — met de laatste koppen eronder (per boon gefilterd: alle koppen).
   const el = document.getElementById('brewlog-history-list');
   el.innerHTML = allEntries.length
-    ? allEntries.map(e=>renderBrewLogEntryCard(e, beanId)).join('')
+    ? historyGroupsOf(allEntries).map(g => renderHistoryGroup(g, !!beanId)).join('')
     : `<p class="empty-hint">${beanId ? 'Nog geen loggings voor deze boon.' : 'Nog geen brouwsels gelogd — dat verschijnt hier zodra je een brouwsel afrondt en opslaat.'}</p>`;
   wireFavToggleButtons(el);
+  el.querySelectorAll('[data-best-cup]').forEach(btn => btn.addEventListener('click', () => brewBestCup(btn.getAttribute('data-best-cup'))));
 
   const elFav = document.getElementById('brewlog-history-list-fav');
   if (elFav){
@@ -12059,6 +12196,15 @@ function renderPrep(){
   renderPrepGoal();
   renderAbTrial(); // BC-10
   renderPrepNextAdjust(); // Fase 4
+  // Sprint 6: "Zet je beste kop opnieuw" — methode, water, bypass en sterkte staan klaar;
+  // de maalstand van toen staat hier (het recept hieronder blijft het recept van nu).
+  const bestRefEl = document.getElementById('prep-best-ref');
+  if (bestRefEl){
+    const r = state.bestCupRef;
+    const show = !!(r && r.beanId === state.beanId && r.method === state.method);
+    bestRefEl.hidden = !show;
+    bestRefEl.textContent = show ? `★ Je beste kop (${r.liking}/5, ${r.dateText}): ${r.line}. Methode, water en sterkte van toen staan klaar.` : '';
+  }
 
   document.getElementById('technique-line').textContent = `${rec.technique} · ${rec.author}`;
   document.getElementById('technique-tasting').textContent = p.desc;
