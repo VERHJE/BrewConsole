@@ -479,7 +479,10 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
   // METHOD_INFO — anders zou de gebruiker via de +/- knoppen een volume kunnen kiezen
   // (bv. 250 ml) waarvoor de engine geen geldig recept teruggeeft, en zou dat stil op
   // een ander volume of een kapot recept uitkomen i.p.v. een leesbare melding (D-2).
-  test('Waterhoeveelheid-schuifregelaar klemt op het engine-geldige bereik — 250 ml is nooit bereikbaar via de min-knop', async () => {
+  // BIJGEWERKT (D2-1): het engine-geldige V60-minimum is nu 240 ml (15 g × ratiorand van het
+  // doelvenster); 250 ml is sindsdien een geldig recept. De klem-eis zelf blijft: nooit onder
+  // wat de engine accepteert, en het recept op de grens rendert gewoon.
+  test('Waterhoeveelheid-schuifregelaar klemt op het engine-geldige bereik (240 ml voor V60/klassiek)', async () => {
     const page = await newTrackedPage();
     await page.goto(FILE_URL, { waitUntil: 'load' });
     await page.click('.navbar [data-nav="method"]');
@@ -497,8 +500,10 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       current = await page.locator('#serving-value').textContent();
     }
     const finalMl = parseInt(current, 10);
-    assert.ok(finalMl >= 260, `De schuifregelaar mag nooit onder het engine-geldige minimum komen, kreeg "${current}"`);
-    assert.notEqual(finalMl, 250, 'De schuifregelaar mag 250 ml nooit als bereikbare waarde tonen (D-2)');
+    const engineMin = await page.evaluate(() => engineValidVolumeRange('v60', 'klassiek').min);
+    assert.equal(engineMin, 240);
+    assert.equal(finalMl, engineMin, `De schuifregelaar moet precies op het engine-geldige minimum stoppen, kreeg "${current}"`);
+    assert.match(await page.locator('#stats-grid .stat-block').first().innerText(), /15,0 g[\s\S]*ondergrens van dit toestel/);
 
     // Het getoonde recept moet exact dit (geklemde) volume tonen — geen mismatch tussen
     // de schuifregelaar en het daadwerkelijk berekende recept.
@@ -2271,6 +2276,83 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     assert.equal(await page.evaluate(() => getBrewRecord('log_b').stockBeanId), 'bean-eth');
     await page.reload({ waitUntil: 'load' });
     assert.deepEqual(await usage(), { 'bean-eth': 18, 'bean-bra': 0 }, 'geen tweede keer');
+    await page.close();
+  });
+
+  // NIEUW (D2-1/D4-2, onderzoek_D2_D4.md): kleine V60-kop op de dosisondergrens met eerlijk
+  // label, en richting-hints bij duidelijk kleine/grote brouwsels — tekst, geen receptgetal.
+  test('D2-1/D4-2: V60 250 ml op de ondergrens met label; hints bij kleine V60 en kleine/grote Chemex', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.evaluate(() => { selectMethod('v60'); selectRoast('medium'); selectProfile('klassiek'); state.waterMl = 250; renderPrep(); });
+    const grid = page.locator('#stats-grid');
+    let txt = await grid.innerText();
+    assert.match(txt, /15,0 g/);
+    assert.match(txt, /ondergrens van dit toestel/);
+    assert.match(txt, /1:16,7/);
+    assert.match(txt, /iets sterker dan het midden van je doel \(nog binnen het doel\)/);
+    assert.match(await page.locator('#batch-hint').innerText(), /kleine kop: .*spoel de dripper heet voor/);
+
+    await page.evaluate(() => { state.waterMl = 300; renderPrep(); });
+    txt = await grid.innerText();
+    assert.equal(await page.locator('#batch-hint').count(), 0, 'een gewone kop krijgt geen hint');
+    assert.doesNotMatch(txt, /ondergrens|midden van je doel/);
+
+    await page.evaluate(() => { state.waterMl = 250; state.strengthAdjust = 1; renderPrep(); });
+    assert.doesNotMatch(await grid.innerText(), /nog binnen het doel/, 'met de sterkteknop geen "binnen het doel"-claim');
+    await page.evaluate(() => { state.strengthAdjust = 0; });
+
+    await page.evaluate(() => { selectMethod('chemex'); selectRoast('medium'); selectProfile('klassiek'); state.waterMl = 300; renderPrep(); });
+    assert.match(await page.locator('#batch-hint').innerText(), /klein brouwsel/);
+    await page.evaluate(() => { state.waterMl = 600; renderPrep(); });
+    assert.equal(await page.locator('#batch-hint').count(), 0, 'een volle 6-kops is gewoon');
+    await page.evaluate(() => { state.waterMl = 850; renderPrep(); });
+    assert.match(await page.locator('#batch-hint').innerText(), /groot brouwsel: .*iets grover/);
+    await page.close();
+  });
+
+  // NIEUW (D4-1): de contacttijdband geldt voor een gewone hoeveelheid; bij een klein
+  // Chemex-brouwsel (17 g, band geldt voor ~42 g) geen binnen/buiten-oordeel.
+  test('D4-1: klein Chemex-brouwsel krijgt op het Klaar-scherm geen tijdsoordeel, met uitleg', async () => {
+    const page = await newTrackedPage();
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.evaluate(() => { selectMethod('chemex'); selectRoast('medium'); selectProfile('klassiek'); state.waterMl = 300; renderPrep(); });
+    await page.click('#start-btn');
+    await assertBecomesActive(page, '#screen-brew');
+    await page.clock.fastForward(FAST_FORWARD);
+    await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
+    await page.click('#brewlog-open-btn');
+    await assertBecomesActive(page, '#screen-brewlog');
+    const summary = await page.locator('#brewlog-honest-summary').textContent();
+    assert.match(summary, /loopt het bed normaal sneller door dan bij een gewone hoeveelheid \(~42 g\).*geen oordeel over je tijd/);
+    assert.doesNotMatch(summary, /valt (binnen|buiten) de gangbare diagnostische band/);
+    await page.close();
+  });
+
+  // NIEUW (BP-A/BP-C, onderzoek_maling_dosis_bypass.md §3.6): stappenplan op de bypass-kaart,
+  // en een klaargezette stap uit een bypass-kop zet bypass terug zodat de test eerlijk is.
+  test('BP-A/BP-C: stappenplan bij bypass; stap uit een bypass-kop zet bypass terug, anders een waarschuwing', async () => {
+    const page = await newTrackedPage();
+    const bean = { id:'bean-bp', name:'Bypass Boon', roastLevel:'medium', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt: 1, doseUsedG: 0,
+      lastBrew: { method:'v60', waterMl:300, bypass:false, bypassPct:null },
+      pendingAdjust: { fromBrewId:'log_bp', lever:'grind', delta:-1, fromValue:16, toValue:15, method:'v60', createdAt: 1, bypassPct: 30, waterMl: 300 } };
+    await page.addInitScript((b) => { if (sessionStorage.getItem('bp')) return; sessionStorage.setItem('bp', '1');
+      localStorage.setItem('brewconsole_beans', JSON.stringify([b])); }, bean);
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.evaluate(() => brewAgain('bean-bp'));
+    await assertBecomesActive(page, '#screen-prep');
+    assert.deepEqual(await page.evaluate(() => [state.bypass, state.bypassPct]), [true, 30], 'de stap kwam uit een 30%-bypass-kop');
+    assert.equal(await page.locator('#prep-next-adjust-setup').count(), 0, 'zelfde opzet → geen waarschuwing');
+
+    await page.evaluate(() => { document.getElementById('refine-details').open = true; });
+    const howto = page.locator('#bypass-howto');
+    assert.equal(await howto.isVisible(), true);
+    await howto.locator('summary').click();
+    assert.equal(await howto.locator('li').count(), 6);
+    assert.match(await howto.innerText(), /Begin met 20%[\s\S]*Te dun of zuur\? Eerst Sterkte een stap omhoog[\s\S]*tellen apart/);
+
+    await page.evaluate(() => { state.bypass = false; renderPrep(); });
+    assert.match(await page.locator('#prep-next-adjust-setup').innerText(), /kop met 30% bypass .* telt deze test niet mee/);
     await page.close();
   });
 

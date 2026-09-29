@@ -606,6 +606,12 @@
     /* Langere meldingen (bijv. met voorraadcorrectie) lopen over twee regels i.p.v. van het scherm af. */
     width:max-content; max-width:calc(100vw - 32px); box-sizing:border-box; line-height:1.4;}
   .undo-bar[hidden]{display:none;}
+  /* BP-A: stappenplan in de bypass-kaart */
+  .bypass-howto{margin-top:8px; font-size:12.5px; color:var(--text-muted);}
+  .bypass-howto summary{cursor:pointer; color:var(--copper-light); font-weight:600;}
+  .bypass-howto ol{margin:6px 0 6px 18px; padding:0;}
+  .bypass-howto li{margin:3px 0;}
+  .bypass-howto p{margin:6px 0 0;}
   .undo-bar button{background:none; border:none; color:var(--copper-light); font-weight:600; cursor:pointer; font-size:13px; white-space:nowrap; flex-shrink:0;}
 
   .prep-bean-line{font-size:13px; color:var(--text-dim); margin:-4px 0 8px;}
@@ -2510,6 +2516,22 @@
                   <span class="badge" data-tone="warn">Tier 3-5 · laag vertrouwen</span>
                 </div>
                 <span id="bypass-experiment-text"></span>
+                <!-- BP-A (onderzoek_maling_dosis_bypass.md §3.6): concreet stappenplan. De app
+                     houdt bij bypass dezelfde dosis (eindratio gelijk), terwijl er minder water
+                     door het bed gaat → reken op een iets lichtere kop; sturen op smaak, want de
+                     maalrichting is in de bronnen omstreden (Drip Roast fijner, Royal Coffee grover). -->
+                <details class="bypass-howto" id="bypass-howto">
+                  <summary>Zo gebruik je het</summary>
+                  <ol>
+                    <li>Begin met 20% — de kleinste stap weg van je gewone kop.</li>
+                    <li>Reken op een iets lichtere kop dan zonder bypass: er gaat minder water door de koffie.</li>
+                    <li>Te dun of zuur? Eerst Sterkte een stap omhoog, daarna 1 klik fijner.</li>
+                    <li>Bitter, scherp of drogend? 1 klik grover, of een lager percentage.</li>
+                    <li>Het bijschenkwater: heet, uit dezelfde ketel en hetzelfde water.</li>
+                    <li>Zet dezelfde boon ook eens zonder bypass en vergelijk — alleen zo weet je of het voor deze koffie iets toevoegt.</li>
+                  </ol>
+                  <p>Het meest geprobeerd bij donkere brandingen, funky naturals en anaerobe koffie, of als je gewone kop hard of drogend smaakt. Stappen die je bij een bypass-kop leert, tellen apart: ze gaan niet mee in het oordeel over het gewone advies.</p>
+                </details>
               </div>
             </div>
           </div>
@@ -4885,7 +4907,6 @@ function engineValidVolumeRange(methodKey, profileKey){
     const targetWindow = B.resolveTargetWindow(mapEntry.cluster, ENGINE_TARGET_WINDOWS[mapEntry.cluster]);
     if (targetWindow.state !== 'RESOLVED') return { min: m.minMl, max: m.maxMl };
     const ratioRange = B.ratioFromWindow(targetWindow.value);
-    const ratioMid = (ratioRange.min + ratioRange.max) / 2;
     const { min: doseMin, max: doseMax } = brewer.doseCeiling.value;
     // FIX (Implementatieplan Zetadvies v3.0, §1b — testbevinding): Math.round() naar het
     // dichtstbijzijnde 5ml-stapje kon de bovengrens over de werkelijk haalbare grens heen
@@ -4895,8 +4916,10 @@ function engineValidVolumeRange(methodKey, profileKey){
     // §1b juist wil voorkomen. Ceil voor de ondergrens en floor voor de bovengrens houden
     // het gerapporteerde bereik altijd BINNEN wat de engine daadwerkelijk accepteert — in
     // het slechtste geval één 5ml-stapje conservatiever, nooit een leeg beloofd volume.
-    const volLow = Math.ceil((doseMin * ratioMid) / 5) * 5;
-    const volHigh = Math.floor((doseMax * ratioMid) / 5) * 5;
+    // D2-1: aan de randen mag de ratio tot de rand van het doelvenster schuiven (zie
+    // doseEdgeFor()), dus de grens is dosisgrens × ratiorand i.p.v. × ratiomidden.
+    const volLow = Math.ceil((doseMin * ratioRange.min) / 5) * 5;
+    const volHigh = Math.floor((doseMax * ratioRange.max) / 5) * 5;
     return {
       min: clamp(Math.min(volLow, volHigh), m.minMl, m.maxMl),
       max: clamp(Math.max(volLow, volHigh), m.minMl, m.maxMl)
@@ -5267,7 +5290,7 @@ function buildFallbackRecipe(reason, waterMl){
     totalTime:0, steps:[],
     technique:'Geen geldig recept bij dit watervolume', author:'—',
     notes:`${reason} Pas de waterhoeveelheid aan (stel bijv. terug naar het midden van het bereik) of kies de andere zettermethode.`,
-    ratioText:'—', processNote:'', freshnessNote:'', altitudeNote:'', hardnessNote:'', bypassNote:'', strengthNote:'',
+    ratioText:'—', processNote:'', freshnessNote:'', altitudeNote:'', hardnessNote:'', bypassNote:'', strengthNote:'', doseEdge:null,
     bypassAdv:{ pct:0, factor:1 }, contactTimeDiagnosticBand:null, pulseCountSourced:false,
     authorUnverified:false,
     modelPolicyVersion: MODEL_POLICY.version
@@ -5350,6 +5373,24 @@ function selectViaCanonicalPipeline(B, gen, preferredOverlayId, targetWindowValu
   return rec.top.value.candidate.genCandidate;
 }
 
+/* D2-1 (onderzoek_D2_D4.md §2): de engine kiest altijd het MIDDEN van het ratiobereik van
+   het doelvenster. Valt de dosis daarbij buiten de dosisgrens van het toestel (V60: 15–22 g),
+   dan weigerde de app het volume — ook als de dosis OP de grens met een ratio die nog
+   binnen het doelvenster ligt prima kan (15 g op 250 ml = 1:16,7 = Hoffmanns 1-kopsrecept,
+   binnen beide vensters). Dit zet de dosis dan op de grens en rekent de ratio terug, maar
+   alleen zolang die ratio binnen het venster blijft; daarbuiten blijft het "geen recept".
+   Binnen de grens verandert er niets (null). */
+function doseEdgeFor(provisionalDose, waterMl, ceiling, ratioRange){
+  if (!ceiling || !ratioRange || !(waterMl > 0) || !(provisionalDose > 0)) return null;
+  if (provisionalDose >= ceiling.min && provisionalDose <= ceiling.max) return null;
+  const side = provisionalDose < ceiling.min ? 'min' : 'max';
+  const dose = side === 'min' ? ceiling.min : ceiling.max;
+  const ratio = waterMl / dose;
+  const EPS = 1e-9;
+  if (ratio < ratioRange.min - EPS || ratio > ratioRange.max + EPS) return null;
+  return { side, dose, ratio };
+}
+
 function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, experimentalFlag, roastDays, altitudeMasl, bypassEnabled, flavorFermentEvidence, waterHardnessMgLArg, strengthAdjust, bypassPctArg){
   const B = window.BrewEngineBundle;
 
@@ -5403,6 +5444,13 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   if (refCore.water.state === 'RESOLVED' && refCore.water.value > 0 && waterMl > 0){
     batchSize = waterMl / refCore.water.value;
   }
+  // D2-1: dosis op de grens, ratio binnen het doelvenster (zie doseEdgeFor()).
+  let doseEdge = null;
+  if (refCore.dose.state === 'RESOLVED' && refCore.dose.value > 0 && targetWindow.state === 'RESOLVED' &&
+      brewer && brewer.doseCeiling && brewer.doseCeiling.state === 'RESOLVED'){
+    doseEdge = doseEdgeFor(refCore.dose.value * batchSize, waterMl, brewer.doseCeiling.value, B.ratioFromWindow(targetWindow.value));
+    if (doseEdge) batchSize = doseEdge.dose / refCore.dose.value;
+  }
 
   const gen = B.generateCandidates({
     coffee, brewer, targetWindow,
@@ -5428,13 +5476,16 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   const overlayId = overlay ? overlay.id.split('::')[0] : null;
 
   const baseDose = core.dose.state === 'RESOLVED' ? core.dose.value : 0;
-  const water = core.water.state === 'RESOLVED' ? core.water.value : waterMl;
+  // D2-1: bij een dosis op de grens is het water het gevraagde volume (de engine rekende het
+  // water bij het venstermidden uit); de ratio hieronder volgt daaruit.
+  const water = doseEdge ? waterMl : (core.water.state === 'RESOLVED' ? core.water.value : waterMl);
 
   // Sterkte-hendel: pure, expliciet-handmatige gebruikersvoorkeur, geen evidence-claim
   // (zelfde geest als voorheen) — verschuift alleen de dosis, water blijft gelijk.
   const strengthStep = clamp(Math.round(strengthAdjust || 0), -1, 1);
   let dose = baseDose;
-  let ratioText = core.ratio.state === 'RESOLVED' ? nlRatio(core.ratio.value) : '—';
+  let ratioText = doseEdge ? nlRatio(`1:${fmt(doseEdge.ratio, 1)}`)
+    : (core.ratio.state === 'RESOLVED' ? nlRatio(core.ratio.value) : '—');
   let strengthNote = '';
   // FIX (Reparatieplan v4.0, B-1 / bevinding E-02): de sterktehendel vermenigvuldigde de
   // dosis ná generateCandidates()'s constraint-check, waardoor V60_DOSE_CEILING (een
@@ -5661,6 +5712,7 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     totalTime, steps,
     technique, author,
     notes, ratioText, processNote, freshnessNote, altitudeNote, hardnessNote, bypassNote, strengthNote,
+    doseEdge, // D2-1: null, of { side:'min'|'max', dose, ratio } als de dosis op de toestelgrens staat
     // VERWIJDERD (Reparatieplan v4.0, A-5 / bevinding E-16): sizeConsistencyWarning kon per
     // constructie nooit vuren — computeRecipe() rekent batchSize juist TERUG uit waterMl,
     // dus de afwijking is altijd ~0. Geverifieerd over het hele geldige volumebereik. Een
@@ -7821,6 +7873,13 @@ function renderAdviceOutcomeSection(st){
       <p class="insights-note" data-advice-gate="${st.gate}" style="margin:10px 0 0;">${escapeHtml(verdict)}</p>
       ${untested ? `<p class="insights-note" style="margin:6px 0 0;">Nog niet getest: ${st.applied} klaargezet · ${st.proposed + st.ignored} niet gebruikt.</p>` : ''}`;
   }
+  // BP-B: apart gehouden stappen eerlijk benoemen.
+  const ap = st.apart || { bypass: 0, mismatch: 0 };
+  const apartBits = [
+    ap.bypass ? `${ap.bypass} bij bypass-koppen` : null,
+    ap.mismatch ? `${ap.mismatch} getest op een kop met een andere opzet (bypass of hoeveelheid)` : null
+  ].filter(Boolean);
+  if (apartBits.length) body += `<p class="insights-note" id="advice-apart" style="margin:6px 0 0;">Apart gehouden, tellen niet mee in de drempel: ${escapeHtml(apartBits.join(' · '))}.</p>`;
   return `<div class="bean-detail-section" id="advice-outcome" style="margin-top:18px;">
       <p class="bean-detail-section-label">Hoe goed werken de adviezen?</p>
       ${body}
@@ -8907,6 +8966,26 @@ function applyActuals(actual, plan, mode, edited){
 }
 
 // De vorige gelogde kop van dezelfde boon + methode (voor "beter / hetzelfde / slechter").
+/* BP-B (onderzoek_maling_dosis_bypass.md §3.5): "beter/slechter dan vorige keer" en de
+   advies-poort vergelijken alleen gelijke koppen. Een bypass-kop is lichter (minder water
+   door het bed → lagere extractie), en een kop van 250 ml is een ander bed dan een van
+   400 ml — die naast elkaar zetten zegt iets over de opzet, niet over de stap.
+   Gelijk = bypass aan/uit én hetzelfde percentage (null = onbekend oud percentage, alleen
+   gelijk aan zichzelf) én het water binnen dezelfde ±40% als het leren (C-3). */
+function bypassKeyOfPlan(plan){
+  const bp = plan && plan.bypass;
+  if (!bp) return 'geen';
+  return bp.pct != null ? String(bp.pct) : 'onbekend';
+}
+function isComparableSetup(a, b){
+  const pa = (a && a.plan) || {}, pb = (b && b.plan) || {};
+  if (bypassKeyOfPlan(pa) !== bypassKeyOfPlan(pb)) return false;
+  const wa = pa.waterMl, wb = pb.waterMl;
+  if (typeof wa === 'number' && typeof wb === 'number' && wa > 0 && wb > 0){
+    if (Math.abs(wa - wb) / Math.max(wa, wb) > LEARNING_VOLUME_TOLERANCE + 1e-9) return false;
+  }
+  return true;
+}
 function findPreviousComparableBrew(store, rec){
   if (!rec || !rec.beanId) return null;
   const method = rec.plan && rec.plan.methodId;
@@ -8914,6 +8993,7 @@ function findPreviousComparableBrew(store, rec){
   for (const r of (store || [])){
     if (r.id === rec.id || !isBrewInLogView(r) || r.beanId !== rec.beanId) continue;
     if (!r.plan || r.plan.methodId !== method) continue;
+    if (!isComparableSetup(r, rec)) continue; // BP-B
     if (!(r.createdAt < rec.createdAt)) continue;
     if (!best || r.createdAt > best.createdAt) best = r;
   }
@@ -9150,10 +9230,15 @@ function adviceOutcomeStats(store){
   const byId = new Map((store || []).map(r => [r.id, r]));
   const byType = { KEEP: 0, REPEAT: 0, CHECK: 0, ADJUST: 0, NONE: 0 };
   const s = { proposed: 0, applied: 0, ignored: 0, tested: 0, better: 0, same: 0, worse: 0, unanswered: 0, success: 0 };
+  // BP-B: stappen bij bypass-koppen, en stappen die op een niet-vergelijkbare kop getest
+  // zijn, tellen apart en NIET mee in de poort (zie isComparableSetup()).
+  const apart = { bypass: 0, mismatch: 0 };
   for (const r of recs){
     const reco = r.recommendation;
     if (byType[reco.type] != null) byType[reco.type]++;
     if (reco.type !== 'ADJUST') continue;
+    if (r.plan && r.plan.bypass){ apart.bypass++; continue; }
+    if (reco.status === 'tested' && reco.setupMismatch){ apart.mismatch++; continue; }
     if (reco.status === 'proposed') s.proposed++;
     else if (reco.status === 'applied') s.applied++;
     else if (reco.status === 'ignored') s.ignored++;
@@ -9170,7 +9255,7 @@ function adviceOutcomeStats(store){
   const harmRate = s.tested ? s.worse / s.tested : null;
   const gate = s.tested < ADVICE_GATE_MIN_TESTED ? 'insufficient'
     : (successRate >= ADVICE_GATE_SUCCESS_MIN && harmRate <= ADVICE_GATE_HARM_MAX) ? 'passed' : 'failed';
-  return Object.assign({ byType, successRate, harmRate, gate, needed: Math.max(0, ADVICE_GATE_MIN_TESTED - s.tested) }, s);
+  return Object.assign({ byType, successRate, harmRate, gate, needed: Math.max(0, ADVICE_GATE_MIN_TESTED - s.tested), apart }, s);
 }
 
 let brewStore = [];
@@ -9662,8 +9747,13 @@ function renderBrewLogHonestSummary(){
     // alleen met een gemeten bed-droog-tijd.
     const { min, max } = rec.contactTimeDiagnosticBand;
     const scheduleWithinBand = rec.totalTime >= min && rec.totalTime <= max;
+    const scale = batchScaleFor(state.method, rec.dose);
     if (!scheduleWithinBand){
       diagnosticLine = `Het schema dat deze app je hierboven gaf (${fmtTime(rec.totalTime)}) valt zelf al buiten de gangbare band voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — deze giet-structuur heeft nu eenmaal ${rec.steps.filter(s=>s.add>0).length} waterbeurten. De band is daarom géén zinvolle controle op jouw uitvoering; hij zegt hier iets over het recept, niet over jou.`;
+    } else if (!scale.judgeBand){
+      // D4-1: de band geldt voor een gewone hoeveelheid; bij een duidelijk kleiner of groter
+      // bed is een binnen/buiten-oordeel geen eerlijke maatlat (onderzoek_D2_D4.md §3).
+      diagnosticLine = `Bij ${fmt(rec.dose, 1)} g loopt het bed normaal ${rec.dose < scale.refDose ? 'sneller' : 'langzamer'} door dan bij een gewone hoeveelheid (~${fmt(scale.refDose, 0)} g). De gangbare band voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) geldt voor die gewone hoeveelheid — daarom hier geen oordeel over je tijd.`;
     } else if (actualTime != null){
       const within = actualTime >= min && actualTime <= max;
       diagnosticLine = within
@@ -10092,11 +10182,39 @@ const LEARNING_MIN_N = 3; // terugvalladder-drempel uit het plan
 
 /* NIEUW (Reparatieplan v4.0, C-3 / bevinding E-12): een leercorrectie mag alleen brouwsels
    van vergelijkbaar formaat middelen — bij 265 ml en 380 ml op een V60 verschilt de
-   beddiepte ~40% en beweegt de optimale maalgraad mee. Bewust GEEN nieuw getal verzonnen:
+   dosis ~40% (de beddiepte, in een kegel ∝ dosis^(1/3), ~13%) en beweegt de optimale
+   maalgraad mee. Bewust GEEN nieuw getal verzonnen:
    dit is dezelfde 40% die de engine zelf al hanteert als "is dit nog hetzelfde formaat"
    (SIZE_CONSISTENCY_TOLERANCE in ranking.ts, niet geexporteerd — vandaar de kopie hier,
    met deze verwijzing als enige rechtvaardiging). */
 const LEARNING_VOLUME_TOLERANCE = 0.4;
+
+/* D4-1/D4-2 (onderzoek_D2_D4.md §3): beddiepte, doorlooptijd, maling en warmteverlies
+   schalen NIET lineair met de hoeveelheid. De richting is onderbouwd (groter → trager, iets
+   grover; kleiner → sneller, fijner, koeler), een getal niet — dus hier geen receptgetal,
+   alleen: (1) wanneer de contacttijdband van het toestel een eerlijke maatlat is, en (2) een
+   richting-hint bij duidelijk kleine of grote brouwsels.
+   refDose = de hoeveelheid waarvoor de band geldt:
+   - V60: 18,5 g, het midden van Rao's 15–22 g (herkomst van de dosisgrens en de band).
+   - Chemex: 42 g, een volle 6-kops (42 g / ~680 ml, 4–5 min; roaster-brewguides, klasse C);
+     Blue Bottle noemt 4–5 min ook voor een 8-kops.
+   smallAtOrBelow / largeAbove = waar de richting-hint begint:
+   - V60 klein: op de ondergrens van 15 g (Hoffmanns 1-kop: ondiep bed → fijner malen).
+   - V60 groot: boven Rao's 22 g (kan pas als D4-3 ooit doorgaat).
+   - Chemex klein: onder 60% van de referentie (buiten de band, zie tolerantie hieronder).
+   - Chemex groot: boven een volle 6-kops (Blue Bottle: 8-kops iets grover malen).
+   De band-tolerantie is bewust dezelfde 40% als LEARNING_VOLUME_TOLERANCE hierboven. */
+const BATCH_REFERENCE = {
+  v60:    { refDose: 18.5, smallAtOrBelow: 15, largeAbove: 22 },
+  chemex: { refDose: 42,   smallAtOrBelow: 42 * (1 - LEARNING_VOLUME_TOLERANCE), largeAbove: 42 }
+};
+function batchScaleFor(methodKey, dose){
+  const ref = BATCH_REFERENCE[methodKey];
+  if (!ref || !(dose > 0)) return { kind: 'normaal', judgeBand: true, refDose: ref ? ref.refDose : null };
+  const judgeBand = Math.abs(dose - ref.refDose) / Math.max(dose, ref.refDose) <= LEARNING_VOLUME_TOLERANCE + 1e-9;
+  const kind = dose <= ref.smallAtOrBelow + 1e-9 ? 'klein' : (dose > ref.largeAbove + 1e-9 ? 'groot' : 'normaal');
+  return { kind, judgeBand, refDose: ref.refDose };
+}
 
 function recipeGrindBaseline(entry){
   if (entry && entry.grindStand != null) return entry.grindStand;
@@ -11438,6 +11556,28 @@ function pendingAdjustForState(){
 function applyPendingAdjustToState(){
   const p = pendingAdjustForState();
   if (p && p.lever === 'dose' && typeof p.toValue === 'number') state.strengthAdjust = p.toValue;
+  // BP-C: een stap uit een bypass-kop test je op een bypass-kop met hetzelfde percentage
+  // (en een stap uit een gewone kop op een gewone kop) — anders vergelijk je twee opzetten.
+  if (p && p.bypassPct !== undefined && state.method === 'v60'){
+    state.bypass = p.bypassPct != null;
+    if (p.bypassPct != null) state.bypassPct = BYPASS_PCT_OPTIONS.includes(p.bypassPct) ? p.bypassPct : BYPASS_DEFAULT_PCT;
+  }
+}
+// BP-C: wijkt de huidige opzet af van de kop die de stap voorstelde? Dan telt de test niet
+// mee in de poort (isComparableSetup()) — de gebruiker hoort dat vooraf.
+function pendingAdjustSetupNote(p){
+  if (!p || p.bypassPct === undefined) return '';
+  const nowPct = state.bypass ? state.bypassPct : null;
+  if ((p.bypassPct != null) !== (nowPct != null) || (p.bypassPct != null && p.bypassPct !== nowPct)){
+    return p.bypassPct != null
+      ? `Deze stap kwam uit een kop met ${p.bypassPct}% bypass — zet bypass weer op ${p.bypassPct}%, anders telt deze test niet mee.`
+      : 'Deze stap kwam uit een kop zonder bypass — zet bypass uit, anders telt deze test niet mee.';
+  }
+  if (typeof p.waterMl === 'number' && typeof state.waterMl === 'number' && p.waterMl > 0 && state.waterMl > 0 &&
+      Math.abs(p.waterMl - state.waterMl) / Math.max(p.waterMl, state.waterMl) > LEARNING_VOLUME_TOLERANCE + 1e-9){
+    return `Deze stap kwam uit een kop van ${p.waterMl} ml — bij een veel andere hoeveelheid telt deze test niet mee.`;
+  }
+  return '';
 }
 // Context voor diagnose en advies, volledig afgeleid uit het record (dus ook na herladen).
 function diagnosisContextForRecord(rec){
@@ -11503,7 +11643,11 @@ function attachDiagnosisAndRecommendation(next, prev, nowMs){
     const src = getBrewRecord(applied.fromBrewId);
     if (src && src.recommendation){
       src.recommendation.status = 'tested';
-      src.recommendation.outcome = next.tasting && next.tasting.vsLast ? next.tasting.vsLast : null;
+      // BP-B: alleen een uitkomst als de testkop dezelfde opzet had als de kop die de stap
+      // voorstelde; anders zegt "beter/slechter" iets over de opzet, niet over de stap.
+      const comparable = isComparableSetup(src, next);
+      src.recommendation.outcome = comparable && next.tasting && next.tasting.vsLast ? next.tasting.vsLast : null;
+      if (comparable) delete src.recommendation.setupMismatch; else src.recommendation.setupMismatch = true;
       src.recommendation.testedByBrewId = next.id;
       upsertBrewRecord(src);
     }
@@ -11542,7 +11686,10 @@ function handleRecommendationClick(e){
   const bean = rec.beanId ? beanLibrary.find(b => b.id === rec.beanId) : null;
   if (e.target.closest('#reco-apply-btn') && bean){
     r.status = 'applied';
-    bean.pendingAdjust = { fromBrewId: rec.id, lever: r.lever, delta: r.delta, fromValue: r.fromValue, toValue: r.toValue, method: rec.plan.methodId, createdAt: Date.now() };
+    bean.pendingAdjust = { fromBrewId: rec.id, lever: r.lever, delta: r.delta, fromValue: r.fromValue, toValue: r.toValue, method: rec.plan.methodId, createdAt: Date.now(),
+      // BP-C: de opzet van de kop die de stap voorstelde, zodat de testkop dezelfde is.
+      bypassPct: rec.plan.bypass ? (rec.plan.bypass.pct != null ? rec.plan.bypass.pct : BYPASS_DEFAULT_PCT) : null,
+      waterMl: typeof rec.plan.waterMl === 'number' ? rec.plan.waterMl : null };
   } else if (e.target.closest('#reco-ignore-btn')){
     r.status = 'ignored';
     if (bean && bean.pendingAdjust && bean.pendingAdjust.fromBrewId === rec.id) delete bean.pendingAdjust;
@@ -11567,8 +11714,10 @@ function renderPrepNextAdjust(){
         ? `Maal op klik ${p.toValue} — ${n} klik${n === 1 ? '' : 'ken'} ${p.delta < 0 ? 'fijner' : 'grover'} dan je vorige kop (klik ${p.fromValue}).`
         : `Maal ${n} klik${n === 1 ? '' : 'ken'} ${p.delta < 0 ? 'fijner' : 'grover'} dan je vorige kop.`)
     : `${p.delta > 0 ? 'Een stap sterker (~8% meer koffie)' : 'Een stap lichter (~8% minder koffie)'} — hieronder al ingesteld.`;
+  const setupNote = pendingAdjustSetupNote(p);
   el.innerHTML = `<p class="prep-next-adjust-title">Jouw stap uit de vorige proefkaart</p>
     <p class="prep-next-adjust-text">${escapeHtml(text)}</p>
+    ${setupNote ? `<p class="prep-next-adjust-note" id="prep-next-adjust-setup">${escapeHtml(setupNote)}</p>` : ''}
     <p class="prep-next-adjust-note">Het recept hieronder toont het algemene startpunt; jouw stap gaat voor. Na het proeven vraagt de kaart of het beter was.</p>
     <button type="button" class="link-secondary" id="prep-next-adjust-cancel">Toch niet</button>`;
   el.hidden = false;
@@ -11771,11 +11920,26 @@ function renderPrep(){
   const statIconDose = `<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3c4 2 7 5.5 7 10a7 7 0 0 1-14 0c0-4.5 3-8 7-10Z"/></svg>`;
   const statIconTemp = `<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 14.5V4a2 2 0 1 0-4 0v10.5a4 4 0 1 0 4 0Z"/></svg>`;
   const statIconWater = `<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3c3 3.5 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7.5 6-11Z"/></svg>`;
+  // D2-1: dosis op de toestelgrens → zeggen, en (zonder sterkteknop) dat de ratio daardoor
+  // naar de rand van het doel schuift maar erbinnen blijft.
+  const doseEdgeSub = rec.doseEdge ? (rec.doseEdge.side === 'min' ? ' · ondergrens van dit toestel' : ' · bovengrens van dit toestel') : '';
+  const ratioEdgeSub = rec.doseEdge && !state.strengthAdjust
+    ? `<div class="stat-sub">${rec.doseEdge.side === 'min' ? 'iets sterker' : 'iets lichter'} dan het midden van je doel (nog binnen het doel)</div>` : '';
+  // D4-2: richting-hint bij duidelijk kleine/grote brouwsels — tekst, geen receptgetal.
+  const batchScale = batchScaleFor(state.method, rec.dose);
+  let batchHint = '';
+  if (batchScale.kind === 'klein'){
+    batchHint = state.method === 'v60'
+      ? 'kleine kop: loopt sneller door · begin aan de fijne kant · spoel de dripper heet voor'
+      : 'klein brouwsel: loopt sneller door · zuur? iets fijner · spoel de Chemex heet voor';
+  } else if (batchScale.kind === 'groot'){
+    batchHint = 'groot brouwsel: loopt trager door · traag en bitter? volgende keer iets grover';
+  }
   document.getElementById('stats-grid').innerHTML = `
     <div class="stat-block"${stockWarning ? ' style="border-color:var(--danger);"' : ''}>
       <div class="stat-label">${statIconDose}Gemalen koffie</div>
       <div class="stat-value">${fmt(rec.dose,1)} g</div>
-      <div class="stat-sub">voor ${rec.water} ml${state.strengthAdjust > 0 ? ' · een stap sterker' : state.strengthAdjust < 0 ? ' · een stap zwakker' : ''}</div>
+      <div class="stat-sub">voor ${rec.water} ml${state.strengthAdjust > 0 ? ' · een stap sterker' : state.strengthAdjust < 0 ? ' · een stap zwakker' : ''}${doseEdgeSub}</div>
       ${stockWarning}
     </div>
     <div class="stat-block">
@@ -11799,6 +11963,7 @@ function renderPrep(){
       <div class="stat-label">Ratio</div>
       <div class="stat-value">${rec.ratioText}</div>
       <div class="stat-sub">gram water per gram koffie</div>
+      ${ratioEdgeSub}
     </div>
     <div class="stat-block stat-block--secondary">
       <div class="stat-label">Maalgraad</div>
@@ -11806,6 +11971,7 @@ function renderPrep(){
       ${rec.grindShortContact ? `<div class="stat-sub">1 klik fijner: kort schema (${fmtTime(rec.totalTime)})</div>` : ''}
       ${rec.grindMicron == null && rec.grindStartingPoint != null && rec.grindStartingRange ? `<div class="stat-sub">start hier · klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} is het startgebied</div><div class="stat-sub">zuur en snel door? fijner · bitter en traag? grover</div>` : ''}
       ${rec.grindMicron == null && rec.grindStartingPoint == null && rec.grindBandLabel ? `<div class="stat-sub">${escapeHtml(rec.grindBandLabel)}</div>` : ''}
+      ${batchHint ? `<div class="stat-sub" id="batch-hint">${escapeHtml(batchHint)}</div>` : ''}
       <div class="stat-sub">${rec.grindMicron != null ? `stand ${rec.grindStand} · Timemore C3S Pro` : `Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}`}</div>
       ${grindMoreNotes.length ? `
       <button type="button" class="stat-more-toggle" id="grind-more-toggle" aria-expanded="false">Meer over deze maalstand ↓</button>
