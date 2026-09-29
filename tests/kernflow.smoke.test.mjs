@@ -1012,20 +1012,28 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
   // BIJGEWERKT (Fase 3): de 0–5-schuifregelaars zijn vervangen door de proefkaart. Dit
   // score-patroon-voorstel bestaat daardoor alleen nog voor oudere loggingen (Fase 4 vervangt
   // het door de diagnose op de nieuwe antwoorden). De test seedt daarom een schema 5-logging
-  // met scores, precies zoals de app die vóór Fase 3 schreef.
-  async function seedLegacyScoredLog(page, axisOverrides){
-    await page.evaluate((axisOverrides) => {
+  // met scores, precies zoals de app die vóór Fase 3 schreef. BC-26: de functie die het
+  // voorstel toen berekende (cuppingSuggestionFor) bestaat niet meer; de test geeft het
+  // bewaarde voorstel daarom letterlijk mee, zoals het in oude loggingen staat.
+  const LEGACY_SUGGESTIONS = {
+    onderextractie: { pattern: 'onderextractie', diagnose: 'Zuur hoog, zoetheid en body laag — kenmerkend voor onderextractie.',
+      voorstel: 'Twee klikken fijner malen bij de volgende kop met deze boon.', wijstNaarWaterprofiel: false },
+    vlak_waterbuffering: { pattern: 'vlak_waterbuffering', diagnose: 'Zuur, bitterheid en aftersmaak allemaal laag — een vlakke kop, mogelijk door waterbuffering (alkaliniteit) in plaats van de maalinstelling.',
+      voorstel: 'Controleer eerst je waterprofiel (met name alkaliniteit) voor je aan de molenstand draait.', wijstNaarWaterprofiel: true }
+  };
+  async function seedLegacyScoredLog(page, axisOverrides, suggestion){
+    await page.evaluate(([axisOverrides, suggestion]) => {
       const scores = {};
       CUPPING_AXES.forEach(a => { scores[a] = Math.round(RADAR_LEVELS / 2); });
       Object.assign(scores, axisOverrides);
       const bean = { id:'bean-f6', name:'F6 Boon', roastLevel:'medium', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:0 };
       const entry = { id:'log_f6', schemaVersion:5, timestamp: Date.now() - 3600000, beanId:'bean-f6', method:'v60', profile:'klassiek',
-        roast:'medium', waterMl:300, bypass:false, scores, note:'', suggestion: cuppingSuggestionFor(scores) };
+        roast:'medium', waterMl:300, bypass:false, scores, note:'', suggestion };
       localStorage.setItem('brewconsole_beans', JSON.stringify([bean]));
       localStorage.setItem('brewConsoleLog', JSON.stringify([entry]));
       localStorage.removeItem('brewconsole_brews');
       localStorage.removeItem('brewconsole_active_brew');
-    }, axisOverrides);
+    }, [axisOverrides, suggestion]);
     await page.reload({ waitUntil: 'load' });
   }
   async function goViaSeededBeanToPrep(page){
@@ -1045,7 +1053,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     const page = await newTrackedPage();
     await page.goto(FILE_URL, { waitUntil: 'load' });
     // Onderextractie-patroon (plantabel §Fase 6, rij 1): zuur hoog, zoet+body laag.
-    await seedLegacyScoredLog(page, { zuur: 3, zoet: 1, body: 1 });
+    await seedLegacyScoredLog(page, { zuur: 3, zoet: 1, body: 1 }, LEGACY_SUGGESTIONS.onderextractie);
     const goViaBeanToBatchStep = () => goViaSeededBeanToPrep(page);
 
     await page.click('.navbar [data-nav="brewlog-history"]');
@@ -1089,7 +1097,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.goto(FILE_URL, { waitUntil: 'load' });
     // Vlak/waterbuffering-patroon (plantabel §Fase 6, rij 4): zuur, bitter én aftersmaak laag.
     // BIJGEWERKT (Fase 3): als oudere score-logging geseed, zie seedLegacyScoredLog().
-    await seedLegacyScoredLog(page, { zuur: 1, bitter: 1, aftersmaak: 1 });
+    await seedLegacyScoredLog(page, { zuur: 1, bitter: 1, aftersmaak: 1 }, LEGACY_SUGGESTIONS.vlak_waterbuffering);
     await goViaSeededBeanToPrep(page);
 
     assert.ok(await page.locator('#prep-cupping-suggestion').isVisible());

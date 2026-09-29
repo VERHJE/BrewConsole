@@ -1008,7 +1008,7 @@
   .dial-live-grams, .dial-water{display:none;}
   .dial-step{font-family:var(--font-display); font-size:15px; color:var(--copper-light); margin-top:4px;}
   /* NIEUW: giet-voortgang (welke stap, hoeveelste giet van hoeveel) + lopend totaal —
-     zie renderBrewFocusInfo() in de JS. */
+     zie updateDial() in de JS. */
   .brew-focus-info{margin:0 0 4px;}
   .brew-pour-badge{
     display:inline-block; background:var(--copper); color:#1B1310;
@@ -1063,7 +1063,7 @@
      step"-knop — die functionaliteit bestaat niet in de app en zou nieuwe interactielogica
      zijn; ook geen swipe-gesture (evenmin bestaande logica).
      HERZIEN (focus-herontwerp): de vroegere Pauze/Hervat-tekstwissel via textContent is
-     vervangen door setPauseBtnLabel() (pauzeTimer()/runTimer()/resetTimer() roepen die nu
+     vervangen door setPauseBtnLabel() (pauseTimer()/runTimer()/resetTimer() roepen die nu
      aan i.p.v. rechtstreeks textContent te zetten) — toont nu een ⏸/▶-icoon met een
      sr-only tekstlabel i.p.v. zichtbare tekst. De knopstaat/timing/click-handler zelf
      (welke functie wanneer welke staat zet) is ongewijzigd, alleen hóe die staat visueel
@@ -2393,8 +2393,8 @@
         </div>
       </div>
       <!-- NIEUW (Implementatieplan Zetadvies v3.0, Fase 6): het voorstel voor de VOLGENDE
-           kop, afgeleid uit de cupping-scores van je laatste logging met deze boon — zie
-           cuppingSuggestionFor(). Bewust een apart blok van prep-history-insight hierboven:
+           kop, zoals bewaard op je laatste logging met deze boon (alleen oude loggingen met
+           cupping-sliders hebben er een, BC-26). Bewust een apart blok van prep-history-insight hierboven:
            dat blok is een kaal feit ("je score lag hoger"), dit blok is expliciet een
            hypothese om te toetsen, nooit automatisch toegepast op het recept hieronder. -->
       <div class="profile-twin-banner" id="prep-cupping-suggestion" hidden>
@@ -2719,7 +2719,7 @@
       <!-- NIEUW (Implementatieplan Bypass v1.0, Fase B/C, BP-5/"proef-en-vul"): wat er
            écht is toegevoegd, voor de vergelijking met het geplande bedrag (rec.bypassMl)
            — alleen zichtbaar als deze logging daadwerkelijk met bypass gezet is, zie
-           renderBrewLogHonestSummary()/openBrewlogScreen() voor de hidden-toggle. -->
+           renderBrewLogHonestSummary()/openBrewLogEntry() voor de hidden-toggle. -->
       <div id="brewlog-bypass-actual-block" hidden>
         <label for="brewlog-bypass-actual" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Werkelijk toegevoegd bypass-water <span style="text-transform:none; letter-spacing:0;" id="brewlog-bypass-actual-hint">(optioneel, gram)</span></label>
         <input type="number" id="brewlog-bypass-actual" class="form-input" min="0" max="2000" step="1" style="max-width:220px;">
@@ -2743,7 +2743,7 @@
          (nu met een targetId-parameter) — geen nieuwe telling-logica, puur een tweede
          plek waar dezelfde functie naar rendert. "Favorieten" is een klein, nieuw,
          zelfstandig boolean-veld per brewLog-entry (entry.favorite, via
-         toggleBrewLogFavorite() + de al bestaande saveBrewLogToStorage()) — geen ander
+         toggleBrewLogFavorite() + persistBrewStore()) — geen ander
          databronveld aangeraakt. -->
     <section class="screen" id="screen-brewlog-history" data-screen="brewlog-history">
       <button class="back-btn" data-back="beans">← Mijn bonen</button>
@@ -4267,16 +4267,11 @@ function resolvedOverlayIdFor(profileKey, methodKey){
   if (!ov) return null;
   return typeof ov === 'string' ? ov : (ov[methodKey] || null);
 }
-function profileRecipeSignature(profileKey, methodKey){
-  const entry = ENGINE_PROFILE_MAP[profileKey];
-  if (!entry) return null;
-  return entry.cluster + '::' + (resolvedOverlayIdFor(profileKey, methodKey) || 'NONE');
-}
 /* Geeft alle ANDERE profielsleutels die voor deze methode dezelfde signature hebben
    (dus een garandeerd identiek recept), beperkt tot profielen die op dit scherm
    sowieso al zichtbaar zijn (methodOnly-filter, zie renderProfileGrid()). */
-/* FIX (Reparatieplan v4.0, B-4 / bevinding E-09): profileRecipeSignature() vergelijkt het
-   GEMAPTE overlay-id, niet het GEGENEREERDE recept. Daardoor bleven sirooprig_vol
+/* FIX (Reparatieplan v4.0, B-4 / bevinding E-09): de oude profileRecipeSignature() (BC-26:
+   verwijderd) vergeleek het GEMAPTE overlay-id, niet het GEGENEREERDE recept. Daardoor bleven sirooprig_vol
    (FULLER::NONE) en evenwichtig_flex (FULLER::HEDRICK_1_2_1) onopgemerkt als tweeling,
    terwijl ze byte-identieke recepten opleveren — Hedrick is namelijk nooit generatable,
    dus evenwichtig_flex valt in de praktijk altijd terug op Core-only. Precies het defect
@@ -4607,10 +4602,8 @@ function altitudeNudge(masl){
    verhoogt: harder water trekt sneller/meer uit bij gelijke temperatuur, zachter water minder.
    Gebrond: de hardheidsgrenzen zelf én de extractierichting (harder → sneller/sterker,
    zachter → langzamer/zwakker). NIET gebrond: er bestaat geen gepubliceerde tabel die mg/L
-   rechtstreeks naar graden Celsius vertaalt — de concrete stapgrootte hieronder is een eigen,
-   voorzichtige toepassing van dat extractieprincipe, net als bij altitudeNudge()/
-   freshnessTierForDays() hierboven. (Vroeger: harder water iets kouder zetten, zachter water
-   iets heter — die correctie bestaat niet meer.)
+   rechtstreeks naar graden Celsius vertaalt — daarom bestaat de vroegere stapgrootte (harder
+   water iets kouder zetten, zachter water iets heter) niet meer.
 
    C6 (koffie-expertpanel, Petra): bewuste vereenvoudiging — dit modelleert alleen algemene
    hardheid (calcium/magnesium), niet alkaliniteit (bicarbonaat, de bufferende werking tegen
@@ -4621,11 +4614,10 @@ function altitudeNudge(masl){
 
    UPDATE (Implementatieplan Zetadvies v3.0, Fase 4a): de oorspronkelijke keuze hierboven
    ("geen tweede invoerveld toegevoegd... te veel gevraagd") is bewust teruggedraaid — er
-   is nu wél een los alkaliniteitsveld (zie alkalinityNudge() hieronder en de HTML). Deze
-   functie (hardnessNudge) blijft ONGEWIJZIGD hardheid-only, om het bestaande, geteste
-   recept-niveau gedrag (rec.hardnessNote) niet aan te raken; het nieuwe waterprofiel-paneel
-   (renderWaterHardnessInput()) roept beide functies apart aan voor zijn EIGEN, per-
-   parameter oordeel (B-5) — nooit een samengevoegd "water is goed"-signaal. */
+   is nu wél een los alkaliniteitsveld (zie HCO3_TO_CACO3_FACTOR hieronder en de HTML). Deze
+   functie (hardnessNudge) blijft hardheid-only (rec.hardnessNote); het waterprofiel-paneel
+   (renderWaterHardnessInput()) geeft per parameter een EIGEN oordeel via waterSCAVerdict()
+   (B-5) — nooit een samengevoegd "water is goed"-signaal. */
 /* FIX (project-brede audit, vinding H7/hardnessNudge): waterhardheid gaf hier voorheen
    een temperatuurcorrectie — een FORBIDDEN edge (generalHardnessGH mag een recept-
    getal structureel niet meer sturen). Hardheid wordt nog genoteerd en tegen de SCA-
@@ -4640,22 +4632,12 @@ function hardnessNudge(mgPerL){
     note:`Waterhardheid genoteerd (${h} mg/L CaCO3, ${rangeNote}) — past de zettemperatuur hierboven niet aan. Er is geen gevalideerde hardheid-naar-temperatuur-aanpassing gevonden in het eigen onderzoek van dit project; waterhardheid mag dat structureel niet meer beïnvloeden.` };
 }
 
-// NIEUW (Implementatieplan Zetadvies v3.0, Fase 4a): alkaliniteit apart van hardheid,
-// zelfde FORBIDDEN-edge-discipline als hardnessNudge()/altitudeNudge() (temp:0, alleen
-// genoteerd). Omrekening HCO3→CaCO3-equivalent: ×0,82 (standaard stoichiometrische
-// omrekeningsfactor, zie SCA Water Quality Standard / Handbook 310-2021).
+// NIEUW (Implementatieplan Zetadvies v3.0, Fase 4a): alkaliniteit apart van hardheid, alleen
+// genoteerd en tegen de SCA-richtwaarde (40–70 mg/L CaCO3) afgezet in het waterpaneel
+// (waterSCAVerdict()) — stuurt geen receptgetal. Omrekening HCO3→CaCO3-equivalent: ×0,82
+// (standaard stoichiometrische omrekeningsfactor, zie SCA Water Quality Standard / Handbook
+// 310-2021).
 var HCO3_TO_CACO3_FACTOR = 0.82;
-function alkalinityNudge(value, unit){
-  const v = Number(value);
-  if (value == null || value === '' || isNaN(v)) return { temp:0, mgLCaCO3:null, note:'' };
-  const mgLCaCO3 = unit === 'HCO3' ? v * HCO3_TO_CACO3_FACTOR : v;
-  const rangeNote = mgLCaCO3 > 70 ? 'boven de SCA-richtwaarde (40–70 mg/L CaCO3)'
-    : mgLCaCO3 < 40 ? 'onder de SCA-richtwaarde (40–70 mg/L CaCO3)'
-    : 'binnen de SCA-richtwaarde (40–70 mg/L CaCO3)';
-  const unitNote = unit === 'HCO3' ? ` (ingevoerd als ${fmt(v,0)} mg/L HCO3, omgerekend ×${HCO3_TO_CACO3_FACTOR})` : '';
-  return { temp:0, mgLCaCO3,
-    note:`Alkaliniteit ${fmt(mgLCaCO3,0)} mg/L CaCO3-equivalent${unitNote}, ${rangeNote} — past de zettemperatuur niet aan; net als hardheid mag dit de receptgetallen structureel niet beïnvloeden.` };
-}
 
 // NIEUW (Implementatieplan Zetadvies v3.0, Fase 4c, B-6): verdunning kraan:demi is PURE
 // rekenkunde op het effectieve waterprofiel — nooit een receptinvloed. Gedemineraliseerd
@@ -5458,7 +5440,7 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   // dosis ná generateCandidates()'s constraint-check, waardoor V60_DOSE_CEILING (een
   // INHERITED_HARD_CONSTRAINT, tier HARD) door een UI-knop overschreden kon worden —
   // 23,7 g bij 380 ml/+1, 14,1 g bij 265 ml/-1. Dezelfde klasse defect als D-2. De klem
-  // hieronder is het vangnet; renderStrengthChips() schakelt de chip bovendien uit zodra
+  // hieronder is het vangnet; renderStrengthToggle() schakelt de chip bovendien uit zodra
   // hij toch niets zou opleveren, zodat dit zelden hoeft te vuren. GEEN stille
   // substitutie: als er geklemd wordt, staat dat in strengthNote.
   let strengthClamped = false;
@@ -5957,9 +5939,6 @@ function renderAdviceChips(){
   // krijgen — displayScoreFor() gaf ze altijd stilzwijgend 0 terug, wat een onzichtbare
   // 0/5-sterrenrij rendert die oogt als kapot i.p.v. "dit is geen smaakwiel-categorie".
   // Voor die knoppen expliciet geen sterrenrij i.p.v. een altijd-nul score te tonen.
-  // HERAUDIT (smaakwiel-scoring): percentages tonen naast de sterren — het exacte,
-  // herleidbare getal (bv. "62%") in plaats van alleen een visuele indicatie. Zie
-  // profileScorePercentages() voor de precieze berekening (puur informatief).
   // HERAUDIT (bijna-gelijke-stand): bij een echte bijna-gelijke stand (zie
   // profileNearTieCandidates()) wordt adviceState.profile hier bewust NIET vooringevuld
   // vanuit bean.profileKey — er wordt geen keuze voor de gebruiker gemaakt. Zodra de
@@ -7346,9 +7325,9 @@ function classifyProfile(selectedTags, extraText, processValue, experimentalFlag
   /* B2 (koffie-expertpanel, Rik): dit blokje gaf altijd een vast +1, ongeacht hoe intens het
      fermentatieproces was — een subtiele anaerobic-lot en een dubbel-gefermenteerde
      experimentele lot scoorden identiek. experimentalFlag is dezelfde vlag die elders in de
-     app (bypassAdvice/bypassGrindTempAdjust) al als het sterkste fermentatie-intensiteit-
-     signaal gold (vóór audit H7 liep het door naar 37,5% bypass; het bypass-percentage is
-     sindsdien een expliciete gebruikerskeuze van 20/30/40%) — hergebruikt hier voor dezelfde
+     app al als het sterkste fermentatie-intensiteit-signaal gold (vóór audit H7 stuurde het
+     ook het bypass-percentage; dat is sindsdien een expliciete gebruikerskeuze van
+     20/30/40%) — hergebruikt hier voor dezelfde
      onderscheiding i.p.v. een nieuw, ongebrond wegingsmodel te verzinnen. */
   if (PROCESS_PROFILE_BOOST[processValue]) scores[PROCESS_PROFILE_BOOST[processValue]] += experimentalFlag ? 2 : 1;
   // Honey-subtype-verfijning (proces-heraudit, zie HONEY_SUBTYPE_TEXT_HINTS hierboven):
@@ -7444,25 +7423,6 @@ function profileMatchStars(score){
   if (score == null) return null;
   const raw = clamp((score / PROFILE_STAR_SCALE) * 5, 0, 5);
   return Math.round(raw * 2) / 2; // afgerond op halve sterren
-}
-/* HERAUDIT (smaakwiel-scoring): sterren geven een snel visueel gevoel, maar niet het
-   exacte "hoe dicht bij elkaar"-getal waar bv. een bijna-gelijke stand (twee profielen
-   allebei ~3,5 ster) om vraagt. Percentage = het aandeel van dit profiel (via
-   displayScoreFor(), dus mét de klassiek/vol_rond-samenvoeging) in de SOM van alle 5
-   classifyProfile()-scores — dezelfde brontelling als de sterren, nu ook als herleidbaar
-   getal. Puur informatief: verandert niets aan welk recept wordt gegenereerd, dat blijft
-   de hoogste-score-winnaar uit classifyProfile(). Bij total 0 (geen enkele match) geeft
-   dit null terug voor elk profiel, net als profileMatchStars(null). */
-function profileScorePercentages(scores){
-  if (!scores) return null;
-  const total = Object.values(scores).reduce((a,b)=>a+(b||0), 0);
-  if (total <= 0) return null;
-  const result = {};
-  visibleProfileKeys().forEach(k=>{
-    if (PROFILE_TECHNIQUE_ONLY_KEYS.includes(k)) return;
-    result[k] = Math.round((displayScoreFor(scores, k) / total) * 100);
-  });
-  return result;
 }
 /* HERAUDIT (bijna-gelijke-stand): classifyProfile() koos voorheen altijd stilzwijgend de
    hoogste score als winnaar, ook wanneer een tweede profiel er vlak achteraan kwam (bv.
@@ -7869,10 +7829,10 @@ function renderAdviceOutcomeSection(st){
 }
 // NIEUW (Visual Design 2.0 fase 2, Geschiedenis-tabs): optionele targetId-parameter zodat
 // dezelfde functie/tellingen ook in de nieuwe "Statistieken"-tab (Geschiedenis-scherm)
-// kunnen renderen, i.p.v. een tweede kopie van deze functie te onderhouden. Standaard
-// (geen argument) ongewijzigd gedrag: #insights-body op het losse Inzichten-scherm.
+// kunnen renderen, i.p.v. een tweede kopie van deze functie te onderhouden. Het losse
+// Inzichten-scherm is vervallen; #history-stats-body is nu het enige doel.
 function renderInsightsScreen(targetId){
-  const el = document.getElementById(targetId || 'insights-body');
+  const el = document.getElementById(targetId || 'history-stats-body');
   if (!el) return;
   if (!brewLog.length){
     el.innerHTML = `<div class="insights-empty">Nog geen brouwsels gelogd. Zodra je een brouwsel afrondt en logt, verschijnen hier je eigen tellingen — geen trend of voorspelling zolang daar te weinig data voor is.</div>`;
@@ -10063,123 +10023,10 @@ function personalHistoryInsight(beanId){
   return { ...biggest, priorCount: prior.length };
 }
 
-/* ============================================================
-   NIEUW (Implementatieplan Zetadvies v3.0, Fase 6) — "Van proeven naar de volgende
-   aanpassing": koppelt de zeven cupping-sliders (die tot nu toe alleen bewaard werden,
-   nooit teruggelezen buiten personalHistoryInsight() hierboven) aan één concreet,
-   deterministisch voorstel voor de VOLGENDE kop.
-
-   Ontwerpbeslissing (scope, vast te leggen in Bouwbesluiten_v3.md): het plan hergebruikt
-   expliciet "de drempel van 1 punt die personalHistoryInsight() al hanteert als grens
-   tussen ruis en patroon" — personalHistoryInsight() past die drempel toe op het verschil
-   met iemands EIGEN historische gemiddelde (longitudinaal, minstens 2 loggings nodig).
-   De tabel in het plan ("zuur hoog", "zoet laag" etc.) beoordeelt echter ÉÉN losse
-   logging, niet een trend — er is dus geen historisch gemiddelde om tegen af te zetten.
-   Dezelfde 1-punts-drempel wordt hier daarom toegepast op de afstand tot het MIDDEN van de
-   0–4-schaal (2): een score van 3 of hoger is "hoog", 1 of lager is "laag" — exact dezelfde
-   grootte drempel, alleen tegen een vast referentiepunt in plaats van een gemiddelde. Dat
-   is een bewuste, gedocumenteerde toepassing van hetzelfde principe, geen nieuwe aanname.
-
-   "Eén voorstel per keer": de vier patronen worden in de volgorde van de plantabel
-   gecontroleerd en de EERSTE match wint — er wordt nooit meer dan één voorstel
-   teruggegeven. "Nooit automatisch toegepast": deze functie retourneert puur tekst, ze
-   raakt geen enkel receptveld. "Altijd gelabeld als hypothese": zie renderPrep() en
-   renderBrewLogHistory() hieronder, die het altijd met dat woord tonen.
-
-   Spanning met het bestaande ontwerpprincipe hierboven: de code-comment bij
-   personalHistoryInsight() zegt expliciet dat een "ad-hoc axis-naar-aanpassing-tabel op
-   app-niveau" het principe "nooit een aanbeveling zonder evidence-onderbouwing" zou
-   schenden — precies wat deze functie is. Het Implementatieplan Zetadvies v3.0 vraagt die
-   tabel nu bewust wél, en de randvoorwaarden hierboven ("nooit automatisch toegepast",
-   "altijd gelabeld als hypothese die je toetst, niet als bewezen correctie", "vuurt alleen
-   ná loggen") zijn precies de vangrails die dat oudere principe alsnog respecteren: dit is
-   geen aanbeveling die als bewezen wordt gepresenteerd, maar een zichtbaar-ongeteste
-   hypothese die de gebruiker zelf moet toetsen. Zie Bouwbesluiten_v3.md voor deze
-   afweging.
-
-   B-3 ("elk vertrekpunt-getal wordt gelogd en is achteraf toetsbaar"): het voorstel wordt
-   in saveBrewLogEntry() op de logging zelf bewaard (entry.suggestion), niet los. De
-   "uitkomst" is daarmee altijd achteraf toetsbaar: de eerstvolgende logging voor dezelfde
-   boon bevat (sinds Fase 5) zijn eigen werkelijk-gebruikte maalstand en scores, dus is met
-   de twee loggings naast elkaar in de Historie precies te zien of het voorstel is
-   opgevolgd en wat dat opleverde — zonder dat deze build zelf al automatisch "geslaagd/
-   mislukt" beoordeelt (dat vereist een aanname over wat "beter" betekent, die dit plan
-   bewust niet maakt; Fase 7 doet dat pas, en dan nog steeds als optelling, geen oordeel).
-   ============================================================ */
-const CUPPING_NOISE_THRESHOLD = 1; // zelfde grootte als personalHistoryInsight()
-// FIX: bewust een letterlijke 2, GEEN "RADAR_LEVELS / 2" — RADAR_LEVELS wordt pas verderop
-// in dit script-blok gedeclareerd (const, temporal dead zone) en deze regel loopt bij het
-// laden van de pagina eerder, wat een "Cannot access 'RADAR_LEVELS' before initialization"
-// zou geven en de HELE rest van het app-script zou laten crashen (geen enkele knop zou
-// nog werken). 2 is en blijft het midden van dezelfde 0-4-cupping-schaal die RADAR_LEVELS=4
-// elders al vastlegt.
-const CUPPING_SCALE_CENTER = 2; // = het midden van de 0-4-schaal (RADAR_LEVELS/2)
-function cuppingAxisLevel(scores, axis){
-  const v = scores ? scores[axis] : null;
-  if (v == null || isNaN(v)) return null;
-  if (v - CUPPING_SCALE_CENTER >= CUPPING_NOISE_THRESHOLD) return 'hoog';
-  if (CUPPING_SCALE_CENTER - v >= CUPPING_NOISE_THRESHOLD) return 'laag';
-  return 'midden';
-}
-// De "alles laag"-controle voor het te-zwak-patroon gebruikt bewust dezelfde zes assen als
-// personalHistoryInsight() se COMPARABLE_AXES (balans telt apart, als afgeleide as).
-const CUPPING_PRIMARY_AXES = ['aroma','zuur','zoet','body','bitter','aftersmaak'];
-function cuppingSuggestionFor(scores){
-  if (!scores) return null;
-  const lvl = (axis) => cuppingAxisLevel(scores, axis);
-  /* FIX (Reparatieplan v4.0, C-4 / bevinding E-13): onderextractie eiste drie assen
-     tegelijk (zuur hoog EN zoet laag EN body laag) en dekte daarmee 6,4% van de
-     scoreruimte, tegen 15,0% voor overextractie met twee assen. Een klassiek
-     onderextraheerde lichte branding scoort vaak hoog op zuur en laag op body, maar
-     MIDDEN op zoetheid — en viel dan door de mazen. 'zoet laag' wordt daarom
-     'zoet niet hoog'. Gemeten effect: 6,4% -> 8,1% dekking.
-     Tegelijk: door de verbreding kunnen onder- en overextractie nu allebei matchen op
-     dezelfde logging. Dat is een tegenstrijdig signaal, geen diagnose — de app kiest daar
-     niet tussen (PDR §30: conflicterend bewijs niet middelen of wegkiezen) maar zegt het. */
-  const onder = lvl('zuur') === 'hoog' && lvl('body') === 'laag' && lvl('zoet') !== 'hoog';
-  const over  = lvl('bitter') === 'hoog' && lvl('aftersmaak') === 'hoog';
-  if (onder && over){
-    return {
-      pattern: 'gemengd_signaal',
-      diagnose: 'De scores wijzen tegelijk op onderextractie (hoog zuur, lage body) en op overextractie (hoge bitterheid, lange aftersmaak).',
-      voorstel: 'Verander de maalstand deze keer NIET. Zet dezelfde boon nog een keer op precies hetzelfde recept en log opnieuw — een van beide signalen verdwijnt dan meestal. Draaien aan de molen op een tegenstrijdig signaal maakt het beeld alleen troebeler.',
-      wijstNaarWaterprofiel: false
-    };
-  }
-  if (onder){
-    return {
-      pattern: 'onderextractie',
-      diagnose: 'Zuur hoog, zoetheid en body laag — kenmerkend voor onderextractie.',
-      voorstel: 'Twee klikken fijner malen bij de volgende kop met deze boon.',
-      wijstNaarWaterprofiel: false
-    };
-  }
-  if (over){
-    return {
-      pattern: 'overextractie',
-      diagnose: 'Bitterheid hoog en een lange, droge aftersmaak — kenmerkend voor overextractie.',
-      voorstel: 'Twee klikken grover malen bij de volgende kop met deze boon.',
-      wijstNaarWaterprofiel: false
-    };
-  }
-  if (CUPPING_PRIMARY_AXES.every(a => lvl(a) === 'laag') && lvl('balans') === 'hoog'){
-    return {
-      pattern: 'te_zwak',
-      diagnose: 'Alle smaakassen laag in intensiteit, met een hoge balansscore — dat wijst op een te zwakke kop, niet op een verkeerde extractie.',
-      voorstel: 'Iets meer dosis op dezelfde hoeveelheid water bij de volgende kop met deze boon (kortere ratio) — laat het water gelijk.',
-      wijstNaarWaterprofiel: false
-    };
-  }
-  if (lvl('zuur') === 'laag' && lvl('bitter') === 'laag' && lvl('aftersmaak') === 'laag'){
-    return {
-      pattern: 'vlak_waterbuffering',
-      diagnose: 'Zuur, bitterheid en aftersmaak allemaal laag — een vlakke kop, mogelijk door waterbuffering (alkaliniteit) in plaats van de maalinstelling.',
-      voorstel: 'Controleer eerst je waterprofiel (met name alkaliniteit) voor je aan de molenstand draait.',
-      wijstNaarWaterprofiel: true
-    };
-  }
-  return null;
-}
+/* BC-26: de Fase 6-hypothese uit de zeven cupping-sliders (cuppingSuggestionFor()) is
+   verwijderd — de proefkaart + diagnoseTasting()/recommendNext() (Fase 3/4) nemen die rol
+   over. Oude loggingen houden hun bewaarde entry.suggestion; renderPrep() toont die nog
+   alleen-lezen als "hypothese om te toetsen". */
 
 /* ============================================================
    NIEUW (Implementatieplan Zetadvies v3.0, Fase 7) — "Het boontype-model": een correctie
@@ -10187,8 +10034,8 @@ function cuppingSuggestionFor(scores){
    verwerkings-bucket × methode), zodat hij overdraagbaar is naar een zak die nog nooit
    gekocht is. Wat hier wordt opgeslagen/berekend is de CORRECTIE (gemiddeld X klikken
    fijner/grover dan het vertrekpunt), nooit het recept zelf — dit past dus geen enkel
-   receptveld automatisch aan, exact zoals cuppingSuggestionFor() hierboven dat ook niet
-   doet, en om dezelfde reden (project-identiteit: nooit een aanbeveling die zichzelf als
+   receptveld automatisch aan, net zoals het advies uit de proefkaart (recommendNext()) dat
+   ook niet doet, en om dezelfde reden (project-identiteit: nooit een aanbeveling die zichzelf als
    bewezen presenteert zonder dat de gebruiker het zelf toetst).
 
    "Vertrekpunt": de plantekst ("gemiddeld twee klikken fijner dan het vertrekpunt")
@@ -13379,7 +13226,7 @@ document.getElementById('theme-toggle').addEventListener('click', ()=>{
    WATERPROFIEL — vaste eigenschap van iemands kraanwater, niet iets
    dat per zet/boon wisselt. Daarom net als het thema los onthouden
    (niet in `state`, die per methode/boon reset). Zie hardnessNudge()/
-   alkalinityNudge() hierboven voor de bronvermelding van de mg/L-drempels.
+   HCO3_TO_CACO3_FACTOR hierboven voor de bronvermelding van de mg/L-drempels.
 
    UPDATE (Implementatieplan Zetadvies v3.0, Fase 4, persistentie-eis): de opslag onder
    'brewconsole_water_hardness' is nu een JSON-waterprofiel-object (hardheid + alkaliniteit
@@ -13520,17 +13367,16 @@ if (backupImportBtn && backupImportFile){
   });
 }
 // NIEUW (Visual Design 2.0 fase 2, Instellingen-scherm "Data"-sectie): een ECHTE reset-
-// functie — wist alleen de twee bestaande gebruikers-databronnen (bonen + brouwlogboek),
-// exact dezelfde localStorage-sleutels als loadBeans()/saveBrewLogToStorage() hierboven,
-// en herlaadt de pagina. Na het wissen valt de app terug op de bestaande, al-geteste
+// functie — wist de gebruikersdata (bonen, brouwsels incl. het oude logboek en een lopend
+// brouwsel, blinde proeven), exact de localStorage-sleutels die loadBeans()/loadBrewLog()/
+// loadAbTrials() lezen, en herlaadt de pagina. Na het wissen valt de app terug op de bestaande, al-geteste
 // seed-bonen-fallback (zie de adversarial-robustness-tests voor corrupte/lege
 // localStorage) — geen nieuw "leeg"-pad nodig, hergebruikt puur wat er al is. Thema-
 // voorkeur (brewconsole_theme) blijft bewust ongemoeid: dat is geen "data" in de zin van
 // deze sectie, en onverwacht van thema wisselen bij een reset zou verrassend zijn.
 function resetAppData(){
   // FIX (Pagina-Polish-spec §7.5, self-caught tijdens verificatie): de tekst beweerde
-  // "en instellingen" te wissen, maar hieronder worden uitsluitend brewconsole_beans en
-  // BREW_LOG_KEY verwijderd — thema (spec §7.5: "blijft ongemoeid") en waterprofiel
+  // "en instellingen" te wissen, maar hieronder wordt alleen data verwijderd — thema (spec §7.5: "blijft ongemoeid") en waterprofiel
   // blijven bewust staan. De tekst moest exact matchen wat er werkelijk gebeurt, anders
   // is dit zelf een voorbeeld van de "fake"/overclaimende tekst die deze hele spec net
   // wil voorkomen.

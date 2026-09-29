@@ -578,16 +578,8 @@ describe('Waterprofiel — alkaliniteit, verdunning, per-parameter oordeel (Impl
     assert.match(api.hardnessNudge(128).note, /50–175 mg\/L/);
   });
 
-  test('alkalinityNudge() is ook een FORBIDDEN edge: altijd temp:0, nooit een receptinvloed', () => {
-    assert.equal(api.alkalinityNudge(50, 'CaCO3').temp, 0);
-    assert.equal(api.alkalinityNudge(200, 'HCO3').temp, 0);
-    assert.equal(api.alkalinityNudge(null, 'CaCO3').temp, 0);
-  });
-
   test('HCO3→CaCO3-omrekening gebruikt exact de gedocumenteerde factor 0,82', () => {
     assert.equal(api.HCO3_TO_CACO3_FACTOR, 0.82);
-    const result = api.alkalinityNudge(100, 'HCO3');
-    assert.ok(Math.abs(result.mgLCaCO3 - 82) < 1e-9, `100 mg/L HCO3 moet 82 mg/L CaCO3-equivalent geven, kreeg ${result.mgLCaCO3}`);
   });
 
   test('waterSCAVerdict() geeft drie losse, correcte uitspraken (onder/binnen/boven), nooit een samengevoegd oordeel', () => {
@@ -626,79 +618,6 @@ describe('RECORD_SCHEMA_VERSION — schema v2 t/m v5 (Implementatieplan Zetadvie
     // tests/kernflow.smoke.test.mjs — deze pure-logic-check bewaakt alleen het versiegetal
     // zelf, zodat een toekomstige per-ongeluk-terugdraai meteen opvalt.
     assert.equal(api.RECORD_SCHEMA_VERSION, 5);
-  });
-});
-
-describe('cuppingSuggestionFor() — proef-naar-voorstel-mapping (Implementatieplan Zetadvies v3.0, Fase 6)', () => {
-  const SCALE = { L: 1, MID: 2, H: 3 }; // laag / midden / hoog op de 0-4-schaal (drempel 1 punt)
-  function scoresWith(overrides){
-    const base = { aroma: SCALE.MID, zuur: SCALE.MID, zoet: SCALE.MID, body: SCALE.MID, bitter: SCALE.MID, aftersmaak: SCALE.MID, balans: SCALE.MID };
-    return Object.assign(base, overrides);
-  }
-
-  test('cuppingAxisLevel(): drempel van 1 punt t.o.v. het midden (2) van de 0-4-schaal', () => {
-    assert.equal(api.CUPPING_SCALE_CENTER, 2);
-    assert.equal(api.CUPPING_NOISE_THRESHOLD, 1);
-    assert.equal(api.cuppingAxisLevel({ zuur: 3 }, 'zuur'), 'hoog');
-    assert.equal(api.cuppingAxisLevel({ zuur: 2 }, 'zuur'), 'midden');
-    assert.equal(api.cuppingAxisLevel({ zuur: 1 }, 'zuur'), 'laag');
-    assert.equal(api.cuppingAxisLevel({ zuur: 4 }, 'zuur'), 'hoog');
-    assert.equal(api.cuppingAxisLevel({ zuur: 0 }, 'zuur'), 'laag');
-    assert.equal(api.cuppingAxisLevel({}, 'zuur'), null, 'ontbrekende score blijft eerlijk null, geen verzonnen niveau');
-  });
-
-  test('Patroon 1 — zuur hoog + zoet laag + body laag → onderextractie, twee klikken fijner', () => {
-    const s = api.cuppingSuggestionFor(scoresWith({ zuur: SCALE.H, zoet: SCALE.L, body: SCALE.L }));
-    assert.ok(s, 'verwacht een match');
-    assert.equal(s.pattern, 'onderextractie');
-    assert.match(s.voorstel, /fijner/);
-  });
-
-  test('Patroon 2 — bitter hoog + aftersmaak hoog → overextractie, twee klikken grover', () => {
-    const s = api.cuppingSuggestionFor(scoresWith({ bitter: SCALE.H, aftersmaak: SCALE.H }));
-    assert.ok(s);
-    assert.equal(s.pattern, 'overextractie');
-    assert.match(s.voorstel, /grover/);
-  });
-
-  test('Patroon 3 — alle smaakassen laag + balans hoog → te zwak, meer dosis bij gelijk water', () => {
-    const s = api.cuppingSuggestionFor(scoresWith({
-      aroma: SCALE.L, zuur: SCALE.L, zoet: SCALE.L, body: SCALE.L, bitter: SCALE.L, aftersmaak: SCALE.L, balans: SCALE.H
-    }));
-    assert.ok(s);
-    assert.equal(s.pattern, 'te_zwak');
-    assert.match(s.voorstel, /dosis/);
-    assert.doesNotMatch(s.voorstel, /water(hoeveelheid)? (aan|ver)passen|meer water|minder water/i, 'water moet nadrukkelijk gelijk blijven, dit is geen watervoorstel');
-  });
-
-  test('Patroon 4 — zuur laag + bitter laag + aftersmaak laag (en balans niet hoog) → vlak/waterbuffering, verwijst naar waterprofiel', () => {
-    const s = api.cuppingSuggestionFor(scoresWith({ zuur: SCALE.L, bitter: SCALE.L, aftersmaak: SCALE.L, balans: SCALE.MID }));
-    assert.ok(s);
-    assert.equal(s.pattern, 'vlak_waterbuffering');
-    assert.equal(s.wijstNaarWaterprofiel, true);
-  });
-
-  test('Eén voorstel per keer: als zowel "te zwak" als "vlak/waterbuffering" tegelijk zouden matchen, wint de tabelvolgorde (te zwak eerst)', () => {
-    // Alle assen laag + balans hoog voldoet óók aan patroon 4 (zuur/bitter/aftersmaak laag)
-    // — de plantabel geeft geen expliciete tie-break, dus deze functie kiest bewust de
-    // volgorde uit de tabel zelf en geeft nooit twee voorstellen tegelijk.
-    const s = api.cuppingSuggestionFor(scoresWith({
-      aroma: SCALE.L, zuur: SCALE.L, zoet: SCALE.L, body: SCALE.L, bitter: SCALE.L, aftersmaak: SCALE.L, balans: SCALE.H
-    }));
-    assert.equal(s.pattern, 'te_zwak');
-  });
-
-  test('Geen enkel patroon matcht → null, geen verzonnen voorstel bij een neutrale of onduidelijke logging', () => {
-    assert.equal(api.cuppingSuggestionFor(scoresWith({})), null, 'alles op het midden mag nooit een voorstel opleveren');
-    assert.equal(api.cuppingSuggestionFor(scoresWith({ zuur: SCALE.H })), null, 'één enkele afwijkende as (geen volledig patroon) mag geen voorstel opleveren');
-    assert.equal(api.cuppingSuggestionFor(null), null);
-    assert.equal(api.cuppingSuggestionFor(undefined), null);
-  });
-
-  test('Nooit automatisch een receptveld raken: het voorstel is puur tekst/labels, geen recept- of statesleutels', () => {
-    const s = api.cuppingSuggestionFor(scoresWith({ zuur: SCALE.H, zoet: SCALE.L, body: SCALE.L }));
-    const keys = Object.keys(s).sort();
-    assert.deepEqual(keys, ['diagnose', 'pattern', 'voorstel', 'wijstNaarWaterprofiel'].sort());
   });
 });
 
@@ -1247,23 +1166,6 @@ describe('C-2 — boon-snapshot op elke logging (bevinding E-11)', () => {
   });
 });
 
-describe('C-4 — onderextractie verbreed + conflictbewaking (bevinding E-13)', () => {
-  test('zuur hoog + body laag + zoet MIDDEN telt nu als onderextractie', () => {
-    const s = { aroma:2, zuur:4, zoet:2, body:0, bitter:1, aftersmaak:2, balans:2 };
-    assert.equal(api.cuppingSuggestionFor(s).pattern, 'onderextractie');
-  });
-  test('tegenstrijdige signalen leveren geen maalverandering maar een herhaalverzoek', () => {
-    const s = { aroma:2, zuur:4, zoet:2, body:0, bitter:4, aftersmaak:4, balans:2 };
-    const sug = api.cuppingSuggestionFor(s);
-    assert.equal(sug.pattern, 'gemengd_signaal');
-    assert.ok(!/fijner|grover/.test(sug.voorstel), 'bij een conflict nooit een maalrichting adviseren');
-  });
-  test('zuiver overextractie blijft ongewijzigd (negatieve controle)', () => {
-    const s = { aroma:2, zuur:1, zoet:2, body:3, bitter:4, aftersmaak:4, balans:2 };
-    assert.equal(api.cuppingSuggestionFor(s).pattern, 'overextractie');
-  });
-});
-
 describe('C-5 — retentiemeting (bevinding E-07b, Bouwbesluit BB-3, akkoord gebruiker: alleen weergave)', () => {
   function resetBrewLog(){ api.brewLog.length = 0; }
   function addEntry(overrides){
@@ -1779,39 +1681,6 @@ describe('Smaakwiel-heraudit — Kiwi + vrije-tekstveld matcht volledige wiel', 
     const cls = api.classifyProfile([], 'floral', null, false);
     assert.equal(cls.scores.fresh_clean, 1);
     assert.equal(cls.scores.fruitig_clean, 0, 'floral mag niet meer tegenstrijdig ook fruitig_clean scoren');
-  });
-});
-
-describe('Smaakwiel-scoring — percentages per profiel (profileScorePercentages)', () => {
-  // HERAUDIT (smaakwiel-scoring): percentages zijn puur informatief — dezelfde brontelling
-  // als de sterren (displayScoreFor/classifyProfile), nu ook als exact, herleidbaar getal.
-  // Verandert niets aan welk recept wordt gegenereerd.
-  test('zonder scores (null) of bij een total van 0 geeft dit null terug', () => {
-    assert.equal(api.profileScorePercentages(null), null);
-    assert.equal(api.profileScorePercentages({heel_fruitig:0, fruitig_clean:0, fresh_clean:0, vol_rond:0, zoet:0}), null);
-  });
-
-  test('een 2-tegen-1-verdeling geeft 67%/33%, som is exact 100', () => {
-    const cls = api.classifyProfile(['Bramen', 'Framboos', 'Anijs'], '', null, false); // heel_fruitig:2, zoet:1
-    const pct = api.profileScorePercentages(cls.scores);
-    assert.equal(pct.heel_fruitig, 67);
-    assert.equal(pct.zoet, 33);
-    assert.equal(pct.fruitig_clean, 0);
-    const sum = Object.values(pct).reduce((a, b) => a + b, 0);
-    assert.equal(sum, 100, `percentages moeten optellen tot 100, kregen ${sum}`);
-  });
-
-  test('een exacte 50/50-verdeling (o.a. het scenario uit de gebruikersvraag) geeft 50%/50%', () => {
-    const cls = api.classifyProfile(['Bramen', 'Chocolade'], '', null, false); // heel_fruitig:1, vol_rond:1 → klassiek
-    const pct = api.profileScorePercentages(cls.scores);
-    assert.equal(pct.heel_fruitig, 50);
-    assert.equal(pct.klassiek, 50, 'vol_rond-score moet via de klassiek-samenvoegknop als percentage verschijnen');
-  });
-
-  test('techniek-only profielen (bv. snel_puur) krijgen geen percentage, ook niet 0%', () => {
-    const cls = api.classifyProfile(['Bramen', 'Framboos'], '', null, false);
-    const pct = api.profileScorePercentages(cls.scores);
-    assert.equal(Object.prototype.hasOwnProperty.call(pct, 'snel_puur'), false);
   });
 });
 
