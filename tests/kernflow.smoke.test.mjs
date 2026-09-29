@@ -35,8 +35,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     if (browser) await browser.close();
   });
 
-  async function newTrackedPage(){
-    const page = await browser.newPage();
+  async function newTrackedPage(opts){
+    const page = await browser.newPage(opts);
     page.on('console', msg => {
       if (msg.type() === 'error') consoleErrors.push(msg.text());
     });
@@ -2325,7 +2325,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await assertBecomesActive(page, '#screen-brewlog');
     const summary = await page.locator('#brewlog-honest-summary').textContent();
     assert.match(summary, /loopt het bed normaal sneller door dan bij een gewone hoeveelheid \(~42 g\).*geen oordeel over je tijd/);
-    assert.doesNotMatch(summary, /valt (binnen|buiten) de gangbare diagnostische band/);
+    assert.doesNotMatch(summary, /valt (binnen|buiten) de normale tijd voor dit toestel/);
     await page.close();
   });
 
@@ -2437,11 +2437,21 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       return page;
     }
 
-    test('eerste start zegt "Welkom", met een boon "Welkom terug"', async () => {
+    test('eerste start zegt "Welkom" (ook met alleen een boon), na een brouwsel "Welkom terug"', async () => {
       let page = await seeded(null);
       assert.equal((await page.locator('#home-title').textContent()).trim(), 'Welkom');
       await page.close();
+      // Sprint 1 (UX-review F3): alleen een boon invoeren is nog geen "terug".
       page = await seeded([BEAN]);
+      assert.equal((await page.locator('#home-title').textContent()).trim(), 'Welkom');
+      await page.close();
+      page = await newTrackedPage();
+      await page.addInitScript(() => {
+        if (sessionStorage.getItem('au2')) return;
+        sessionStorage.setItem('au2', '1');
+        localStorage.setItem('brewConsoleLog', JSON.stringify([{ id:'w1', schemaVersion:5, timestamp:Date.now()-86400000, beanId:null, method:'v60', profile:'klassiek', roast:'medium', waterMl:300, bypass:false, scores:{aroma:3}, note:'', doseG:17.3, ratioText:'1:17,4' }]));
+      });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
       assert.equal((await page.locator('#home-title').textContent()).trim(), 'Welkom terug');
       await page.close();
     });
@@ -2513,6 +2523,121 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
         }
       }
       assert.deepEqual([...new Set(problems)], []);
+      await page.close();
+    });
+  });
+
+  // NIEUW (UX-review, Sprint 1): het advies in beeld, één hoofdactie na afloop, geen
+  // misleidende terugknoppen en tikdoelen van minimaal 44 px — op telefoonformaat.
+  describe('Sprint 1: quick wins uit de UX-review', () => {
+    const PHONE = { viewport: { width: 390, height: 844 } };
+    const BEAN = { id:'bean-s1', name:'Sprint Boon', roastLevel:'light', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:0 };
+    async function phonePage(beans){
+      const page = await newTrackedPage(PHONE);
+      await page.addInitScript((beans) => {
+        if (sessionStorage.getItem('s1')) return;
+        sessionStorage.setItem('s1', '1');
+        if (beans) localStorage.setItem('brewconsole_beans', JSON.stringify(beans));
+      }, beans || null);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      return page;
+    }
+    async function brewToDone(page){
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('#advisor-link');
+      await page.click('[data-bean-pick="bean-s1"]');
+      await page.click('#advice-batch [data-adv-batch="single"]');
+      await page.click('#advice-cta');
+      await assertBecomesActive(page, '#screen-prep');
+      await page.click('#start-btn');
+      await assertBecomesActive(page, '#screen-brew');
+      await page.clock.fastForward('03:20');
+      await page.click('#bed-dry-btn');
+    }
+
+    test('na bed droog: geen ▶, × Stop of lege pil — "Proeven & loggen" is de hoofdknop; ↻ brengt ▶ terug', async () => {
+      const page = await phonePage([BEAN]);
+      await brewToDone(page);
+      assert.equal(await page.locator('#pause-btn').isVisible(), false, '▶ heeft na afloop geen functie');
+      assert.equal(await page.locator('#stop-btn').isVisible(), false, '× Stop hoort niet bij een klaar brouwsel');
+      assert.equal(await page.locator('#next-info').isVisible(), false, 'geen lege pil onder "Bed droog na …"');
+      const open = page.locator('#brewlog-open-btn');
+      assert.equal(await open.isVisible(), true);
+      assert.ok(await open.evaluate(el => el.classList.contains('start-btn')), 'loggen is de primaire knop');
+      assert.equal((await open.textContent()).trim(), 'Proeven & loggen →');
+      assert.equal(await page.locator('#home-btn').isVisible(), true);
+      await page.click('#reset-btn');
+      assert.equal(await page.locator('#pause-btn').isVisible(), true, 'na ↻ kun je weer starten');
+      assert.equal(await page.locator('#stop-btn').isVisible(), true);
+      await page.close();
+    });
+
+    test('na "Loggen opslaan" staan de bevestiging en het advies in beeld, boven de tabbalk', async () => {
+      const page = await phonePage([BEAN]);
+      await brewToDone(page);
+      await page.click('#brewlog-open-btn');
+      await assertBecomesActive(page, '#screen-brewlog');
+      assert.ok(await page.locator('#brewlog-save-btn').evaluate(el => el.classList.contains('start-btn')), 'opslaan is de primaire knop');
+      await page.click('#actuals-planned-btn');
+      for (const [q, v] of [['strength','just_right'],['acidity','sharp'],['finish','hollow'],['liking','2']]) await page.click(`[data-t-q="${q}"][data-t-v="${v}"]`);
+      await page.click('#brewlog-save-btn');
+      await page.waitForFunction(() => {
+        const card = document.getElementById('reco-card');
+        const nav = document.getElementById('navbar');
+        if (!card || card.hidden) return false;
+        const c = card.getBoundingClientRect();
+        const navTop = nav && !nav.hidden ? nav.getBoundingClientRect().top : window.innerHeight;
+        return c.top >= 0 && c.bottom <= navTop;
+      }, null, { timeout: 5000 });
+      assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.id), 'brewlog-saved-msg', 'focus op de bevestiging');
+      assert.equal(await page.locator('#reco-apply-btn').isVisible(), true);
+      await page.close();
+    });
+
+    test('via de tabbalk geen terugknop op Bonen/Geschiedenis; via een link binnen de app wel', async () => {
+      const page = await phonePage([BEAN]);
+      const backVisible = (screen) => page.locator(`#screen-${screen} > .back-btn`).isVisible();
+      await page.click('.navbar [data-nav="beans"]');
+      await assertBecomesActive(page, '#screen-beans');
+      assert.equal(await backVisible('beans'), false, 'Bonen via de tab = hoofdscherm');
+      await page.click('.navbar [data-nav="brewlog-history"]');
+      await assertBecomesActive(page, '#screen-brewlog-history');
+      assert.equal(await backVisible('brewlog-history'), false, 'Geschiedenis via de tab = hoofdscherm');
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('#beans-link');
+      await assertBecomesActive(page, '#screen-beans');
+      assert.equal(await backVisible('beans'), true, 'via "Bonen beheren" blijft "← Methode" staan');
+      await page.close();
+    });
+
+    test('elke zichtbare knop, link en invoer op de hoofdschermen is minstens 44 × 44 px', async () => {
+      const page = await phonePage([BEAN]);
+      const problems = [];
+      for (const nav of ['home', 'beans', 'method', 'brewlog-history', 'settings']){
+        await page.click(`.navbar [data-nav="${nav}"]`);
+        await page.waitForTimeout(100);
+        const small = await page.evaluate(() => [...document.querySelectorAll('.screen.active button, .screen.active a, .screen.active input, .screen.active select, .screen.active summary, #theme-toggle')]
+          .filter(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden' && (r.width < 43.5 || r.height < 43.5); })
+          .map(el => `${el.id || el.className} ${Math.round(el.getBoundingClientRect().width)}×${Math.round(el.getBoundingClientRect().height)}`));
+        for (const x of small) problems.push(`${nav}: ${x}`);
+      }
+      assert.deepEqual([...new Set(problems)], []);
+      await page.close();
+    });
+
+    test('woordkeuze: Nederlands in plaats van "Brew Intelligence"/"Start brew"/"Pour-over"', async () => {
+      const page = await phonePage([BEAN]);
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('[data-method="v60"]');
+      await page.click('#roast-grid [data-roast] >> nth=0');
+      await page.click('#profile-grid [data-profile="klassiek"]');
+      await assertBecomesActive(page, '#screen-prep');
+      const prep = await page.locator('#screen-prep').innerText();
+      assert.doesNotMatch(prep, /Brew Intelligence|Start brew/i);
+      assert.match(prep, /Waarom dit recept\?/);
+      assert.equal((await page.locator('#start-btn').textContent()).trim(), 'Start →');
+      await page.click('#start-btn');
+      assert.doesNotMatch(await page.locator('#screen-brew').innerText(), /pour-over/i);
       await page.close();
     });
   });

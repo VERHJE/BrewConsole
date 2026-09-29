@@ -1022,6 +1022,15 @@
     padding:6px 14px; border-radius:var(--radius-pill); margin-bottom:10px; letter-spacing:.01em;
   }
   .brew-pour-badge:empty{display:none;}
+  /* Sprint 1 (UX-review F2): na bed droog/einde geen ▶/× Stop meer — zie syncBrewFinishedUi(). */
+  #screen-brew[data-finished] #pause-btn,
+  #screen-brew[data-finished] #stop-btn{display:none;}
+  .brewlog-open-btn{margin-top:14px;}
+  /* Sprint 1 (UX-review F1): "Opgeslagen ✓" + advies komen in beeld, niet tegen de rand. */
+  .brewlog-saved-msg{scroll-margin-top:16px;}
+  .brewlog-saved-msg:focus{outline:none;}
+  /* Sprint 1 (UX-review F5): via de tabbalk geopend = hoofdscherm, geen terugknop. */
+  .screen[data-tab-root] > .back-btn{display:none;}
   .brew-pour-progress{
     width:150px; height:4px; margin:0 auto 12px;
     background:var(--surface-2); border-radius:var(--radius-pill); overflow:hidden;
@@ -1186,6 +1195,9 @@
     100%{ color:var(--text-dim); transform:scale(1); }
   }
   .next-info.pre-alert{ animation:preAlertPulse .6s ease; display:inline-block; }
+  /* Sprint 1 (UX-review F2): .pre-alert bleef na afloop staan en won van .next-info:empty —
+     dat gaf een lege pil onder "Bed droog na …". */
+  .next-info.pre-alert:empty{ display:none; }
 
   /* bean advisor */
   .advisor-link{
@@ -1789,6 +1801,19 @@
        kaarten in twee kolommen i.p.v. één, zodat de zijbalk-breedte goed benut wordt. */
     .bean-list{display:grid; grid-template-columns:repeat(2,1fr); gap:12px;}
   }
+  /* Sprint 1 (UX-review F9): tikdoelen minimaal 44 × 44 (WCAG 2.5.5 / Apple HIG). Alleen
+     de hoogte/breedte gaat omhoog; kleur, tekst en volgorde blijven gelijk. */
+  .theme-toggle{width:44px; height:44px;}
+  .bean-use-btn,
+  .advisor-link,
+  .backup-row .advisor-link,
+  .detail-tab,
+  .form-input,
+  .pill-cta{min-height:44px;}
+  .bean-use-btn,
+  .backup-row .advisor-link,
+  .detail-tab{display:inline-flex; align-items:center; justify-content:center;}
+  .advisor-link[hidden], .bean-use-btn[hidden]{display:none;}
 </style>
 </head>
 <body>
@@ -2436,7 +2461,7 @@
         <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.4M12 18.6V21M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M3 12h2.4M18.6 12H21M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg></div>
         <div class="prep-intel-body">
           <div class="prep-intel-header">
-            <span class="prep-intel-title">Brew Intelligence</span>
+            <span class="prep-intel-title">Waarom dit recept?</span>
             <div id="evidence-badge-row" class="badge-row" style="margin:0;"></div>
           </div>
           <p class="style-note" id="style-note" style="margin:0;"></p>
@@ -2566,7 +2591,7 @@
            bovenaan dit scherm, alleen hier als tweede CTA naast Start Brew. -->
       <div class="prep-cta-row">
         <button type="button" class="advisor-primary prep-adjust-btn" data-back="profile">Aanpassen</button>
-        <button class="start-btn" id="start-btn">Start brew →</button>
+        <button class="start-btn" id="start-btn">Start →</button>
       </div>
       <!-- Audit BC-12: de onderbouwing blijft volledig, maar op verzoek i.p.v. als muur tekst
            onder de startknop. Zelfde elementen/ID's, alleen samen ingeklapt. -->
@@ -2612,7 +2637,7 @@
         <div class="brew-hero" id="brew-hero">
           <div class="brew-hero-header">
             <div class="brew-hero-title" id="brew-hero-title"></div>
-            <div class="brew-hero-subtitle">Pour-over</div>
+            <div class="brew-hero-subtitle">Filterkoffie</div>
           </div>
           <div class="wake-indicator" id="wake-indicator"><span class="dot"></span>Scherm blijft aan</div>
           <button class="stop-btn" id="stop-btn">× Stop</button>
@@ -2665,7 +2690,7 @@
 
         <p class="dial-flow" id="dial-flow"></p>
         <p class="finish-note" id="finish-note" style="display:none;">☕ Klaar — laat volledig doorlopen.</p>
-        <button class="advisor-link" id="brewlog-open-btn" style="display:none;">📋 Dit brouwsel loggen →</button>
+        <button class="start-btn brewlog-open-btn" id="brewlog-open-btn" style="display:none;">Proeven &amp; loggen →</button>
 
       <!-- HERZIEN (focus-herontwerp): de volledige stappenlijst blijft 100% aanwezig
            (inclusief de proef-en-vul-/weeginstructies bij bypass) maar staat nu achter een
@@ -2735,7 +2760,7 @@
            zonder deze twee werkelijk-gemeten velden (i.p.v. het aanbevolen recept) is er
            straks niets om een leerlus op te bouwen. Beide optioneel: een leeg veld wordt
            NOOIT als 0 opgeslagen (zie saveBrewLogEntry()), puur weggelaten. -->
-      <label for="brewlog-cup-weight" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Kopgewicht na afloop <span style="text-transform:none; letter-spacing:0;">(optioneel, gram — hiermee berekent de app je werkelijke retentie: (water − kopgewicht) / dosis. Vanaf 5 bruikbare metingen verschijnt je eigen gemiddelde op het Recept-scherm, náást de vaste aanname van 2,0 g/g. Het vervangt die aanname niet automatisch. Bij bypass: weeg pas NÁ het toevoegen van het bypass-water — anders klopt deze berekening niet)</span></label>
+      <label for="brewlog-cup-weight" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Kopgewicht na afloop <span style="text-transform:none; letter-spacing:0;">(optioneel, gram) — zo zie je hoeveel water er in het koffiedik achterblijft. Na 5 metingen staat je eigen gemiddelde op het receptscherm, naast de vaste aanname van 2,0 g/g; die wordt niet automatisch vervangen. Met bypass: weeg ná het bijvullen.</span></label>
       <input type="number" id="brewlog-cup-weight" class="form-input" placeholder="bijv. 268" min="0" max="2000" step="1" style="max-width:220px;">
 
       <!-- NIEUW (Implementatieplan Bypass v1.0, Fase B/C, BP-5/"proef-en-vul"): wat er
@@ -2753,8 +2778,8 @@
       <label class="form-label" style="margin-top:14px; display:block;">Notities
         <textarea id="brewlog-note" class="form-input" rows="3" placeholder="bijv. iets wateriger dan normaal, minder fruitig"></textarea>
       </label>
-      <button class="advisor-primary" id="brewlog-save-btn" style="margin-top:14px;">Loggen opslaan</button>
-      <p class="empty-hint" id="brewlog-saved-msg" hidden>Opgeslagen ✓ — terug te vinden via de bonenkaart.</p>
+      <button class="start-btn" id="brewlog-save-btn" style="margin-top:14px;">Loggen opslaan</button>
+      <p class="empty-hint brewlog-saved-msg" id="brewlog-saved-msg" tabindex="-1" hidden>Opgeslagen ✓ — terug te vinden via de bonenkaart.</p>
       <!-- Fase 4: diagnose + één advies, na opslaan. Adviserend — niets verandert vanzelf. -->
       <div class="reco-card" id="reco-card" aria-live="polite" hidden></div>
     </section>
@@ -7778,9 +7803,10 @@ function renderBeanLibraryScreen(){
    ============================================================ */
 function renderHomeScreen(){
   renderHomeActiveBrewBanner(); // Fase 2
-  // Audit BC-25/§4: "Welkom terug" klopt pas als er al iets is — bij de eerste start gewoon "Welkom".
+  // Audit BC-25/§4: "Welkom terug" klopt pas als er al gezet is — bij de eerste start gewoon "Welkom".
   const homeTitle = document.getElementById('home-title');
-  if (homeTitle) homeTitle.textContent = (beanLibrary.length || brewStore.length) ? 'Welkom terug' : 'Welkom';
+  // Sprint 1 (UX-review F3): alleen bonen invoeren is nog geen "terug" — pas na een eerste brouwsel.
+  if (homeTitle) homeTitle.textContent = brewStore.length ? 'Welkom terug' : 'Welkom';
   const chipRow = document.getElementById('home-chip-row');
   if (chipRow){
     const chips = [];
@@ -9757,8 +9783,8 @@ function renderBrewLogHonestSummary(){
     } else if (actualTime != null){
       const within = actualTime >= min && actualTime <= max;
       diagnosticLine = within
-        ? `Totale contacttijd ${fmtTime(actualTime)} valt binnen de gangbare diagnostische band voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — geen doel, puur een plausibiliteitscontrole achteraf.`
-        : `Totale contacttijd ${fmtTime(actualTime)} valt buiten de gangbare diagnostische band voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — geen fout, wél de moeite van opletten waard; deze band is een controle achteraf, geen doel.`;
+        ? `Totale tijd ${fmtTime(actualTime)} valt binnen de normale tijd voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — alleen ter controle achteraf, geen doel.`
+        : `Totale tijd ${fmtTime(actualTime)} valt buiten de normale tijd voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — geen fout, wel iets om op te letten; alleen ter controle achteraf, geen doel.`;
     }
   }
   el.innerHTML = `<strong>Wat we écht weten</strong>` +
@@ -9821,6 +9847,17 @@ function saveBrewLogEntry(){
   const savedMsg = document.getElementById('brewlog-saved-msg');
   if (savedMsg) savedMsg.hidden = false;
   renderRecommendationPanel(getBrewRecord(next.id)); // Fase 4
+  revealSavedBrewLog();
+}
+// Sprint 1 (UX-review F1): het advies verscheen onder de knop, half achter de tabbalk — wie
+// niet scrolde, zag het nooit. Na opslaan schuift "Opgeslagen ✓" + het advies in beeld en
+// krijgt de bevestiging de focus (het advies zelf meldt zich via zijn aria-live).
+function revealSavedBrewLog(){
+  const savedMsg = document.getElementById('brewlog-saved-msg');
+  if (!savedMsg || savedMsg.hidden) return;
+  const reduce = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  try{ savedMsg.focus({ preventScroll:true }); } catch(e){ /* oudere browsers: focus zonder opties */ }
+  if (typeof savedMsg.scrollIntoView === 'function') savedMsg.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block:'start' });
 }
 // NIEUW (Visual Design 2.0 fase 2, Geschiedenis-tabs): het per-entry-kaartje uit
 // renderBrewLogHistory() hieronder losgetrokken naar een eigen functie, zodat zowel de
@@ -9959,9 +9996,9 @@ let historyBeanIdShown = null;
 // hergebruikt door toggleBrewLogFavorite zonder te navigeren) en deze buitenste functie die
 // daarna showScreen() doet — elke bestaande aanroep van renderBrewLogHistory(beanId) blijft
 // exact hetzelfde gedrag vertonen (lijst opbouwen + naar het scherm navigeren).
-function renderBrewLogHistory(beanId){
+function renderBrewLogHistory(beanId, opts){
   renderBrewLogHistoryLists(beanId);
-  showScreen('brewlog-history');
+  showScreen('brewlog-history', opts);
 }
 let legacyReviewOpen = false;
 function legacyStockMoveText(move){
@@ -12345,6 +12382,10 @@ function showScreen(name, opts){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const target = document.getElementById('screen-'+name);
   target.classList.add('active');
+  // Sprint 1 (UX-review F5): via de tabbalk geopend = hoofdscherm, dan hoort er geen
+  // "← Methode"/"← Mijn bonen" boven; via een link binnen de app blijft de terugknop.
+  // Bij het terug-gebaar (fromHistory) blijft de eerdere stand van dit scherm staan.
+  if (!(opts && opts.fromHistory)) target.toggleAttribute('data-tab-root', !!(opts && opts.tabRoot));
   document.querySelector('.app').setAttribute('data-state', name);
 
   const order = ['method','roast','profile','prep'];
@@ -12851,6 +12892,12 @@ function setPauseBtnEnabled(enabled){
   btn.disabled = !enabled;
   btn.setAttribute('aria-disabled', enabled ? 'false' : 'true');
 }
+// Sprint 1 (UX-review F2): na bed droog/einde is er niets meer te pauzeren of te stoppen —
+// ▶ en × Stop verdwijnen, zodat "Proeven & loggen" de enige hoofdactie is (↻ en ⌂ blijven).
+function syncBrewFinishedUi(){
+  const screen = document.getElementById('screen-brew');
+  if (screen) screen.toggleAttribute('data-finished', !!timer.finished);
+}
 function currentBrewPhase(){
   return brewPhaseAt(state.recipe.steps, state.recipe.totalTime, timer.elapsed);
 }
@@ -13003,6 +13050,7 @@ function openTastingForActiveBrew(){
     timer.finished = true;
     timer.running = false;
     timer.elapsed = rec.actual.bedDrySec != null ? rec.actual.bedDrySec : 0;
+    syncBrewFinishedUi();
   }
   openBrewLogEntry();
 }
@@ -13015,6 +13063,7 @@ function currentStepIndex(){
 }
 
 function updateDial(){
+  syncBrewFinishedUi();
   const total = state.recipe.totalTime;
   const fraction = clamp(timer.elapsed/total, 0, 1);
   document.getElementById('dial-fill').style.strokeDashoffset = (CIRC*(1-fraction)).toFixed(2);
@@ -13585,10 +13634,10 @@ document.querySelectorAll('.navbar [data-nav]').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     const dest = btn.getAttribute('data-nav');
     if (dest === 'home'){ renderHomeScreen(); showScreen('home'); }
-    else if (dest === 'beans'){ renderBeanLibraryScreen(); showScreen('beans'); }
+    else if (dest === 'beans'){ renderBeanLibraryScreen(); showScreen('beans', { tabRoot:true }); }
     else if (dest === 'method'){ if (isActiveBrewBrewing() && openActiveBrew()) return; setActiveBean(null); renderMethodGrid(); showScreen('method'); } // BC-01: verse start; Fase 2: lopend brouwsel gaat voor
     else if (dest === 'settings'){ showScreen('settings'); }
-    else if (dest === 'brewlog-history'){ renderBrewLogHistory(); }
+    else if (dest === 'brewlog-history'){ renderBrewLogHistory(undefined, { tabRoot:true }); }
   });
 });
 
