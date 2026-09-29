@@ -540,7 +540,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await assertBecomesActive(page, '#screen-profile');
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
-    const lightTempBlock = (await page.locator('#stats-grid .stat-block', { hasText: 'Watertemperatuur' }).innerText()).trim();
+    const lightTempBlock = (await page.locator('#stats-grid .stat-block', { hasText: 'Temperatuur' }).innerText()).trim();
     assert.match(lightTempBlock, /koken en direct gieten/, 'Light-branding hoort de instructie "koken en direct gieten" te tonen, niet alleen een getal');
 
     await page.click('[data-back="profile"]');
@@ -551,7 +551,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await assertBecomesActive(page, '#screen-profile');
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
-    const darkTempBlock = (await page.locator('#stats-grid .stat-block', { hasText: 'Watertemperatuur' }).innerText()).trim();
+    const darkTempBlock = (await page.locator('#stats-grid .stat-block', { hasText: 'Temperatuur' }).innerText()).trim();
     assert.match(darkTempBlock, /koken, ongeveer 1 minuut wachten/, 'Dark-branding hoort een andere, langere-wachttijd-instructie te tonen');
     assert.notEqual(lightTempBlock, darkTempBlock, 'De instructie moet daadwerkelijk meebewegen met de branddiepte, niet een vast tekstblokje zijn');
 
@@ -2150,7 +2150,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     assert.equal((await grind.locator('.stat-value').textContent()).trim(), `Klik ${rec.start}`);
     assert.match(await grind.innerText(), new RegExp(`start hier · klik ${rec.min}–${rec.max} is het startgebied`));
     assert.match(await grind.innerText(), /zuur en snel door\? fijner · bitter en traag\? grover/);
-    for (const label of ['Gemalen koffie', 'Watertemperatuur', 'Ratio', 'Maalgraad', 'Brouwtijd']){
+    for (const label of ['Gemalen koffie', 'Temperatuur', 'Ratio', 'Maalgraad', 'Brouwtijd']){
       const n = await page.locator('#stats-grid .stat-block', { hasText: label }).locator('.stat-sub').count();
       assert.ok(n >= 1, `${label} heeft een uitlegregel`);
     }
@@ -2816,7 +2816,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     test('vier heldengetallen vooraan; water staat er één keer, met −/+ in de tegel', async () => {
       const page = await toPrep();
       const labels = await page.locator('#stats-grid .stat-block--hero .stat-label').allTextContents();
-      assert.deepEqual(labels.map(t => t.trim()), ['Gemalen koffie', 'Water', 'Maalgraad', 'Watertemperatuur']);
+      assert.deepEqual(labels.map(t => t.trim()), ['Gemalen koffie', 'Water', 'Maalgraad', 'Temperatuur']);
       assert.equal(await page.locator('#screen-prep .serving-row').count(), 0, 'geen losse waterregel meer');
       const before = await page.evaluate(() => state.waterMl);
       await page.click('#serving-plus');
@@ -2946,6 +2946,113 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.equal(await group.locator('.history-best').count(), 0);
       assert.equal(await group.locator('.history-group-cups .brewlog-entry-card').count(), 3);
       assert.match(await group.locator('.history-more > summary').textContent(), /Eerdere koppen \(1\)/);
+      await page.close();
+    });
+  });
+
+  describe('Sprint 5: typografie, tokens en een korter receptscherm', () => {
+    const PHONE = { viewport: { width: 390, height: 844 } };
+    const SCALE = ['12px', '14px', '16px', '20px', '24px', '32px', '48px'];
+    async function toPrep(page, method){
+      await page.click('.navbar [data-nav="method"]');
+      await page.click(`[data-method="${method}"]`);
+      await page.click('#roast-grid [data-roast] >> nth=0');
+      await page.click('#profile-grid [data-profile] >> nth=0');
+      await assertBecomesActive(page, '#screen-prep');
+    }
+    // Zichtbare tekst op het actieve scherm (+ tabbalk): welke lettergroottes komen voor?
+    const visibleSizes = (page) => page.evaluate(() => {
+      const sizes = new Set();
+      for (const el of document.querySelectorAll('.screen.active *, .navbar *')){
+        if (!el.getClientRects().length) continue;
+        if (![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) continue;
+        sizes.add(getComputedStyle(el).fontSize);
+      }
+      return [...sizes];
+    });
+
+    test('elk hoofdscherm op de telefoon gebruikt ≤8 lettergroottes, allemaal uit de schaal', async () => {
+      const page = await newTrackedPage(PHONE);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      const all = new Set();
+      const check = async (name) => {
+        const sizes = await visibleSizes(page);
+        assert.ok(sizes.length <= 8, `${name}: ${sizes.length} groottes (${sizes.join(', ')})`);
+        for (const s of sizes){ assert.ok(SCALE.includes(s), `${name}: ${s} valt buiten de typeschaal`); all.add(s); }
+      };
+      await check('home');
+      for (const nav of ['beans', 'brewlog-history', 'settings']){
+        await page.click(`.navbar [data-nav="${nav}"]`);
+        await check(nav);
+      }
+      await toPrep(page, 'v60');
+      await check('recept');
+      assert.ok(all.size <= 8, `samen ${all.size} groottes`);
+      await page.close();
+    });
+
+    test('mono alleen voor getallen: labels en tabbalk in de gewone letter, receptgetallen in mono', async () => {
+      const page = await newTrackedPage(PHONE);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await toPrep(page, 'v60');
+      const fam = (sel) => page.evaluate((s) => getComputedStyle(document.querySelector(s)).fontFamily, sel);
+      for (const sel of ['#stats-grid .stat-label', '.navbar-btn', '#summary-tag', '.recipe-table th']){
+        assert.doesNotMatch(await fam(sel), /mono/i, `${sel} hoort niet in mono`);
+      }
+      assert.match(await fam('#stats-grid .stat-value'), /mono/i, 'receptgetal blijft mono');
+      await page.close();
+    });
+
+    test('geen tweede tabbalk bij Zet; "Kernrecept" heet in beeld Basisrecept', async () => {
+      const page = await newTrackedPage(PHONE);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.click('.navbar [data-nav="method"]');
+      assert.equal(await page.locator('.tracker, .tracker-item').count(), 0);
+      await page.click('[data-method="chemex"]');
+      await page.click('#roast-grid [data-roast] >> nth=0');
+      assert.doesNotMatch(await page.locator('#screen-profile').innerText(), /Kernrecept/);
+      await page.click('#profile-grid [data-profile] >> nth=0');
+      await assertBecomesActive(page, '#screen-prep');
+      assert.equal(await page.evaluate(() => state.recipe.technique), 'Kernrecept', 'de engine-waarde blijft ongewijzigd');
+      assert.match(await page.locator('#technique-line').innerText(), /^Basisrecept/);
+      assert.doesNotMatch(await page.locator('#screen-prep').innerText(), /Kernrecept/);
+      // Een maalgraad als woord ("middelgrof") staat niet in mono en past in de tegel.
+      const grind = page.locator('#stats-grid .stat-block--grind');
+      const word = await grind.locator('.stat-value').evaluate(el => ({ mono: /mono/i.test(getComputedStyle(el).fontFamily), over: el.scrollWidth > el.clientWidth + 1, digit: /\d/.test(el.textContent) }));
+      if (!word.digit){ assert.equal(word.mono, false); assert.equal(word.over, false); }
+      await page.close();
+    });
+
+    test('receptscherm op de telefoon: water over de volle breedte, niets steekt uit een tegel, korter dan 1,6 schermhoogte', async () => {
+      for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 640 }]){
+        const page = await newTrackedPage({ viewport });
+        await page.goto(FILE_URL, { waitUntil: 'load' });
+        await toPrep(page, 'v60');
+        const m = await page.evaluate(() => {
+          const g = document.getElementById('stats-grid').getBoundingClientRect();
+          const w = document.getElementById('stats-water-block').getBoundingClientRect();
+          const over = [...document.querySelectorAll('#stats-grid .stat-block')].flatMap(b => {
+            const r = b.getBoundingClientRect();
+            return [...b.querySelectorAll('*')].filter(c => c.getBoundingClientRect().right > r.right + 1).map(c => c.className || c.tagName);
+          });
+          return { full: Math.abs(w.width - g.width) < 2, over, h: document.getElementById('screen-prep').scrollHeight, vh: innerHeight };
+        });
+        assert.ok(m.full, `${viewport.width}: watertegel over de volle breedte`);
+        assert.deepEqual(m.over, [], `${viewport.width}: niets steekt uit een tegel`);
+        if (viewport.width === 390) assert.ok(m.h / m.vh < 1.6, `receptscherm ${m.h}px = ${(m.h / m.vh).toFixed(2)} schermhoogtes`);
+        await page.close();
+      }
+    });
+
+    test('desktop: de getallengrid blijft binnen de receptkolom', async () => {
+      const page = await newTrackedPage({ viewport: { width: 1280, height: 720 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await toPrep(page, 'v60');
+      const m = await page.evaluate(() => {
+        const main = document.querySelector('#screen-prep .prep-main').getBoundingClientRect();
+        return [...document.querySelectorAll('#stats-grid .stat-block')].map(b => b.getBoundingClientRect().right - main.right);
+      });
+      for (const d of m) assert.ok(d <= 1, `tegel steekt ${d}px buiten de kolom`);
       await page.close();
     });
   });
