@@ -71,36 +71,32 @@
     --font-display:ui-serif,'New York','Iowan Old Style',Georgia,'Fraunces',serif;
     --font-body:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI','IBM Plex Sans',sans-serif;
     --font-mono:ui-monospace,'SF Mono','SFMono-Regular',Menlo,'IBM Plex Mono',monospace;
+    /* Sprint 5 (UX-review F8): één typeschaal van 7 stappen i.p.v. 24 losse groottes.
+       Monospace alleen voor getallen (tijden, grammen, klikken); labels in de bodyletter.
+       Uitzondering: de grote timer in iPad-"aanrechtmodus" (op afstand leesbaar). */
+    --fs-label:12px;    /* labels, bijschriften */
+    --fs-small:14px;    /* secundaire tekst */
+    --fs-body:16px;     /* lopende tekst, knoppen */
+    --fs-heading:20px;  /* kopjes, kaarttitels */
+    --fs-number:24px;   /* heldengetallen */
+    --fs-title:32px;    /* schermtitels */
+    --fs-display:48px;  /* timer */
 
     /* NIEUW (Visual Design 2.0, §3-§9/§24): semantische laag bovenop de bestaande tokens
        hierboven — alias, geen vervanging (zie toelichting bovenaan dit blok). Nieuwe
        componenten (§24) gebruiken deze namen; bestaande, al-geverifieerde regels blijven
        gewoon --bg/--surface/--copper/... rechtstreeks gebruiken. */
-    --surface-0:var(--bg);
-    --surface-1:var(--surface);
     --surface-floating:rgba(28,28,26,.72); /* Level 2 glass: --surface met alpha, zie §6 */
     --surface-floating-border:rgba(237,230,217,.08); /* zeer laag-contrast, §6 "avoid bright white glass borders" */
     /* Cleanup: was 2x letterlijk herhaald (stop-btn, navbar) i.p.v. gedeeld — zelfde
        waarde in beide theme's, dus hier één keer gedefinieerd i.p.v. per-theme. */
     --glass-blur:blur(20px) saturate(1.4);
-    --text-primary:var(--text);
-    --text-secondary:var(--text-dim);
-    --text-muted:var(--text-faint);
-    --text-disabled:rgba(237,230,217,.38); /* op --text gebaseerd, nooit opacity als ENIGE disabled-marker (zie §25) — altijd samen met aria-disabled/cursor */
-    --accent-primary:var(--copper);
-    --accent-soft:var(--copper-dim);
     --accent-glow:rgba(212,165,116,.28); /* --copper op lage alpha, voor §5 ambient/focus-gloed */
-    --border-subtle:var(--border);
-    --border-active:var(--copper-dim);
-    --success:var(--sage);
     --success-soft:rgba(143,159,143,.16);
-    --warning:var(--berry);
-    --error:var(--danger);
 
     /* Diepte (§3.2) — Level 3 modal bestond al via .modal-overlay hieronder; deze twee
        zijn nieuw, voor kaarten (Level 1) en floating/glass-elementen (Level 2). */
     --shadow-card:0 1px 2px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.12);
-    --shadow-floating:0 8px 24px rgba(0,0,0,.4), inset 0 1px 0 rgba(237,230,217,.05);
 
     /* Geometrie (§3.3) — kleine, consistente schaal; pillen blijven voorbehouden aan
        tags/status (bestaande --radius-pill-achtige 999px-waarden hieronder ongemoeid). */
@@ -108,13 +104,11 @@
     --radius-md:14px;
     --radius-lg:20px;
     --radius-pill:999px;
-    --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px;
 
     /* Motion (§9) — timing-schaal; @media (prefers-reduced-motion: reduce) hieronder
        (regel ~741, ongewijzigd) blijft de harde override voor alle transitions/animaties. */
     --motion-micro:140ms;
     --motion-standard:240ms;
-    --motion-emphasis:400ms;
     --ease-out:cubic-bezier(.16,1,.3,1);
     --ease-in:cubic-bezier(.7,0,.84,0);
   }
@@ -144,25 +138,11 @@
        thema-tokens (geen nieuwe Caramel-berekening voor licht — de spec zelf is
        donker-georiënteerd en geeft geen lichte-thema-waarden; hergebruik voorkomt een
        ongeverifieerde contrastwijziging op een thema dat de spec niet beschrijft). */
-    --surface-0:var(--bg);
-    --surface-1:var(--surface);
     --surface-floating:rgba(226,218,205,.78);
     --surface-floating-border:rgba(43,24,16,.08);
-    --text-primary:var(--text);
-    --text-secondary:var(--text-dim);
-    --text-muted:var(--text-faint);
-    --text-disabled:rgba(43,24,16,.38);
-    --accent-primary:var(--copper);
-    --accent-soft:var(--copper-dim);
     --accent-glow:rgba(170,112,57,.22);
-    --border-subtle:var(--border);
-    --border-active:var(--copper-dim);
-    --success:var(--sage);
     --success-soft:rgba(119,144,90,.14);
-    --warning:var(--berry);
-    --error:var(--danger);
     --shadow-card:0 1px 2px rgba(43,24,16,.12), 0 0 0 1px rgba(43,24,16,.06);
-    --shadow-floating:0 8px 24px rgba(43,24,16,.18), inset 0 1px 0 rgba(255,255,255,.4);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0; background:var(--bg);}
@@ -203,12 +183,12 @@
   }
   .splash-content{ position:relative; text-align:center; padding:0 24px 28px; }
   .splash-title{
-    font-family:var(--font-display); font-weight:600; font-size:30px; color:var(--text);
+    font-family:var(--font-display); font-weight:600; font-size:var(--fs-title); color:var(--text);
     margin:0 0 6px;
   }
   .splash-version{ color:var(--copper-light); }
   .splash-tagline{
-    font-family:var(--font-mono); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase;
+    font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.18em; text-transform:uppercase;
     color:var(--text-faint); margin:0;
   }
   .splash-loadbar{
@@ -250,11 +230,11 @@
     padding:20px; max-width:340px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,.45);
     animation:modalIn var(--motion-standard) var(--ease-out) both;
   }
-  .modal-box p{font-family:var(--font-body); font-size:14px; color:var(--text); line-height:1.5; margin:0 0 18px;}
+  .modal-box p{font-family:var(--font-body); font-size:var(--fs-small); color:var(--text); line-height:1.5; margin:0 0 18px;}
   .modal-actions{display:flex; gap:10px;}
   .modal-btn{
     flex:1; min-height:44px; border-radius:var(--radius-sm); border:1px solid var(--border);
-    font-family:var(--font-body); font-size:13.5px; font-weight:600; cursor:pointer;
+    font-family:var(--font-body); font-size:var(--fs-small); font-weight:600; cursor:pointer;
     transition:transform var(--motion-micro) var(--ease-out), background var(--motion-standard) var(--ease-out);
   }
   .modal-btn:active{transform:scale(.97);}
@@ -313,7 +293,7 @@
   .top-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
   .wordmark{
     font-family:var(--font-mono);
-    font-size:11px;
+    font-size:var(--fs-label);
     letter-spacing:.14em;
     text-transform:lowercase;
     color:var(--text-faint);
@@ -335,36 +315,14 @@
   .install-hint{
     display:flex; align-items:flex-start; gap:10px;
     background:var(--surface); border:1px solid var(--copper-dim); border-radius:12px;
-    padding:12px 14px; margin:0 0 18px; font-size:12.5px; color:var(--text-dim); line-height:1.5;
+    padding:12px 14px; margin:0 0 18px; font-size:var(--fs-small); color:var(--text-dim); line-height:1.5;
   }
-  .install-hint strong{color:var(--copper-light); display:block; font-family:var(--font-display); font-size:14px; margin-bottom:2px;}
+  .install-hint strong{color:var(--copper-light); display:block; font-family:var(--font-display); font-size:var(--fs-small); margin-bottom:2px;}
   .install-hint button{
-    background:none; border:none; color:var(--text-faint); font-size:16px; line-height:1;
+    background:none; border:none; color:var(--text-faint); font-size:var(--fs-body); line-height:1;
     cursor:pointer; padding:2px 4px; flex-shrink:0; margin-left:auto;
   }
 
-  /* tracker */
-  .tracker[hidden]{display:none;}
-  .tracker{
-    display:flex;
-    gap:0;
-    margin-bottom:28px;
-    border-bottom:1px solid var(--border);
-  }
-  .tracker-item{
-    flex:1;
-    text-align:center;
-    padding:0 4px 10px;
-    font-family:var(--font-mono);
-    font-size:11px;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-    color:var(--text-faint);
-    border-bottom:2px solid transparent;
-    transition:color var(--motion-standard) var(--ease-out), border-color var(--motion-standard) var(--ease-out);
-  }
-  .tracker-item[data-status="done"]{color:var(--text-dim); border-color:var(--copper-dim);}
-  .tracker-item[data-status="current"]{color:var(--copper-light); border-color:var(--copper);}
 
   /* screens */
   .screen{display:none;}
@@ -373,7 +331,7 @@
 
   .back-btn{
     background:none; border:none; color:var(--text-faint);
-    font-family:var(--font-mono); font-size:12px; letter-spacing:.04em;
+    font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.04em;
     padding:12px 4px 16px 0; margin:-12px 0 0 -4px; cursor:pointer;
     min-height:44px; display:inline-flex; align-items:center;
     transition:color var(--motion-standard) var(--ease-out);
@@ -384,7 +342,7 @@
   .title{
     font-family:var(--font-display);
     font-weight:600;
-    font-size:26px;
+    font-size:var(--fs-number);
     line-height:1.2;
     margin:0 0 6px;
   }
@@ -396,7 +354,7 @@
   .header-icon-btn{
     width:44px; height:44px; border-radius:var(--radius-sm); flex-shrink:0;
     border:1px solid var(--border); background:var(--surface-2); color:var(--copper-light);
-    font-size:22px; line-height:1; cursor:pointer;
+    font-size:var(--fs-number); line-height:1; cursor:pointer;
     display:flex; align-items:center; justify-content:center;
     transition:border-color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
@@ -410,18 +368,18 @@
     width:44px; height:44px; margin:4px auto 14px; border-radius:50%;
     background:var(--surface-2); border:1px solid var(--border); color:var(--copper-light);
     display:flex; align-items:center; justify-content:center;
-    font-family:var(--font-display); font-size:19px; font-weight:600;
+    font-family:var(--font-display); font-size:var(--fs-heading); font-weight:600;
   }
   .triage-step-meta{ display:flex; align-items:baseline; gap:10px; margin-bottom:8px; }
-  .triage-step-number{ font-family:var(--font-mono); font-size:22px; color:var(--copper-light); font-weight:600; font-variant-numeric:tabular-nums; }
-  .triage-step-category{ font-family:var(--font-mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); }
-  .triage-step-question{ font-family:var(--font-display); font-size:19px; font-weight:600; line-height:1.35; margin:0 0 18px; }
+  .triage-step-number{ font-family:var(--font-mono); font-size:var(--fs-number); color:var(--copper-light); font-weight:600; font-variant-numeric:tabular-nums; }
+  .triage-step-category{ font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); }
+  .triage-step-question{ font-family:var(--font-display); font-size:var(--fs-heading); font-weight:600; line-height:1.35; margin:0 0 18px; }
   .triage-options{ display:flex; flex-direction:column; gap:8px; }
   .triage-option{
     display:flex; align-items:center; justify-content:space-between; gap:12px;
     width:100%; text-align:left; min-height:52px; padding:14px 16px;
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
-    color:var(--text); font-family:var(--font-body); font-size:14.5px; cursor:pointer;
+    color:var(--text); font-family:var(--font-body); font-size:var(--fs-small); cursor:pointer;
     box-shadow:var(--shadow-card);
     transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
@@ -439,7 +397,7 @@
   }
   .triage-option:active{ transform:scale(.99); }
   .triage-step-footer{ display:flex; align-items:center; justify-content:space-between; margin-top:14px; min-height:32px; }
-  .triage-progress{ font-family:var(--font-mono); font-size:12px; color:var(--text-faint); font-variant-numeric:tabular-nums; }
+  .triage-progress{ font-family:var(--font-mono); font-size:var(--fs-label); color:var(--text-faint); font-variant-numeric:tabular-nums; }
   /* Resultaatkaarten: vraag → waarom → praktische volgende stap per gevlagde oorzaak
      (spec §6.3) — bewust GEEN percentage/waarschijnlijkheidsgetal (§14 "geen Triage
      probability"). */
@@ -447,12 +405,12 @@
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
     padding:14px; margin-bottom:10px; box-shadow:var(--shadow-card);
   }
-  .triage-result-question{ font-weight:600; font-size:14px; color:var(--text); margin:0 0 6px; }
-  .triage-result-why{ font-size:13px; color:var(--text-dim); line-height:1.5; margin:0 0 8px; }
-  .triage-result-action{ font-size:13px; color:var(--copper-light); margin:0; }
+  .triage-result-question{ font-weight:600; font-size:var(--fs-small); color:var(--text); margin:0 0 6px; }
+  .triage-result-why{ font-size:var(--fs-small); color:var(--text-dim); line-height:1.5; margin:0 0 8px; }
+  .triage-result-action{ font-size:var(--fs-small); color:var(--copper-light); margin:0; }
   .subtitle{
     color:var(--text-dim);
-    font-size:14px;
+    font-size:var(--fs-small);
     line-height:1.5;
     margin:0 0 24px;
     max-width:42ch;
@@ -481,8 +439,8 @@
     background:linear-gradient(160deg, rgba(193,127,62,0.14), var(--surface) 70%);
   }
   .choice-card svg{width:34px; height:34px; color:var(--copper-light); flex-shrink:0;}
-  .choice-name{font-family:var(--font-display); font-weight:600; font-size:19px; display:block;}
-  .choice-desc{font-size:12.5px; color:var(--text-dim); line-height:1.4; margin-top:2px;}
+  .choice-name{font-family:var(--font-display); font-weight:600; font-size:var(--fs-heading); display:block;}
+  .choice-desc{font-size:var(--fs-small); color:var(--text-dim); line-height:1.4; margin-top:2px;}
 
   /* roast grid */
   .choice-grid--4{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
@@ -501,8 +459,8 @@
   .roast-card:active{transform:scale(.98);}
   .roast-card[data-selected="true"]{border-color:var(--copper);}
   .roast-swatch{width:100%; height:20px; border-radius:6px; margin-bottom:12px;}
-  .roast-name{font-family:var(--font-display); font-weight:600; font-size:17px; display:block;}
-  .roast-desc{font-size:12px; color:var(--text-dim); margin-top:3px;}
+  .roast-name{font-family:var(--font-display); font-weight:600; font-size:var(--fs-body); display:block;}
+  .roast-desc{font-size:var(--fs-label); color:var(--text-dim); margin-top:3px;}
 
   /* profile list */
   .choice-grid--1{display:flex; flex-direction:column; gap:10px;}
@@ -523,86 +481,83 @@
   .profile-row:active{transform:scale(.99);}
   .profile-row[data-selected="true"]{background:var(--surface-2);}
   .profile-row svg{width:24px; height:24px; flex-shrink:0;}
-  .profile-name{font-family:var(--font-display); font-weight:600; font-size:16px; display:block;}
-  .profile-desc{font-size:12px; color:var(--text-dim); margin-top:2px;}
+  .profile-name{font-family:var(--font-display); font-weight:600; font-size:var(--fs-body); display:block;}
+  .profile-desc{font-size:var(--fs-label); color:var(--text-dim); margin-top:2px;}
   /* FIX (teamreview v2, UX Researcher/Devil's Advocate — Kritiek bevinding #1): badge op
      profielkaarten die vandaag naar exact hetzelfde recept resolven, zie findProfileTwins(). */
-  .profile-twin-note{font-size:11px; color:var(--text-faint); font-style:italic; display:block; margin-top:4px;}
+  .profile-twin-note{font-size:var(--fs-label); color:var(--text-faint); font-style:italic; display:block; margin-top:4px;}
 
   /* prep screen */
+  /* Sprint 5: stille kicker boven de titel i.p.v. een pil — zelfde info, minder hoogte. */
   .summary-tag{
-    display:inline-flex; align-items:center; gap:7px;
-    font-family:var(--font-mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    display:flex; align-items:center; gap:7px;
+    font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.06em; text-transform:uppercase;
     color:var(--text-dim);
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:var(--radius-pill);
-    padding:5px 12px;
-    margin-bottom:10px;
+    margin-bottom:4px;
   }
   .summary-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
   /* Fase 4: advies-paneel + klaargezette stap. */
   .reco-card{background:var(--surface); border:1px solid var(--copper); border-radius:16px; padding:16px; margin:14px 0 8px; display:flex; flex-direction:column; gap:8px;}
   .reco-card[hidden]{display:none;}
   .reco-card[data-type="KEEP"]{border-color:var(--border);}
-  .reco-kicker{margin:0; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--text-faint); display:flex; align-items:center; gap:8px;}
-  .reco-title{margin:0; font-size:19px; font-weight:700; color:var(--copper-light);}
+  .reco-kicker{margin:0; font-size:var(--fs-label); letter-spacing:.04em; text-transform:uppercase; color:var(--text-faint); display:flex; align-items:center; gap:8px;}
+  .reco-title{margin:0; font-size:var(--fs-heading); font-weight:700; color:var(--copper-light);}
   .reco-card[data-type="KEEP"] .reco-title{color:var(--text);}
-  .reco-body{margin:0; font-size:13.5px; color:var(--text-dim);}
-  .reco-note{margin:0; font-size:12px; color:var(--text-faint);}
-  .reco-status{margin:4px 0 0; font-size:13px; color:var(--copper-light);}
+  .reco-body{margin:0; font-size:var(--fs-small); color:var(--text-dim);}
+  .reco-note{margin:0; font-size:var(--fs-label); color:var(--text-faint);}
+  .reco-status{margin:4px 0 0; font-size:var(--fs-small); color:var(--copper-light);}
   .prep-next-adjust{background:var(--surface); border:1px solid var(--copper); border-radius:14px; padding:12px 14px; margin:0 0 14px;}
   .prep-next-adjust[hidden]{display:none;}
-  .prep-next-adjust-title{margin:0 0 4px; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--text-faint);}
-  .prep-next-adjust-text{margin:0; font-size:15px; font-weight:600; color:var(--copper-light);}
-  .prep-next-adjust-note{margin:6px 0 0; font-size:12px; color:var(--text-faint);}
+  .prep-next-adjust-title{margin:0 0 4px; font-size:var(--fs-label); letter-spacing:.04em; text-transform:uppercase; color:var(--text-faint);}
+  .prep-next-adjust-text{margin:0; font-size:var(--fs-body); font-weight:600; color:var(--copper-light);}
+  .prep-next-adjust-note{margin:6px 0 0; font-size:var(--fs-label); color:var(--text-faint);}
   /* Fase 3: proefkaart + doel op het receptscherm. */
   .tasting-card{display:flex; flex-direction:column; gap:14px; margin:14px 0 16px;}
   .tasting-block{display:flex; flex-direction:column; gap:8px;}
-  .tasting-q{margin:0; font-size:14.5px; font-weight:600; color:var(--text);}
-  .tasting-q-sub{font-weight:400; font-size:12.5px; color:var(--text-faint);}
+  .tasting-q{margin:0; font-size:var(--fs-small); font-weight:600; color:var(--text);}
+  .tasting-q-sub{font-weight:400; font-size:var(--fs-small); color:var(--text-faint);}
   .tasting-card .chip-row{display:flex; flex-wrap:wrap; gap:8px;}
   .tasting-card .chip{min-height:40px;}
   .tasting-actuals{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:12px 14px;}
   .tasting-actuals-edit{display:flex; gap:10px; flex-wrap:wrap;}
   .tasting-actuals-edit[hidden]{display:none;}
-  .tasting-actuals-edit label{display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--text-faint); flex:1 1 120px;}
-  .tasting-hint{margin:0; font-size:11.5px; color:var(--text-faint);}
-  .tasting-gate{margin:0; font-size:13px; color:var(--text-dim);}
+  .tasting-actuals-edit label{display:flex; flex-direction:column; gap:4px; font-size:var(--fs-label); color:var(--text-faint); flex:1 1 120px;}
+  .tasting-hint{margin:0; font-size:var(--fs-label); color:var(--text-faint);}
+  .tasting-gate{margin:0; font-size:var(--fs-small); color:var(--text-dim);}
   .tasting-gate[data-state="passed"]{color:var(--copper-light);}
   .prep-goal{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 12px;}
-  .prep-goal-label{font-size:12.5px; color:var(--text-dim); margin-right:2px;}
+  .prep-goal-label{font-size:var(--fs-small); color:var(--text-dim); margin-right:2px;}
   /* Fase 2: herstelpaneel + Home-banner. */
   .brew-recovery{position:relative; z-index:3; background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:18px; margin:0 0 16px; display:flex; flex-direction:column; gap:10px;}
   .brew-recovery[hidden]{display:none;}
-  .brew-recovery-title{font-size:18px; font-weight:700; margin:0; color:var(--text);}
-  .brew-recovery-text{font-size:13.5px; color:var(--text-dim); margin:0 0 4px;}
+  .brew-recovery-title{font-size:var(--fs-heading); font-weight:700; margin:0; color:var(--text);}
+  .brew-recovery-text{font-size:var(--fs-small); color:var(--text-dim); margin:0 0 4px;}
   .home-active-brew{display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; text-align:left; cursor:pointer;
     background:var(--surface); border:1px solid var(--copper-light); border-radius:16px; padding:12px 16px; margin:0 0 14px; color:var(--text);}
   .home-active-brew[hidden]{display:none;}
-  .home-active-brew-title{font-weight:700; font-size:15px;}
-  .home-active-brew-desc{font-size:12.5px; color:var(--text-dim);}
+  .home-active-brew-title{font-weight:700; font-size:var(--fs-body);}
+  .home-active-brew-desc{font-size:var(--fs-small); color:var(--text-dim);}
   /* Fase 2: brouwscherm — dominante actie + Bed droog. */
   .brew-action{text-align:center; margin:4px 0 10px;}
-  .brew-action-main{font-size:34px; line-height:1.1; font-weight:700; color:var(--text); letter-spacing:-.01em; font-variant-numeric:tabular-nums;}
+  .brew-action-main{font-size:var(--fs-title); line-height:1.1; font-weight:700; color:var(--text); letter-spacing:-.01em; font-variant-numeric:tabular-nums;}
   .brew-action[data-kind="wait"] .brew-action-main{color:var(--text); opacity:.88;}
   .brew-action-main, .brew-action-sub{text-shadow:0 1px 12px rgba(0,0,0,.55);}
   #pause-btn:disabled{opacity:.35; cursor:default;}
   .brew-action[data-kind="drawdown"] .brew-action-main, .brew-action[data-kind="done"] .brew-action-main{color:var(--copper-light);}
-  .brew-action-sub{font-size:13.5px; color:var(--text-dim); margin-top:6px;}
+  .brew-action-sub{font-size:var(--fs-small); color:var(--text-dim); margin-top:6px;}
   .bed-dry-btn{display:block; width:100%; min-height:64px; margin:6px 0 8px; border:none; border-radius:var(--radius-pill);
-    background:var(--copper-light); color:#1a120c; font-size:20px; font-weight:700; letter-spacing:.02em; cursor:pointer;
+    background:var(--copper-light); color:#1a120c; font-size:var(--fs-heading); font-weight:700; letter-spacing:.02em; cursor:pointer;
     box-shadow:0 6px 24px rgba(212,165,116,.28);}
   .bed-dry-btn[hidden]{display:none;}
   .bed-dry-btn:active{transform:translateY(1px) scale(.99);}
-  .bed-dry-hint{font-size:12px; color:var(--text-faint); text-align:center; margin:0 0 10px;}
+  .bed-dry-hint{font-size:var(--fs-label); color:var(--text-faint); text-align:center; margin:0 0 10px;}
   .bed-dry-hint[hidden]{display:none;}
   /* Fase 1: verwijderen van een logging + "Ongedaan maken"-balk. */
   /* Sprint 6 (UX-review F5): logboek per boon. */
   .history-group{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; margin:0 0 16px; box-shadow:var(--shadow-card);}
   .history-group-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
-  .history-group-title{font-family:var(--font-display); font-weight:700; font-size:18px; margin:0; color:var(--text);}
-  .history-group-sub{font-size:12.5px; color:var(--text-dim); margin:0;}
+  .history-group-title{font-family:var(--font-display); font-weight:700; font-size:var(--fs-heading); margin:0; color:var(--text);}
+  .history-group-sub{font-size:var(--fs-small); color:var(--text-dim); margin:0;}
   .history-dots{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:4px 0 10px;}
   .cup-dots{display:flex; gap:5px; flex-wrap:wrap;}
   .cup-dot{width:14px; height:14px; border-radius:50%; background:transparent; border:1.5px solid var(--border);}
@@ -611,48 +566,48 @@
   .cup-dot[data-l="3"]{background:#b39a58; border-color:#b39a58;}
   .cup-dot[data-l="4"]{background:#86a86c; border-color:#86a86c;}
   .cup-dot[data-l="5"]{background:#5fae7c; border-color:#5fae7c;}
-  .history-dots-label{font-size:11.5px; color:var(--text-faint);}
+  .history-dots-label{font-size:var(--fs-label); color:var(--text-faint);}
   .advice-chain{border-left:2px solid var(--copper-dim); padding-left:12px; margin:0 0 12px;}
-  .advice-chain-title{font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); margin:0 0 6px;}
+  .advice-chain-title{font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); margin:0 0 6px;}
   .advice-chain ol{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px;}
-  .advice-chain li{font-size:13px; color:var(--text); line-height:1.45;}
+  .advice-chain li{font-size:var(--fs-small); color:var(--text); line-height:1.45;}
   .advice-chain-cup{color:var(--text-dim);}
-  .advice-chain-status{display:inline-block; font-size:11.5px; padding:1px 8px; border-radius:999px; background:var(--surface-2); color:var(--text-dim); margin-left:2px;}
+  .advice-chain-status{display:inline-block; font-size:var(--fs-label); padding:1px 8px; border-radius:999px; background:var(--surface-2); color:var(--text-dim); margin-left:2px;}
   .advice-chain li[data-advice-outcome="better"] .advice-chain-status{color:#5fae7c;}
   .advice-chain li[data-advice-outcome="worse"] .advice-chain-status{color:var(--danger);}
   .history-best{background:linear-gradient(180deg, rgba(212,165,116,.10), rgba(212,165,116,.02)); border:1px solid var(--copper-dim); border-radius:var(--radius-sm); padding:12px; margin:0 0 12px;}
-  .history-best-title{font-weight:600; font-size:14px; color:var(--copper-light); margin:0 0 2px;}
-  .history-best-sub{font-size:12.5px; color:var(--text-dim); margin:0;}
-  .history-best-btn{margin-top:10px; font-size:15px; padding:12px;}
+  .history-best-title{font-weight:600; font-size:var(--fs-small); color:var(--copper-light); margin:0 0 2px;}
+  .history-best-sub{font-size:var(--fs-small); color:var(--text-dim); margin:0;}
+  .history-best-btn{margin-top:10px; font-size:var(--fs-body); padding:12px;}
   .history-group-cups .brewlog-entry-card:last-child{margin-bottom:0;}
   .history-more{margin-top:10px;}
-  .history-more > summary{cursor:pointer; min-height:44px; display:flex; align-items:center; color:var(--copper-light); font-size:13.5px;}
-  .prep-best-ref{font-size:13px; color:var(--copper-light); background:var(--surface); border:1px solid var(--copper-dim); border-radius:var(--radius-sm); padding:10px 12px; margin:0 0 12px;}
+  .history-more > summary{cursor:pointer; min-height:44px; display:flex; align-items:center; color:var(--copper-light); font-size:var(--fs-small);}
+  .prep-best-ref{font-size:var(--fs-small); color:var(--copper-light); background:var(--surface); border:1px solid var(--copper-dim); border-radius:var(--radius-sm); padding:10px 12px; margin:0 0 12px;}
   .prep-best-ref[hidden]{display:none;}
-  .brewlog-entry-delete{background:none; border:none; color:var(--text-faint); font-size:12px; padding:6px 0 0; cursor:pointer; text-decoration:underline;}
+  .brewlog-entry-delete{background:none; border:none; color:var(--text-faint); font-size:var(--fs-label); padding:6px 0 0; cursor:pointer; text-decoration:underline;}
   .undo-bar{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(96px + env(safe-area-inset-bottom)); z-index:60;
     display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--border);
-    border-radius:18px; padding:10px 16px; font-size:13px; color:var(--text); box-shadow:0 6px 24px rgba(0,0,0,.35);
+    border-radius:18px; padding:10px 16px; font-size:var(--fs-small); color:var(--text); box-shadow:0 6px 24px rgba(0,0,0,.35);
     /* Langere meldingen (bijv. met voorraadcorrectie) lopen over twee regels i.p.v. van het scherm af. */
     width:max-content; max-width:calc(100vw - 32px); box-sizing:border-box; line-height:1.4;}
   .undo-bar[hidden]{display:none;}
   /* BP-A: stappenplan in de bypass-kaart */
-  .bypass-howto{margin-top:8px; font-size:12.5px; color:var(--text-muted);}
+  .bypass-howto{margin-top:8px; font-size:var(--fs-small); color:var(--text-faint);}
   .bypass-howto summary{cursor:pointer; color:var(--copper-light); font-weight:600;}
   .bypass-howto ol{margin:6px 0 6px 18px; padding:0;}
   .bypass-howto li{margin:3px 0;}
   .bypass-howto p{margin:6px 0 0;}
-  .undo-bar button{background:none; border:none; color:var(--copper-light); font-weight:600; cursor:pointer; font-size:13px; white-space:nowrap; flex-shrink:0;}
+  .undo-bar button{background:none; border:none; color:var(--copper-light); font-weight:600; cursor:pointer; font-size:var(--fs-small); white-space:nowrap; flex-shrink:0;}
 
-  .prep-bean-line{font-size:13px; color:var(--text-dim); margin:-4px 0 8px;}
+  .prep-bean-line{font-size:var(--fs-small); color:var(--text-dim); margin:-4px 0 8px;}
   .prep-bean-line[data-linked="false"]{color:var(--text-faint);}
 
   .technique-line{
-    font-size:13px; color:var(--copper-light);
+    font-size:var(--fs-small); color:var(--copper-light);
     margin:0 0 4px;
   }
   .technique-tasting{
-    font-size:12px; color:var(--text-faint); font-style:italic;
+    font-size:var(--fs-label); color:var(--text-faint); font-style:italic;
     margin:0 0 18px;
   }
   /* FIX (teamreview v2 — Kritiek bevinding #1): expliciete "hetzelfde recept"-banner op
@@ -661,7 +616,7 @@
      want dit is geen kleine kanttekening maar precies de eerlijkheid die Spanning 2 uit
      de plenaire discussie vroeg. */
   .profile-twin-banner{
-    font-size:12.5px; color:var(--text); line-height:1.4;
+    font-size:var(--fs-small); color:var(--text); line-height:1.4;
     background:var(--surface-2); border:1px solid var(--border); border-left:3px solid var(--copper-light);
     border-radius:8px; padding:8px 12px; margin:0 0 18px;
   }
@@ -683,9 +638,9 @@
     display:flex; align-items:center; justify-content:center; color:var(--copper-light);
   }
   .prep-intel-icon svg{ width:17px; height:17px; }
-  .prep-intel-body{ flex:1; min-width:0; font-size:12.5px; color:var(--text); line-height:1.4; }
+  .prep-intel-body{ flex:1; min-width:0; font-size:var(--fs-small); color:var(--text); line-height:1.4; }
   .prep-intel-header{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:5px; }
-  .prep-intel-title{ font-family:var(--font-display); font-weight:600; font-size:14px; color:var(--text); }
+  .prep-intel-title{ font-family:var(--font-display); font-weight:600; font-size:var(--fs-small); color:var(--text); }
 
   /* NIEUW (Visual Design 2.0, §12 Recipe-scherm): serving-row en stepper-knoppen krijgen
      hetzelfde Level-1-kaartgewicht (shadow-card) en tactiele press-state als de andere
@@ -699,19 +654,19 @@
     margin-bottom:16px;
     box-shadow:var(--shadow-card);
   }
-  .serving-label{font-size:13px; color:var(--text-dim);}
+  .serving-label{font-size:var(--fs-small); color:var(--text-dim);}
   .stepper{display:flex; align-items:center; gap:8px;}
   .stepper button{
     width:44px; height:44px; border-radius:var(--radius-sm);
     border:1px solid var(--border);
     background:var(--surface-2);
     color:var(--copper-light);
-    font-size:19px; cursor:pointer; line-height:1;
+    font-size:var(--fs-heading); cursor:pointer; line-height:1;
     transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-micro) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
   .stepper button:hover{border-color:var(--copper);}
   .stepper button:active{background:var(--copper-dim); transform:scale(.94);}
-  .stepper span{font-size:15px; min-width:60px; text-align:center; font-variant-numeric:tabular-nums;}
+  .stepper span{font-size:var(--fs-body); min-width:60px; text-align:center; font-variant-numeric:tabular-nums;}
 
   .stats-grid{
     display:grid; grid-template-columns:1fr 1fr; gap:10px;
@@ -745,22 +700,23 @@
   .stats-grid.stats-grid--three{ grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-bottom:0; }
   .stats-grid--three .stat-block{ padding:12px 10px; }
   .stat-label{
-    font-family:var(--font-mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
-    color:var(--text-muted); margin-bottom:6px;
+    font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.08em; text-transform:uppercase;
+    color:var(--text-faint); margin-bottom:6px;
     display:flex; align-items:center; gap:5px;
   }
   /* NIEUW (visuele afstemming referentiebeeld recept-scherm): klein line-icoon per primair
      statblok (boon/druppel/thermometer) — puur decoratief bij het bestaande label, geen
      nieuwe data. */
   .stat-icon{ width:13px; height:13px; flex-shrink:0; opacity:.85; }
-  .stat-value{font-family:var(--font-mono); font-size:19px; color:var(--copper-light); font-variant-numeric:tabular-nums;}
-  .stat-sub{font-size:10.5px; color:var(--text-muted); margin-top:3px;}
+  @media (max-width:359px){ #stats-grid .stat-icon{display:none;} }
+  .stat-value{font-family:var(--font-mono); font-size:var(--fs-heading); color:var(--copper-light); font-variant-numeric:tabular-nums;}
+  .stat-sub{font-size:var(--fs-label); color:var(--text-faint); margin-top:3px;}
   /* NIEUW (visuele afstemming referentiebeeld): lokale "meer info"-toggle binnen een
      stat-block (vandaag alleen Maalgraad) — houdt de kaart standaard compact terwijl de
      volledige, ongewijzigde toelichting één tik verderop blijft. */
   .stat-more-toggle{
     display:block; background:none; border:none; color:var(--copper-light); cursor:pointer;
-    font-size:10.5px; font-family:var(--font-mono); letter-spacing:.02em; padding:0; margin-top:6px;
+    font-size:var(--fs-label); font-family:var(--font-body); letter-spacing:.02em; padding:0; margin-top:6px;
     text-align:left;
   }
   .stat-more-toggle:hover{ text-decoration:underline; }
@@ -769,35 +725,52 @@
   /* NIEUW (Visual Design 2.0 fase 2, spec §12 "ratio/grind/brew-time secondary" + §27
      "secondary information stays quiet"): kleinere waarde, gedempt label — zelfde kaart,
      minder visueel gewicht dan de drie dominante stat-blocks. */
-  .stat-block--secondary .stat-value{font-size:14px; color:var(--text-dim); font-variant-numeric:tabular-nums;}
+  .stat-block--secondary .stat-value{font-size:var(--fs-small); color:var(--text-dim); font-variant-numeric:tabular-nums;}
   /* NIEUW (Visual Design 2.0 fase 3, detail-referentie recept-scherm): het waterhoeveelheid-
      statblok is nu tikbaar (opent #water-modal) — zelfde tactiele taal als .bean-card. */
   /* Sprint 3 (UX-review F4): −/+ in de watertegel; het getal zelf opent de modal. */
   .stat-stepper{display:flex; align-items:center; justify-content:space-between; gap:4px;}
   .stat-stepper button:not(.stat-value--btn){
     width:44px; height:44px; flex-shrink:0; border-radius:var(--radius-sm); border:1px solid var(--border);
-    background:var(--surface-2); color:var(--copper-light); font-size:19px; line-height:1; cursor:pointer;
+    background:var(--surface-2); color:var(--copper-light); font-size:var(--fs-heading); line-height:1; cursor:pointer;
   }
   .stat-stepper button:not(.stat-value--btn):active{background:var(--copper-dim); transform:scale(.94);}
   .stat-value--btn{background:none; border:none; padding:0; min-height:44px; cursor:pointer; flex:1; text-align:center; white-space:nowrap;}
   .stat-value--btn:hover{text-decoration:underline; text-underline-offset:3px;}
-  .stat-block--hero .stat-value{font-size:22px;}
+  .stat-block--hero .stat-value{font-size:var(--fs-number);}
+  /* Sprint 5: mono alleen voor getallen — een maalgraad als woord ("middelgrof") in de gewone letter. */
+  .stat-block--hero .stat-value.stat-value--word{font-family:var(--font-body); font-size:var(--fs-heading); white-space:normal; overflow-wrap:anywhere;}
   .stat-block--adjusted{border-color:var(--copper); background:linear-gradient(180deg, rgba(212,165,116,.10), rgba(212,165,116,.02)), var(--surface);}
   .stat-block--adjusted .stat-label{color:var(--copper-light);}
   .stat-sub--adjusted{color:var(--copper-light);}
   .stat-block--wide{grid-column:1 / -1;}
+  /* Sprint 5: op de telefoon krijgt de watertegel (met −/+) de volle breedte bovenaan en
+     loopt de maalgraad-tegel (de meeste tekst) rechts over twee rijen naast koffie en
+     temperatuur — gelijke kolommen, geen afgebroken "Klik 15", korter scherm. DOM-volgorde
+     (en dus schermlezer-volgorde) blijft koffie · water · maalgraad · temperatuur. */
+  @media (max-width:699px){
+    #stats-grid{grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-flow:row dense;}
+    #stats-grid .stat-block--water{order:-1; grid-column:1 / -1; padding-top:10px; padding-bottom:10px;}
+    #stats-grid .stat-block--water .stat-stepper{justify-content:center; gap:18px;}
+    #stats-grid .stat-block--water .stat-value--btn{flex:0 1 auto; min-width:120px;}
+    #stats-grid .stat-block--grind{grid-column:2; grid-row:span 2; align-self:stretch;}
+  }
   #stats-grid{align-items:start;}
   .stat-block--secondary .stat-label{color:var(--text-faint);}
+  /* Sprint 5: ratio en brouwtijd compact — label en waarde op één regel, uitleg eronder. */
+  .stat-block--secondary{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; column-gap:8px; padding:10px 14px;}
+  .stat-block--secondary .stat-label{margin-bottom:0;}
+  .stat-block--secondary .stat-sub{flex-basis:100%;}
 
   .style-note{
-    font-size:13px; color:var(--text-dim); line-height:1.5;
+    font-size:var(--fs-small); color:var(--text-dim); line-height:1.5;
     border-left:2px solid var(--copper-dim);
     padding-left:10px;
     margin:0 0 18px;
   }
   .process-note{
     display:flex; gap:8px; align-items:flex-start;
-    font-size:12.5px; color:var(--text-dim); line-height:1.5;
+    font-size:var(--fs-small); color:var(--text-dim); line-height:1.5;
     background:var(--surface); border:1px solid var(--copper-dim); border-radius:var(--radius-sm);
     padding:11px 13px; margin:-6px 0 18px;
   }
@@ -807,6 +780,8 @@
   /* NIEUW (Visual Design 2.0, §12): recipe-table krijgt shadow-card zodat het kernrecept
      (de belangrijkste content van dit scherm) hetzelfde elevated-kaart-gewicht heeft als
      stats-grid/stat-block erboven — cel-inhoud/berekeningen ongewijzigd. */
+  .recipe-rate-note{font-size:var(--fs-label); color:var(--text-faint); margin:-8px 0 14px 2px;}
+  .recipe-rate-note[hidden]{display:none;}
   .recipe-table{
     width:100%; border-collapse:collapse; margin-bottom:14px;
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
@@ -818,30 +793,30 @@
   .recipe-table thead th{padding-top:12px;}
   .recipe-table tbody tr:last-child td{padding-bottom:12px;}
   .recipe-table th{
-    font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase;
+    font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.06em; text-transform:uppercase;
     color:var(--text-faint); text-align:left; padding:0 8px 8px 0; font-weight:500;
   }
   .recipe-table td{
-    font-size:13px; padding:9px 8px 9px 0;
+    font-size:var(--fs-small); padding:7px 8px 7px 0;
     border-top:1px solid var(--border);
     color:var(--text); font-weight:500;
   }
-  .recipe-table td.mono{font-family:var(--font-mono); color:var(--text);}
+  .recipe-table td.mono{font-family:var(--font-mono); color:var(--text); white-space:nowrap;}
   /* NIEUW (visuele afstemming referentiebeeld "pour step detail"): elke zetstap-rij is
      tikbaar (opent #pourstep-modal) — subtiele hover/press-feedback, geen nieuwe kolom. */
   .recipe-table tbody tr{ cursor:pointer; transition:background var(--motion-standard) var(--ease-out); }
   .recipe-table tbody tr:hover, .recipe-table tbody tr:focus-visible{ background:var(--surface-2); }
   .recipe-table tbody tr:active{ background:var(--copper-dim); }
-  .recipe-table .step-note{display:block; font-size:11px; color:var(--text-faint); margin-top:1px;}
-  .recipe-table .step-flow{display:block; font-size:11px; color:var(--copper-light); margin-top:1px; font-style:italic;}
-  .recipe-table .step-rate{display:block; font-size:10.5px; color:var(--text-faint); margin-top:1px;}
+  .recipe-table .step-note{display:block; font-size:var(--fs-label); color:var(--text-faint); margin-top:1px;}
+  .recipe-table .step-flow{display:block; font-size:var(--fs-label); color:var(--copper-light); margin-top:1px; font-style:italic;}
+  .recipe-table .step-rate{display:block; font-size:var(--fs-label); color:var(--text-faint); margin-top:1px;}
   /* text-shadow (op verzoek, lichtere scrim-ronde): dit is kale tekst zonder eigen
      ondoorzichtig vlak, rechtstreeks over de doorlopende foto — dezelfde bescherming als
      .brew-hero-title al had, nu ook hier i.p.v. op een zware scrim te leunen. */
-  .dial-flow{font-size:12.5px; color:var(--copper-light); font-style:italic; margin-top:2px; max-width:220px; margin-left:auto; margin-right:auto; text-shadow:0 1px 3px rgba(0,0,0,.75);}
+  .dial-flow{font-size:var(--fs-small); color:var(--copper-light); font-style:italic; margin-top:2px; max-width:220px; margin-left:auto; margin-right:auto; text-shadow:0 1px 3px rgba(0,0,0,.75);}
 
   .method-tips{
-    font-size:11.5px; color:var(--text-faint); line-height:1.5;
+    font-size:var(--fs-label); color:var(--text-faint); line-height:1.5;
     margin:0 0 20px;
   }
 
@@ -849,17 +824,22 @@
      elevatie + inner highlight in rust, iets dieper bij press (§7 "pressed state visually
      moves inward ~1-2px", §8 "small scale/depth change, never bounce"). Kleur/geometrie
      ongewijzigd — alleen echte diepte toegevoegd. */
-  .start-btn{
+  /* Sprint 5 (UX-review): drie vaste knopvarianten. Nieuwe code gebruikt .btn-primary /
+     .btn-secondary / .btn-tertiary; de oudere klassen hieronder delen exact dezelfde regels:
+       primair   = .start-btn (.pill-cta = de pilvorm)  — gevuld koper, één per scherm
+       secundair = .advisor-primary, .bean-use-btn, .advisor-link — omlijnd
+       tertiair  = .link-secondary — alleen tekst */
+  .start-btn, .btn-primary{
     width:100%;
     background:var(--copper);
     color:#1B1310;
     border:none; border-radius:var(--radius-md);
-    font-family:var(--font-display); font-weight:600; font-size:17px;
+    font-family:var(--font-display); font-weight:600; font-size:var(--fs-body);
     padding:16px; cursor:pointer;
     box-shadow:0 1px 0 rgba(255,255,255,.16) inset, 0 4px 14px rgba(212,165,116,.18);
     transition:background var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
-  .start-btn:hover{background:var(--copper-light);}
+  .start-btn:hover, .btn-primary:hover{background:var(--copper-light);}
   .start-btn:active{transform:translateY(1px) scale(.98); box-shadow:0 1px 0 rgba(255,255,255,.1) inset, 0 2px 6px rgba(212,165,116,.14);}
   /* NIEUW (Visual Design 2.0 fase 2, spec §12 "Start Brew primary, Adjust secondary"):
      Aanpassen (.advisor-primary, al de bestaande SecondaryButton-stijl) + Start Brew
@@ -873,30 +853,30 @@
   .legacy-review{background:var(--surface); border:1px solid var(--copper-dim, var(--border)); border-radius:var(--radius-md); padding:12px 14px; margin:0 0 14px;}
   .legacy-review[hidden]{display:none;}
   .legacy-review-head{display:flex; gap:12px; align-items:flex-start; justify-content:space-between;}
-  .legacy-review-title{margin:0; font-weight:600; color:var(--copper-light); font-size:14px;}
-  .legacy-review-sub{margin:4px 0 0; font-size:12px; color:var(--text-dim); line-height:1.45;}
+  .legacy-review-title{margin:0; font-weight:600; color:var(--copper-light); font-size:var(--fs-small);}
+  .legacy-review-sub{margin:4px 0 0; font-size:var(--fs-label); color:var(--text-dim); line-height:1.45;}
   .legacy-review-list{display:grid; gap:10px; margin-top:12px;}
   .legacy-review-item{border-top:1px solid var(--border); padding-top:10px;}
-  .legacy-review-meta{margin:0; font-size:12.5px; color:var(--text);}
-  .legacy-review-why{margin:3px 0 8px; font-size:12px; color:var(--text-dim);}
+  .legacy-review-meta{margin:0; font-size:var(--fs-small); color:var(--text);}
+  .legacy-review-why{margin:3px 0 8px; font-size:var(--fs-label); color:var(--text-dim);}
   .legacy-review-actions{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
   .legacy-review-select{flex:1 1 180px; min-width:0;}
   .ab-trial{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px 14px; margin:10px 0 14px;}
   .ab-trial[hidden]{display:none;}
-  .ab-title{margin:0 0 6px; font-weight:600; color:var(--copper-light); font-size:14px;}
-  .ab-text, .ab-tally, .ab-reveal{margin:4px 0 8px; font-size:12.5px; color:var(--text-dim); line-height:1.45;}
+  .ab-title{margin:0 0 6px; font-weight:600; color:var(--copper-light); font-size:var(--fs-small);}
+  .ab-text, .ab-tally, .ab-reveal{margin:4px 0 8px; font-size:var(--fs-small); color:var(--text-dim); line-height:1.45;}
   .ab-reveal{color:var(--text);}
-  .ab-q{margin:10px 0 4px; font-size:12px; color:var(--text-muted);}
-  .ab-q-hint{color:var(--text-faint); font-size:11px;}
+  .ab-q{margin:10px 0 4px; font-size:var(--fs-label); color:var(--text-faint);}
+  .ab-q-hint{color:var(--text-faint); font-size:var(--fs-label);}
   .ab-actions{display:flex; gap:12px; align-items:center; margin-top:10px;}
   .scan-review-rows{margin:0; display:grid; gap:4px;}
-  .scan-review-row{display:grid; grid-template-columns:96px 1fr; gap:8px; font-size:13px;}
-  .scan-review-row dt{color:var(--text-muted); font-family:var(--font-mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; padding-top:2px;}
+  .scan-review-row{display:grid; grid-template-columns:96px 1fr; gap:8px; font-size:var(--fs-small);}
+  .scan-review-row dt{color:var(--text-faint); font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.06em; text-transform:uppercase; padding-top:2px;}
   .scan-review-row dd{margin:0; color:var(--text);}
-  .scan-review-row[data-missing="true"] dd{color:var(--warn, var(--copper-light));}
-  .scan-review-hint{margin:8px 0 0; font-size:11.5px; color:var(--text-faint);}
-  .profile-group-label{flex-basis:100%; width:100%; grid-column:1/-1; margin:12px 0 2px; font-family:var(--font-mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted);}
-  .disclaimer{font-size:11px; color:var(--text-faint); margin-top:10px; line-height:1.4;}
+  .scan-review-row[data-missing="true"] dd{color:var(--copper-light);}
+  .scan-review-hint{margin:8px 0 0; font-size:var(--fs-label); color:var(--text-faint);}
+  .profile-group-label{flex-basis:100%; width:100%; grid-column:1/-1; margin:12px 0 2px; font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint);}
+  .disclaimer{font-size:var(--fs-label); color:var(--text-faint); margin-top:10px; line-height:1.4;}
 
   /* brew screen */
   /* HERZIEN (op verzoek, na screenshot-feedback "foto liep door over de hele pagina, de
@@ -960,11 +940,11 @@
   }
   .brew-hero-header{position:relative; margin-bottom:18px;}
   .brew-hero-title{
-    font-family:var(--font-display); font-size:18px; font-weight:600;
+    font-family:var(--font-display); font-size:var(--fs-heading); font-weight:600;
     color:#F5F0E6; text-shadow:0 1px 4px rgba(0,0,0,.6);
   }
   .brew-hero-subtitle{
-    font-size:11px; color:rgba(245,240,230,.78); margin-top:3px;
+    font-size:var(--fs-label); color:rgba(245,240,230,.78); margin-top:3px;
     text-transform:uppercase; letter-spacing:.07em; text-shadow:0 1px 3px rgba(0,0,0,.6);
   }
   /* NIEUW (Visual Design 2.0, §13 Brew Timer hero mode): stop-btn zweeft over de foto-
@@ -978,7 +958,7 @@
   .stop-btn{
     position:absolute; top:0; right:0;
     background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm);
-    color:var(--text-dim); font-family:var(--font-mono); font-size:12px;
+    color:var(--text-dim); font-family:var(--font-body); font-size:var(--fs-label);
     padding:10px 12px; cursor:pointer; min-height:40px;
     transition:border-color var(--motion-standard) var(--ease-out), color var(--motion-standard) var(--ease-out);
   }
@@ -992,7 +972,7 @@
   .wake-indicator{
     position:absolute; top:0; left:0;
     display:flex; align-items:center; gap:5px;
-    font-family:var(--font-mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase;
+    font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.05em; text-transform:uppercase;
     color:rgba(245,240,230,.85); padding:10px 4px; opacity:0; transition:opacity .3s ease;
     text-shadow:0 1px 3px rgba(0,0,0,.6);
   }
@@ -1045,23 +1025,23 @@
      fontstack maakt cijfers al even breed, maar font-variant-numeric:tabular-nums
      garandeert dat ook in eventuele fallback-fonts en volgt de "brew numerals"-eis uit
      de Style Guide expliciet, i.p.v. impliciet te leunen op het toeval van monospace. */
-  .dial-time{font-size:40px; color:var(--text); letter-spacing:.01em; font-weight:600; font-variant-numeric:tabular-nums;}
+  .dial-time{font-size:var(--fs-display); color:var(--text); letter-spacing:.01em; font-weight:600; font-variant-numeric:tabular-nums;}
   /* NIEUW: "van {totaal}" naast de verstreken tijd (dial-center staat op de ondoorzichtige
      .dial-backdrop-schijf, dus gewoon thema-tokens — geen hardcoded kleur zoals de titel
      hierboven die wél op de rauwe foto staat). */
-  .dial-total{font-size:12px; color:var(--text-faint); margin-top:-3px; font-weight:500;}
+  .dial-total{font-size:var(--fs-label); color:var(--text-faint); margin-top:-3px; font-weight:500;}
   /* HERZIEN (focus-herontwerp): deze twee uitlezingen zijn vervangen door de duidelijkere
      #brew-pour-badge/#brew-cumulative hieronder de dial (giet-telling + lopend totaal in
      plaats van losse getallen in de dial zelf) — de JS die ze vult blijft ongewijzigd
      (geen functionaliteit verwijderd, puur visueel overbodig geworden dubbele info). */
   .dial-live-grams, .dial-water{display:none;}
-  .dial-step{font-family:var(--font-display); font-size:15px; color:var(--copper-light); margin-top:4px;}
+  .dial-step{font-family:var(--font-display); font-size:var(--fs-body); color:var(--copper-light); margin-top:4px;}
   /* NIEUW: giet-voortgang (welke stap, hoeveelste giet van hoeveel) + lopend totaal —
      zie updateDial() in de JS. */
   .brew-focus-info{margin:0 0 4px;}
   .brew-pour-badge{
     display:inline-block; background:var(--copper); color:#1B1310;
-    font-family:var(--font-display); font-weight:700; font-size:12.5px;
+    font-family:var(--font-display); font-weight:700; font-size:var(--fs-small);
     padding:6px 14px; border-radius:var(--radius-pill); margin-bottom:10px; letter-spacing:.01em;
   }
   .brew-pour-badge:empty{display:none;}
@@ -1073,21 +1053,21 @@
   .brewlog-saved-msg{scroll-margin-top:16px;}
   /* Sprint 4 (UX-review F1): proefkaart als stepper + adviesscherm. */
   .tasting-progress{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:6px 0 4px; flex-wrap:wrap;}
-  .tasting-progress-label{font-family:var(--font-mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--copper-light); margin:0;}
+  .tasting-progress-label{font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.06em; text-transform:uppercase; color:var(--copper-light); margin:0;}
   .tasting-dots{display:flex; gap:0;}
   .tasting-dot{width:44px; min-height:44px; background:none; border:none; padding:0; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;}
   .tasting-dot span{display:block; width:18px; height:5px; border-radius:4px; background:var(--border);}
   .tasting-dot[data-state="done"] span{background:var(--copper-dim);}
   .tasting-dot[data-state="current"] span{background:var(--copper); width:24px;}
   .tasting-step[hidden]{display:none;}
-  .tasting-step .tasting-q{font-size:19px;}
-  .tasting-step .chip-row .chip{min-height:48px; font-size:15px;}
+  .tasting-step .tasting-q{font-size:var(--fs-heading);}
+  .tasting-step .chip-row .chip{min-height:48px; font-size:var(--fs-body);}
   .tasting-nav{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:6px 0 4px;}
-  .tasting-nav .link-secondary{width:auto; margin:0; padding:10px 4px; text-decoration:none; font-size:14px;}
-  .tasting-nav .advisor-primary{width:auto; margin:0 0 0 auto; min-height:44px; padding:10px 18px; font-size:14.5px;}
+  .tasting-nav .link-secondary{width:auto; margin:0; padding:10px 4px; text-decoration:none; font-size:var(--fs-small);}
+  .tasting-nav .advisor-primary{width:auto; margin:0 0 0 auto; min-height:44px; padding:10px 18px; font-size:var(--fs-small);}
   .tasting-nav [hidden]{display:none;}
   .brewlog-more{margin-top:14px;}
-  .brewlog-more-sub{font-family:var(--font-body); font-weight:400; font-size:12px; color:var(--text-faint); margin-left:6px;}
+  .brewlog-more-sub{font-family:var(--font-body); font-weight:400; font-size:var(--fs-label); color:var(--text-faint); margin-left:6px;}
   .brewlog-result-actions{display:none;}
   /* Sprint 4: de foto stond boven de proefkaart en duwde de eerste vraag onder de vouw;
      het Klaar-vinkje en de meetwaarden blijven. */
@@ -1099,12 +1079,12 @@
   #screen-brewlog[data-mode="result"] #brewlog-more,
   #screen-brewlog[data-mode="result"] #brewlog-save-btn{display:none;}
   #screen-brewlog[data-mode="result"] .brewlog-complete-check{display:none;}
-  #screen-brewlog[data-mode="result"] .reco-title{font-size:24px;}
+  #screen-brewlog[data-mode="result"] .reco-title{font-size:var(--fs-number);}
   .reco-fromto{display:flex; align-items:stretch; gap:8px; margin:4px 0;}
   .reco-fromto-tile{flex:1; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; display:flex; flex-direction:column; gap:2px;}
   .reco-fromto-tile--next{border-color:var(--copper);}
-  .reco-fromto-val{font-family:var(--font-mono); font-weight:700; font-size:22px; color:var(--text);}
-  .reco-fromto-arrow{align-self:center; color:var(--copper-light); font-size:18px;}
+  .reco-fromto-val{font-family:var(--font-mono); font-weight:700; font-size:var(--fs-number); color:var(--text);}
+  .reco-fromto-arrow{align-self:center; color:var(--copper-light); font-size:var(--fs-heading);}
   .brewlog-saved-msg:focus{outline:none;}
   /* Sprint 1 (UX-review F5): via de tabbalk geopend = hoofdscherm, geen terugknop. */
   .screen[data-tab-root] > .back-btn{display:none;}
@@ -1118,12 +1098,12 @@
   }
   .brew-cumulative{
     font-family:var(--font-mono); font-variant-numeric:tabular-nums;
-    font-size:13px; color:var(--text-dim); margin:0 0 12px; font-weight:500;
+    font-size:var(--fs-small); color:var(--text-dim); margin:0 0 12px; font-weight:500;
     text-shadow:0 1px 3px rgba(0,0,0,.75);
   }
   .brew-cumulative:empty{display:none;}
   .next-info{
-    font-size:13px; color:var(--text); font-weight:500; margin:0 0 26px; min-height:16px;
+    font-size:var(--fs-small); color:var(--text); font-weight:500; margin:0 0 26px; min-height:16px;
     display:inline-block; background:var(--surface); border:1px solid var(--border);
     border-radius:var(--radius-pill); padding:11px 16px;
     box-shadow:var(--shadow-card);
@@ -1137,15 +1117,15 @@
     border:1px solid var(--border);
     border-radius:var(--radius-sm);
     padding:11px 14px;
-    font-size:13px;
+    font-size:var(--fs-small);
     box-shadow:var(--shadow-card);
     transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
   .brew-step-main{display:flex; align-items:center; justify-content:space-between;}
   .brew-step[data-active="true"]{border-color:var(--copper); background:var(--surface-2); box-shadow:var(--shadow-card), 0 0 0 1px var(--accent-glow);}
   .brew-step[data-done="true"]{opacity:.45;}
-  .brew-step-time{font-family:var(--font-mono); color:var(--text); font-weight:500; font-size:12.5px;}
-  .brew-step-flow{font-size:11.5px; color:var(--copper-light); font-style:italic;}
+  .brew-step-time{font-family:var(--font-mono); color:var(--text); font-weight:500; font-size:var(--fs-small);}
+  .brew-step-flow{font-size:var(--fs-label); color:var(--copper-light); font-style:italic;}
   .brew-step-bypass{border-color:var(--copper-light); background:var(--surface-2);}
   .brew-step-bypass .brew-step-time{color:var(--copper-light);}
 
@@ -1170,7 +1150,7 @@
   .brew-controls button{
     width:60px; height:60px; border-radius:50%; border:1px solid var(--border);
     display:flex; align-items:center; justify-content:center; text-align:center;
-    background:var(--surface); color:var(--text); font-size:11.5px; padding:4px; cursor:pointer;
+    background:var(--surface); color:var(--text); font-size:var(--fs-label); padding:4px; cursor:pointer;
     box-shadow:var(--shadow-card);
     transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
@@ -1184,14 +1164,14 @@
   .brew-controls #home-btn svg{width:19px; height:19px;}
   .brew-controls #home-btn:hover{color:var(--copper-light);}
   .brew-controls #pause-btn{
-    width:76px; height:76px; font-size:14px; font-weight:600; font-family:var(--font-display);
+    width:76px; height:76px; font-size:var(--fs-small); font-weight:600; font-family:var(--font-display);
     background:var(--copper); color:#1B1310; border:none;
     box-shadow:0 1px 0 rgba(255,255,255,.16) inset, 0 4px 14px rgba(212,165,116,.18);
   }
   .brew-controls #pause-btn:hover{background:var(--copper-light);}
   .brew-controls #pause-btn:active{background:var(--copper-light); transform:translateY(1px) scale(.96); box-shadow:0 1px 0 rgba(255,255,255,.1) inset, 0 2px 6px rgba(212,165,116,.14);}
   .finish-note{
-    font-family:var(--font-display); font-size:17px; color:var(--copper-light);
+    font-family:var(--font-display); font-size:var(--fs-body); color:var(--copper-light);
     margin:-8px 0 20px; text-shadow:0 1px 3px rgba(0,0,0,.75);
   }
   /* FIX (v2.2 kernflow, oorspronkelijk) — VERVANGEN in vervolgplan v2.3, Bouwbesluit B2:
@@ -1209,40 +1189,40 @@
     gap:4px; margin:6px 0 18px;
   }
   .brewlog-complete-check{
-    width:52px; height:52px; border-radius:50%; background:var(--success); color:var(--bg);
-    display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:26px; font-weight:700;
+    width:52px; height:52px; border-radius:50%; background:var(--sage); color:var(--bg);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:var(--fs-number); font-weight:700;
     box-shadow:0 0 0 8px var(--success-soft), 0 0 44px 6px var(--success-soft);
     margin-bottom:6px;
   }
-  .brewlog-complete-sub{ font-size:13.5px; color:var(--text-dim); margin:0; }
+  .brewlog-complete-sub{ font-size:var(--fs-small); color:var(--text-dim); margin:0; }
   .brewlog-complete-stats{ display:flex; gap:10px; justify-content:center; margin:0 0 18px; }
   .brewlog-complete-stat{
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
     padding:8px 14px; text-align:center; box-shadow:var(--shadow-card);
   }
-  .brewlog-complete-stat .stat-label{ font-size:9px; margin-bottom:2px; }
-  .brewlog-complete-stat .stat-value{ font-size:14px; font-family:var(--font-mono); color:var(--text); font-variant-numeric:tabular-nums; }
+  .brewlog-complete-stat .stat-label{ font-size:var(--fs-label); margin-bottom:2px; }
+  .brewlog-complete-stat .stat-value{ font-size:var(--fs-small); font-family:var(--font-mono); color:var(--text); font-variant-numeric:tabular-nums; }
   .brewlog-honest-summary{
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
-    padding:12px 14px; margin:16px 0 4px; color:var(--text-dim); font-size:12.5px; line-height:1.5;
+    padding:12px 14px; margin:16px 0 4px; color:var(--text-dim); font-size:var(--fs-small); line-height:1.5;
     box-shadow:var(--shadow-card);
   }
-  .brewlog-honest-summary strong{color:var(--text); font-family:var(--font-display); font-size:14px; display:block; margin-bottom:4px; font-weight:600;}
+  .brewlog-honest-summary strong{color:var(--text); font-family:var(--font-display); font-size:var(--fs-small); display:block; margin-bottom:4px; font-weight:600;}
   /* NIEUW (Visual Design 2.0, §14): de smaaksliders krijgen hetzelfde paneel-niveau als
      de andere elevated content-blokken — puur omkadering op de bestaande, al-bestaande
      wrapper-div; de sliders/labels/waarden zelf (en hun input-listeners) ongewijzigd. */
   .brewlog-sliders{
-    background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:var(--radius-md);
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
     padding:14px 16px 2px; box-shadow:var(--shadow-card); margin-bottom:4px;
   }
   .brewlog-slider-row{margin-bottom:14px;}
-  .brewlog-slider-row .brewlog-slider-label{display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px;}
+  .brewlog-slider-row .brewlog-slider-label{display:flex; justify-content:space-between; font-size:var(--fs-small); margin-bottom:4px;}
   .brewlog-slider-row .brewlog-slider-label span:last-child{color:var(--copper-light); font-family:var(--font-mono);}
   .brewlog-slider-row input[type="range"]{width:100%; accent-color:var(--copper);}
   .brewlog-entry-card{
     position:relative;
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
-    padding:12px 40px 12px 14px; margin-bottom:10px; font-size:13px;
+    padding:12px 40px 12px 14px; margin-bottom:10px; font-size:var(--fs-small);
     box-shadow:var(--shadow-card);
   }
   /* NIEUW (Visual Design 2.0 fase 2, detail-referentie scherm 10 "History"): favoriet-
@@ -1252,17 +1232,17 @@
   .brewlog-entry-fav{
     position:absolute; top:10px; right:10px; width:28px; height:28px;
     display:flex; align-items:center; justify-content:center;
-    background:none; border:none; color:var(--text-faint); font-size:17px; line-height:1; cursor:pointer;
+    background:none; border:none; color:var(--text-faint); font-size:var(--fs-body); line-height:1; cursor:pointer;
     transition:color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
   .brewlog-entry-fav[aria-pressed="true"]{ color:var(--berry); }
   .brewlog-entry-fav:active{ transform:scale(.85); }
   .brewlog-entry-header{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;}
-  .brewlog-entry-header .brewlog-entry-date{color:var(--text-faint); font-size:12px; font-family:var(--font-mono);}
-  .brewlog-entry-meta{color:var(--text-dim); font-size:12px; margin-bottom:6px;}
+  .brewlog-entry-header .brewlog-entry-date{color:var(--text-faint); font-size:var(--fs-label); font-family:var(--font-body);}
+  .brewlog-entry-meta{color:var(--text-dim); font-size:var(--fs-label); margin-bottom:6px;}
   .brewlog-entry-scores{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px;}
   .brewlog-entry-scores span{
-    background:var(--surface-2); border-radius:6px; padding:2px 7px; font-size:11px; color:var(--text-dim);
+    background:var(--surface-2); border-radius:6px; padding:2px 7px; font-size:var(--fs-label); color:var(--text-dim);
   }
   .brewlog-entry-note{font-style:italic; color:var(--text);}
 
@@ -1279,8 +1259,8 @@
   /* bean advisor */
   .advisor-link{
     display:block; width:100%; margin-top:14px;
-    background:none; border:1px dashed var(--border); border-radius:var(--radius-sm);
-    padding:12px; color:var(--text-dim); font-size:12.5px; cursor:pointer; text-align:center;
+    background:none; border:1px solid var(--border); border-radius:var(--radius-sm);
+    padding:12px; color:var(--text-dim); font-size:var(--fs-small); cursor:pointer; text-align:center;
     transition:border-color var(--motion-standard) var(--ease-out), color var(--motion-standard) var(--ease-out);
   }
   .advisor-link:hover{border-color:var(--copper); color:var(--copper-light);}
@@ -1296,7 +1276,7 @@
   .pill-cta{
     display:block; width:100%; text-align:center; box-sizing:border-box;
     background:var(--copper); color:#1B1310; border:none; border-radius:var(--radius-pill);
-    font-family:var(--font-display); font-weight:600; font-size:14px;
+    font-family:var(--font-display); font-weight:600; font-size:var(--fs-small);
     padding:13px; margin-top:14px; cursor:pointer; box-shadow:var(--shadow-card);
     transition:transform var(--motion-micro) var(--ease-out), background var(--motion-standard) var(--ease-out);
   }
@@ -1310,19 +1290,19 @@
   /* NIEUW (Visual Design 2.0, §7/§24 SecondaryButton): zelfde tactiele press-diepte als
      .start-btn, maar bescheidener (secundaire actie) — nooit sterker ogen dan de primaire
      CTA (§27 "no secondary card competes with the primary action"). */
-  .advisor-primary{
+  .advisor-primary, .btn-secondary{
     display:flex; align-items:center; justify-content:center; gap:8px;
     width:100%; margin-top:16px; min-height:52px;
     background:var(--surface); border:1px solid var(--copper-dim); border-radius:var(--radius-md);
-    padding:14px; color:var(--copper-light); font-family:var(--font-display); font-weight:600; font-size:15.5px;
+    padding:14px; color:var(--copper-light); font-family:var(--font-display); font-weight:600; font-size:var(--fs-body);
     cursor:pointer; text-align:center; box-shadow:var(--shadow-card);
     transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
-  .advisor-primary:hover{border-color:var(--copper); background:var(--surface-2);}
+  .advisor-primary:hover, .btn-secondary:hover{border-color:var(--copper); background:var(--surface-2);}
   .advisor-primary:active{transform:translateY(1px) scale(.99);}
-  .link-secondary{
+  .link-secondary, .btn-tertiary{
     display:block; width:100%; margin-top:10px; min-height:44px;
-    background:none; border:none; color:var(--text-faint); font-size:12px;
+    background:none; border:none; color:var(--text-faint); font-size:var(--fs-label);
     padding:10px; cursor:pointer; text-align:center; text-decoration:underline; text-underline-offset:2px;
     transition:color var(--motion-standard) var(--ease-out);
   }
@@ -1338,7 +1318,7 @@
 
   .section-divider{
     display:flex; align-items:center; gap:12px; margin:24px 0 18px;
-    font-family:var(--font-mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+    font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.08em; text-transform:uppercase;
     color:var(--text-faint);
   }
   .section-divider::before, .section-divider::after{ content:""; flex:1; height:1px; background:var(--border); }
@@ -1355,20 +1335,20 @@
   .bean-pick-card:hover{border-color:var(--copper-dim);}
   .bean-pick-card:active{background:var(--surface-2);}
   .bean-pick-card[data-selected="true"]{border-color:var(--copper); background:linear-gradient(160deg, rgba(193,127,62,0.14), var(--surface) 70%);}
-  .bean-pick-name{font-family:var(--font-display); font-weight:600; font-size:15px; display:block;}
-  .bean-pick-meta{font-size:11.5px; color:var(--text-dim); margin-top:3px;}
-  .bean-pick-arrow{color:var(--text-faint); font-size:16px; flex-shrink:0;}
+  .bean-pick-name{font-family:var(--font-display); font-weight:600; font-size:var(--fs-body); display:block;}
+  .bean-pick-meta{font-size:var(--fs-label); color:var(--text-dim); margin-top:3px;}
+  .bean-pick-arrow{color:var(--text-faint); font-size:var(--fs-body); flex-shrink:0;}
   .bean-pick-new{
     display:block; width:100%; text-align:center; cursor:pointer;
     background:none; border:1px dashed var(--border); border-radius:var(--radius-md);
-    padding:13px; color:var(--text-dim); font-size:13px;
+    padding:13px; color:var(--text-dim); font-size:var(--fs-small);
     transition:border-color var(--motion-standard) var(--ease-out), color var(--motion-standard) var(--ease-out);
   }
   .bean-pick-new:hover{border-color:var(--copper); color:var(--copper-light);}
 
   .advice-q{margin-bottom:20px;}
   .advice-q-label{
-    font-family:var(--font-mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.06em; text-transform:uppercase;
     color:var(--text-faint); margin:0 0 8px;
   }
   .chip-row{display:flex; flex-wrap:wrap; gap:8px;}
@@ -1389,9 +1369,9 @@
      om niet als "kapot scherm" over te komen — accent-gekleurde linkerrand + achtergrondtint,
      hergebruikt --accent-glow (bestaande "--copper op lage alpha"-token, zie hierboven bij
      de theme-vars) i.p.v. een nieuwe kleurmix te verzinnen. */
-  .advice-tie-note{font-size:11.5px; color:var(--text-faint); margin:4px 0 0;}
+  .advice-tie-note{font-size:var(--fs-label); color:var(--text-faint); margin:4px 0 0;}
   .advice-tie-note[data-pending="true"]{
-    font-size:13px; color:var(--text); margin:8px 0 0; padding:8px 10px;
+    font-size:var(--fs-small); color:var(--text); margin:8px 0 0; padding:8px 10px;
     border-left:3px solid var(--copper); background:var(--accent-glow); border-radius:6px;
   }
   /* NIEUW (Visual Design 2.0, §7/§24 SegmentedControl/Tag): een geselecteerde chip
@@ -1400,7 +1380,7 @@
      hier het juiste gebruik, §3.3: "pills reserved for tags/status"). */
   .chip{
     padding:12px 16px; min-height:44px; border-radius:var(--radius-pill); border:1px solid var(--border);
-    background:var(--surface); color:var(--text-dim); font-size:12.5px; cursor:pointer;
+    background:var(--surface); color:var(--text-dim); font-size:var(--fs-small); cursor:pointer;
     transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out), color var(--motion-standard) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
   .chip:hover{border-color:var(--copper-dim);}
@@ -1411,34 +1391,34 @@
     padding:18px; margin-top:4px;
     box-shadow:var(--shadow-card);
   }
-  .advice-result-title{font-family:var(--font-display); font-weight:600; font-size:20px; color:var(--copper-light); margin:0 0 10px;}
-  .advice-result ul{margin:0 0 16px; padding-left:18px; font-size:13px; color:var(--text-dim); line-height:1.6;}
+  .advice-result-title{font-family:var(--font-display); font-weight:600; font-size:var(--fs-heading); color:var(--copper-light); margin:0 0 10px;}
+  .advice-result ul{margin:0 0 16px; padding-left:18px; font-size:var(--fs-small); color:var(--text-dim); line-height:1.6;}
   .advice-result li{margin-bottom:4px;}
   /* NIEUW (Visual Design 2.0, §7 PrimaryButton): zelfde tactiele press-diepte als .start-btn
      — .advice-cta is de primaire CTA binnen het advies-resultaat. */
   .advice-cta{
     width:100%; background:var(--copper); color:#1B1310; border:none; border-radius:var(--radius-sm);
-    padding:13px; font-family:var(--font-display); font-weight:600; font-size:15px; cursor:pointer;
+    padding:13px; font-family:var(--font-display); font-weight:600; font-size:var(--fs-body); cursor:pointer;
     box-shadow:0 1px 0 rgba(255,255,255,.16) inset, 0 4px 14px rgba(212,165,116,.18);
     transition:background var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
   .advice-cta:hover{background:var(--copper-light);}
   .advice-cta:active{transform:translateY(1px) scale(.98); box-shadow:0 1px 0 rgba(255,255,255,.1) inset, 0 2px 6px rgba(212,165,116,.14);}
   .advice-secondary-notes{
-    background:var(--bg-recessed, rgba(0,0,0,.12)); border-radius:var(--radius-sm); padding:12px 14px; margin:0 0 16px;
+    background:rgba(0,0,0,.12); border-radius:var(--radius-sm); padding:12px 14px; margin:0 0 16px;
   }
-  .advice-secondary-title{font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-faint); margin:0 0 6px;}
-  .advice-secondary-notes ul{margin:0; padding-left:16px; font-size:12.5px; color:var(--text-dim); line-height:1.55;}
+  .advice-secondary-title{font-size:var(--fs-label); text-transform:uppercase; letter-spacing:.04em; color:var(--text-faint); margin:0 0 6px;}
+  .advice-secondary-notes ul{margin:0; padding-left:16px; font-size:var(--fs-small); color:var(--text-dim); line-height:1.55;}
   .advice-secondary-notes li{margin-bottom:4px;}
 
   /* bean library + form */
-  .form-label{display:block; font-size:12px; color:var(--text-dim); margin:0 0 14px;}
+  .form-label{display:block; font-size:var(--fs-label); color:var(--text-dim); margin:0 0 14px;}
   /* NIEUW (Visual Design 2.0, §12/§24): form-input krijgt een zachte accent-glow bij focus
      i.p.v. alleen een randkleur-wissel — puur een extra box-shadow, geen gedragswijziging. */
   .form-input{
     display:block; width:100%; margin-top:6px;
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
-    padding:11px 12px; color:var(--text); font-size:14px; font-family:var(--font-body);
+    padding:11px 12px; color:var(--text); font-size:var(--fs-small); font-family:var(--font-body);
     transition:border-color var(--motion-standard) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
   .form-input:focus{border-color:var(--copper); box-shadow:0 0 0 3px var(--accent-glow);}
@@ -1451,7 +1431,7 @@
   }
   .scan-status{
     display:flex; align-items:center; gap:8px;
-    font-family:var(--font-mono); font-size:12px; color:var(--copper-light);
+    font-family:var(--font-body); font-size:var(--fs-label); color:var(--copper-light);
     margin:10px 0 0;
   }
   /* BEVINDING (Release-Candidate-audit): de ::before-spinner stond hier ongeconditioneerd
@@ -1489,14 +1469,14 @@
   .bean-card-top-text .bean-card-header{margin-bottom:4px;}
   .bean-card-top-text .bean-card-meta, .bean-card-top-text .badge-row{margin-bottom:0;}
   .bean-card-header{display:flex; align-items:center; justify-content:space-between;}
-  .bean-card-name{font-family:var(--font-display); font-weight:600; font-size:16px;}
+  .bean-card-name{font-family:var(--font-display); font-weight:600; font-size:var(--fs-body);}
   .bean-card-actions{display:flex; align-items:center; margin:-11px -11px -11px 0;}
   .bean-edit, .bean-delete{
-    background:none; border:none; color:var(--text-faint); font-size:20px; line-height:1; cursor:pointer;
+    background:none; border:none; color:var(--text-faint); font-size:var(--fs-heading); line-height:1; cursor:pointer;
     width:44px; height:44px; display:flex; align-items:center; justify-content:center;
     transition:color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
-  .bean-edit{font-size:16px;}
+  .bean-edit{font-size:var(--fs-body);}
   .bean-edit:hover, .bean-edit:active{color:var(--copper-light);}
   .bean-delete:hover{color:var(--danger);}
   .bean-delete:active{color:var(--danger);}
@@ -1504,7 +1484,7 @@
   /* NIEUW (Visual Design 2.0 fase 3, boon-niveau favorieten): zelfde knop-geometrie als
      .bean-edit/.bean-delete, kleurtaal van .brewlog-entry-fav (--berry als "aan"-status). */
   .bean-fav{
-    background:none; border:none; color:var(--text-faint); font-size:18px; line-height:1; cursor:pointer;
+    background:none; border:none; color:var(--text-faint); font-size:var(--fs-heading); line-height:1; cursor:pointer;
     width:44px; height:44px; display:flex; align-items:center; justify-content:center;
     transition:color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
@@ -1515,25 +1495,25 @@
   .bean-detail-hero-fav{
     position:absolute; top:10px; right:10px; z-index:1;
     width:38px; height:38px; border-radius:50%; border:none; cursor:pointer;
-    display:flex; align-items:center; justify-content:center; font-size:19px; line-height:1;
+    display:flex; align-items:center; justify-content:center; font-size:var(--fs-heading); line-height:1;
     background:rgba(20,16,14,.45); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
     color:#fff; transition:color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
   .bean-detail-hero-fav[aria-pressed="true"]{ color:var(--berry); }
   .bean-detail-hero-fav:active{ transform:scale(.88); }
-  .bean-card-meta{font-size:12px; color:var(--text-dim); margin:0 0 10px;}
+  .bean-card-meta{font-size:var(--fs-label); color:var(--text-dim); margin:0 0 10px;}
   .bean-tags{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;}
-  .bean-tag{font-size:11px; border:1px solid var(--border); border-radius:var(--radius-pill); padding:3px 10px; color:var(--text-dim);}
+  .bean-tag{font-size:var(--fs-label); border:1px solid var(--border); border-radius:var(--radius-pill); padding:3px 10px; color:var(--text-dim);}
   .bean-use-btn{
     width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm);
-    padding:10px; color:var(--copper-light); font-size:13px; cursor:pointer;
+    padding:10px; color:var(--copper-light); font-size:var(--fs-small); cursor:pointer;
     box-shadow:var(--shadow-card);
     transition:border-color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
   .bean-use-btn:hover{border-color:var(--copper);}
   .bean-use-btn:active{transform:translateY(1px) scale(.99); box-shadow:none;}
   .bean-card-btnrow{display:flex; gap:8px;}
-  .bean-card-btnrow .bean-use-btn{width:auto; flex:1; font-size:12.5px;}
+  .bean-card-btnrow .bean-use-btn{width:auto; flex:1; font-size:var(--fs-small);}
   .bean-again-btn{border-color:var(--copper-light);}
   .bean-search-row{display:flex; gap:8px; margin-bottom:12px;}
   /* FIX (self-caught tijdens screenshot-controle): een class-selector met display:flex
@@ -1545,7 +1525,7 @@
   .bean-search-row #bean-sort-select{flex:1;}
   .backup-row{display:flex; gap:8px; margin-top:12px;}
   .backup-row .advisor-link{flex:1; text-align:center; border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px;}
-  .empty-hint{font-size:13px; color:var(--text-faint); margin-bottom:16px;}
+  .empty-hint{font-size:var(--fs-small); color:var(--text-faint); margin-bottom:16px;}
 
   .chip[data-selected="true"] .chip-check{display:inline;}
   .chip-check{display:none;}
@@ -1556,7 +1536,7 @@
      andere elevated content-blokken — alleen omkadering, de SVG/kleuren zelf ongewijzigd. */
   .radar-wrap{
     display:flex; justify-content:center; margin-bottom:18px;
-    background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:var(--radius-md);
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
     padding:14px; box-shadow:var(--shadow-card);
   }
   .radar-svg{width:100%; max-width:280px; height:auto;}
@@ -1564,7 +1544,7 @@
   .radar-axis{stroke:var(--border); stroke-width:1;}
   .radar-shape{fill:rgba(193,127,62,.28); stroke:var(--copper); stroke-width:2; stroke-linejoin:round; transition:d .4s ease;}
   .radar-dot{fill:var(--copper-light);}
-  .radar-label{font-family:var(--font-mono); font-size:9.5px; fill:var(--text-dim); text-anchor:middle;}
+  .radar-label{font-family:var(--font-body); font-size:var(--fs-label); fill:var(--text-dim); text-anchor:middle;}
 
   /* SCA flavor wheel accordion */
   details.flavor-category{
@@ -1574,21 +1554,21 @@
   }
   details.flavor-category summary{
     padding:12px 14px; cursor:pointer; list-style:none;
-    font-family:var(--font-display); font-weight:600; font-size:14.5px;
+    font-family:var(--font-display); font-weight:600; font-size:var(--fs-small);
     display:flex; align-items:center; justify-content:space-between; gap:10px;
   }
   details.flavor-category summary::-webkit-details-marker{display:none;}
   .flavor-category-count{
-    font-family:var(--font-mono); font-size:11px; font-weight:400;
+    font-family:var(--font-mono); font-size:var(--fs-label); font-weight:400;
     color:var(--text-faint); margin-left:auto; margin-right:8px;
   }
-  .flavor-category-arrow{font-family:var(--font-mono); color:var(--text-faint); font-size:14px;}
+  .flavor-category-arrow{font-family:var(--font-mono); color:var(--text-faint); font-size:var(--fs-small);}
   details.flavor-category[open] .flavor-category-arrow{transform:rotate(45deg); display:inline-block;}
   .flavor-category-body{padding:2px 14px 14px;}
   .flavor-subgroup{margin-bottom:10px;}
   .flavor-subgroup-label{
-    font-size:10.5px; color:var(--text-faint); margin:0 0 6px;
-    font-family:var(--font-mono); text-transform:uppercase; letter-spacing:.04em;
+    font-size:var(--fs-label); color:var(--text-faint); margin:0 0 6px;
+    font-family:var(--font-body); text-transform:uppercase; letter-spacing:.04em;
   }
 
   @media (prefers-reduced-motion: reduce){
@@ -1612,9 +1592,9 @@
     .choice-grid--4{ grid-template-columns:repeat(5,1fr); }
     .stats-grid{ grid-template-columns:repeat(4,1fr); }
     .dial-wrap{ width:300px; height:300px; }
-    .dial-time{ font-size:48px; }
+    .dial-time{ font-size:var(--fs-display); }
     .radar-svg{ max-width:320px; }
-    .title{ font-size:30px; }
+    .title{ font-size:var(--fs-title); }
   }
   @media (min-width:700px) and (orientation:landscape){
     .app{ --app-max:920px; }
@@ -1637,7 +1617,7 @@
   #screen-prep > .photo-slot{display:none;}
   /* Sprint 3: doelchips op één regel i.p.v. twee. */
   #screen-prep .prep-goal{flex-wrap:nowrap; overflow-x:auto; gap:6px; margin-bottom:10px; scrollbar-width:none;}
-  #screen-prep .prep-goal .chip{white-space:nowrap; padding-left:12px; padding-right:12px; font-size:13px;}
+  #screen-prep .prep-goal .chip{white-space:nowrap; padding-left:12px; padding-right:12px; font-size:var(--fs-small);}
   /* Audit BC-19: groter scherm = meer overzicht, niet een uitgerekte telefoon. */
   @media (min-width:700px){
     #screen-prep .photo-slot--banner{ aspect-ratio:auto; height:190px; }
@@ -1648,7 +1628,7 @@
     .dial-wrap{ width:380px; height:380px; }
     .dial-time{ font-size:64px; }
     .brew-action-main{ font-size:52px; }
-    .brew-action-sub{ font-size:17px; }
+    .brew-action-sub{ font-size:var(--fs-body); }
     .brew-hero{ padding-top:72px; }
   }
   @media (min-width:1100px){
@@ -1658,7 +1638,9 @@
     #screen-prep .prep-side{ grid-column:2; position:sticky; top:max(18px, var(--safe-t)); display:flex; flex-direction:column; }
     #screen-prep .prep-side .prep-cta-row{ order:-1; margin:0 0 14px; }
     #screen-prep .stat-value{ white-space:nowrap; }
-    #screen-prep .recipe-table{ font-size:13px; }
+    /* Sprint 5: de receptkolom is hier ~440px; vier heldengetallen passen 2×2, drie kolommen liepen onder de rechterkolom door. */
+    #screen-prep .stats-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    #screen-prep .recipe-table{ font-size:var(--fs-small); }
   }
   /* Schermtitels krijgen programmatisch focus (voor schermlezers); geen zichtbaar kader daarom. */
   [data-screen-heading]:focus, .screen > h1.title:focus, .screen .prep-main > h1.title:focus{ outline:none; }
@@ -1698,7 +1680,7 @@
     display:flex; flex-direction:column; align-items:center; gap:3px;
     background:none; border:none; cursor:pointer;
     min-width:56px; min-height:44px; padding:4px 6px;
-    color:var(--text-faint); font-family:var(--font-mono); font-size:10px;
+    color:var(--text-faint); font-family:var(--font-body); font-size:var(--fs-label);
     letter-spacing:.03em; border-radius:var(--radius-sm);
     transition:color var(--motion-standard) var(--ease-out);
   }
@@ -1733,7 +1715,7 @@
     display:inline-flex; align-items:center; gap:6px;
     padding:4px 10px; border-radius:var(--radius-pill);
     border:1px solid var(--border); background:var(--surface-2);
-    font-family:var(--font-mono); font-size:10.5px; font-weight:600;
+    font-family:var(--font-body); font-size:var(--fs-label); font-weight:600;
     text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim);
     white-space:nowrap;
   }
@@ -1790,10 +1772,10 @@
   }
   .home-cta:hover{border-color:var(--copper); box-shadow:var(--shadow-card), 0 0 0 1px var(--accent-glow);}
   .home-cta:active{transform:scale(.99);}
-  .home-cta-title{font-family:var(--font-display); font-weight:600; font-size:16px; display:block; margin-bottom:3px;}
-  .home-cta-desc{font-size:12.5px; color:var(--text-dim);}
+  .home-cta-title{font-family:var(--font-display); font-weight:600; font-size:var(--fs-body); display:block; margin-bottom:3px;}
+  .home-cta-desc{font-size:var(--fs-small); color:var(--text-dim);}
   .home-section-label{
-    font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.08em; text-transform:uppercase;
     color:var(--text-faint); margin:22px 0 10px;
   }
   .home-strip{display:flex; gap:10px; overflow-x:auto; padding-bottom:4px;}
@@ -1801,8 +1783,8 @@
   .home-strip-item .photo-slot{width:130px; height:88px; margin-bottom:6px;}
   .home-strip-item:hover{transform:translateY(-2px);}
   .home-strip-item:active{transform:translateY(0) scale(.97);}
-  .home-strip-name{font-size:12px; color:var(--text-dim);}
-  .home-strip-stock{display:block; font-size:11.5px; color:var(--text-faint); margin-top:2px;}
+  .home-strip-name{font-size:var(--fs-label); color:var(--text-dim);}
+  .home-strip-stock{display:block; font-size:var(--fs-label); color:var(--text-faint); margin-top:2px;}
   /* Sprint 2 (UX-review F3): "Je volgende kop" — het hoofdonderwerp van Home. */
   .next-cup{
     background:linear-gradient(180deg, rgba(212,165,116,.12), rgba(212,165,116,.03)), var(--surface);
@@ -1810,41 +1792,41 @@
     box-shadow:var(--shadow-card);
   }
   .next-cup[hidden]{display:none;}
-  .next-cup-kicker{font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--copper-light); margin:0 0 6px;}
-  .next-cup-title{font-family:var(--font-display); font-weight:700; font-size:20px; line-height:1.25; margin:0 0 6px; color:var(--text);}
-  .next-cup-line{font-size:14px; color:var(--text); margin:0 0 4px;}
-  .next-cup-stock{font-size:13px; color:var(--text-dim); margin:0;}
+  .next-cup-kicker{font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.08em; text-transform:uppercase; color:var(--copper-light); margin:0 0 6px;}
+  .next-cup-title{font-family:var(--font-display); font-weight:700; font-size:var(--fs-heading); line-height:1.25; margin:0 0 6px; color:var(--text);}
+  .next-cup-line{font-size:var(--fs-small); color:var(--text); margin:0 0 4px;}
+  .next-cup-stock{font-size:var(--fs-small); color:var(--text-dim); margin:0;}
   .next-cup-go{margin-top:14px;}
   .next-cup .link-secondary{margin-top:4px;}
   .next-cup--compact{margin-bottom:18px;}
-  .next-cup--compact .next-cup-title{font-size:17px;}
+  .next-cup--compact .next-cup-title{font-size:var(--fs-body);}
 
   /* Bean Detail */
-  .bean-detail-meta{font-size:13px; color:var(--text-dim); margin:0 0 14px;}
+  .bean-detail-meta{font-size:var(--fs-small); color:var(--text-dim); margin:0 0 14px;}
   .bean-detail-section{margin-bottom:22px;}
   .bean-detail-section-label{
-    font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.08em; text-transform:uppercase;
     color:var(--text-faint); margin:0 0 10px;
   }
   /* NIEUW (Visual Design 2.0, §11): "Kenmerken"-feiten krijgen hetzelfde paneel-niveau
      als de radar-wrap hierboven — puur presentatie, feit-labels/waarden ongewijzigd. */
   .bean-detail-fact-grid{
     display:grid; grid-template-columns:1fr 1fr; gap:10px 16px;
-    background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:var(--radius-md);
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
     padding:14px; box-shadow:var(--shadow-card);
   }
-  .bean-detail-fact-label{font-size:11px; color:var(--text-faint);}
-  .bean-detail-fact-value{font-size:13.5px; color:var(--text);}
+  .bean-detail-fact-label{font-size:var(--fs-label); color:var(--text-faint);}
+  .bean-detail-fact-value{font-size:var(--fs-small); color:var(--text);}
 
   /* NIEUW (visuele afstemming referentiebeeld Boon Detail "Boon details"): icoon+label+
      waarde-rijen i.p.v. het 2-koloms grid — uitsluitend bestaande boonvelden, geen nieuwe
      feiten (geen Oogst/Koffiebrander, die bestaan niet in het boonformulier). Het 2-koloms
      .bean-detail-fact-grid hierboven blijft ongewijzigd voor Instellingen/pourstep-modal. */
   .bean-detail-fact-rows{
-    background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:var(--radius-md);
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
     box-shadow:var(--shadow-card); overflow:hidden;
   }
-  .bean-detail-fact-row{ display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid var(--border-subtle); }
+  .bean-detail-fact-row{ display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid var(--border); }
   .bean-detail-fact-row:last-child{ border-bottom:none; }
   .bean-detail-fact-row-icon{
     width:26px; height:26px; border-radius:50%; flex-shrink:0;
@@ -1852,32 +1834,32 @@
     display:flex; align-items:center; justify-content:center;
   }
   .bean-detail-fact-row-icon svg{ width:13px; height:13px; }
-  .bean-detail-fact-row-label{ flex:1; font-size:12.5px; color:var(--text-faint); }
-  .bean-detail-fact-row-value{ font-size:13px; color:var(--text); font-weight:500; text-align:right; }
+  .bean-detail-fact-row-label{ flex:1; font-size:var(--fs-small); color:var(--text-faint); }
+  .bean-detail-fact-row-value{ font-size:var(--fs-small); color:var(--text); font-weight:500; text-align:right; }
 
   /* NIEUW (Visual Design 2.0 fase 2, detail-referentie scherm 04 + spec §11 "use tabs/
      segments for existing detail sections where appropriate"): een SegmentedControl-achtige
      tab-balk voor Bean Detail — zelfde "seated" selectie-taal als .chip[data-selected], maar
      gelijke-breedte segmenten i.p.v. wrappende pillen. */
   .detail-tabs{
-    display:flex; gap:4px; background:var(--surface-2); border:1px solid var(--border-subtle);
+    display:flex; gap:4px; background:var(--surface-2); border:1px solid var(--border);
     border-radius:var(--radius-md); padding:4px; margin:14px 0 18px;
   }
   .detail-tab{
     flex:1; text-align:center; padding:9px 4px; border-radius:var(--radius-sm); border:none;
-    background:none; color:var(--text-muted); font-family:var(--font-mono); font-size:10.5px;
+    background:none; color:var(--text-faint); font-family:var(--font-body); font-size:var(--fs-label);
     letter-spacing:.02em; cursor:pointer;
     transition:background var(--motion-standard) var(--ease-out), color var(--motion-standard) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
   .detail-tab[aria-selected="true"]{ background:var(--surface); color:var(--copper-light); box-shadow:var(--shadow-card); }
   .detail-tab:active{ transform:scale(.97); }
   .detail-tab-panel[hidden]{ display:none; }
-  .bean-detail-about{ font-size:13.5px; color:var(--text-dim); line-height:1.6; margin:0; }
+  .bean-detail-about{ font-size:var(--fs-small); color:var(--text-dim); line-height:1.6; margin:0; }
   /* NIEUW (Pagina-Polish-spec §5.4, Best Brew-kaart): zelfde mono/copper "receptgetal"-
      taal als .stat-value/.stat-sub in het Recept-scherm, hier zonder de volledige
      stat-block-kaart eromheen (dit blok zit al binnen bean-detail-best-brew-block). */
-  .bean-detail-best-brew-facts{ font-family:var(--font-mono); font-size:16px; color:var(--copper-light); margin:0 0 4px; font-variant-numeric:tabular-nums; }
-  .bean-detail-best-brew-facts-sub{ font-size:12px; color:var(--text-faint); margin:0; }
+  .bean-detail-best-brew-facts{ font-family:var(--font-body); font-size:var(--fs-body); color:var(--copper-light); margin:0 0 4px; font-variant-numeric:tabular-nums; }
+  .bean-detail-best-brew-facts-sub{ font-size:var(--fs-label); color:var(--text-faint); margin:0; }
   /* NIEUW (visuele afstemming referentiebeeld "Jouw beste brew"): kaartomkadering met
      lichte copper-accent + doel-icoon (startpunt, geen score/trofee-connotatie) — inhoud
      blijft exact wat renderBeanDetailBestBrew() teruggeeft, geen cijfer toegevoegd. */
@@ -1895,10 +1877,10 @@
   .best-brew-icon svg{ width:15px; height:15px; }
 
   /* Inzichten */
-  .insights-note{font-size:12.5px; color:var(--text-faint); margin:6px 0 18px; line-height:1.5;}
+  .insights-note{font-size:var(--fs-small); color:var(--text-faint); margin:6px 0 18px; line-height:1.5;}
   .insights-empty{
     background:var(--surface); border:1px dashed var(--border); border-radius:var(--radius-md);
-    padding:24px 18px; text-align:center; color:var(--text-dim); font-size:13.5px; line-height:1.5;
+    padding:24px 18px; text-align:center; color:var(--text-dim); font-size:var(--fs-small); line-height:1.5;
   }
 
   /* ============================================================
@@ -1921,7 +1903,7 @@
       width:172px; flex-shrink:0; border-top:none; border-right:1px solid var(--border);
       background:none; padding:0 14px 0 0;
     }
-    .navbar-btn{flex-direction:row; justify-content:flex-start; gap:10px; min-width:0; min-height:44px; font-size:12.5px; padding:10px 10px;}
+    .navbar-btn{flex-direction:row; justify-content:flex-start; gap:10px; min-width:0; min-height:44px; font-size:var(--fs-small); padding:10px 10px;}
     .navbar-btn[aria-current="page"]{background:var(--surface-2); border-radius:var(--radius-sm);}
     .navbar-btn--zet{color:var(--copper-light); font-weight:700;}
     /* "Split view" (Bouwbesluit): de twee lijstschermen (Bonen, Historie) tonen hun
@@ -1977,14 +1959,14 @@
      openWaterModal()/syncWaterModal() verderop in het script. -->
 <div class="modal-overlay" id="water-modal" hidden>
   <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="water-modal-title">
-    <p id="water-modal-title" style="font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); margin:0 0 4px;">Waterhoeveelheid aanpassen</p>
-    <p class="mono" id="water-modal-value" style="font-size:32px; font-weight:600; color:var(--text); margin:0 0 16px;">250 ml</p>
+    <p id="water-modal-title" style="font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); margin:0 0 4px;">Waterhoeveelheid aanpassen</p>
+    <p class="mono" id="water-modal-value" style="font-size:var(--fs-title); font-weight:600; color:var(--text); margin:0 0 16px;">250 ml</p>
     <div class="stepper" style="justify-content:center; margin-bottom:14px;">
       <button type="button" id="water-modal-minus" aria-label="Minder water">−</button>
       <input type="range" id="water-modal-slider" step="1" style="flex:1; margin:0 4px;">
       <button type="button" id="water-modal-plus" aria-label="Meer water">+</button>
     </div>
-    <p style="font-size:11.5px; color:var(--text-faint); margin:0 0 18px;" id="water-modal-range-note"></p>
+    <p style="font-size:var(--fs-label); color:var(--text-faint); margin:0 0 18px;" id="water-modal-range-note"></p>
     <div class="modal-actions">
       <button type="button" class="modal-btn modal-btn-secondary" id="water-modal-close">Klaar</button>
     </div>
@@ -1996,9 +1978,9 @@
      van wat #recipe-body al toont. -->
 <div class="modal-overlay" id="pourstep-modal" hidden>
   <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="pourstep-modal-title">
-    <p id="pourstep-modal-title" style="font-family:var(--font-display); font-weight:600; font-size:17px; color:var(--text); margin:0 0 14px;"></p>
+    <p id="pourstep-modal-title" style="font-family:var(--font-display); font-weight:600; font-size:var(--fs-body); color:var(--text); margin:0 0 14px;"></p>
     <div class="bean-detail-fact-grid" id="pourstep-modal-facts" style="margin-bottom:14px;"></div>
-    <p style="font-size:13px; color:var(--text-dim); line-height:1.5; margin:0 0 18px;" id="pourstep-modal-tip"></p>
+    <p style="font-size:var(--fs-small); color:var(--text-dim); line-height:1.5; margin:0 0 18px;" id="pourstep-modal-tip"></p>
     <div class="modal-actions">
       <button type="button" class="modal-btn modal-btn-secondary" id="pourstep-modal-close">Sluiten</button>
     </div>
@@ -2056,12 +2038,8 @@
     <button id="install-hint-dismiss" aria-label="Sluiten" type="button">×</button>
   </div>
 
-  <header class="tracker" id="tracker">
-    <div class="tracker-item" data-step="method">Methode</div>
-    <div class="tracker-item" data-step="roast">Roast</div>
-    <div class="tracker-item" data-step="profile">Profiel</div>
-    <div class="tracker-item" data-step="prep">Recept</div>
-  </header>
+  <!-- Sprint 5 (UX-review F5): de tweede tabbalk (Methode · Roast · Profiel · Recept) is weg —
+       elk stapscherm heeft zijn eigen terugknop, en de adviesroute sloeg die stappen toch over. -->
 
   <main>
     <!-- NIEUW (vervolgplan v2.3, Fase 5): Home is de nieuwe standaardbestemming bij het
@@ -2182,7 +2160,7 @@
       <!-- .link-secondary is block-level (volle breedte) — de knop op een eigen regel
            houden i.p.v. inline tekst ernaast/erna te verwachten (leverde eerder een
            wees-lopend leesteken op een eigen regel op). -->
-      <p class="empty-hint" id="bean-empty-backup-hint" style="margin:-4px 0 0;" hidden>
+      <p class="empty-hint" id="bean-empty-backup-hint" style="margin:10px 0 0; text-align:center;" hidden>
         Of importeer een eerdere backup
         <button type="button" class="link-secondary" id="bean-empty-backup-link">via Instellingen →</button>
       </p>
@@ -2321,12 +2299,12 @@
 
         <p class="advice-q-label">Beoogd gebruik <span style="text-transform:none; letter-spacing:0; color:var(--text-faint);">(optioneel — los van branddiepte)</span></p>
         <div class="chip-row" id="f-intended-use-chips" style="margin-bottom:6px;"></div>
-        <p style="font-size:11.5px; color:var(--text-faint); margin:0 0 20px;">Waar de rooster de boon voor ontwikkelde — een espresso-roast kan via filter vlakker uitpakken, ook bij dezelfde branddiepte.</p>
+        <p style="font-size:var(--fs-label); color:var(--text-faint); margin:0 0 20px;">Waar de rooster de boon voor ontwikkelde — een espresso-roast kan via filter vlakker uitpakken, ook bij dezelfde branddiepte.</p>
 
         <p class="advice-q-label">Proces</p>
         <div class="chip-row" id="f-process-chips" style="margin-bottom:6px;"></div>
         <div class="chip-row" id="f-experimental-chip" style="margin-bottom:6px;"></div>
-        <p style="font-size:11.5px; color:var(--text-faint); margin:0 0 20px;">Natural/anaerobic? Dat weegt mee in de methodekeuze (V60 of Chemex) en het voorgestelde profiel; dosis, maling en temperatuur veranderen er niet door.</p>
+        <p style="font-size:var(--fs-label); color:var(--text-faint); margin:0 0 20px;">Natural/anaerobic? Dat weegt mee in de methodekeuze (V60 of Chemex) en het voorgestelde profiel; dosis, maling en temperatuur veranderen er niet door.</p>
 
         <details class="flavor-category">
           <summary style="color:var(--copper-light)">
@@ -2620,38 +2598,38 @@
           <div class="advice-q" style="margin:0 0 14px;">
             <p class="advice-q-label">Branddatum <span style="text-transform:none; letter-spacing:0;">(optioneel, staat vaak op de zak — preciezer bloom-advies)</span></p>
             <input type="date" id="prep-roast-date" class="form-input" style="max-width:220px;">
-            <p class="freshness-readout" id="freshness-readout" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
+            <p class="freshness-readout" id="freshness-readout" style="font-size:var(--fs-small); color:var(--text-faint); margin:8px 0 0;"></p>
           </div>
 
           <div class="advice-q" style="margin:14px 0;">
             <p class="advice-q-label">Zak geopend op <span style="text-transform:none; letter-spacing:0;">(optioneel — los van branddatum, waarschuwt voor oxidatie na openen)</span></p>
             <input type="date" id="prep-opened-date" class="form-input" style="max-width:220px;">
-            <p class="freshness-readout" id="opened-readout" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
+            <p class="freshness-readout" id="opened-readout" style="font-size:var(--fs-small); color:var(--text-faint); margin:8px 0 0;"></p>
           </div>
 
           <!-- Audit BC-24: het waterprofiel is een eenmalige instelling en staat in Instellingen;
                hier alleen wat er nu geldt, met een weg ernaartoe. -->
           <div class="advice-q" style="margin:14px 0;" id="prep-water-summary-block">
             <p class="advice-q-label">Waterprofiel</p>
-            <p class="freshness-readout" id="prep-water-summary" style="font-size:12.5px; color:var(--text-faint); margin:0;"></p>
+            <p class="freshness-readout" id="prep-water-summary" style="font-size:var(--fs-small); color:var(--text-faint); margin:0;"></p>
             <button type="button" class="link-secondary" id="prep-water-settings-link" style="margin-top:4px; padding:4px 0;">Waterprofiel in Instellingen →</button>
           </div>
 
           <div class="advice-q" style="margin:14px 0;">
             <p class="advice-q-label">Sterkte <span style="text-transform:none; letter-spacing:0;">(optioneel — directe ratio-aanpassing, los van concentraat/bypass hieronder)</span></p>
             <div class="chip-row" id="strength-chip"></div>
-            <p class="freshness-readout" id="strength-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
+            <p class="freshness-readout" id="strength-note" style="font-size:var(--fs-small); color:var(--text-faint); margin:8px 0 0;"></p>
           </div>
 
           <div class="advice-q" style="margin:14px 0 18px;" id="bypass-advice-block">
             <p class="advice-q-label">Concentraat + bypass <span style="text-transform:none; letter-spacing:0;">(optioneel, experimenteel — alleen op V60)</span></p>
             <div class="chip-row" id="bypass-chip"></div>
-            <p class="freshness-readout" id="bypass-fit-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;"></p>
+            <p class="freshness-readout" id="bypass-fit-note" style="font-size:var(--fs-small); color:var(--text-faint); margin:8px 0 0;"></p>
             <!-- NIEUW (Implementatieplan Bypass v1.0, Fase C, "proef-en-vul"): moment van
                  toevoegen — bepaalt de weeginstructie in Brew Mode (zie renderBrewStepsList()).
                  Alleen zichtbaar/zinvol zolang bypass aan staat. -->
             <div id="bypass-moment-block" hidden style="margin-top:10px;">
-              <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:0 0 6px;">Wanneer voeg je het bypass-water toe?</p>
+              <p class="freshness-readout" style="font-size:var(--fs-label); color:var(--text-faint); margin:0 0 6px;">Wanneer voeg je het bypass-water toe?</p>
               <div class="chip-row" id="bypass-moment-chip"></div>
             </div>
             <!-- NIEUW (Implementatieplan Bypass v1.0, Fase A, BP-8/PDR §27): experimenteel-
@@ -2703,6 +2681,7 @@
         </thead>
         <tbody id="recipe-body"></tbody>
       </table>
+      <p class="recipe-rate-note" id="recipe-rate-note" hidden></p>
       <!-- Sprint 3 (UX-review F4): de vaste zet-tips en de geluidstest op verzoek, niet als
            alinea vóór de Start-knop. Zelfde elementen/ID's. -->
       <details class="flavor-category prep-tips-details" id="prep-tips-details">
@@ -2735,12 +2714,12 @@
           <span class="flavor-category-arrow">+</span>
         </summary>
         <div class="flavor-category-body">
-          <p class="freshness-readout" id="profile-scope-note" style="font-size:12.5px; color:var(--text-faint); margin:0 0 8px;" hidden></p>
-          <p class="freshness-readout" id="temp-anchor-note" style="font-size:12.5px; color:var(--text-faint); margin:0 0 8px;"></p>
+          <p class="freshness-readout" id="profile-scope-note" style="font-size:var(--fs-small); color:var(--text-faint); margin:0 0 8px;" hidden></p>
+          <p class="freshness-readout" id="temp-anchor-note" style="font-size:var(--fs-small); color:var(--text-faint); margin:0 0 8px;"></p>
           <p class="disclaimer" id="disclaimer"></p>
-          <p class="freshness-readout" id="target-window-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
-          <p class="freshness-readout" id="retention-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
-          <p class="freshness-readout" id="personal-calibration-note" style="font-size:12.5px; color:var(--text-faint); margin:8px 0 0;" hidden></p>
+          <p class="freshness-readout" id="target-window-note" style="font-size:var(--fs-small); color:var(--text-faint); margin:8px 0 0;" hidden></p>
+          <p class="freshness-readout" id="retention-note" style="font-size:var(--fs-small); color:var(--text-faint); margin:8px 0 0;" hidden></p>
+          <p class="freshness-readout" id="personal-calibration-note" style="font-size:var(--fs-small); color:var(--text-faint); margin:8px 0 0;" hidden></p>
         </div>
       </details>
       </div>
@@ -2903,7 +2882,7 @@
              zonder deze twee werkelijk-gemeten velden (i.p.v. het aanbevolen recept) is er
              straks niets om een leerlus op te bouwen. Beide optioneel: een leeg veld wordt
              NOOIT als 0 opgeslagen (zie saveBrewLogEntry()), puur weggelaten. -->
-        <label for="brewlog-cup-weight" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Kopgewicht na afloop <span style="text-transform:none; letter-spacing:0;">(optioneel, gram) — zo zie je hoeveel water er in het koffiedik achterblijft. Na 5 metingen staat je eigen gemiddelde op het receptscherm, naast de vaste aanname van 2,0 g/g; die wordt niet automatisch vervangen. Met bypass: weeg ná het bijvullen.</span></label>
+        <label for="brewlog-cup-weight" style="font-size:var(--fs-label); color:var(--text-faint); display:block; margin:12px 0 4px;">Kopgewicht na afloop <span style="text-transform:none; letter-spacing:0;">(optioneel, gram) — zo zie je hoeveel water er in het koffiedik achterblijft. Na 5 metingen staat je eigen gemiddelde op het receptscherm, naast de vaste aanname van 2,0 g/g; die wordt niet automatisch vervangen. Met bypass: weeg ná het bijvullen.</span></label>
         <input type="number" id="brewlog-cup-weight" class="form-input" placeholder="bijv. 268" min="0" max="2000" step="1" style="max-width:220px;">
 
         <!-- NIEUW (Implementatieplan Bypass v1.0, Fase B/C, BP-5/"proef-en-vul"): wat er
@@ -2911,7 +2890,7 @@
              — alleen zichtbaar als deze logging daadwerkelijk met bypass gezet is, zie
              renderBrewLogHonestSummary()/openBrewLogEntry() voor de hidden-toggle. -->
         <div id="brewlog-bypass-actual-block" hidden>
-          <label for="brewlog-bypass-actual" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Werkelijk toegevoegd bypass-water <span style="text-transform:none; letter-spacing:0;" id="brewlog-bypass-actual-hint">(optioneel, gram)</span></label>
+          <label for="brewlog-bypass-actual" style="font-size:var(--fs-label); color:var(--text-faint); display:block; margin:12px 0 4px;">Werkelijk toegevoegd bypass-water <span style="text-transform:none; letter-spacing:0;" id="brewlog-bypass-actual-hint">(optioneel, gram)</span></label>
           <input type="number" id="brewlog-bypass-actual" class="form-input" min="0" max="2000" step="1" style="max-width:220px;">
         </div>
 
@@ -3008,18 +2987,18 @@
         <p class="bean-detail-section-label">Water</p>
       <div class="advice-q" style="margin:0;">
         <p class="empty-hint" style="margin:0 0 10px;">Eenmalig invullen: het blijft onthouden, los van boon of methode. Het verandert geen receptgetal, maar helpt bij vlakke of doffe koppen (alkaliniteit dempt zuren).</p>
-        <p class="freshness-readout" style="font-size:12px; color:var(--text-faint); margin:0 0 6px;">Snel invullen:</p>
+        <p class="freshness-readout" style="font-size:var(--fs-label); color:var(--text-faint); margin:0 0 6px;">Snel invullen:</p>
         <div class="chip-row" id="water-presets">
           <button type="button" class="chip" data-water-preset="sca">SCA-richtwaarde (68 / 40)</button>
           <button type="button" class="chip" data-water-preset="clear">Wissen</button>
         </div>
-        <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:6px 0 10px;">Kraanwater: zoek op je postcode het kwaliteitsoverzicht van je waterbedrijf ("totale hardheid" en "waterstofcarbonaat/HCO3"). Mineralenzakje of flessenwater: neem de waarden van de verpakking over. De SCA-richtwaarde is bedoeld voor wie water zelf mengt.</p>
-        <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:0 0 8px;">Vereenvoudiging: hardheid (calcium/magnesium) is niet hetzelfde als alkaliniteit (bufferende werking tegen zuren) — vooral bij fruitige/zure profielen bepaalt alkaliniteit minstens zo sterk hoe zuur de kop aankomt. Elke parameter hieronder krijgt daarom een eigen oordeel, nooit één samengevoegd "water is goed".</p>
+        <p class="freshness-readout" style="font-size:var(--fs-label); color:var(--text-faint); margin:6px 0 10px;">Kraanwater: zoek op je postcode het kwaliteitsoverzicht van je waterbedrijf ("totale hardheid" en "waterstofcarbonaat/HCO3"). Mineralenzakje of flessenwater: neem de waarden van de verpakking over. De SCA-richtwaarde is bedoeld voor wie water zelf mengt.</p>
+        <p class="freshness-readout" style="font-size:var(--fs-label); color:var(--text-faint); margin:0 0 8px;">Vereenvoudiging: hardheid (calcium/magnesium) is niet hetzelfde als alkaliniteit (bufferende werking tegen zuren) — vooral bij fruitige/zure profielen bepaalt alkaliniteit minstens zo sterk hoe zuur de kop aankomt. Elke parameter hieronder krijgt daarom een eigen oordeel, nooit één samengevoegd "water is goed".</p>
 
-        <label for="prep-water-hardness" style="font-size:12px; color:var(--text-faint); display:block; margin:10px 0 4px;">Hardheid (mg/L als CaCO3)</label>
+        <label for="prep-water-hardness" style="font-size:var(--fs-label); color:var(--text-faint); display:block; margin:10px 0 4px;">Hardheid (mg/L als CaCO3)</label>
         <input type="number" id="prep-water-hardness" class="form-input" placeholder="bijv. 128" min="0" max="600" step="1" style="max-width:220px;">
 
-        <label for="prep-water-alkalinity" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Alkaliniteit</label>
+        <label for="prep-water-alkalinity" style="font-size:var(--fs-label); color:var(--text-faint); display:block; margin:12px 0 4px;">Alkaliniteit</label>
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
           <input type="number" id="prep-water-alkalinity" class="form-input" placeholder="bijv. 50" min="0" max="600" step="1" style="max-width:150px;">
           <select id="prep-water-alkalinity-unit" class="form-input" style="max-width:150px;">
@@ -3027,19 +3006,19 @@
             <option value="HCO3">mg/L HCO3</option>
           </select>
         </div>
-        <p class="freshness-readout" style="font-size:11px; color:var(--text-faint); margin:6px 0 0;">Te vinden op het kwaliteitsoverzicht per productiebedrijf van je waterbedrijf, of met een KH-druppeltest. HCO3 wordt omgerekend naar CaCO3-equivalent (×0,82) voor de SCA-vergelijking hieronder.</p>
+        <p class="freshness-readout" style="font-size:var(--fs-label); color:var(--text-faint); margin:6px 0 0;">Te vinden op het kwaliteitsoverzicht per productiebedrijf van je waterbedrijf, of met een KH-druppeltest. HCO3 wordt omgerekend naar CaCO3-equivalent (×0,82) voor de SCA-vergelijking hieronder.</p>
 
-        <label for="prep-water-dilution" style="font-size:12px; color:var(--text-faint); display:block; margin:12px 0 4px;">Verdunning kraan : gedemineraliseerd <span style="text-transform:none; letter-spacing:0;">(optioneel — herberekent het effectieve profiel hieronder, puur rekenkundig, geen receptinvloed)</span></label>
+        <label for="prep-water-dilution" style="font-size:var(--fs-label); color:var(--text-faint); display:block; margin:12px 0 4px;">Verdunning kraan : gedemineraliseerd <span style="text-transform:none; letter-spacing:0;">(optioneel — herberekent het effectieve profiel hieronder, puur rekenkundig, geen receptinvloed)</span></label>
         <select id="prep-water-dilution" class="form-input" style="max-width:220px;">
           <option value="1:0">Geen verdunning (1:0, puur kraanwater)</option>
           <option value="2:1">2 : 1</option>
           <option value="1:1">1 : 1</option>
         </select>
 
-        <p class="freshness-readout" id="hardness-readout" style="font-size:12.5px; color:var(--text-faint); margin:10px 0 0;"></p>
-        <p class="freshness-readout" id="alkalinity-readout" style="font-size:12.5px; color:var(--text-faint); margin:4px 0 0;"></p>
-        <p class="freshness-readout" id="ph-readout" style="font-size:12.5px; color:var(--text-faint); margin:4px 0 0;"></p>
-        <p class="freshness-readout" id="water-confidence-readout" style="font-size:11px; color:var(--text-faint); margin:8px 0 0;"></p>
+        <p class="freshness-readout" id="hardness-readout" style="font-size:var(--fs-small); color:var(--text-faint); margin:10px 0 0;"></p>
+        <p class="freshness-readout" id="alkalinity-readout" style="font-size:var(--fs-small); color:var(--text-faint); margin:4px 0 0;"></p>
+        <p class="freshness-readout" id="ph-readout" style="font-size:var(--fs-small); color:var(--text-faint); margin:4px 0 0;"></p>
+        <p class="freshness-readout" id="water-confidence-readout" style="font-size:var(--fs-label); color:var(--text-faint); margin:8px 0 0;"></p>
       </div>
       </div>
 
@@ -4436,7 +4415,7 @@ const ENGINE_PROFILE_MAP = {
    evidence-veld in de engine zelf aangeraakt. */
 const OVERLAY_DISPLAY = {
   KASUYA_4_6:            { name:'Kasuya 4:6', mechanism:'Twee fasen: de eerste 40% van het water gaat in twee gietbeurten en bepaalt zoetheid/helderheid (Kasuya’s eigen ‘smaakknop’ — een grotere eerste pour geeft meer helderheid/zuur, een kleinere meer zoetheid), de resterende 60% bepaalt via het aantal beurten de sterkte.' },
-  HOFFMANN_ULTIMATE:     { name:'Hoffmann Ultimate', mechanism:'Ondiepe bloom, net genoeg geswirld om droge plekken weg te werken, gevolgd door een hoofdgiet in twee spiraalbewegingen. Bewust zonder eigen temperatuurgetal — die komt hier uit het kernrecept.' },
+  HOFFMANN_ULTIMATE:     { name:'Hoffmann Ultimate', mechanism:'Ondiepe bloom, net genoeg geswirld om droge plekken weg te werken, gevolgd door een hoofdgiet in twee spiraalbewegingen. Bewust zonder eigen temperatuurgetal — die komt hier uit het basisrecept.' },
   APRIL_HOUSE_METHOD:    { name:'April huismethode', mechanism:'Zes gelijke gietbeurten, geen aparte bloom-fase; elke pour gebeurt in een stevige cirkelbeweging die zelf voor de agitatie zorgt.' },
   RAO_V60_MINIMAL_POUR:  { name:'Rao — Minimal Pour', mechanism:'Zo min mogelijk losse gietbeurten om temperatuurverlies en turbulentie te beperken, afgesloten met de ‘Rao Spin’ — de dripper ronddraaien na de laatste pour om kanaalvorming tegen te gaan.' },
   RAO_CHEMEX_DISCLOSED:  { name:'Rao Clarity', mechanism:'Snelle, hete gietstijl (derdehands toegeschreven, zie disclaimer): bloom, één hoofdgiet tot volume, lichte agitatie.' },
@@ -5111,6 +5090,12 @@ function engineValidVolumeRange(methodKey, profileKey){
    is voor déze zettermethode (bijv. Hedrick: vier onderling tegenstrijdige bronnen —
    zie data/styleOverlays.ts), ofwel omdat de kandidaat is uitgesloten door een harde
    grens (bijv. Rao Chemex boven de 475ml-plafond). */
+// Sprint 5 (UX-review F7): de engine noemt het recept zonder naam-gebonden schema intern
+// "Kernrecept"; in beeld heet dat "Basisrecept" (en geen Engelse engine-naam als auteur).
+function techniqueDisplayLine(rec){
+  if (rec.technique === 'Kernrecept') return 'Basisrecept · eigen berekening, geen naam-gebonden schema';
+  return `${rec.technique} · ${rec.author}`;
+}
 function coreOnlyReason(profileKey, methodKey, gen){
   const pref = ENGINE_PROFILE_MAP[profileKey] && ENGINE_PROFILE_MAP[profileKey].overlay;
   const prefId = typeof pref === 'string' ? pref : (pref ? pref[methodKey] : null);
@@ -5838,7 +5823,7 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   } else {
     technique = 'Kernrecept';
     author = 'Brew Intelligence 2.0-engine (geen naam-gebonden schema)';
-    notes = `${coreOnlyReason(profileKey, methodKey, gen)} Dosis, water, ratio, maling en temperatuur hieronder komen wél gewoon uit het eerlijke kernrecept — alleen het naam-gebonden giet-schema ontbreekt.`;
+    notes = `${coreOnlyReason(profileKey, methodKey, gen)} Dosis, water, ratio, maling en temperatuur hieronder komen wél gewoon uit het eerlijke basisrecept — alleen het naam-gebonden giet-schema ontbreekt.`;
   }
 
   // Verwerkingsmethode/experimenteel — genoteerd, maar past de cijfers structureel niet
@@ -10029,7 +10014,7 @@ function renderBrewLogHonestSummary(){
       timeLine = `Bed droog na ${fmtTime(actualTime)} — ${Math.round(Math.abs(diff))}s ${diff > 0 ? 'later dan' : 'eerder dan'} de schatting van het schema (${fmtTime(targetTime)}).`;
     }
   }
-  const ratioLine = `Kernrecept-ratio ${rec.ratioText} (${fmt(rec.dose,1)} g op ${state.waterMl} ml).`;
+  const ratioLine = `Basisrecept-ratio ${rec.ratioText} (${fmt(rec.dose,1)} g op ${state.waterMl} ml).`;
   // NIEUW (Implementatieplan Bypass v1.0, Fase B, BP-5 punt 5): bij bypass klopt de
   // kernrecept-ratio hierboven pas ná het bijschenken — het Klaar-scherm toonde tot nu toe
   // geen enkel getal over de daadwerkelijke brewer-ratio (Gate-0-bevinding "Klaar-scherm").
@@ -11527,7 +11512,7 @@ function renderBypassToggle(){
   const optionsHtml = BYPASS_PCT_OPTIONS.map(pct => {
     const pourMl = state.waterMl ? Math.round(state.waterMl * (1 - pct / 100) / 5) * 5 : null;
     const ratioHint = (dose && pourMl) ? `1:${fmt(pourMl / dose, 1)}` : '';
-    return `<button type="button" class="chip" data-bypass-pct="${pct}" data-selected="${state.bypass && state.bypassPct === pct}">${pct}%${ratioHint ? `<span style="display:block; font-size:10px; opacity:.75; font-weight:400;">${ratioHint}</span>` : ''}</button>`;
+    return `<button type="button" class="chip" data-bypass-pct="${pct}" data-selected="${state.bypass && state.bypassPct === pct}">${pct}%${ratioHint ? `<span style="display:block; font-size:var(--fs-label); opacity:.75; font-weight:400;">${ratioHint}</span>` : ''}</button>`;
   }).join('');
   el.innerHTML = `<button type="button" class="chip" data-bypass-pct="0" data-selected="${!state.bypass}">Uit</button>${optionsHtml}`;
   el.querySelectorAll('[data-bypass-pct]').forEach(btn=>btn.addEventListener('click', ()=>{
@@ -12190,7 +12175,7 @@ function renderPrep(){
   if (beanLineEl){
     beanLineEl.textContent = activeBean
       ? `Boon: ${activeBean.name || 'Naamloze boon'}`
-      : 'Geen boon gekoppeld — dit brouwsel komt in geen bonengeschiedenis';
+      : 'Geen boon gekoppeld · telt niet mee bij een boon';
     beanLineEl.dataset.linked = activeBean ? 'true' : 'false';
   }
   renderPrepGoal();
@@ -12206,7 +12191,7 @@ function renderPrep(){
     bestRefEl.textContent = show ? `★ Je beste kop (${r.liking}/5, ${r.dateText}): ${r.line}. Methode, water en sterkte van toen staan klaar.` : '';
   }
 
-  document.getElementById('technique-line').textContent = `${rec.technique} · ${rec.author}`;
+  document.getElementById('technique-line').textContent = techniqueDisplayLine(rec);
   document.getElementById('technique-tasting').textContent = p.desc;
 
   const twinEl = document.getElementById('prep-twin-note');
@@ -12396,7 +12381,7 @@ function renderPrep(){
       <div class="stat-sub">voor ${rec.water} ml${state.strengthAdjust > 0 ? ' · een stap sterker' : state.strengthAdjust < 0 ? ' · een stap zwakker' : ''}${doseEdgeSub}</div>
       ${stockWarning}
     </div>
-    <div class="stat-block stat-block--hero" id="stats-water-block">
+    <div class="stat-block stat-block--hero stat-block--water" id="stats-water-block">
       <div class="stat-label">${statIconWater}${state.bypass ? 'Water totaal' : 'Water'}</div>
       <div class="stat-stepper">
         <button type="button" id="serving-minus" aria-label="Minder water">−</button>
@@ -12405,9 +12390,9 @@ function renderPrep(){
       </div>
       <div class="stat-sub">${state.bypass ? `waarvan ${rec.pourWaterMl} ml door de koffie` : '± 50 ml per tik, of tik het getal'}</div>
     </div>
-    <div class="stat-block stat-block--hero${grindAdjusted ? ' stat-block--adjusted' : ''}">
+    <div class="stat-block stat-block--hero stat-block--grind${grindAdjusted ? ' stat-block--adjusted' : ''}">
       <div class="stat-label">Maalgraad${grindAdjusted ? ' · jouw stap' : ''}</div>
-      <div class="stat-value">${escapeHtml(grindValue)}</div>
+      <div class="stat-value${/\d/.test(grindValue) ? '' : ' stat-value--word'}">${escapeHtml(grindValue)}</div>
       ${grindAdjusted ? `<div class="stat-sub stat-sub--adjusted">was ${escapeHtml(String(pAdj.fromValue))} · stap uit je vorige kop</div>` : ''}
       ${rec.grindShortContact ? `<div class="stat-sub">1 klik fijner: kort schema (${fmtTime(rec.totalTime)})</div>` : ''}
       ${rec.grindMicron == null && rec.grindStartingPoint != null && rec.grindStartingRange ? `<div class="stat-sub">${grindAdjusted ? '' : 'start hier · '}klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} is het startgebied</div><div class="stat-sub">zuur en snel door? fijner · bitter en traag? grover</div>` : ''}
@@ -12419,7 +12404,7 @@ function renderPrep(){
       <div class="stat-more-body" id="grind-more-body" hidden>${rec.grindMicron == null ? `<div class="stat-sub">Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}</div>` : ''}${grindMoreNotes.map(n=>`<div class="stat-sub">${n}</div>`).join('')}</div>` : ''}
     </div>
     <div class="stat-block stat-block--hero">
-      <div class="stat-label">${statIconTemp}Watertemperatuur</div>
+      <div class="stat-label">${statIconTemp}Temperatuur</div>
       <div class="stat-value">${rec.tempBand.min}–${rec.tempBand.max} °C</div>
       <div class="stat-sub">${escapeHtml(rec.tempInstruction || '')}</div>
     </div>
@@ -12473,9 +12458,9 @@ function renderPrep(){
     // hoofd te zien; nu ook een eigen, zichtbare badge.
     evidenceBadgeRow.innerHTML = (rec.hasNamedOverlay
       ? (rec.pulseCountSourced
-          ? `<span class="badge" data-tone="good">Kernrecept + gietschema</span>`
-          : `<span class="badge" data-tone="info">Kernrecept + eigen gietschema</span>`)
-      : `<span class="badge" data-tone="info">Alleen kernrecept</span>`)
+          ? `<span class="badge" data-tone="good">Basisrecept + gietschema</span>`
+          : `<span class="badge" data-tone="info">Basisrecept + eigen gietschema</span>`)
+      : `<span class="badge" data-tone="info">Alleen basisrecept</span>`)
       + (rec.authorUnverified ? `<span class="badge" data-tone="warn">Ongeverifieerde toeschrijving</span>` : '');
   }
 
@@ -12584,11 +12569,16 @@ function renderPrep(){
   }
 
   const recipeBodyEl = document.getElementById('recipe-body');
+  // Sprint 5: staat bij elke giet dezelfde snelheid, dan één regel onder de tabel i.p.v. per rij.
+  const rates = rec.steps.filter(s=>s.add>0).map(pourRateLabel);
+  const oneRate = rates.length > 1 && rates.every(r => r === rates[0]) ? rates[0] : null;
+  const rateNoteEl = document.getElementById('recipe-rate-note');
+  if (rateNoteEl){ rateNoteEl.hidden = !oneRate; rateNoteEl.textContent = oneRate ? `Giet steeds rustig: ${oneRate}.` : ''; }
   recipeBodyEl.innerHTML = rec.steps.map((s,i)=>`
     <tr data-pourstep="${i}" role="button" tabindex="0" aria-label="Details voor ${escapeHtml(s.label)}">
       <td>${s.label}${s.note?`<span class="step-note">${s.note}</span>`:''}${s.flow?`<span class="step-flow">${s.flow}</span>`:''}</td>
       <td class="mono">${fmtStepTime(s)}</td>
-      <td class="mono">${s.add>0? '+'+s.add+' ml' : '—'}${s.add>0 ? `<span class="step-rate">${pourRateLabel(s)}</span>` : ''}</td>
+      <td class="mono">${s.add>0? '+'+s.add+' ml' : '—'}${s.add>0 && !oneRate ? `<span class="step-rate">${pourRateLabel(s)}</span>` : ''}</td>
       <td class="mono">${s.to} ml</td>
     </tr>
   `).join('');
@@ -12810,21 +12800,6 @@ function showScreen(name, opts){
   // Bij het terug-gebaar (fromHistory) blijft de eerdere stand van dit scherm staan.
   if (!(opts && opts.fromHistory)) target.toggleAttribute('data-tab-root', !!(opts && opts.tabRoot));
   document.querySelector('.app').setAttribute('data-state', name);
-
-  const order = ['method','roast','profile','prep'];
-  const idx = order.indexOf(name);
-  const wizardless = ['brew','advice','beans','bean-add','home','settings','brewlog-history','bean-detail','brewlog','triage'];
-  // Audit BC-25: de stappenbalk hoort bij de recept-wizard, niet bij Home/Instellingen/timer.
-  const trackerEl = document.getElementById('tracker');
-  if (trackerEl) trackerEl.hidden = wizardless.includes(name);
-  document.querySelectorAll('.tracker-item').forEach(item=>{
-    const step = item.getAttribute('data-step');
-    const stepIdx = order.indexOf(step);
-    if (wizardless.includes(name)){ item.removeAttribute('data-status'); return; }
-    if (stepIdx < idx) item.setAttribute('data-status','done');
-    else if (stepIdx === idx) item.setAttribute('data-status','current');
-    else item.removeAttribute('data-status');
-  });
 
   // NIEUW (Fase 3 — navigatieshell): tabbalk verbergen tijdens Brew Mode, zodat weg-
   // navigeren tijdens een lopende brouw (vandaag onmogelijk, regressierisicotabel §5
