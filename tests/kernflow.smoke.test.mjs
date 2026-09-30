@@ -2271,20 +2271,28 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       { id:'bean-bra', name:'Brazil Cerrado', roastLevel:'medium', profileKey:'klassiek', process:'natural', flavorNotes:[], addedAt: now - 30 * day, doseUsedG:18 }
     ];
     const legacy = [{ id:'log_b', schemaVersion: 5, timestamp: now - day, beanId:'bean-bra', method:'v60', profile:'klassiek', roast:'light', waterMl:300, doseG:18, scores:{}, note:'', approved:true }];
-    // De bewaker staat in localStorage (niet sessionStorage): deze test herlaadt twee keer, en
-    // op de CI-browser bleef sessionStorage bij het herladen van een file://-pagina niet altijd
-    // bewaard — dan zette het init-script de beginvoorraad terug en leek de correctie dubbel.
-    await page.addInitScript(([b, l]) => { if (localStorage.getItem('lr2-seeded')) return; localStorage.setItem('lr2-seeded', '1');
-      localStorage.setItem('brewconsole_beans', JSON.stringify(b)); localStorage.setItem('brewConsoleLog', JSON.stringify(l)); }, [beans, legacy]);
-    await page.goto(FILE_URL, { waitUntil: 'load' });
+    // Elke laadstap krijgt zijn opslag expliciet mee (init-script, gekozen via ?lr2=<stap>).
+    // Eerst schreef de test en herlaadde meteen; op de CI-browser kwam die schrijfactie bij
+    // een file://-pagina niet altijd door vóór het herladen, en startte de app weer met de
+    // beginstand. Nu hangt niets af van wat een herlaad overleeft.
+    const seedStep = (step, store) => page.addInitScript(([key, data]) => {
+      if (new URLSearchParams(location.search).get('lr2') !== key) return;
+      localStorage.clear();
+      for (const [k, v] of Object.entries(data)) localStorage.setItem(k, v);
+    }, [step, store]);
+    const dump = () => page.evaluate(() => Object.fromEntries(Object.keys(localStorage).map(k => [k, localStorage.getItem(k)])));
+    await seedStep('1', { brewconsole_beans: JSON.stringify(beans), brewConsoleLog: JSON.stringify(legacy) });
+    await page.goto(FILE_URL + '?lr2=1', { waitUntil: 'load' });
     // Zoals de vorige versie het opsloeg: wel opnieuw gekoppeld, geen voorraadcorrectie.
     await page.evaluate(() => { const r = getBrewRecord('log_b'); r.beanId = 'bean-eth'; r.beanRelinkedAt = r.reviewedAt = Date.now(); persistBrewStore(); });
     const usage = () => page.evaluate(() => Object.fromEntries(beanLibrary.map(b => [b.id, b.doseUsedG])));
     assert.deepEqual(await usage(), { 'bean-eth': 0, 'bean-bra': 18 });
-    await page.reload({ waitUntil: 'load' });
+    await seedStep('2', await dump());
+    await page.goto(FILE_URL + '?lr2=2', { waitUntil: 'load' });
     assert.deepEqual(await usage(), { 'bean-eth': 18, 'bean-bra': 0 });
     assert.equal(await page.evaluate(() => getBrewRecord('log_b').stockBeanId), 'bean-eth');
-    await page.reload({ waitUntil: 'load' });
+    await seedStep('3', await dump());
+    await page.goto(FILE_URL + '?lr2=3', { waitUntil: 'load' });
     assert.deepEqual(await usage(), { 'bean-eth': 18, 'bean-bra': 0 }, 'geen tweede keer');
     await page.close();
   });
