@@ -3052,6 +3052,25 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       }
     });
 
+    test('methodekeuze: V60- en Chemex-foto volledig in beeld (vlak volgt de beeldverhouding van de foto)', async () => {
+      for (const viewport of [{ width: 390, height: 844 }, { width: 1280, height: 800 }]){
+        const page = await newTrackedPage({ viewport });
+        await page.goto(FILE_URL, { waitUntil: 'load' });
+        await page.click('.navbar [data-nav="method"]');
+        await page.waitForFunction(() => [...document.querySelectorAll('#method-grid .photo-slot-img')].every(i => i.complete && i.naturalWidth > 0));
+        const cards = await page.evaluate(() => [...document.querySelectorAll('#method-grid .photo-slot--card')].map(slot => {
+          const img = slot.querySelector('img'); const r = slot.getBoundingClientRect();
+          return { slot: r.width / r.height, img: img.naturalWidth / img.naturalHeight, scrim: getComputedStyle(slot.querySelector('.photo-scrim')).display };
+        }));
+        assert.equal(cards.length, 2);
+        for (const c of cards){
+          assert.ok(Math.abs(c.slot - c.img) < 0.03, `${viewport.width}: vlak ${c.slot.toFixed(2)} vs foto ${c.img.toFixed(2)} — foto wordt bijgesneden`);
+          assert.equal(c.scrim, 'none');
+        }
+        await page.close();
+      }
+    });
+
     test('desktop: de getallengrid blijft binnen de receptkolom', async () => {
       const page = await newTrackedPage({ viewport: { width: 1280, height: 720 } });
       await page.goto(FILE_URL, { waitUntil: 'load' });

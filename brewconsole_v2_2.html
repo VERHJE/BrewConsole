@@ -1760,6 +1760,15 @@
      bronbeelden zijn al op de juiste beeldverhouding aangeleverd, dus geen geforceerde crop nodig). */
   .photo-slot-img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;}
   .photo-slot[data-has-photo="true"] svg{display:none;}
+  /* Methodekeuze: de bronfoto's zijn vierkant en tonen de hele brouwer (filterrand, kegel of
+     houten kraag, kan). 16:10 sneed boven- en onderkant weg, waardoor V60 en Chemex slecht
+     herkenbaar waren. Nu vierkant en rand-tot-rand in de kaart (geen binnenmarge om de
+     foto), geen donkere verloop-laag — de tekst staat eronder, niet erop. */
+  #method-grid .choice-card{padding:0; gap:0; overflow:hidden;}
+  #method-grid .photo-slot--card{aspect-ratio:1/1; border:0; border-radius:0; box-shadow:none;}
+  #method-grid .photo-slot[data-has-photo="true"] .photo-scrim{display:none;}
+  #method-grid .choice-card > span{display:block; padding:12px 14px 14px;}
+  #method-grid .choice-card[data-selected="true"] .photo-slot--card{box-shadow:inset 0 0 0 2px var(--copper);}
 
   /* Home-scherm — NIEUW (Visual Design 2.0, §10): tactiele diepte op de CTA-kaarten en
      een lichte hover/press-lift op de boon-strip-kaarten (al <button>-elementen, alleen
