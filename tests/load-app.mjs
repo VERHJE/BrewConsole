@@ -122,7 +122,7 @@ export function loadApp(){
       ASSUMED_SINGLE_POUR_SEC,
       TASTING_STRENGTH, TASTING_ACIDITY, TASTING_FINISH, BREW_GOALS, LATE_TASTING_MIN,
       toggleFinish, tastingGate, buildTasting, applyActuals, findPreviousComparableBrew,
-      DIAGNOSIS_RULESET_VERSION, KH_HIGH_CACO3, diagnoseTasting, leverFromMatrix, adjustFeasibility,
+      DIAGNOSIS_RULESET_VERSION, KH_HIGH_CACO3, diagnoseTasting, leverFromMatrix, adjustFeasibility, landStrength,
       recommendNext, recommendationTexts, TASTING_GOAL_HIT, TASTING_VS_LAST,
       adviceOutcomeStats, ADVICE_GATE_MIN_TESTED, ADVICE_GATE_SUCCESS_MIN, ADVICE_GATE_HARM_MAX,
       extractBeanNameFromText, extractRoastDateFromText,

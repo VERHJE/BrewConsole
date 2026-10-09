@@ -2071,6 +2071,43 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.close();
     });
 
+    test('halve stap: na een −8%-kop die te slap was adviseert de app het midden; dat staat bij de volgende kop ingesteld', async () => {
+      const page = await seeded();
+      await toPrep(page);
+      const dose0 = await page.evaluate(() => state.recipe.dose);
+      await brewToCard(page);
+      await answer(page, { strength: 'too_strong', acidity: 'lively', finish: ['hollow'], liking: 3 });
+      assert.match((await page.locator('#reco-card .reco-title').textContent()).trim(), /^Een stap lichter: ~8% minder koffie/);
+      await page.click('#reco-apply-btn');
+
+      await toPrep(page);
+      assert.equal(await page.evaluate(() => state.strengthAdjust), -1);
+      const doseMin = await page.evaluate(() => state.recipe.dose);
+      await brewToCard(page);
+      await answer(page, { strength: 'too_weak', acidity: 'lively', finish: ['hollow'], liking: 3 });
+      assert.match((await page.locator('#reco-card .reco-title').textContent()).trim(), /^Een halve stap sterker: ~4% meer koffie \(\d+,\d → \d+,\d g\)$/);
+      assert.match(await page.locator('#reco-card').innerText(), /Ga niet helemaal terug naar standaard maar een halve stap/);
+      await page.click('#reco-apply-btn');
+      const p = await pending(page);
+      assert.deepEqual([p.lever, p.delta, p.fromValue, p.toValue], ['dose', 0.5, -1, -0.5]);
+      const s = await store(page);
+      assert.deepEqual([s[1].recommendation.reasonKey, s[1].recommendation.rulesetVersion], ['halfway', 'diag-2026.2']);
+
+      await toPrep(page);
+      assert.equal(await page.evaluate(() => state.strengthAdjust), -0.5);
+      const doseHalf = await page.evaluate(() => state.recipe.dose);
+      assert.ok(doseMin < doseHalf && doseHalf < dose0, `${doseMin} < ${doseHalf} < ${dose0}`);
+      assert.match(await page.locator('#prep-next-adjust').innerText(), /Een halve stap sterker \(~4% meer koffie\)/);
+      assert.equal(await page.locator('#strength-chip [data-strength="-0.5"]').getAttribute('data-selected'), 'true');
+
+      // De halve stap testen en slagen: houd dit recept.
+      await brewToCard(page);
+      await answer(page, { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: 5, vsLast: 'better' });
+      assert.equal((await page.locator('#reco-card .reco-title').textContent()).trim(), 'Houd dit recept zo');
+      assert.equal((await store(page))[1].recommendation.status, 'tested');
+      await page.close();
+    });
+
     test('geslaagde kop → "Houd dit recept zo"; onvolledig → geen advies maar wat er ontbreekt', async () => {
       const page = await seeded();
       await toPrep(page);
@@ -3149,6 +3186,35 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       const grid = await page.evaluate(() => [...document.querySelectorAll('#roast-grid [data-roast]')].map(c => [c.getAttribute('data-roast'), c.querySelector('img').currentSrc.split('/').pop()]));
       assert.deepEqual(grid, ['light', 'light_medium', 'medium', 'medium_dark', 'dark'].map(r => [r, `roast-${r}.webp`]));
       await page.close();
+    });
+
+    test('sterkte: vijf standen (−8% … +8%); de halve stap ligt tussen standaard en een hele stap', async () => {
+      for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 640 }]){
+        const page = await newTrackedPage({ viewport });
+        await page.goto(FILE_URL, { waitUntil: 'load' });
+        await toPrep(page, 'v60');
+        await page.evaluate(() => { document.getElementById('refine-details').open = true; });   // de sterkte zit in "Verfijn dit recept"
+        const chips = page.locator('#strength-chip [data-strength]');
+        assert.deepEqual(await chips.evaluateAll(els => els.map(e => e.dataset.strength)), ['-1', '-0.5', '0', '0.5', '1']);
+        assert.deepEqual(await chips.allInnerTexts(), ['\u22128%', '\u22124%', 'Standaard', '+4%', '+8%']);
+        const rows = await chips.evaluateAll(els => new Set(els.map(e => Math.round(e.getBoundingClientRect().top))).size);
+        if (viewport.width === 390) assert.equal(rows, 1, 'vijf standen op één regel op een telefoon');
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${viewport.width}: geen horizontale scroll`);
+        const dose = {};
+        for (const v of ['-1', '-0.5', '0', '0.5', '1']){
+          await page.click(`#strength-chip [data-strength="${v}"]`);
+          assert.equal(await page.evaluate(() => state.strengthAdjust), Number(v));
+          dose[v] = await page.evaluate(() => state.recipe.dose);
+        }
+        assert.ok(dose['-1'] < dose['-0.5'] && dose['-0.5'] < dose['0'] && dose['0'] < dose['0.5'] && dose['0.5'] < dose['1'], JSON.stringify(dose));
+        assert.ok(Math.abs(dose['-0.5'] - dose['0'] * 0.96) <= 0.06, `−4% van ${dose['0']} g is ${dose['-0.5']} g`);
+        assert.ok(Math.abs(dose['0.5'] - dose['0'] * 1.04) <= 0.06);
+        await page.click('#strength-chip [data-strength="-0.5"]');
+        assert.equal(await page.locator('#strength-chip [data-strength="-0.5"]').getAttribute('data-selected'), 'true');
+        assert.match(await page.locator('#strength-note').innerText(), /Dosis -4% t\.o\.v\. het standaardrecept \(een halve stap\)/);
+        assert.match(await page.locator('#stats-grid').innerText(), /een halve stap zwakker/);
+        await page.close();
+      }
     });
 
     test('desktop: de getallengrid blijft binnen de receptkolom', async () => {

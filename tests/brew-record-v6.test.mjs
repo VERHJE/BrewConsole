@@ -584,6 +584,90 @@ describe('Fase 4 — haalbaarheid en trajectregels', () => {
   });
 });
 
+describe('Halve stap — tussen standaard en een hele sterktestap (diag-2026.2)', () => {
+  const ctxAt = (cur, blocked = {}) => ({ actualsConfirmed: true, roastId: 'light', grind: { current: 20, min: 10, max: 40 }, strength: { current: cur, blocked } });
+  const weak = { strength: 'too_weak', acidity: 'lively', finish: ['sweet_clean'], liking: 3 };
+  const strong = { strength: 'too_strong', acidity: 'lively', finish: ['sweet_clean'], liking: 3 };
+  const full = (delta, from, to) => ({ lever: 'dose', delta, fromValue: from, toValue: to });
+  const pick = (r) => [r.type, r.lever, r.delta, r.fromValue, r.toValue, r.reasonKey];
+
+  test('op −8% en "te slap" → de halve stap (−4%), niet "herhaal" en niet helemaal terug', () => {
+    const r = api.recommendNext({ tasting: weak, ctx: ctxAt(-1), lastApplied: full(-1, 0, -1) });
+    assert.deepEqual(pick(r), ['ADJUST', 'dose', 0.5, -1, -0.5, 'halfway']);
+    assert.equal(r.rulesetVersion, 'diag-2026.2');
+  });
+  test('zonder geregistreerde vorige stap (eigen keuze of voorkeur) geldt hetzelfde', () => {
+    assert.deepEqual(pick(api.recommendNext({ tasting: weak, ctx: ctxAt(-1) })), ['ADJUST', 'dose', 0.5, -1, -0.5, 'halfway']);
+  });
+  test('spiegelbeeld: op +8% en "te sterk" → +4%', () => {
+    assert.deepEqual(pick(api.recommendNext({ tasting: strong, ctx: ctxAt(1), lastApplied: full(1, 0, 1) })), ['ADJUST', 'dose', -0.5, 1, 0.5, 'halfway']);
+  });
+  test('"veel te slap" / "veel te sterk" blijft een hele stap terug naar standaard', () => {
+    assert.deepEqual(pick(api.recommendNext({ tasting: Object.assign({}, weak, { strength: 'much_too_weak' }), ctx: ctxAt(-1), lastApplied: full(-1, 0, -1) })),
+      ['ADJUST', 'dose', 1, -1, 0, 'matrix']);
+    assert.deepEqual(pick(api.recommendNext({ tasting: Object.assign({}, strong, { strength: 'much_too_strong' }), ctx: ctxAt(1) })),
+      ['ADJUST', 'dose', -1, 1, 0, 'matrix']);
+  });
+  test('"slechter dan de vorige" na een hele dosisstap → de halve stap terug; na een maalstap ongewijzigd', () => {
+    const r = api.recommendNext({ tasting: Object.assign({}, weak, { vsLast: 'worse' }), ctx: ctxAt(-1), lastApplied: full(-1, 0, -1) });
+    assert.deepEqual(pick(r), ['ADJUST', 'dose', 0.5, -1, -0.5, 'halfway_worse']);
+    const g = api.recommendNext({ tasting: Object.assign({}, weak, { vsLast: 'worse' }), ctx: ctxAt(0), lastApplied: { lever: 'grind', delta: -1 } });
+    assert.equal(g.reasonKey, 'revert_worse');
+  });
+  test('was de vorige stap zelf een halve, dan niet meteen weer terug (geen heen-en-weer)', () => {
+    // −8% bereikt via een halve stap (−½ → −1), nu "te slap": dat is een omkering → herhaal eerst.
+    const r = api.recommendNext({ tasting: weak, ctx: ctxAt(-1), lastApplied: full(-0.5, -0.5, -1) });
+    assert.deepEqual([r.type, r.reasonKey], ['REPEAT', 'hysteresis']);
+    // Na de halve stap −1 → −½ en dan "te sterk": ook een omkering → herhaal.
+    const r2 = api.recommendNext({ tasting: strong, ctx: ctxAt(-0.5), lastApplied: full(0.5, -1, -0.5) });
+    assert.deepEqual([r2.type, r2.reasonKey], ['REPEAT', 'hysteresis']);
+  });
+  test('op een halve stand: een stap loopt nooit dwars over standaard heen en nooit voorbij ±1', () => {
+    assert.deepEqual(pick(api.recommendNext({ tasting: weak, ctx: ctxAt(-0.5) })), ['ADJUST', 'dose', 0.5, -0.5, 0, 'matrix']);
+    assert.deepEqual(pick(api.recommendNext({ tasting: strong, ctx: ctxAt(0.5) })), ['ADJUST', 'dose', -0.5, 0.5, 0, 'matrix']);
+    assert.deepEqual(pick(api.recommendNext({ tasting: strong, ctx: ctxAt(-0.5) })), ['ADJUST', 'dose', -0.5, -0.5, -1, 'matrix']);
+    assert.deepEqual(pick(api.recommendNext({ tasting: weak, ctx: ctxAt(0.5) })), ['ADJUST', 'dose', 0.5, 0.5, 1, 'matrix']);
+  });
+  test('vanaf standaard blijft een stap 8% (ongewijzigd gedrag)', () => {
+    assert.deepEqual(pick(api.recommendNext({ tasting: weak, ctx: ctxAt(0) })), ['ADJUST', 'dose', 1, 0, 1, 'matrix']);
+    assert.deepEqual(pick(api.recommendNext({ tasting: strong, ctx: ctxAt(0) })), ['ADJUST', 'dose', -1, 0, -1, 'matrix']);
+  });
+  test('is de halve stap niet haalbaar (geen effect op de dosis), dan het oude gedrag', () => {
+    const c = ctxAt(-1, { '-0.5': true });
+    assert.deepEqual([api.recommendNext({ tasting: weak, ctx: c, lastApplied: full(-1, 0, -1) }).reasonKey], ['hysteresis']);
+    assert.deepEqual(pick(api.recommendNext({ tasting: weak, ctx: c })), ['ADJUST', 'dose', 1, -1, 0, 'matrix']);
+  });
+  test('adjustFeasibility() en landStrength() op het halve-stappenraster', () => {
+    assert.deepEqual([-1, -0.5, 0, 0.5, 1].map(f => api.landStrength(f, 1)), [0, 0, 1, 1, 1]);
+    assert.deepEqual([-1, -0.5, 0, 0.5, 1].map(f => api.landStrength(f, -1)), [-1, -1, -1, 0, 0]);
+    assert.deepEqual(j(api.adjustFeasibility('dose', 1, ctxAt(-0.5))), { ok: true, fromValue: -0.5, toValue: 0 });
+    assert.deepEqual(j(api.adjustFeasibility('dose', 0.5, ctxAt(-1))), { ok: true, fromValue: -1, toValue: -0.5 });
+    assert.deepEqual(j(api.adjustFeasibility('dose', 1, ctxAt(1))), { ok: false, blockedKey: 'dose_limit', fromValue: 1, toValue: 2 });
+    assert.equal(api.adjustFeasibility('dose', 0.5, ctxAt(-1, { '-0.5': true })).ok, false);
+  });
+  test('teksten: "een halve stap", ~4%, van → naar in gram, en waarom het midden', () => {
+    const r = api.recommendNext({ tasting: weak, ctx: ctxAt(-1), lastApplied: full(-1, 0, -1) });
+    const tx = api.recommendationTexts(r, api.diagnoseTasting(weak, ctxAt(-1)), { doseFrom: 18.3, doseTo: 19.1 });
+    assert.equal(tx.title, 'Een halve stap sterker: ~4% meer koffie (18,3 → 19,1 g)');
+    assert.match(tx.body, /Te slap op de hele stap\. Ga niet helemaal terug naar standaard maar een halve stap/);
+    assert.match(tx.expect, /minder dun dan je vorige kop, maar nog lichter dan het standaardrecept/);
+    const w = api.recommendNext({ tasting: Object.assign({}, weak, { vsLast: 'worse' }), ctx: ctxAt(-1), lastApplied: full(-1, 0, -1) });
+    assert.match(api.recommendationTexts(w, api.diagnoseTasting(weak, ctxAt(-1)), {}).body, /een halve stap terug: zo proef je het midden/);
+    // Een hele stap blijft zoals het was.
+    const f = api.recommendNext({ tasting: weak, ctx: ctxAt(0) });
+    assert.equal(api.recommendationTexts(f, api.diagnoseTasting(weak, ctxAt(0)), { doseFrom: 19.9, doseTo: 21.5 }).title, 'Een stap sterker: ~8% meer koffie (19,9 → 21,5 g)');
+  });
+  test('de dosis: halve stap is ~4% (op 0,1 g), ligt tussen standaard en een hele stap, en een halve stap telt mee in de meting', () => {
+    const dose = (st) => api.computeRecipe('v60', 'light', 'heel_fruitig', 350, null, false, 10, null, false, false, null, st).dose;
+    assert.deepEqual([-1, -0.5, 0, 0.5, 1].map(dose), [18.3, 19.1, 19.9, 20.7, 21.5]);
+    assert.equal(dose(-0.5), Math.round(dose(0) * 0.96 * 10) / 10);
+    assert.deepEqual([0.3, 0.2, -0.3, -0.2, 0.74, 5].map(dose), [20.7, 19.9, 19.1, 19.9, 20.7, 21.5], 'afgerond op het halve-stappenraster en begrensd op ±1');
+    assert.match(api.computeRecipe('v60', 'light', 'heel_fruitig', 350, null, false, 10, null, false, false, null, -0.5).strengthNote, /met een halve stap \(dosis -4%/);
+    const s = j(api.adviceOutcomeStats([{ id: 'h', recommendation: { type: 'ADJUST', lever: 'dose', delta: 0.5, status: 'tested', outcome: 'better' } }]));
+    assert.deepEqual([s.tested, s.better, s.success], [1, 1, 1]);
+  });
+});
+
 describe('Fase 4 — eigenschappen over alle proefkaart-combinaties (v2 §15)', () => {
   const STRENGTHS = ['much_too_weak', 'too_weak', 'just_right', 'too_strong', 'much_too_strong'];
   const ACIDITIES = ['flat', 'lively', 'sharp'];
@@ -593,7 +677,9 @@ describe('Fase 4 — eigenschappen over alle proefkaart-combinaties (v2 §15)', 
   const contexts = [
     { actualsConfirmed: true, roastId: 'medium', grind: { current: 15, min: 13, max: 18 }, strength: { current: 0, blocked: {} } },
     { actualsConfirmed: false, roastId: 'dark', grind: { current: 13, min: 13, max: 18 }, strength: { current: 1, blocked: {} } },
-    { actualsConfirmed: true, roastId: 'light', grind: { current: null, min: null, max: null }, strength: { current: -1, blocked: { '0': true } } }
+    { actualsConfirmed: true, roastId: 'light', grind: { current: null, min: null, max: null }, strength: { current: -1, blocked: { '0': true } } },
+    { actualsConfirmed: true, roastId: 'medium', grind: { current: 15, min: 13, max: 18 }, strength: { current: -0.5, blocked: {} } },
+    { actualsConfirmed: true, roastId: 'medium', grind: { current: 15, min: 13, max: 18 }, strength: { current: 0.5, blocked: { '0': true } } }
   ];
   test(`${all.length} combinaties × ${contexts.length} contexten: hooguit één hendel, en een ADJUST is altijd haalbaar`, () => {
     for (const ctx of contexts) for (const t of all){
@@ -601,9 +687,13 @@ describe('Fase 4 — eigenschappen over alle proefkaart-combinaties (v2 §15)', 
       assert.ok(['NONE', 'KEEP', 'CHECK', 'REPEAT', 'ADJUST'].includes(r.type));
       if (r.type === 'ADJUST'){
         assert.ok(['grind', 'dose'].includes(r.lever));
-        assert.ok(Math.abs(r.delta) >= 1 && Math.abs(r.delta) <= 2);
+        assert.ok(Math.abs(r.delta) >= 0.5 && Math.abs(r.delta) <= 2);
         assert.ok(api.adjustFeasibility(r.lever, r.delta, ctx).ok, `onhaalbare stap bij ${JSON.stringify(t)}`);
-        if (r.lever === 'dose') assert.equal(Math.abs(r.delta), 1, 'dosis altijd één stap (8%)');
+        if (r.lever === 'dose'){
+          assert.ok([0.5, 1].includes(Math.abs(r.delta)), 'dosis: één stap (8%) of een halve stap (4%)');
+          assert.ok(Number.isInteger(r.toValue * 2) && r.toValue >= -1 && r.toValue <= 1, 'op het halve-stappenraster, binnen −1…+1');
+          assert.equal(r.toValue - r.fromValue, r.delta, 'delta is de echte verplaatsing');
+        } else assert.ok(Math.abs(r.delta) >= 1);
       }
     }
   });

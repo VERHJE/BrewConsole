@@ -1389,6 +1389,9 @@
   .chip:hover{border-color:var(--copper-dim);}
   .chip:active{background:var(--surface-2); transform:scale(.97);}
   .chip[data-selected="true"]{border-color:var(--copper); color:var(--copper-light); background:var(--surface-2); box-shadow:inset 0 1px 3px rgba(0,0,0,.3), 0 0 0 1px var(--accent-glow);}
+  /* Sterkte: vijf standen (−8% … +8%) passen zo op één regel op een telefoon; op een heel smal scherm breken ze netjes af. */
+  #strength-chip{gap:5px;}
+  #strength-chip .chip{padding-left:8px; padding-right:8px;}
   .advice-result{
     background:var(--surface); border:1px solid var(--copper-dim); border-radius:var(--radius-md);
     padding:18px; margin-top:4px;
@@ -5016,11 +5019,13 @@ function bypassAdvice(pct){
 /* C2 (koffie-expertpanel, Noor/Dr. Ilse): tot nu toe liep "sterker/zwakker zetten"
    uitsluitend via de bypass-concentraat-techniek (zie hieronder) — een indirecte weg
    voor wie geen concentraat wil zetten en gewoon een net iets intensere of lichtere
-   kop wil. strengthAdjust (-1/0/+1) is een losse, optionele hendel die de dosis direct
+   kop wil. strengthAdjust (-1, -0,5, 0, +0,5, +1) is een losse, optionele hendel die de dosis direct
    verschuift terwijl het watervolume gelijk blijft (dus de ratio zelf verandert), naast
    en onafhankelijk van bypass. Geen gepubliceerde exacte stapgrootte hiervoor — 8% per
    stap is een eigen, behoudende keuze (ongeveer één voelbare ratio-stap, bijv. 1:15 naar
-   ~1:13,9 of ~1:16,2), klein genoeg om de bestaande recept-kalibratie niet te verstoren. */
+   ~1:13,9 of ~1:16,2), klein genoeg om de bestaande recept-kalibratie niet te verstoren.
+   Halve stap (diag-2026.2, op verzoek goedgekeurd): ±0,5 = ~4% dosis, voor wie tussen
+   'standaard' en een hele stap wil zitten (eigen keuze, net zo min een evidence-claim). */
 const STRENGTH_DOSE_STEP = 0.08;
 /* Eerlijke, engine-afgeleide standaard-waterhoeveelheid voor een methode/profiel-
    combinatie — vervangt de oude RECIPE_DB[method][profile].water opzoeking (die tabel
@@ -5651,7 +5656,7 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
 
   // Sterkte-hendel: pure, expliciet-handmatige gebruikersvoorkeur, geen evidence-claim
   // (zelfde geest als voorheen) — verschuift alleen de dosis, water blijft gelijk.
-  const strengthStep = clamp(Math.round(strengthAdjust || 0), -1, 1);
+  const strengthStep = clamp(Math.round((strengthAdjust || 0) * 2) / 2, -1, 1);
   let dose = baseDose;
   let ratioText = doseEdge ? nlRatio(`1:${fmt(doseEdge.ratio, 1)}`)
     : (core.ratio.state === 'RESOLVED' ? nlRatio(core.ratio.value) : '—');
@@ -5675,7 +5680,7 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     }
     const liveRatio = dose > 0 ? water / dose : 0;
     ratioText = nlRatio(`1:${fmt(liveRatio, 1)}`);
-    strengthNote = (strengthClamped ? `Begrensd: de gevraagde sterktestap zou de dosis buiten het gevalideerde bereik van dit toestel duwen (${brewer.doseCeiling.value.min}–${brewer.doseCeiling.value.max} g). De dosis staat daarom op ${fmt(dose,1)} g — de rand van wat hier onderbouwd is, niet de volle stap. Wil je verder, kies dan een ander watervolume. ` : '') + `Sterkte handmatig ${strengthStep > 0 ? 'verhoogd' : 'verlaagd'} (dosis ${strengthStep > 0 ? '+' : ''}${Math.round(strengthStep * STRENGTH_DOSE_STEP * 100)}%, ratio nu ${ratioText}) — watervolume blijft gelijk. Dit is een eigen handmatige voorkeur, geen evidence-claim. Los te combineren met de concentraat/bypass-methode hieronder.`;
+    strengthNote = (strengthClamped ? `Begrensd: de gevraagde sterktestap zou de dosis buiten het gevalideerde bereik van dit toestel duwen (${brewer.doseCeiling.value.min}–${brewer.doseCeiling.value.max} g). De dosis staat daarom op ${fmt(dose,1)} g — de rand van wat hier onderbouwd is, niet de volle stap. Wil je verder, kies dan een ander watervolume. ` : '') + `Sterkte handmatig ${strengthStep > 0 ? 'verhoogd' : 'verlaagd'}${Math.abs(strengthStep) === 0.5 ? ' met een halve stap' : ''} (dosis ${strengthStep > 0 ? '+' : ''}${Math.round(strengthStep * STRENGTH_DOSE_STEP * 100)}%, ratio nu ${ratioText}) — watervolume blijft gelijk. Dit is een eigen handmatige voorkeur, geen evidence-claim. Los te combineren met de concentraat/bypass-methode hieronder.`;
   }
 
   // Concentraat/bypass — door de gebruiker gekozen percentage (zie bypassAdvice()/BP-2),
@@ -9264,8 +9269,12 @@ function findPreviousComparableBrew(store, rec){
    Volgorde: NONE → KEEP (gate) → CHECK (geldigheid) → terugdraaien na "slechter" →
    matrix-hendel met trajectregels (niet heen-en-weer, insluiten) → haalbaarheid → ADJUST,
    anders REPEAT. Eén hendel per kop; stap 1 klik of 8% dosis (2 klikken alleen bij
-   "veel te …" met overeenstemmend extractiebewijs). */
-const DIAGNOSIS_RULESET_VERSION = 'diag-2026.1';
+   "veel te …" met overeenstemmend extractiebewijs).
+   Halve stap (diag-2026.2, goedgekeurd): zit je op −8% of +8% en wijst het oordeel terug naar
+   standaard ("te slap" / "te sterk", of "slechter dan de vorige"), dan zijn beide uiteinden
+   geproefd en adviseert de app eerst het midden (±4%). Bij "veel te …" blijft het een hele stap
+   terug; een halve stap wordt nooit direct weer teruggedraaid (geen heen-en-weer). */
+const DIAGNOSIS_RULESET_VERSION = 'diag-2026.2';
 const KH_HIGH_CACO3 = 70; // bovengrens SCA-richtwaarde alkaliniteit (mg/L CaCO3)
 const CONFIDENCE_LABELS = { likely: 'Waarschijnlijk', possible: 'Mogelijk', uncertain: 'Onzeker' };
 
@@ -9323,8 +9332,8 @@ function leverFromMatrix(strengthState, extractionState, dark){
   return null;
 }
 
-// Haalbaarheid: maalstand binnen het praktische bereik; sterktestap binnen −1…+1 en met
-// werkelijk effect (dosisplafond 15–22 g). Geeft {ok, toValue, blockedKey}.
+// Haalbaarheid: maalstand binnen het praktische bereik; sterktestap binnen −1…+1 (ook halve
+// stappen) en met werkelijk effect (dosisplafond 15–22 g). Geeft {ok, toValue, blockedKey}.
 function adjustFeasibility(lever, delta, ctx){
   const c = ctx || {};
   if (lever === 'grind'){
@@ -9337,9 +9346,17 @@ function adjustFeasibility(lever, delta, ctx){
   }
   const st = c.strength || {};
   const from = typeof st.current === 'number' ? st.current : 0;
-  const to = from + delta;
-  const feasible = to >= -1 && to <= 1 && !(st.blocked && st.blocked[String(to)]);
-  return feasible ? { ok: true, fromValue: from, toValue: to } : { ok: false, blockedKey: 'dose_limit', fromValue: from, toValue: to };
+  const raw = from + delta;
+  const to = landStrength(from, delta);
+  const feasible = to !== from && !(st.blocked && st.blocked[String(to)]);
+  return feasible ? { ok: true, fromValue: from, toValue: to } : { ok: false, blockedKey: 'dose_limit', fromValue: from, toValue: raw };
+}
+// Sterktestanden liggen op het halve-stappenraster (−1, −½, 0, +½, +1). Een stap loopt nooit
+// dwars over 'Standaard' heen (landt er juist op) en nooit voorbij ±1.
+function landStrength(from, delta){
+  let to = from + delta;
+  if (from !== 0 && from * to < 0) to = 0;
+  return Math.max(-1, Math.min(1, to));
 }
 
 function recommendNext(input){
@@ -9367,12 +9384,29 @@ function recommendNext(input){
     let f = adjustFeasibility(lever, delta, ctx);
     if (!f.ok && Math.abs(delta) === 2){ delta = Math.sign(delta); f = adjustFeasibility(lever, delta, ctx); }
     if (!f.ok) return out({ type: 'CHECK', reasonKey: f.blockedKey, lever, delta, fromValue: f.fromValue, toValue: f.toValue, confidence: null });
-    return out({ type: 'ADJUST', lever, delta, fromValue: f.fromValue, toValue: f.toValue, reasonKey, confidence });
+    // De echte verplaatsing van de dosisstand: een stap die anders over Standaard heen zou gaan, landt erop (halve stap).
+    const actual = lever === 'dose' ? f.toValue - f.fromValue : delta;
+    return out({ type: 'ADJUST', lever, delta: actual, fromValue: f.fromValue, toValue: f.toValue, reasonKey, confidence });
+  };
+
+  // Halve stap: zit je op −8% of +8% en wijst het oordeel terug naar standaard, dan test je eerst het
+  // midden (±4%) i.p.v. helemaal terug. Alleen als die halve stap haalbaar is; anders het oude gedrag.
+  const curStrength = (ctx.strength && typeof ctx.strength.current === 'number') ? ctx.strength.current : 0;
+  const halfwayBack = (dir, reasonKey, confidence) => {
+    if (Math.abs(curStrength) !== 1 || Math.sign(curStrength) !== -dir) return null;
+    const r = feasibleAdjust('dose', dir * 0.5, reasonKey, confidence);
+    return r.type === 'ADJUST' ? r : null;
   };
 
   // Mislukte stap: deze kop testte een wijziging en smaakte slechter → die stap terugdraaien.
+  // Was het een hele dosisstap, dan alleen de helft terug (beide uiteinden zijn geproefd).
   if (lastApplied && t.vsLast === 'worse'){
-    return feasibleAdjust(lastApplied.lever, -lastApplied.delta, 'revert_worse', 'possible');
+    const back = -lastApplied.delta;
+    if (lastApplied.lever === 'dose' && Math.abs(back) === 1){
+      const half = halfwayBack(Math.sign(back), 'halfway_worse', 'possible');
+      if (half) return half;
+    }
+    return feasibleAdjust(lastApplied.lever, back, 'revert_worse', 'possible');
   }
 
   const dark = ctx.roastId === 'dark' || ctx.roastId === 'medium_dark';
@@ -9382,6 +9416,12 @@ function recommendNext(input){
   let confidence = cand.basis === 'strength' ? (d.strength.much ? 'likely' : 'possible') : d.confidence;
   if (confidence === 'uncertain') return out({ type: 'REPEAT', reasonKey: 'uncertain', confidence: 'uncertain' });
   if (!ctx.actualsConfirmed && confidence === 'likely') confidence = 'possible';
+
+  // Halve stap na een gewone "te slap" / "te sterk" (niet "veel te …"), tenzij de vorige stap zelf al een halve was.
+  if (cand.lever === 'dose' && !d.strength.much && !(lastApplied && lastApplied.lever === 'dose' && Math.abs(lastApplied.delta) < 1)){
+    const half = halfwayBack(cand.dir, 'halfway', confidence);
+    if (half) return half;
+  }
 
   // Trajectregels: niet heen-en-weer op één kop, en stoppen als je al aan beide kanten zat.
   if (lastApplied && lastApplied.lever === cand.lever && Math.sign(lastApplied.delta) === -cand.dir && confidence !== 'likely'){
@@ -9421,11 +9461,15 @@ function recommendationTexts(reco, diag, extra){
       return `Maal ${clicks(n)} ${dir}${fromTo}`;
     }
     const dose = (x.doseFrom != null && x.doseTo != null) ? ` (${fmt(x.doseFrom, 1)} → ${fmt(x.doseTo, 1)} g)` : '';
-    return r.delta > 0 ? `Een stap sterker: ~8% meer koffie${dose}` : `Een stap lichter: ~8% minder koffie${dose}`;
+    const pct = Math.round(Math.abs(r.delta) * STRENGTH_DOSE_STEP * 100);
+    const stap = Math.abs(r.delta) === 0.5 ? 'Een halve stap' : 'Een stap';
+    return r.delta > 0 ? `${stap} sterker: ~${pct}% meer koffie${dose}` : `${stap} lichter: ~${pct}% minder koffie${dose}`;
   };
   const leverExpect = () => r.lever === 'grind'
     ? (r.delta < 0 ? 'Verwacht: meer zoetheid en minder scherp zuur, bij ongeveer dezelfde sterkte.' : 'Verwacht: minder bitter en droog, iets lichter van smaak.')
-    : (r.delta > 0 ? 'Verwacht: voller en sterker, zonder dat het bitterder hoeft te worden.' : 'Verwacht: lichter en helderder.');
+    : (r.reasonKey === 'halfway' || r.reasonKey === 'halfway_worse')
+      ? (r.delta > 0 ? 'Verwacht: minder dun dan je vorige kop, maar nog lichter dan het standaardrecept.' : 'Verwacht: minder zwaar dan je vorige kop, maar nog sterker dan het standaardrecept.')
+      : (r.delta > 0 ? 'Verwacht: voller en sterker, zonder dat het bitterder hoeft te worden.' : 'Verwacht: lichter en helderder.');
   switch (r.type){
     case 'NONE': title = 'Nog geen advies'; body = `Beantwoord eerst: ${(r.missing || []).join(', ')}.`; break;
     case 'KEEP': title = 'Houd dit recept zo'; body = 'Geslaagde kop: alles beantwoord, minstens 4 van 5, en geen "veel te …". Niets veranderen is hier het beste advies.'; break;
@@ -9457,6 +9501,10 @@ function recommendationTexts(reco, diag, extra){
         const strengthOnly = r.lever === 'dose' && eState !== 'under' && eState !== 'over';
         body = r.reasonKey === 'revert_worse'
           ? 'Deze kop testte een wijziging en smaakte slechter dan de vorige. Draai die stap terug.'
+          : r.reasonKey === 'halfway_worse'
+            ? 'Deze kop testte een hele stap en smaakte slechter dan de vorige. Draai hem maar een halve stap terug: zo proef je het midden tussen je twee koppen.'
+          : r.reasonKey === 'halfway'
+            ? `${r.delta > 0 ? 'Te slap' : 'Te sterk'} op de hele stap. Ga niet helemaal terug naar standaard maar een halve stap: zo proef je het midden tussen die kop en het standaardrecept.`
           : strengthOnly
             ? `${r.delta > 0 ? 'Te slap' : 'Te sterk'}, zonder duidelijk signaal over de extractie — de sterkte stuur je met de hoeveelheid koffie, niet met de maling.`
             : matrixWhy;
@@ -11468,13 +11516,20 @@ function renderWaterHardnessInput(){
 /* C2 (koffie-expertpanel, Noor/Dr. Ilse): losse, directe sterkte-hendel naast bypass —
    verschuift de dosis (dus de ratio) zelf i.p.v. een concentraat te zetten en terug te
    verdunnen. Zie STRENGTH_DOSE_STEP/strengthNote bij computeRecipe() voor het mechanisme.
-   Drie chips (Zwakker/Standaard/Sterker) i.p.v. losse toggle, want dit is geen aan/uit
-   maar een drieledige keuze; nogmaals op de al-actieve chip tikken zet 'm terug naar
-   standaard. */
+   Vijf chips (−8% / −4% / Standaard / +4% / +8%) i.p.v. losse toggle, want dit is geen
+   aan/uit maar een gradueel te kiezen stand; de halve stappen (±4%) zijn voor wie tussen
+   standaard en een hele stap wil zitten. */
 function renderStrengthToggle(){
   const el = document.getElementById('strength-chip');
   if (!el) return;
-  const options = [ { v:-1, label:'Zwakker' }, { v:0, label:'Standaard' }, { v:1, label:'Sterker' } ];
+  // Vijf standen op het halve-stappenraster: de percentages zijn het dosisverschil met standaard.
+  const options = [
+    { v:-1,   label:'\u22128%',    aria:'Zwakker: dosis min 8 procent' },
+    { v:-0.5, label:'\u22124%',    aria:'Iets zwakker: dosis min 4 procent' },
+    { v:0,    label:'Standaard', aria:'Standaard' },
+    { v:0.5,  label:'+4%',       aria:'Iets sterker: dosis plus 4 procent' },
+    { v:1,    label:'+8%',       aria:'Sterker: dosis plus 8 procent' }
+  ];
   el.innerHTML = options.map(o =>
     (function(){
       // NIEUW (Reparatieplan v4.0, B-1b): een sterktestap die door de dosisklem toch
@@ -11488,7 +11543,7 @@ function renderStrengthToggle(){
         state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude,
         state.bypass, state.fermentEvidence, waterHardnessMgL, 0);
       const zinloos = o.v !== 0 && probe.dose > 0 && Math.abs(probe.dose - neutraal.dose) < 0.15;
-      return `<button type="button" class="chip" data-strength="${o.v}" data-selected="${(state.strengthAdjust||0)===o.v}"${zinloos ? ' disabled title="Bij dit watervolume zit de dosis al aan de rand van het gevalideerde bereik — deze stap zou niets veranderen."' : ''}>${o.label}</button>`;
+      return `<button type="button" class="chip" data-strength="${o.v}" aria-label="${o.aria}" data-selected="${(state.strengthAdjust||0)===o.v}"${zinloos ? ' disabled title="Bij dit watervolume zit de dosis al aan de rand van het gevalideerde bereik — deze stap zou niets veranderen."' : ''}>${o.label}</button>`;
     })()
   ).join('');
   el.querySelectorAll('[data-strength]').forEach(btn=>btn.addEventListener('click', ()=>{
@@ -11498,7 +11553,7 @@ function renderStrengthToggle(){
   const noteEl = document.getElementById('strength-note');
   if (noteEl){
     noteEl.textContent = state.strengthAdjust
-      ? `Dosis ${state.strengthAdjust > 0 ? '+' : ''}${Math.round(state.strengthAdjust*STRENGTH_DOSE_STEP*100)}% t.o.v. het standaardrecept — watervolume blijft gelijk. Kan gecombineerd worden met de concentraat/bypass-methode hieronder.`
+      ? `Dosis ${state.strengthAdjust > 0 ? '+' : ''}${Math.round(state.strengthAdjust*STRENGTH_DOSE_STEP*100)}% t.o.v. het standaardrecept${Math.abs(state.strengthAdjust) === 0.5 ? ' (een halve stap)' : ''} — watervolume blijft gelijk. Kan gecombineerd worden met de concentraat/bypass-methode hieronder.`
       : 'Staat op standaard — verandert de dosis/ratio niet. Voor een concentraat-methode (andere aanpak, zie hieronder) gebruik je Concentraat + bypass.';
   }
 }
@@ -12031,7 +12086,7 @@ function diagnosisContextForRecord(rec){
   const cur = plan.strengthStep || 0;
   const blocked = {};
   const d0 = doseForRecordAt(rec, cur);
-  [-1, 0, 1].forEach(st => {
+  [-1, -0.5, 0, 0.5, 1].forEach(st => {
     if (st === cur) return;
     const dd = doseForRecordAt(rec, st);
     if (dd == null || d0 == null || !(dd > 0) || Math.abs(dd - d0) < 0.15) blocked[String(st)] = true;
@@ -12154,7 +12209,7 @@ function renderPrepNextAdjust(){
     ? (p.toValue != null
         ? `Maal op klik ${p.toValue} — ${n} klik${n === 1 ? '' : 'ken'} ${p.delta < 0 ? 'fijner' : 'grover'} dan je vorige kop (klik ${p.fromValue}).`
         : `Maal ${n} klik${n === 1 ? '' : 'ken'} ${p.delta < 0 ? 'fijner' : 'grover'} dan je vorige kop.`)
-    : `${p.delta > 0 ? 'Een stap sterker (~8% meer koffie)' : 'Een stap lichter (~8% minder koffie)'} — hieronder al ingesteld.`;
+    : `${Math.abs(p.delta) === 0.5 ? 'Een halve stap' : 'Een stap'} ${p.delta > 0 ? 'sterker' : 'lichter'} (~${Math.round(Math.abs(p.delta) * STRENGTH_DOSE_STEP * 100)}% ${p.delta > 0 ? 'meer' : 'minder'} koffie) — hieronder al ingesteld.`;
   const setupNote = pendingAdjustSetupNote(p);
   el.innerHTML = `<p class="prep-next-adjust-title">Jouw stap uit de vorige proefkaart</p>
     <p class="prep-next-adjust-text">${escapeHtml(text)}</p>
@@ -12399,7 +12454,7 @@ function renderPrep(){
     <div class="stat-block stat-block--hero${doseAdjusted ? ' stat-block--adjusted' : ''}"${stockWarning ? ' style="border-color:var(--danger);"' : ''}>
       <div class="stat-label">${statIconDose}Gemalen koffie${doseAdjusted ? ' · jouw stap' : ''}</div>
       <div class="stat-value">${fmt(rec.dose,1)} g</div>
-      <div class="stat-sub">voor ${rec.water} ml${state.strengthAdjust > 0 ? ' · een stap sterker' : state.strengthAdjust < 0 ? ' · een stap zwakker' : ''}${doseEdgeSub}</div>
+      <div class="stat-sub">voor ${rec.water} ml${state.strengthAdjust ? ` · ${Math.abs(state.strengthAdjust) === 0.5 ? 'een halve stap' : 'een stap'} ${state.strengthAdjust > 0 ? 'sterker' : 'zwakker'}` : ''}${doseEdgeSub}</div>
       ${stockWarning}
     </div>
     <div class="stat-block stat-block--hero stat-block--water" id="stats-water-block">

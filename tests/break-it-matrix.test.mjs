@@ -94,7 +94,7 @@ describe('§9 Break-it matrix — representatieve sweep over methode×profiel×r
       const only = api.PROFILE_INFO[profile].methodOnly;
       if (only && only !== method) continue;
       for (const roast of ['light', 'medium', 'dark']){
-        for (const strength of [-1, 0, 1]){
+        for (const strength of [-1, -0.5, 0, 0.5, 1]){
           test(`${method}/${profile}/${roast}/sterkte=${strength} is gezond`, () => {
             const rec = api.computeRecipe(method, roast, profile, vol, null, false, null, null, false, null, null, strength);
             assertHealthyRecipe(rec, { method, profile, roast });
