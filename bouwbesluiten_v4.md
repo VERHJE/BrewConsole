@@ -108,6 +108,8 @@ Vastgelegd bij de wijziging die uit een gebruikersmelding kwam: de standaard mis
 
 Elk bestaand recept (standaard en ±8%) blijft byte-identiek (golden fixtures, B-1-sweep, FORBIDDEN-edges en break-it-matrix lopen nu ook over ±4% en blijven groen). Advies vanaf standaard, na "veel te …" en bij maalstappen is ongewijzigd. De blinde helder-proef (A/B) blijft 0 tegen −8%.
 
+**Vervolg (op verzoek):** de opt-in "Voortaan bij Helder & fris…" zet voortaan een halve stap (−4%, `AB_LIGHTER_STEP`) in plaats van een hele (−8%, dat bleek te slap). De opt-in blijft een eigen, bewuste keuze na de blinde proeven en wordt nooit vanzelf aangezet; de proef zelf vergelijkt nog steeds met één hele stap lager.
+
 ## Testresultaten
 
 808/808 tests groen (`npm run qa`), inclusief 12 nieuwe pure tests (advieskeuzes, landing op het raster, teksten, dosis, poortstatistiek) en 2 browsertests (vijf chips op één regel, volledige cyclus −8% → halve stap → ingesteld → getest "beter" → houd zo).

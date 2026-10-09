@@ -2440,9 +2440,13 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     // Vier extra proeven waarin de variant wint → duidelijke uitslag → zelf aanzetten.
     await page.evaluate(() => { for (let i = 0; i < 4; i++) abTrials.push({ id: 'x' + i, preferred: 'variant' }); saveAbTrials(); renderAbTrial(); });
     assert.equal(await page.locator('.ab-tally').getAttribute('data-ab-verdict'), 'variant');
+    assert.match(await page.locator('#ab-lighter-on').innerText(), /een halve stap zwakker \(−4%\)/);
     await page.click('#ab-lighter-on');
-    assert.equal(await page.evaluate(() => state.strengthAdjust), -1);
-    assert.ok(await page.evaluate(() => state.recipe.dose) < dose0, 'nu een stap minder koffie');
+    assert.equal(await page.evaluate(() => state.strengthAdjust), -0.5, 'Helder & fris zet een halve stap (−4%)');
+    const doseLight = await page.evaluate(() => state.recipe.dose);
+    assert.ok(doseLight < dose0, 'nu minder koffie');
+    assert.ok(Math.abs(doseLight - dose0 * 0.96) <= 0.06, `−4% van ${dose0} g is ${doseLight} g`);
+    assert.match(await page.locator('#ab-trial').innerText(), /Staat aan: bij Helder & fris zet je een halve stap zwakker \(−4% koffie\)/);
     await page.click('[data-goal="balanced"]');
     assert.equal(await page.evaluate(() => state.strengthAdjust), 0, 'ander doel → automatische stap terug');
     assert.equal(await page.evaluate(() => state.recipe.dose), dose0);
