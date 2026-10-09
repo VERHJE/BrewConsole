@@ -115,3 +115,20 @@ Elk bestaand recept (standaard en ±8%) blijft byte-identiek (golden fixtures, B
 ## Testresultaten
 
 808/808 tests groen (`npm run qa`), inclusief 12 nieuwe pure tests (advieskeuzes, landing op het raster, teksten, dosis, poortstatistiek) en 2 browsertests (vijf chips op één regel, volledige cyclus −8% → halve stap → ingesteld → getest "beter" → houd zo).
+
+# Expertreview oktober 2026 — Sprint A (fouten en vertrouwen)
+
+Uit de expertreview van oktober 2026 (bevindingen R-01 t/m R-22). Sprint A raakt geen receptgetal en geen adviesregel; akkoord gekregen om te starten.
+
+| # | Wat was er mis | Wat is gebouwd |
+| --- | --- | --- |
+| **R-01** | Een gelogde kop opnieuw openen ("← Terug naar timer" → "Proeven & loggen") toonde een lege proefkaart; opslaan overschreef proefkaart, advies en bevestiging. | `openBrewLogEntry()` vult de kaart uit het bewaarde record (`tastingDraftFromRecord()`, `actualsModeOfRecord()`) en toont het bewaarde advies. |
+| **R-05** | "Bloemig & delicaat (Hedrick-methode)" en "Naar Hedrick's aanpak", terwijl de engine Hedrick nooit maakt. | Teksten eerlijk gemaakt; de tekstentest controleert nu dat een profielbeschrijving alleen een bronnaam noemt als de engine dat schema ook maakt. |
+| **R-06** | Wie zonder boon begon, kon nergens alsnog een boon koppelen; de leerlus deed dan niets. | Boonkiezer (`openBeanPicker()`) op het receptscherm en na opslaan, met snel een boon aanmaken (alleen een naam; branding en profiel van het recept). `linkBrewToBean()` koppelt achteraf met dezelfde bijwerkingen als bij het zetten. |
+| **R-07** | "Zet deze boon" (boondetail) liep altijd via het methode-advies en vroeg het profiel opnieuw. | Na de eerste kop gaat de boondetail direct naar het recept (`brewBean()`); op de bonenkaart heet de tweede knop dan "Anders zetten →". Een profiel gekozen in het advies wordt het profiel van de boon. |
+| **R-08** | Een "check eerst"-advies verdween na het Klaar-scherm. | De boon bewaart het (`pendingCheck`) tot de volgende gelogde kop; Home en het receptscherm tonen het. |
+| **R-16** | "Gezet zoals gepland?" werd makkelijk overgeslagen; de kop telde dan niet mee. | Opslaan zonder bevestiging vraagt het nog één keer: "Ja, opslaan", "Anders…" of "Weet ik niet, toch opslaan". |
+| **R-17** | De brander werd de boonnaam; "250g" werd niet herkend. | Nieuw veld Brander; `extractRoasterFromText()`, `extractBagSizeFromText()`; regels in hoofdletters worden netjes gemaakt. |
+| **R-18** | Na een boon opslaan via de Bonen-tab stond er toch "← Methode". | `showScreen(…, { keepTabRoot })`. |
+| **R-19** | Klaar-scherm toonde de plantemperatuur als resultaat. | Label "Temp. (plan)". |
+| **R-21** | Bonenkaart was een knop met knoppen erin; alkaliniteitseenheid zonder label. | De boonnaam is de knop; de kaart vangt alleen de tik eromheen. Label toegevoegd. |

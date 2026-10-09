@@ -243,6 +243,17 @@
   .modal-btn:active{transform:scale(.97);}
   .modal-btn-secondary{background:var(--surface-2); color:var(--text);}
   .modal-btn-danger{background:var(--danger); color:#fff; border-color:var(--danger);}
+  .bean-picker-box{max-width:380px; max-height:calc(100% - 40px); overflow:auto;}
+  .modal-box p.bean-picker-title{font-size:var(--fs-body); font-weight:600; margin:0 0 12px;}
+  .bean-picker-list{display:flex; flex-direction:column; gap:8px; margin:0 0 14px;}
+  .bean-picker-item{min-height:44px; text-align:left; padding:10px 12px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-family:var(--font-body); font-size:var(--fs-small); cursor:pointer;}
+  .bean-picker-item small{display:block; color:var(--text-faint); font-size:var(--fs-label);}
+  .bean-picker-new{display:flex; flex-direction:column; gap:6px; margin:0 0 14px;}
+  .bean-picker-new label{font-size:var(--fs-label); color:var(--text-faint);}
+  .bean-picker-new-row{display:flex; gap:8px;}
+  .bean-picker-new-row .form-input{flex:1; min-width:0;}
+  .bean-picker-new-row .modal-btn{flex:0 0 auto; padding:0 14px;}
+  .prep-bean-link{margin-left:8px; min-height:44px; padding:0 4px;}
 
   /* NIEUW (Visual Design 2.0, §19 Subtle texture): microscopische monochrome grain,
      ~1-2% opacity, op geselecteerde grote donkere oppervlakken — CSS-only (geen
@@ -523,6 +534,8 @@
   .tasting-card .chip{min-height:40px;}
   .tasting-actuals{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:12px 14px;}
   .tasting-actuals-edit{display:flex; gap:10px; flex-wrap:wrap;}
+  .actuals-confirm{margin-top:14px; background:var(--surface); border:1px solid var(--accent); border-radius:14px; padding:12px 14px;}
+  .actuals-confirm[hidden]{display:none;}
   .tasting-actuals-edit[hidden]{display:none;}
   .tasting-actuals-edit label{display:flex; flex-direction:column; gap:4px; font-size:var(--fs-label); color:var(--text-faint); flex:1 1 120px;}
   .tasting-hint{margin:0; font-size:var(--fs-label); color:var(--text-faint);}
@@ -1476,6 +1489,7 @@
   .bean-card-top-text .bean-card-meta, .bean-card-top-text .badge-row{margin-bottom:0;}
   .bean-card-header{display:flex; align-items:center; justify-content:space-between;}
   .bean-card-name{font-family:var(--font-display); font-weight:600; font-size:var(--fs-body);}
+  .bean-card-open{background:none; border:0; padding:0; margin:0; color:inherit; text-align:left; cursor:pointer; min-height:44px;}
   .bean-card-actions{display:flex; align-items:center; margin:-11px -11px -11px 0;}
   .bean-edit, .bean-delete{
     background:none; border:none; color:var(--text-faint); font-size:var(--fs-heading); line-height:1; cursor:pointer;
@@ -1968,6 +1982,25 @@
     </div>
   </div>
 </div>
+<!-- Review R-06: wie zonder boon begon, kon daarna nergens een boon koppelen, waardoor de
+     leerlus stil bleef staan. Deze kiezer koppelt een opgeslagen boon of maakt er snel een
+     aan (alleen een naam; de rest kan later via Bewerken). -->
+<div class="modal-overlay" id="bean-picker" hidden>
+  <div class="modal-box bean-picker-box" role="dialog" aria-modal="true" aria-labelledby="bean-picker-title">
+    <p class="bean-picker-title" id="bean-picker-title">Welke boon is dit?</p>
+    <div class="bean-picker-list" id="bean-picker-list"></div>
+    <form class="bean-picker-new" id="bean-picker-new">
+      <label for="bean-picker-name">Nieuwe boon (alleen een naam)</label>
+      <div class="bean-picker-new-row">
+        <input type="text" id="bean-picker-name" class="form-input" placeholder="bijv. Ethiopia Guji" autocomplete="off">
+        <button type="submit" class="modal-btn modal-btn-secondary" id="bean-picker-create">Aanmaken</button>
+      </div>
+    </form>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn modal-btn-secondary" id="bean-picker-cancel">Annuleren</button>
+    </div>
+  </div>
+</div>
 <!-- NIEUW (Visual Design 2.0 fase 3, detail-referentie recept-scherm "waterhoeveelheid
      aanpassen"-modal): een grotere, tastbaardere versie van de al bestaande
      waterhoeveelheid-stepper (.serving-row/#serving-minus/#serving-plus, die op het
@@ -2308,8 +2341,11 @@
 
         <div class="section-divider">of vul handmatig in</div>
 
-        <label class="form-label">Naam / roaster
-          <input type="text" id="f-name" class="form-input" placeholder="bijv. 7AM Coproca">
+        <label class="form-label">Naam
+          <input type="text" id="f-name" class="form-input" placeholder="bijv. Ethiopia Guji Hambela">
+        </label>
+        <label class="form-label">Brander (optioneel)
+          <input type="text" id="f-roaster" class="form-input" placeholder="bijv. 7AM Coffee Roasters" autocomplete="off">
         </label>
 
         <p class="advice-q-label">Roast</p>
@@ -2521,6 +2557,8 @@
       <div class="ab-trial" id="ab-trial" hidden></div>
       <!-- Fase 4: de stap die je na je vorige kop koos ("Gebruik voor volgende kop"). -->
       <div class="prep-next-adjust" id="prep-next-adjust" hidden></div>
+      <!-- Review R-08: een "check eerst" uit je vorige kop met deze boon. -->
+      <div class="prep-next-adjust prep-check-note" id="prep-check-note" hidden></div>
       <!-- Sprint 6: vanuit "Zet je beste kop opnieuw" — wat die kop toen was. -->
       <p class="prep-best-ref" id="prep-best-ref" hidden></p>
       <p class="technique-line" id="technique-line"></p>
@@ -2913,6 +2951,17 @@
         </label>
         </div>
       </details>
+      <!-- Review R-16: "Gezet zoals gepland?" werd makkelijk overgeslagen, waarna de kop niet
+           meetelde. Wie opslaat zonder te bevestigen, krijgt deze vraag nog één keer. -->
+      <div class="actuals-confirm" id="actuals-confirm" role="group" aria-labelledby="actuals-confirm-title" hidden>
+        <p class="tasting-q" id="actuals-confirm-title">Eerst nog: gezet zoals gepland?</p>
+        <p class="tasting-hint" id="actuals-confirm-plan"></p>
+        <div class="chip-row">
+          <button type="button" class="chip" id="actuals-confirm-yes">✓ Ja, opslaan</button>
+          <button type="button" class="chip" id="actuals-confirm-edit">Anders…</button>
+          <button type="button" class="link-secondary" id="actuals-confirm-skip">Weet ik niet, toch opslaan</button>
+        </div>
+      </div>
       <button class="start-btn" id="brewlog-save-btn" style="margin-top:14px;">Loggen opslaan</button>
       <p class="empty-hint brewlog-saved-msg" id="brewlog-saved-msg" tabindex="-1" hidden>Opgeslagen ✓ — terug te vinden via de bonenkaart.</p>
       <!-- Fase 4: diagnose + één advies, na opslaan. Adviserend — niets verandert vanzelf. -->
@@ -3012,7 +3061,7 @@
         <label for="prep-water-alkalinity" style="font-size:var(--fs-label); color:var(--text-faint); display:block; margin:12px 0 4px;">Alkaliniteit</label>
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
           <input type="number" id="prep-water-alkalinity" class="form-input" placeholder="bijv. 50" min="0" max="600" step="1" style="max-width:150px;">
-          <select id="prep-water-alkalinity-unit" class="form-input" style="max-width:150px;">
+          <select id="prep-water-alkalinity-unit" class="form-input" style="max-width:150px;" aria-label="Eenheid alkaliniteit">
             <option value="CaCO3">mg/L CaCO3</option>
             <option value="HCO3">mg/L HCO3</option>
           </select>
@@ -4334,7 +4383,7 @@ const PROFILE_INFO = {
   // giet-momenten tussen bronnen verschilt) en werd tegengesproken door onafhankelijk
   // heronderzoek (zie coreOnlyReason() hierboven voor de volledige toelichting die al
   // elders op hetzelfde scherm stond). Karakterclaim behouden, structuurclaim verwijderd.
-  evenwichtig_flex: { name:'Evenwichtig & flexibel', desc:'Naar Hedrick\'s aanpak — flexibel, betrouwbaar bij wisselende bonen', color:'#6E7F91', icon:'scale' }
+  evenwichtig_flex: { name:'Evenwichtig & flexibel', desc:'Flexibel basisrecept — betrouwbaar bij wisselende bonen', color:'#6E7F91', icon:'scale' }
 };
 
 /* ============================================================
@@ -6317,6 +6366,10 @@ function applyAdvice(){
   state.strengthAdjust = 0; // C2: zelfde redenering — sterkte is ook een per-keer-keuze
   state.goalLighterApplied = false; // BC-10
   state.beanId = adviceState.beanId || null;
+  // R-07: het profiel dat je voor deze boon koos (ook na een bijna-gelijke stand) is voortaan
+  // het profiel van de boon, zodat "Zet opnieuw" en "Zet deze boon" dezelfde keuze gebruiken.
+  const adviceBean = state.beanId ? beanLibrary.find(b => b.id === state.beanId) : null;
+  if (adviceBean && state.profile && adviceBean.profileKey !== state.profile){ adviceBean.profileKey = state.profile; saveBeansToStorage(); }
   const baseWater = defaultWaterMlFor(state.method, state.profile);
   const factor = adviceState.batch === 'multi' ? 1.5 : 1;
   state.waterMl = Math.round(baseWater * factor / 50) * 50;
@@ -7342,9 +7395,15 @@ function applyParsedTextToForm(rawText){
   // BC-20: naamsuggestie (ook uit een lange eerste regel) en branddatum — alleen als die
   // velden nog leeg zijn, nooit iets overschrijven wat je zelf invulde.
   found.name = extractBeanNameFromText(rawText);
+  found.roaster = extractRoasterFromText(rawText); // R-17
+  found.bagSizeG = extractBagSizeFromText(rawText); // R-17
   found.roastDate = extractRoastDateFromText(rawText);
   const nameEl = document.getElementById('f-name');
   if (nameEl && !nameEl.value.trim() && found.name) nameEl.value = found.name;
+  const roasterEl = document.getElementById('f-roaster');
+  if (roasterEl && !roasterEl.value.trim() && found.roaster) roasterEl.value = found.roaster;
+  const bagEl = document.getElementById('f-bagsize');
+  if (bagEl && !bagEl.value && found.bagSizeG) bagEl.value = found.bagSizeG;
   const roastDateEl = document.getElementById('f-roast-date');
   if (roastDateEl && !roastDateEl.value && found.roastDate) roastDateEl.value = found.roastDate;
 
@@ -7397,9 +7456,32 @@ function applyParsedTextToForm(rawText){
    eerste scheidingsteken. Branddatum: alleen met een brand-/roast-woord vlak ervoor op
    dezelfde regel — zo wordt een THT-/best-before-datum nooit als branddatum gelezen. */
 const NAME_SKIP_RE = /^(roast(ed)?\b|gebrand|branddatum|best before|tht\b|ten minste|origin\b|herkomst|process\b|proces\b|notes?\b|smaak|tasting)/i;
+/* Review R-17: veel etiketten beginnen met de brander ("Kawa Coffee Roasters"), en dan werd
+   de brander de boonnaam. Een regel met een branderwoord is nu de brander; de naam komt
+   uit de eerstvolgende regel. Een regel in hoofdletters wordt netjes gemaakt. */
+const ROASTER_LINE_RE = /\b(roasters?|roastery|roasting( co(mpany)?)?|coffee co\.?|coffee company|koffiebranderij|branderij|brandery|rösterei|kaffeerösterei|torrefacteur|torréfaction)\b/i;
+function isRoasterLine(line){ return ROASTER_LINE_RE.test(line) && line.length <= 50; }
+function tidyAllCaps(line){
+  if (!/[A-Z]/.test(line) || line !== line.toUpperCase() || line.length < 4) return line;
+  return line.toLowerCase().replace(/(^|[\s\-/(])([a-zà-ÿ])/g, (m, a, b) => a + b.toUpperCase());
+}
+function extractRoasterFromText(rawText){
+  const line = String(rawText || '').split('\n').map(s => s.trim()).filter(Boolean).find(isRoasterLine);
+  return line ? tidyAllCaps(line) : null;
+}
+// Zakgrootte: "250g", "250 gram", "1 kg", "1kg" — alleen een plausibele zak (100–2500 g).
+function extractBagSizeFromText(rawText){
+  const t = String(rawText || '');
+  const kg = t.match(/(?:^|[^\d.,])(\d(?:[.,]\d)?)\s?kg\b/i);
+  if (kg){ const g = Math.round(parseFloat(kg[1].replace(',', '.')) * 1000); if (g >= 100 && g <= 2500) return g; }
+  const gr = t.match(/(?:^|[^\d.,])(\d{3,4})\s?(?:g|gr|gram|grams)\b/i);
+  if (gr){ const g = Number(gr[1]); if (g >= 100 && g <= 2500) return g; }
+  return null;
+}
 function extractBeanNameFromText(rawText){
   const lines = String(rawText || '').split('\n').map(s => s.trim()).filter(Boolean).filter(l => !NAME_SKIP_RE.test(l));
-  const first = lines[0];
+  const nonRoaster = lines.filter(l => !isRoasterLine(l));
+  const first = nonRoaster.length ? tidyAllCaps(nonRoaster[0]) : (lines[0] || null);
   if (!first) return null;
   if (first.length <= 40 && !/[.:;]\s/.test(first) && !/\s[—–|]\s/.test(first)) return first;
   const head = first.split(/\s[—–\-|·]\s|[.,;:](?:\s|$)/)[0].trim();
@@ -7622,7 +7704,7 @@ function secondaryFlavorNotes(scores, winnerKey){
   const tips = {
     heel_fruitig: 'felle bessen/wijnachtige tonen — een fractie kortere bloom en iets grotere eerste pour trekt die vroege zuren sterker naar voren.',
     fruitig_clean: 'helder citrus-/steenfruitkarakter — dat zit al vroeg in de extractie; een rustige, ononderbroken pour (geen pulse) houdt dat schoon.',
-    fresh_clean: 'lichte/theeachtige/bloemige tonen — dit is precies waar het "Bloemig & delicaat"-profiel (Hedrick-methode, alleen V60) voor gemaakt is; het loont om deze boon een keer daarmee te zetten als je puur op die noot wilt proeven.',
+    fresh_clean: 'lichte/theeachtige/bloemige tonen — daarvoor is het profiel "Bloemig & delicaat" bedoeld (alleen V60). Let op: dat profiel gebruikt vandaag het basisrecept, de aparte gietmethode die erbij hoort is nog niet beschikbaar.',
     vol_rond: 'chocolade/notige body — die zit laat in de extractie; iets meer contacttijd (grover malen is niet nodig, langer laten doorlopen wel) brengt dat beter naar boven.',
     zoet: 'karamel/kruidige zoetheid — zit in het midden van de extractie; een iets kleinere eerste pour geeft de latere suikers meer tijd om mee te komen, zoals het "Zoet"-profiel al doet.'
   };
@@ -7723,7 +7805,7 @@ function floralDominanceNote(flavorTags){
   if (floralCount === 0) return '';
   const ratio = floralCount / known.length;
   if (ratio < 0.5) return '';
-  return `Deze boon leunt sterk op bloemige smaaknotities (${floralCount}/${known.length} van de gekozen tags) — dat is precies het domein van het aparte profiel "Bloemig & delicaat" (Hedrick-methode, alleen V60). Het smaakwiel-algoritme kiest dit profiel niet automatisch (florale tags vallen onder de bredere "Fresh & Clean"-bucket) — het loont om het handmatig te proberen als je puur op die florale helderheid wilt zetten.`;
+  return `Deze boon leunt sterk op bloemige smaaknotities (${floralCount}/${known.length} van de gekozen tags) — daarvoor is het profiel "Bloemig & delicaat" bedoeld (alleen V60). Het smaakwiel kiest dit profiel niet automatisch (bloemige tags vallen onder de bredere "Fresh & Clean"). Let op: het gebruikt vandaag het basisrecept, de aparte gietmethode die erbij hoort is nog niet beschikbaar.`;
 }
 
 /* Twee voorbeeldbonen uit eigen foto's (Wonder Beans en Ús Kofje) —
@@ -7902,7 +7984,7 @@ function renderBeanLibraryScreen(){
     const flavorTags = b.flavorNotes || [];
     const visibleFlavorTags = flavorTags.slice(0, 3);
     const overflowCount = flavorTags.length - visibleFlavorTags.length;
-    return `<div class="bean-card" data-open-detail="${b.id}" role="button" tabindex="0" aria-label="Bekijk ${escapeHtml(b.name || 'boon')}">
+    return `<div class="bean-card" data-open-detail="${b.id}">
       <div class="bean-card-top">
         <!-- NIEUW (Visual Design 2.0 fase 2, detail-referentie schermen 03/11): een kleine
              foto-thumbnail per boonkaart, zoals de referentie toont. Bewust de bestaande,
@@ -7914,7 +7996,7 @@ function renderBeanLibraryScreen(){
         </div>
         <div class="bean-card-top-text">
           <div class="bean-card-header">
-            <span class="bean-card-name">${escapeHtml(b.name || 'Naamloze boon')}</span>
+            <button type="button" class="bean-card-name bean-card-open" data-open-detail="${b.id}" aria-label="Bekijk ${escapeHtml(b.name || 'boon')}">${escapeHtml(b.name || 'Naamloze boon')}</button>
             <!-- Edit/verwijderen zijn hier bewust behouden (niet in de referentieschets
                  zichtbaar, die alleen ♥ › toont) — dit is de ENIGE plek in de app waar een
                  boon verwijderd kan worden; weglaten zou functionaliteit breken, wat de
@@ -7933,13 +8015,15 @@ function renderBeanLibraryScreen(){
       ${freshBadge || stockBadge ? `<div class="badge-row">${freshBadge}${stockBadge}</div>` : ''}
       <div class="bean-card-btnrow">
         ${b.lastBrew ? `<button class="bean-use-btn bean-again-btn" data-again="${b.id}">↻ Brouw opnieuw (${METHOD_INFO[b.lastBrew.method] ? METHOD_INFO[b.lastBrew.method].name : b.lastBrew.method}${b.lastBrew.bypass ? ', bypass' : ''})</button>` : ''}
-        <button class="bean-use-btn" data-use="${b.id}">Zet deze boon →</button>
+        <button class="bean-use-btn" data-use="${b.id}">${b.lastBrew ? 'Anders zetten →' : 'Zet deze boon →'}</button>
       </div>
       ${brewLog.some(e=>e.beanId===b.id) ? `<button class="advisor-link" style="margin-top:6px;" data-history="${b.id}">📋 Geschiedenis (${brewLog.filter(e=>e.beanId===b.id).length})</button>` : ''}
     </div>`;
   }).join('');
   el.querySelectorAll('[data-fav]').forEach(btn=>btn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleBeanFavorite(btn.getAttribute('data-fav')); }));
   el.querySelectorAll('[data-del]').forEach(btn=>btn.addEventListener('click', (e)=>{ e.stopPropagation(); deleteBean(btn.getAttribute('data-del')); }));
+  // R-07: op de kaart staat naast "↻ Brouw opnieuw" ook deze knop — die blijft de bewuste
+  // keuze voor een nieuw advies (methode/profiel), vandaar het andere label als er al een kop is.
   el.querySelectorAll('[data-use]').forEach(btn=>btn.addEventListener('click', (e)=>{ e.stopPropagation(); useBeanForAdvice(btn.getAttribute('data-use')); }));
   el.querySelectorAll('[data-again]').forEach(btn=>btn.addEventListener('click', (e)=>{ e.stopPropagation(); brewAgain(btn.getAttribute('data-again')); }));
   el.querySelectorAll('[data-edit]').forEach(btn=>btn.addEventListener('click', (e)=>{ e.stopPropagation(); editBean(btn.getAttribute('data-edit')); }));
@@ -7947,13 +8031,10 @@ function renderBeanLibraryScreen(){
   // NIEUW (Fase 5 — Bean Detail, Bouwbesluit "Bean Detail — ingang"): tik op de kaart zelf
   // (buiten de actieknoppen, die hierboven al stopPropagation() doen) opent het read-only
   // Bean Detail-scherm. Toetsenbord-equivalent (Enter/Spatie) voor wie niet met een muis/
-  // touch navigeert — de kaart is met role="button" tabindex="0" al focusbaar gemaakt.
-  el.querySelectorAll('[data-open-detail]').forEach(card=>{
-    const open = ()=>openBeanDetail(card.getAttribute('data-open-detail'));
-    card.addEventListener('click', open);
-    card.addEventListener('keydown', (e)=>{
-      if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(); }
-    });
+  // touch navigeert. Review R-21: de kaart was zelf een knop mét knoppen erin (verwarrend voor
+  // een schermlezer); nu is de boonnaam de echte knop en vangt de kaart alleen de tik eromheen.
+  el.querySelectorAll('.bean-card[data-open-detail]').forEach(card=>{
+    card.addEventListener('click', ()=>openBeanDetail(card.getAttribute('data-open-detail')));
   });
 }
 
@@ -8052,8 +8133,10 @@ function renderNextCupCard(targetId){
   const src = t.adjust ? getBrewRecord(t.adjust.fromBrewId) : null;
   const adviceTitle = src && src.recommendation ? recommendationTexts(src.recommendation, null, {}).title : null;
   const liking = t.entry && t.entry.tasting && t.entry.tasting.liking ? t.entry.tasting.liking : null;
+  const checkTx = !t.adjust ? pendingCheckTexts(t.bean) : null; // R-08
   const line = t.adjust
     ? (adviceTitle ? `Advies uit je vorige kop: ${adviceTitle}` : 'Er staat een stap klaar uit je vorige kop.')
+    : checkTx ? `${liking ? `Vorige kop: ${liking} van 5. ` : ''}${checkTx.title}.`
     : (liking ? `Vorige kop: ${liking} van 5.` : 'Zet je vorige recept opnieuw.');
   const stock = beanStockLine(t.bean);
   el.innerHTML = `<p class="next-cup-kicker">Je volgende kop${t.adjust ? ' · advies klaar' : ''}</p>
@@ -8493,7 +8576,7 @@ function renderBeanDetailRadar(beanId){
   svg.innerHTML = html;
 }
 document.getElementById('bean-detail-edit-btn').addEventListener('click', ()=>{ if (beanDetailId) editBean(beanDetailId); });
-document.getElementById('bean-detail-use-btn').addEventListener('click', ()=>{ if (beanDetailId) useBeanForAdvice(beanDetailId); });
+document.getElementById('bean-detail-use-btn').addEventListener('click', ()=>{ if (beanDetailId) brewBean(beanDetailId); });
 document.getElementById('bean-detail-fav-btn').addEventListener('click', ()=>{ if (beanDetailId) toggleBeanFavorite(beanDetailId); });
 wireDetailTabs('bean-detail-tabs');
 wireDetailTabs('history-tabs');
@@ -9841,25 +9924,51 @@ function applyCompletionSideEffects(rec, nowMs){
   const bean = rec.beanId ? beanLibrary.find(b => b.id === rec.beanId) : null;
   if (!bean) return;
   const plan = rec.plan || {};
-  bean.lastBrew = { method: plan.methodId, waterMl: plan.waterMl, bypass: !!plan.bypass, bypassPct: plan.bypass ? plan.bypass.pct : null };
+  bean.lastBrew = lastBrewFromPlan(plan, rec);
   bean.doseUsedG = Math.round(((bean.doseUsedG || 0) + (plan.doseG || 0)) * 10) / 10;
   saveBeansToStorage();
 }
+function lastBrewFromPlan(plan, rec){
+  return { method: plan.methodId, waterMl: plan.waterMl, bypass: !!plan.bypass, bypassPct: plan.bypass ? plan.bypass.pct : null };
+}
 
 // Fase 3: het concept van de proefkaart voor het actieve brouwsel.
-const tastingDraft = { strength: null, acidity: null, finish: [], liking: null, goalHit: null, vsLast: null, actualsMode: null };
+const tastingDraft = { strength: null, acidity: null, finish: [], liking: null, goalHit: null, vsLast: null, missed: null, actualsMode: null };
 function resetTastingDraft(){
-  Object.assign(tastingDraft, { strength: null, acidity: null, finish: [], liking: null, goalHit: null, vsLast: null, actualsMode: null });
+  Object.assign(tastingDraft, { strength: null, acidity: null, finish: [], liking: null, goalHit: null, vsLast: null, missed: null, actualsMode: null });
+}
+/* Review R-01: een al gelogde kop opnieuw openen (bv. via "← Terug naar timer" en dan weer
+   "Proeven & loggen") toonde een LEGE kaart, en opslaan overschreef dan de proefkaart, het
+   advies en de bevestiging. Nu vullen we de kaart met wat er al bewaard is. */
+function actualsModeOfRecord(rec){
+  const a = rec && rec.actual, plan = (rec && rec.plan) || {};
+  if (!a || !a.confirmed) return null;
+  const planGrind = typeof plan.grindTarget === 'number' ? plan.grindTarget : (typeof plan.grindStartingPoint === 'number' ? plan.grindStartingPoint : null);
+  const planDose = typeof plan.doseG === 'number' ? plan.doseG : null;
+  return (a.doseG === planDose && a.grindClick === planGrind) ? 'planned' : 'edited';
+}
+function tastingDraftFromRecord(rec){
+  const t = (rec && rec.tasting) || {};
+  return {
+    strength: t.strength || null, acidity: t.acidity || null,
+    finish: Array.isArray(t.finish) ? t.finish.slice() : [],
+    liking: t.liking || null, goalHit: t.goalHit || null, vsLast: t.vsLast || null,
+    missed: t.missed || null,
+    actualsMode: actualsModeOfRecord(rec)
+  };
 }
 function openBrewLogEntry(){
   completeActiveBrew(); // Fase 1: no-op als het record al COMPLETED is (normaal pad: schema-einde)
   resetTastingDraft();
+  const loggedRec = activeBrewRecord();
+  const alreadyLogged = !!(loggedRec && loggedRec.lifecycle === 'logged' && loggedRec.tasting);
+  if (alreadyLogged) Object.assign(tastingDraft, tastingDraftFromRecord(loggedRec));
   const noteEl = document.getElementById('brewlog-note');
-  if (noteEl) noteEl.value = '';
+  if (noteEl) noteEl.value = alreadyLogged ? (loggedRec.tasting.note || '') : '';
   // NIEUW (Fase 5): draaft leegmaken bij elke nieuwe logging — anders blijft een eerder
   // ingevuld kopgewicht per ongeluk staan voor een heel ander brouwsel.
   const cupWeightEl = document.getElementById('brewlog-cup-weight');
-  if (cupWeightEl) cupWeightEl.value = '';
+  if (cupWeightEl) cupWeightEl.value = alreadyLogged && loggedRec.actual && loggedRec.actual.cupWeightG != null ? loggedRec.actual.cupWeightG : '';
   // NIEUW (Implementatieplan Bypass v1.0, Fase B/C, BP-5/"proef-en-vul"): alleen zichtbaar
   // als dít brouwsel met bypass gezet is; voorgevuld met het geplande bedrag (rec.bypassMl)
   // zodat "niets aanpassen" betekent "precies volgens plan", niet "leeg/onbekend".
@@ -9869,11 +9978,15 @@ function openBrewLogEntry(){
   if (bypassActualBlock && bypassActualEl){
     const wasBypass = !!(state.bypass && state.recipe && state.recipe.bypassMl != null);
     bypassActualBlock.hidden = !wasBypass;
-    bypassActualEl.value = wasBypass ? state.recipe.bypassMl : '';
+    bypassActualEl.value = wasBypass
+      ? (alreadyLogged && loggedRec.actual && loggedRec.actual.bypassActualG != null ? loggedRec.actual.bypassActualG : state.recipe.bypassMl)
+      : '';
     if (bypassActualHint) bypassActualHint.textContent = wasBypass ? `(optioneel, gram — gepland was ${state.recipe.bypassMl} g)` : '(optioneel, gram)';
   }
   const savedMsg = document.getElementById('brewlog-saved-msg');
   if (savedMsg) savedMsg.hidden = true;
+  actualsConfirmSkip = false;
+  showActualsConfirm(false); // R-16
   renderRecommendationPanel(null); // Fase 4: het advies verschijnt pas na opslaan
   setBrewLogMode('form'); // Sprint 4
   const moreEl = document.getElementById('brewlog-more');
@@ -9889,11 +10002,23 @@ function openBrewLogEntry(){
     metaEl.innerHTML = `
       <div class="brewlog-complete-stat"><div class="stat-label">Bed droog</div><div class="stat-value">${activeBedDrySec() != null ? fmtTime(activeBedDrySec()) : '—'}</div></div>
       <div class="brewlog-complete-stat"><div class="stat-label">Totaal water</div><div class="stat-value">${state.waterMl} ml</div></div>
-      <div class="brewlog-complete-stat"><div class="stat-label">Temperatuur</div><div class="stat-value">${state.recipe.temp}°C</div></div>
+      <div class="brewlog-complete-stat"><div class="stat-label">Temp. (plan)</div><div class="stat-value">${state.recipe.temp}°C</div></div>
     `;
   }
   renderTastingCard();
   renderBrewLogHonestSummary();
+  if (alreadyLogged){
+    // R-01: aangepaste dosis/maling terugzetten, en het bewaarde advies tonen i.p.v. een lege kaart.
+    if (tastingDraft.actualsMode === 'edited'){
+      const doseEl = document.getElementById('brewlog-actual-dose');
+      const grindEl = document.getElementById('brewlog-actual-grind');
+      if (doseEl && loggedRec.actual.doseG != null) doseEl.value = loggedRec.actual.doseG;
+      if (grindEl && loggedRec.actual.grindClick != null) grindEl.value = loggedRec.actual.grindClick;
+    }
+    if (savedMsg) savedMsg.hidden = false;
+    renderRecommendationPanel(loggedRec);
+    setBrewLogMode(loggedRec.recommendation && loggedRec.recommendation.type !== 'NONE' ? 'result' : 'form');
+  }
   showScreen('brewlog');
 }
 
@@ -10034,6 +10159,7 @@ function handleTastingCardClick(e){
   if (e.target.closest('#tasting-prev')){ goToTastingStep(tastingStepIdx - 1, true); return; }
   if (e.target.closest('#actuals-planned-btn')){
     d.actualsMode = d.actualsMode === 'planned' ? null : 'planned';
+    if (d.actualsMode) showActualsConfirm(false); // R-16
   } else if (e.target.closest('#actuals-edit-btn')){
     d.actualsMode = d.actualsMode === 'edited' ? null : 'edited';
     if (d.actualsMode === 'edited'){
@@ -10152,7 +10278,45 @@ function readOptionalNumberInput(id){
   const n = Number(raw);
   return isNaN(n) ? null : n;
 }
+// R-16: opslaan zonder "zoals gepland?" vraagt het nog één keer; "Weet ik niet" slaat toch op.
+let actualsConfirmSkip = false;
+function showActualsConfirm(show){
+  const el = document.getElementById('actuals-confirm');
+  if (!el) return;
+  el.hidden = !show;
+  if (!show) return;
+  const rec = activeBrewRecord();
+  const plan = (rec && rec.plan) || {};
+  const bits = [plan.doseG != null ? `${fmt(plan.doseG, 1)} g` : null,
+    plan.grindTarget != null ? `klik ${plan.grindTarget}` : plan.grindStartingPoint != null ? `klik ${plan.grindStartingPoint}` : null].filter(Boolean).join(' · ');
+  const planEl = document.getElementById('actuals-confirm-plan');
+  if (planEl) planEl.textContent = `${bits ? `Plan: ${bits}. ` : ''}Alleen een bevestigde kop telt mee om te leren.`;
+  const yes = document.getElementById('actuals-confirm-yes');
+  try{ if (yes) yes.focus({ preventScroll:true }); } catch(e){ /* oudere browsers */ }
+  if (typeof el.scrollIntoView === 'function') el.scrollIntoView({ block:'center' });
+}
+function handleActualsConfirmClick(e){
+  if (e.target.closest('#actuals-confirm-yes')){
+    tastingDraft.actualsMode = 'planned';
+    refreshTastingCard();
+    saveBrewLogEntry();
+  } else if (e.target.closest('#actuals-confirm-edit')){
+    showActualsConfirm(false);
+    const editBtn = document.getElementById('actuals-edit-btn');
+    if (editBtn && tastingDraft.actualsMode !== 'edited') editBtn.click();
+    const block = document.querySelector('#tasting-card .tasting-actuals');
+    if (block && typeof block.scrollIntoView === 'function') block.scrollIntoView({ block:'center' });
+    const doseEl = document.getElementById('brewlog-actual-dose');
+    try{ if (doseEl) doseEl.focus({ preventScroll:true }); } catch(err){ /* oudere browsers */ }
+  } else if (e.target.closest('#actuals-confirm-skip')){
+    actualsConfirmSkip = true;
+    saveBrewLogEntry();
+  }
+}
 function saveBrewLogEntry(){
+  if (!tastingDraft.actualsMode && !actualsConfirmSkip){ showActualsConfirm(true); return; }
+  actualsConfirmSkip = false;
+  showActualsConfirm(false);
   const noteEl = document.getElementById('brewlog-note');
   const nowMs = Date.now();
   /* Fase 1 (Brew Intelligence v2): de proeving hoort bij het record dat bij Start is
@@ -11112,6 +11276,8 @@ function editBean(id){
   if (altitudeEl) altitudeEl.value = bean.altitude != null ? bean.altitude : '';
   const bagSizeEl = document.getElementById('f-bagsize');
   if (bagSizeEl) bagSizeEl.value = bean.bagSizeG != null ? bean.bagSizeG : '';
+  const roasterEl = document.getElementById('f-roaster');
+  if (roasterEl) roasterEl.value = bean.roaster || '';
 
   renderFlavorTagChips();
   renderFormRoastChips();
@@ -11146,6 +11312,75 @@ function exitEditMode(){
   if (cancelBtn) cancelBtn.style.display = 'none';
 }
 
+/* Review R-06: boonkiezer. Geeft een Promise met het gekozen (of nieuw aangemaakte) bean-id,
+   of null bij annuleren. Een snelle boon krijgt de branding en het profiel van het huidige
+   recept, zodat er niets verandert aan wat je net zette. */
+function quickBeanFromState(name){
+  return {
+    id: 'bean_' + Date.now(), schemaVersion: RECORD_SCHEMA_VERSION,
+    name: name, country: '', region: '', farm: '', process: state.process || 'overig', variety: '', flavorNotes: [],
+    roastLevel: state.roast || 'medium', profileKey: state.profile || 'klassiek',
+    flavorScores: null, fermentEvidence: false, experimental: !!state.experimental,
+    roastDate: state.roastDate || null, openedDate: state.openedDate || null, intendedUse: null,
+    altitude: null, bagSizeG: null, doseUsedG: 0, addedAt: Date.now()
+  };
+}
+function openBeanPicker(title){
+  return new Promise(resolve => {
+    const overlay = document.getElementById('bean-picker');
+    const list = document.getElementById('bean-picker-list');
+    const form = document.getElementById('bean-picker-new');
+    const nameEl = document.getElementById('bean-picker-name');
+    const cancel = document.getElementById('bean-picker-cancel');
+    if (!overlay || !list || !form || !nameEl || !cancel){ resolve(null); return; }
+    document.getElementById('bean-picker-title').textContent = title || 'Welke boon is dit?';
+    const beans = beanLibrary.slice().sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+    list.innerHTML = beans.length
+      ? beans.map(b => `<button type="button" class="bean-picker-item" data-pick-bean="${escapeHtml(b.id)}">${escapeHtml(b.name || 'Naamloze boon')}<small>${escapeHtml([ROAST_INFO[b.roastLevel] ? ROAST_INFO[b.roastLevel].name : '', PROCESS_INFO[b.process] ? PROCESS_INFO[b.process].name : ''].filter(Boolean).join(' · '))}</small></button>`).join('')
+      : '<p class="empty-hint">Nog geen bonen opgeslagen.</p>';
+    nameEl.value = '';
+    overlay.hidden = false;
+    const done = (id) => {
+      overlay.hidden = true;
+      list.removeEventListener('click', onList); form.removeEventListener('submit', onNew); cancel.removeEventListener('click', onCancel);
+      resolve(id);
+    };
+    const onList = (e) => { const b = e.target.closest('[data-pick-bean]'); if (b) done(b.getAttribute('data-pick-bean')); };
+    const onNew = (e) => {
+      e.preventDefault();
+      const name = nameEl.value.trim();
+      if (!name){ nameEl.focus(); return; }
+      const bean = quickBeanFromState(name);
+      beanLibrary.push(bean);
+      saveBeansToStorage();
+      renderBeanLibraryScreen();
+      renderBeanChipsInAdvice();
+      done(bean.id);
+    };
+    const onCancel = () => done(null);
+    list.addEventListener('click', onList); form.addEventListener('submit', onNew); cancel.addEventListener('click', onCancel);
+    const first = list.querySelector('button') || nameEl;
+    try{ first.focus({ preventScroll:true }); } catch(e){ /* oudere browsers */ }
+  });
+}
+// Koppelt een al gezet brouwsel zonder boon alsnog aan een boon, met dezelfde bijwerkingen
+// als bij het zetten (laatste kop + voorraad), zodat "Zet opnieuw" en het advies werken.
+function linkBrewToBean(recId, beanId){
+  const rec = getBrewRecord(recId);
+  const bean = beanLibrary.find(b => b.id === beanId);
+  if (!rec || !bean || rec.beanId) return false;
+  rec.beanId = bean.id;
+  rec.beanSnapshot = beanSnapshotOf(bean);
+  if (rec.sideEffectsAppliedAt){
+    const plan = rec.plan || {};
+    bean.lastBrew = lastBrewFromPlan(plan, rec);
+    bean.doseUsedG = Math.round(((bean.doseUsedG || 0) + (plan.doseG || 0)) * 10) / 10;
+    saveBeansToStorage();
+  }
+  upsertBrewRecord(rec); persistBrewStore(); rebuildBrewLogView();
+  setActiveBean(bean.id);
+  return true;
+}
 /* Phase 0 / BC-01 (audit: boonkoppeling). Eén plek die bepaalt bij welke boon het
    volgende brouwsel hoort. Voorheen zette alleen useBeanForAdvice()/brewAgain() de
    beanId; de bonenchip in het advies-scherm en "nieuwe boon opslaan" vanuit het advies
@@ -11179,6 +11414,15 @@ function loadBeanIntoAdvice(bean){
   state.goal = BREW_GOALS[bean.goal] ? bean.goal : null; // Fase 3: het laatst gekozen doel voor deze boon
 }
 
+/* Review R-07: "Zet deze boon" (Bonen, boondetail) en "Zet opnieuw" (Home) deden iets anders —
+   de eerste liep altijd via het methode-advies en vroeg bij een bijna-gelijke stand het
+   profiel opnieuw. Nu: is deze boon al eens gezet, dan direct naar het recept (zoals Home);
+   alleen de eerste keer via het advies. */
+function brewBean(id){
+  const bean = beanLibrary.find(b => b.id === id);
+  if (bean && bean.lastBrew) brewAgain(id);
+  else useBeanForAdvice(id);
+}
 function useBeanForAdvice(id){
   const bean = beanLibrary.find(b=>b.id===id);
   if (!bean) return;
@@ -11885,11 +12129,13 @@ function showScanResult(found){
   const origin = [found.country, found.region].filter(Boolean).join(' · ');
   const rows = [
     ['Naam', nameVal.trim() || null, 'niet herkend — vul hieronder in'],
+    ['Brander', ((document.getElementById('f-roaster') || {}).value || '').trim() || null, 'niet herkend — optioneel'],
     ['Branddatum', dateVal ? new Date(dateVal + 'T00:00:00').toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' }) : null, 'niet herkend — staat die op de zak? Vul hieronder in (preciezer bloom-advies)'],
     ['Branding', found.roast ? ROAST_INFO[found.roast].name : null, `niet herkend — staat nu op ${ROAST_INFO[formRoastChip] ? ROAST_INFO[formRoastChip].name : formRoastChip} (standaard), controleer`],
     ['Proces', found.process ? PROCESS_INFO[found.process].name : null, `niet herkend — staat nu op ${PROCESS_INFO[formProcessChip] ? PROCESS_INFO[formProcessChip].name : formProcessChip} (standaard), controleer`],
     ['Herkomst', origin || null, 'niet herkend'],
-    ['Smaak', found.tags && found.tags.length ? found.tags.slice(0, 5).join(', ') + (found.tags.length > 5 ? ` +${found.tags.length - 5}` : '') : null, 'geen smaaknotities herkend']
+    ['Smaak', found.tags && found.tags.length ? found.tags.slice(0, 5).join(', ') + (found.tags.length > 5 ? ` +${found.tags.length - 5}` : '') : null, 'geen smaaknotities herkend'],
+    ['Zak', (document.getElementById('f-bagsize') || {}).value ? `${document.getElementById('f-bagsize').value} g` : null, 'niet herkend — optioneel, voor je voorraad']
   ];
   el.innerHTML = `<p class="scan-review-summary">${escapeHtml(summariseScan(found))}</p>
     <dl class="scan-review-rows">${rows.map(([label, val, missing]) =>
@@ -12159,7 +12405,25 @@ function attachDiagnosisAndRecommendation(next, prev, nowMs){
     }
     if (bean && bean.pendingAdjust && bean.pendingAdjust.fromBrewId === applied.fromBrewId){ delete bean.pendingAdjust; beansChanged = true; }
   }
+  // Review R-08: een "check eerst"-advies (gieten, water, versheid) verdween na het Klaar-
+  // scherm. Nu bewaart de boon het tot de volgende gelogde kop, en tonen Home en het
+  // receptscherm het bij die kop.
+  if (bean){
+    if (bean.pendingCheck){ delete bean.pendingCheck; beansChanged = true; }
+    if (next.recommendation.type === 'CHECK'){
+      bean.pendingCheck = { fromBrewId: next.id, reasonKey: next.recommendation.reasonKey, createdAt: nowMs };
+      beansChanged = true;
+    }
+  }
   if (beansChanged) saveBeansToStorage();
+}
+// R-08: de tekst van een openstaande "check eerst" voor een boon (of null).
+function pendingCheckTexts(bean){
+  const pc = bean && bean.pendingCheck;
+  if (!pc) return null;
+  const src = getBrewRecord(pc.fromBrewId);
+  if (!src || src.deletedAt || !src.recommendation || src.recommendation.type !== 'CHECK') return null;
+  return recommendationTexts(src.recommendation, src.diagnosis, recommendationExtraForRecord(src));
 }
 function renderRecommendationPanel(rec){
   const el = document.getElementById('reco-card');
@@ -12171,7 +12435,7 @@ function renderRecommendationPanel(rec){
   let actions = '';
   if (r.type === 'ADJUST'){
     if (r.status === 'applied') actions = `<p class="reco-status">✓ Staat klaar voor je volgende kop met deze boon.</p><button type="button" class="link-secondary" id="reco-undo-btn">Ongedaan maken</button>`;
-    else if (!bean) actions = `<p class="reco-status">Koppel een boon aan je brouwsel om een stap mee te nemen naar de volgende kop.</p>`;
+    else if (!bean) actions = `<p class="reco-status">Koppel een boon aan dit brouwsel om de stap mee te nemen naar je volgende kop.</p><button type="button" class="start-btn" id="reco-link-bean-btn">Koppel een boon</button>`;
     else if (r.status === 'ignored') actions = `<p class="reco-status">Niet toegepast.</p><button type="button" class="link-secondary" id="reco-apply-btn">Toch gebruiken</button>`;
     else actions = `<button type="button" class="start-btn" id="reco-apply-btn">Gebruik voor volgende kop</button><button type="button" class="link-secondary" id="reco-ignore-btn">Niet nu</button>`; // Sprint 4: de hoofdactie van het adviesscherm
   }
@@ -12186,10 +12450,19 @@ function renderRecommendationPanel(rec){
     (tx.body ? `<p class="reco-body">${escapeHtml(tx.body)}</p>` : '') +
     (tx.expect ? `<p class="reco-body">${escapeHtml(tx.expect)}</p>` : '') +
     tx.notes.map(n => `<p class="reco-note">${escapeHtml(n)}</p>`).join('') +
+    (r.type !== 'ADJUST' && !bean ? `<p class="reco-status">Koppel een boon om deze kop bij de boon te bewaren en "Zet opnieuw" te kunnen gebruiken.</p><button type="button" class="link-secondary" id="reco-link-bean-btn">Koppel een boon</button>` : '') +
     actions;
   el.hidden = false;
 }
 function handleRecommendationClick(e){
+  if (e.target.closest('#reco-link-bean-btn')){ // R-06
+    const linkRec = activeBrewRecord();
+    if (!linkRec) return;
+    openBeanPicker('Bij welke boon hoort deze kop?').then(id => {
+      if (id && linkBrewToBean(linkRec.id, id)) renderRecommendationPanel(getBrewRecord(linkRec.id));
+    });
+    return;
+  }
   const rec = activeBrewRecord();
   if (!rec || !rec.recommendation || rec.recommendation.type !== 'ADJUST') return;
   const r = rec.recommendation;
@@ -12232,6 +12505,17 @@ function renderPrepNextAdjust(){
     <button type="button" class="link-secondary" id="prep-next-adjust-cancel">Toch niet</button>`;
   el.hidden = false;
 }
+function renderPrepCheckNote(){
+  const el = document.getElementById('prep-check-note');
+  if (!el) return;
+  const bean = state.beanId ? beanLibrary.find(b => b.id === state.beanId) : null;
+  const tx = pendingCheckTexts(bean);
+  if (!tx){ el.hidden = true; el.innerHTML = ''; return; }
+  el.innerHTML = `<p class="prep-next-adjust-title">Uit je vorige kop</p>
+    <p class="prep-next-adjust-text">${escapeHtml(tx.title)}</p>
+    ${tx.body ? `<p class="prep-next-adjust-note">${escapeHtml(tx.body)}</p>` : ''}`;
+  el.hidden = false;
+}
 function cancelPendingAdjust(){
   const p = pendingAdjustForState();
   if (!p) return;
@@ -12263,14 +12547,15 @@ function renderPrep(){
   if (state.beanId && !activeBean) setActiveBean(null);
   const beanLineEl = document.getElementById('prep-bean-line');
   if (beanLineEl){
-    beanLineEl.textContent = activeBean
-      ? `Boon: ${activeBean.name || 'Naamloze boon'}`
-      : 'Geen boon gekoppeld · telt niet mee bij een boon';
+    beanLineEl.innerHTML = activeBean
+      ? `Boon: ${escapeHtml(activeBean.name || 'Naamloze boon')}`
+      : 'Geen boon gekoppeld · zonder boon leert de app niets van deze kop <button type="button" class="link-secondary prep-bean-link" id="prep-bean-link-btn">Kies een boon</button>';
     beanLineEl.dataset.linked = activeBean ? 'true' : 'false';
   }
   renderPrepGoal();
   renderAbTrial(); // BC-10
   renderPrepNextAdjust(); // Fase 4
+  renderPrepCheckNote(); // R-08
   // Sprint 6: "Zet je beste kop opnieuw" — methode, water, bypass en sterkte staan klaar;
   // de maalstand van toen staat hier (het recept hieronder blijft het recept van nu).
   const bestRefEl = document.getElementById('prep-best-ref');
@@ -12888,7 +13173,8 @@ function showScreen(name, opts){
   // Sprint 1 (UX-review F5): via de tabbalk geopend = hoofdscherm, dan hoort er geen
   // "← Methode"/"← Mijn bonen" boven; via een link binnen de app blijft de terugknop.
   // Bij het terug-gebaar (fromHistory) blijft de eerdere stand van dit scherm staan.
-  if (!(opts && opts.fromHistory)) target.toggleAttribute('data-tab-root', !!(opts && opts.tabRoot));
+  // Review R-18: terug naar een scherm na een tussenstap (bv. boon opslaan) houdt de stand.
+  if (!(opts && (opts.fromHistory || opts.keepTabRoot))) target.toggleAttribute('data-tab-root', !!(opts && opts.tabRoot));
   document.querySelector('.app').setAttribute('data-state', name);
 
   // NIEUW (Fase 3 — navigatieshell): tabbalk verbergen tijdens Brew Mode, zodat weg-
@@ -13043,6 +13329,7 @@ document.getElementById('scan-text-btn').addEventListener('click', ()=>{
 document.getElementById('bean-form').addEventListener('submit', (e)=>{
   e.preventDefault();
   const name = document.getElementById('f-name').value.trim() || 'Naamloze boon';
+  const roaster = ((document.getElementById('f-roaster') || {}).value || '').trim() || null;
   const country = resolveSelectOrOther('f-country','f-country-other');
   const region = document.getElementById('f-region').value.trim();
   const farm = document.getElementById('f-farm').value.trim();
@@ -13071,7 +13358,7 @@ document.getElementById('bean-form').addEventListener('submit', (e)=>{
     if (bean){
       Object.assign(bean, {
         schemaVersion: RECORD_SCHEMA_VERSION, // backfilt oudere records zodra ze bewerkt worden
-        name, country, region, farm, process, variety, flavorNotes,
+        name, roaster, country, region, farm, process, variety, flavorNotes,
         roastLevel: formRoastChip,
         profileKey: formProfileChip,
         flavorScores: flavorCls.scores,
@@ -13091,7 +13378,7 @@ document.getElementById('bean-form').addEventListener('submit', (e)=>{
     bean = {
       id: 'bean_' + Date.now(),
       schemaVersion: RECORD_SCHEMA_VERSION,
-      name, country, region, farm, process, variety, flavorNotes,
+      name, roaster, country, region, farm, process, variety, flavorNotes,
       roastLevel: formRoastChip,
       profileKey: formProfileChip,
       flavorScores: flavorCls.scores,
@@ -13119,7 +13406,7 @@ document.getElementById('bean-form').addEventListener('submit', (e)=>{
     renderBeanChipsInAdvice();
     maybeShowAdviceResult();
   } else {
-    showScreen('beans');
+    showScreen('beans', { keepTabRoot: true }); // R-18
   }
 });
 
@@ -13870,6 +14157,17 @@ document.getElementById('brewlog-edit-btn').addEventListener('click', () => {
   if (card && typeof card.scrollIntoView === 'function') card.scrollIntoView({ block:'start' });
 });
 document.getElementById('brewlog-home-btn').addEventListener('click', () => { renderHomeScreen(); showScreen('home'); });
+document.getElementById('actuals-confirm').addEventListener('click', handleActualsConfirmClick); // R-16
+document.getElementById('prep-bean-line').addEventListener('click', (e)=>{ // R-06
+  if (!e.target.closest('#prep-bean-link-btn')) return;
+  openBeanPicker('Welke boon zet je?').then(id => {
+    if (!id) return;
+    const bean = beanLibrary.find(b => b.id === id);
+    setActiveBean(id);
+    if (bean && !state.roastDate && bean.roastDate) state.roastDate = bean.roastDate;
+    renderPrep();
+  });
+});
 document.getElementById('prep-next-adjust').addEventListener('click', (e)=>{
   if (e.target.closest('#prep-next-adjust-cancel')) cancelPendingAdjust();
 });

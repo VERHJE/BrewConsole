@@ -50,6 +50,24 @@ describe('BC-02: UI-teksten beloven geen effecten die de engine niet heeft', () 
     }
   });
 
+  // Review R-05: twee teksten beloofden een "Hedrick-methode" terwijl de engine Hedrick nooit
+  // maakt (die profielen krijgen het basisrecept). Een profielbeschrijving mag alleen een
+  // bronnaam noemen als de engine voor dat profiel ook echt dat naam-gebonden schema maakt.
+  test('profielbeschrijvingen noemen geen bron waarvan de engine het schema niet maakt', () => {
+    assert.doesNotMatch(html, /Hedrick-methode|Naar Hedrick/);
+    const NAMES = ['Hedrick', 'Kasuya', 'Hoffmann', 'Rao', 'Perger', 'April'];
+    for (const [key, info] of Object.entries(api.PROFILE_INFO)){
+      const named = NAMES.filter(n => info.desc.includes(n));
+      if (!named.length) continue;
+      const methods = info.methodOnly ? [info.methodOnly] : ['v60', 'chemex'];
+      const ok = methods.some(m => {
+        const r = api.computeRecipe(m, 'medium', key, m === 'v60' ? 300 : 600, 'washed', false, 10, null, false, false, null, 0);
+        return r.hasNamedOverlay && named.every(n => (r.technique + ' ' + r.author).includes(n));
+      });
+      assert.ok(ok, `${key}: beschrijving noemt ${named.join(', ')}, maar de engine maakt dat schema niet`);
+    }
+  });
+
   test('procestekst klopt met de engine: proces duwt de methodekeuze (natural/anaerobic → V60)', () => {
     const nat = api.computeMethodAdvice('medium', 'klassiek', 'single', 'natural', false);
     const wa = api.computeMethodAdvice('medium', 'klassiek', 'single', 'washed', false);

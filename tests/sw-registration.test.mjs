@@ -240,6 +240,8 @@ describe('Service worker registratie (bijlage A — bevinding F, opgelost)', () 
     await page.click('#brewlog-open-btn');
     await page.waitForFunction(() => document.getElementById('screen-brewlog').classList.contains('active'));
     await page.click('#brewlog-save-btn');
+    // Review R-16: zonder "zoals gepland?" vraagt de app het nog één keer — toch opslaan.
+    if (await page.locator('#actuals-confirm').isVisible()) await page.click('#actuals-confirm-skip');
     await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
 
     const offlineLogCount = await page.evaluate(() => {
