@@ -17,7 +17,7 @@ const ROOT = path.resolve(__dirname, '..');
 const FIXED_CHROMIUM_PATH = '/opt/pw-browsers/chromium';
 const executablePath = fs.existsSync(FIXED_CHROMIUM_PATH) ? FIXED_CHROMIUM_PATH : undefined;
 
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.webp': 'image/webp' };
 
 function startServer(){
   return new Promise((resolve) => {
@@ -104,6 +104,34 @@ describe('Service worker registratie (bijlage A — bevinding F, opgelost)', () 
     assert.ok(methodButtons > 0, 'de app moet offline renderen met de methodeknoppen zichtbaar');
     assert.deepEqual(errors, [], 'geen onafgevangen fouten tijdens de offline koude start');
     await cold.close();
+    await ctx.close();
+  });
+
+  test('de PHOTOS-lijst in sw.js is gelijk aan de map photos/ (anders ontbreekt een foto offline)', () => {
+    const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+    const listed = [...sw.matchAll(/'photos\/([^']+)'/g)].map(m => m[1]).sort();
+    const onDisk = fs.readdirSync(path.join(ROOT, 'photos')).sort();
+    assert.ok(onDisk.length > 0);
+    assert.deepEqual(listed, onDisk);
+  });
+
+  test('alle foto\'s zitten na installatie in de cache en laden offline zonder netwerk', async () => {
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    await page.goto(base, { waitUntil: 'load' });
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    const onDisk = fs.readdirSync(path.join(ROOT, 'photos'));
+    const cached = await page.evaluate(async () => {
+      const cache = await caches.open('brew-console-v2');
+      return (await cache.keys()).map(r => new URL(r.url).pathname);
+    });
+    for (const f of onDisk) assert.ok(cached.includes('/photos/' + f), `${f} staat niet in de cache`);
+    await ctx.setOffline(true);
+    const status = await page.evaluate(async () => (await fetch('photos/roast-dark.webp')).status);
+    assert.equal(status, 200);
+    const cold = await ctx.newPage();
+    await cold.goto(base, { waitUntil: 'load' });
+    await cold.waitForFunction(() => { const i = document.querySelector('#home-hero img'); return i.complete && i.naturalWidth > 0; });
     await ctx.close();
   });
 
