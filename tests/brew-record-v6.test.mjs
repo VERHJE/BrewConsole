@@ -668,6 +668,22 @@ describe('Halve stap — tussen standaard en een hele sterktestap (diag-2026.2)'
   });
 });
 
+describe('Blinde helder-proef met een halve stap (−4%)', () => {
+  test('de proef test dezelfde stap als de opt-in: −½', () => {
+    assert.equal(api.AB_LIGHTER_STEP, -0.5);
+  });
+  test('proeven tellen alleen mee voor hun eigen stap; oudere proeven zonder stap waren −1', () => {
+    const t = (variantStep) => Object.assign({ preferred: 'variant' }, variantStep === undefined ? {} : { variantStep });
+    const trials = [t(), t(-1), t(-0.5), t(-0.5), null, { preferred: 'control', variantStep: -0.5 }];
+    assert.equal(api.abTrialsForStep(trials, -0.5).length, 3);
+    assert.equal(api.abTrialsForStep(trials, -1).length, 2);
+    assert.equal(api.abTrialsForStep(null, -0.5).length, 0);
+    // vijf winsten met −½ geven een oordeel, vijf winsten met −1 geven er geen voor −½
+    assert.equal(api.abTrialVerdict(api.abTrialsForStep([t(-0.5), t(-0.5), t(-0.5), t(-0.5), t(-0.5)], -0.5)).verdict, 'variant');
+    assert.equal(api.abTrialVerdict(api.abTrialsForStep([t(), t(), t(), t(), t()], -0.5)).verdict, 'insufficient');
+  });
+});
+
 describe('Fase 4 — eigenschappen over alle proefkaart-combinaties (v2 §15)', () => {
   const STRENGTHS = ['much_too_weak', 'too_weak', 'just_right', 'too_strong', 'much_too_strong'];
   const ACIDITIES = ['flat', 'lively', 'sharp'];

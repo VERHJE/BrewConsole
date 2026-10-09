@@ -9125,16 +9125,21 @@ const LATE_TASTING_MIN = 120; // later geproefd telt straks minder zwaar mee bij
 /* NIEUW (audit BC-10 / open vraag D-1): "Helder & fris" zou volgens de Brewing Control
    Chart (Guinard e.a. 2023) eerder om een lagere STERKTE vragen dan om minder extractie.
    Dat verandert elk recept, dus eerst blind proeven op je eigen bonen: controle = het
-   recept zoals het is, variant = één sterktestap lager (~8% minder koffie, zelfde maling
-   en water). Pas als de variant duidelijk wint, kun je hem zelf aanzetten — nooit vanzelf. */
+   recept zoals het is, variant = AB_LIGHTER_STEP lager (een halve stap, ~4% minder koffie, zelfde
+   maling en water; eerst een hele stap, ~8%). Pas als de variant duidelijk wint, kun je hem zelf
+   aanzetten — nooit vanzelf. */
 const AB_TRIALS_KEY = 'brewconsole_ab_trials';
 const AB_LIGHTER_KEY = 'brewconsole_bright_lighter';
 const AB_MIN_TRIALS = 5;
 const AB_WIN_SHARE = 0.7;
-// De stap die de opt-in "Voortaan bij Helder & fris…" zet: een halve stap (−4%), op verzoek van
-// de gebruiker (eerst een hele stap, −8%, en dat bleek te slap). De blinde proef zelf vergelijkt
-// nog steeds met één hele stap lager; dit is de eigen, bewuste keuze na die proeven.
+// De stap die de blinde proef test én die de opt-in "Voortaan bij Helder & fris…" zet: een halve
+// stap (−4%), op verzoek van de gebruiker (eerst een hele stap, −8%, en dat bleek te slap). Proeven
+// tellen alleen mee voor de stap waarmee ze gedaan zijn (variantStep); oudere proeven zonder stap
+// waren met één hele stap lager (−1) en tellen dus niet mee voor −4%.
 const AB_LIGHTER_STEP = -0.5;
+function abTrialsForStep(trials, step){
+  return (trials || []).filter(t => t && (typeof t.variantStep === 'number' ? t.variantStep : -1) === step);
+}
 function abArmForAnswer(answer, cupForVariant){
   if (answer === 'none') return 'none';
   if (answer == null) return null;
@@ -11973,7 +11978,7 @@ function applyGoalStrengthPreference(){
 function abDosesForState(){
   const args = [state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL];
   const control = computeRecipe(...args, 0, state.bypassPct);
-  const variant = computeRecipe(...args, -1, state.bypassPct);
+  const variant = computeRecipe(...args, AB_LIGHTER_STEP, state.bypassPct);
   return { control, variant };
 }
 function renderAbTrial(){
@@ -11981,8 +11986,12 @@ function renderAbTrial(){
   if (!el) return;
   if (state.goal !== 'bright' || !state.recipe || !(state.recipe.dose > 0)){ el.hidden = true; el.innerHTML = ''; return; }
   el.hidden = false;
-  const v = abTrialVerdict(abTrials);
-  const tally = v.n ? `${v.n} ${v.n === 1 ? 'proef' : 'proeven'}: ${v.variant}× minder koffie lekkerder, ${v.control}× het gewone recept, ${v.ties}× geen verschil.` : 'Nog geen proeven gedaan.';
+  const matching = abTrialsForStep(abTrials, AB_LIGHTER_STEP);
+  const v = abTrialVerdict(matching);
+  const older = abTrials.filter(t => t).length - matching.length;
+  const stepPct = Math.round(Math.abs(AB_LIGHTER_STEP) * STRENGTH_DOSE_STEP * 100);
+  const tally = (v.n ? `${v.n} ${v.n === 1 ? 'proef' : 'proeven'}: ${v.variant}× minder koffie lekkerder, ${v.control}× het gewone recept, ${v.ties}× geen verschil.` : 'Nog geen proeven gedaan.')
+    + (older > 0 ? ` ${older} eerdere ${older === 1 ? 'proef' : 'proeven'} met een grotere stap (~8% minder koffie) ${older === 1 ? 'telt' : 'tellen'} niet mee voor ${stepPct}%.` : '');
   let body;
   if (abOpenTrial){
     const t = abOpenTrial;
@@ -11997,10 +12006,10 @@ function renderAbTrial(){
     const { control, variant } = abDosesForState();
     const possible = variant.dose > 0 && Math.abs(variant.dose - control.dose) >= 0.15;
     const on = abLighterEnabled();
-    body = `<p class="ab-text">Zet twee koppen met deze boon, vlak na elkaar: zelfde maling, zelfde water. Eén kop krijgt ~8% minder koffie. Doordat je de koppen door elkaar schuift, weet je tijdens het proeven niet welke het is.</p>
+    body = `<p class="ab-text">Zet twee koppen met deze boon, vlak na elkaar: zelfde maling, zelfde water. Eén kop krijgt ~${stepPct}% minder koffie. Doordat je de koppen door elkaar schuift, weet je tijdens het proeven niet welke het is.</p>
       ${abLastReveal ? `<p class="ab-reveal" id="ab-reveal">${escapeHtml(abLastReveal)}</p>` : ''}
       <p class="ab-tally" data-ab-verdict="${v.verdict}">${escapeHtml(tally)} ${v.verdict === 'insufficient' ? `Nog ${v.needed} tot een oordeel.` : v.verdict === 'variant' ? 'Minder koffie wint duidelijk.' : v.verdict === 'control' ? 'Het gewone recept wint — niets veranderen.' : 'Geen duidelijke winnaar — niets veranderen.'}</p>
-      ${possible ? `<button type="button" class="advisor-link" id="ab-start-btn">Start een proef</button>` : `<p class="ab-text">Bij dit watervolume zit de dosis al aan de rand van het bereik — een stap minder koffie kan hier niet.</p>`}
+      ${possible ? `<button type="button" class="advisor-link" id="ab-start-btn">Start een proef</button>` : `<p class="ab-text">Bij dit watervolume zit de dosis al aan de rand van het bereik — een halve stap minder koffie kan hier niet.</p>`}
       ${on ? `<p class="ab-text">Staat aan: bij Helder &amp; fris zet je een halve stap zwakker (−4% koffie). <button type="button" class="link-secondary" id="ab-lighter-off">Uitzetten</button></p>`
         : v.verdict === 'variant' ? `<button type="button" class="advisor-primary" id="ab-lighter-on">Voortaan bij Helder &amp; fris een halve stap zwakker (−4%)</button>` : ''}`;
   }
@@ -12012,7 +12021,7 @@ function handleAbTrialClick(e){
   if (btn.id === 'ab-start-btn'){
     const { control, variant } = abDosesForState();
     abOpenTrial = { id: 'ab_' + Date.now(), createdAt: Date.now(), beanId: state.beanId || null, method: state.method, profile: state.profile, roast: state.roast, waterMl: state.waterMl,
-      controlDose: control.dose, variantDose: variant.dose, cupForVariant: Math.random() < 0.5 ? 1 : 2, preferredCup: null, brighterCup: null };
+      controlDose: control.dose, variantDose: variant.dose, variantStep: AB_LIGHTER_STEP, cupForVariant: Math.random() < 0.5 ? 1 : 2, preferredCup: null, brighterCup: null };
     abLastReveal = null;
   } else if (btn.dataset.abQ && abOpenTrial){
     abOpenTrial[btn.dataset.abQ] = btn.dataset.abA;
@@ -12021,7 +12030,7 @@ function handleAbTrialClick(e){
   } else if (btn.id === 'ab-reveal-btn' && abOpenTrial && abOpenTrial.preferredCup){
     const t = abOpenTrial;
     const rec = { id: t.id, createdAt: t.createdAt, beanId: t.beanId, method: t.method, profile: t.profile, roast: t.roast, waterMl: t.waterMl,
-      controlDose: t.controlDose, variantDose: t.variantDose, cupForVariant: t.cupForVariant,
+      controlDose: t.controlDose, variantDose: t.variantDose, variantStep: t.variantStep, cupForVariant: t.cupForVariant,
       preferred: abArmForAnswer(t.preferredCup, t.cupForVariant), brighter: abArmForAnswer(t.brighterCup, t.cupForVariant) };
     abTrials.push(rec);
     saveAbTrials();
