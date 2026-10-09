@@ -3595,6 +3595,42 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     });
   });
 
+
+  describe('Review idee 20: aanrechtmodus', () => {
+    async function toBrew(page){
+      await page.click('#home-start-brew-btn');
+      await page.click('[data-method="v60"]');
+      await page.click('[data-roast="light"]');
+      await page.click('[data-profile="klassiek"]');
+      await page.click('#start-btn');
+      await assertBecomesActive(page, '#screen-brew');
+    }
+    test('op een liggende iPad standaard aan (wijzerplaat links, grote instructie rechts); op een telefoon uit, aan te zetten en onthouden', async () => {
+      const ipad = await newTrackedPage({ viewport: { width: 1180, height: 820 } });
+      await ipad.goto(FILE_URL, { waitUntil: 'load' });
+      await toBrew(ipad);
+      assert.equal(await ipad.locator('#screen-brew').getAttribute('data-counter'), 'on');
+      assert.equal(await ipad.locator('#screen-brew .brew-fg').evaluate(el => getComputedStyle(el).display), 'grid');
+      const fs = await ipad.locator('#brew-action-main').evaluate(el => parseFloat(getComputedStyle(el).fontSize));
+      assert.ok(fs >= 60, `grote instructie (${fs}px)`);
+      const [dial, action] = await Promise.all([ipad.locator('.dial-wrap').boundingBox(), ipad.locator('#brew-action-main').boundingBox()]);
+      assert.ok(dial.x + dial.width <= action.x + 1, 'wijzerplaat links van de instructie');
+      assert.equal(await ipad.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      await ipad.close();
+
+      const phone = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await phone.goto(FILE_URL, { waitUntil: 'load' });
+      await toBrew(phone);
+      assert.equal(await phone.locator('#screen-brew').getAttribute('data-counter'), 'off');
+      await phone.click('#counter-toggle');
+      assert.equal(await phone.locator('#screen-brew').getAttribute('data-counter'), 'on');
+      assert.equal(await phone.locator('#counter-toggle').getAttribute('aria-pressed'), 'true');
+      assert.ok(await phone.locator('#brew-action-main').evaluate(el => parseFloat(getComputedStyle(el).fontSize)) >= 40);
+      assert.equal(await phone.evaluate(() => localStorage.getItem('brewconsole_counter_mode')), 'on');
+      await phone.close();
+    });
+  });
+
   test('Geen console- of pageerrors opgetreden tijdens de hele kernflow', () => {
     assert.deepEqual(consoleErrors, [], 'Onverwachte console.error()-aanroepen tijdens de kernflow');
     assert.deepEqual(pageErrors, [], 'Onverwachte onafgevangen JS-fouten tijdens de kernflow');

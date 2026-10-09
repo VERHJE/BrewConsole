@@ -1652,6 +1652,24 @@
     .brew-action-sub{ font-size:var(--fs-body); }
     .brew-hero{ padding-top:72px; }
   }
+  /* Expertreview idee 20: aanrechtmodus (#screen-brew[data-counter="on"]). Alleen grootte en
+     indeling; welke instructie er staat, blijft precies hetzelfde. */
+  .counter-toggle{display:block; margin:10px auto 0; min-height:44px;}
+  #screen-brew[data-counter="on"] .brew-action-main{font-size:clamp(44px, 9vw, 92px); line-height:1.05;}
+  #screen-brew[data-counter="on"] .brew-action-sub{font-size:var(--fs-body);}
+  #screen-brew[data-counter="on"] .next-info{font-size:var(--fs-body);}
+  #screen-brew[data-counter="on"] .bed-dry-btn{min-height:88px; font-size:var(--fs-title);}
+  #screen-brew[data-counter="on"] .brew-cumulative,
+  #screen-brew[data-counter="on"] .dial-flow{display:none;}
+  @media (min-width:900px) and (orientation:landscape){
+    #screen-brew[data-counter="on"] .brew-fg{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); column-gap:40px; align-items:center;}
+    #screen-brew[data-counter="on"] .brew-fg > *{grid-column:2;}
+    #screen-brew[data-counter="on"] .brew-fg > .brew-hero{grid-column:1; grid-row:1 / span 8;}
+    #screen-brew[data-counter="on"] .brew-fg > .brew-recovery{grid-column:1 / -1;}
+    #screen-brew[data-counter="on"] .dial-wrap{width:min(42vw, 440px); height:min(42vw, 440px);}
+    #screen-brew[data-counter="on"] .brew-focus-info{text-align:left;}
+    #screen-brew[data-counter="on"] .brew-action-main{font-size:clamp(44px, 6vw, 76px);}
+  }
   @media (min-width:1100px){
     #screen-prep.active{ display:grid; grid-template-columns:minmax(0,1fr) 370px; column-gap:28px; align-items:start; }
     #screen-prep > .back-btn, #screen-prep > .photo-slot{ grid-column:1 / -1; }
@@ -2913,6 +2931,9 @@
              bedoeld op Chromium. Zelfde fix toegepast op PAUSE_ICON/PLAY_ICON in de JS. -->
         <button id="reset-btn" aria-label="Reset"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 1 2.6 6.4"/><path d="M3 20v-5h5"/></svg></button>
       </div>
+      <!-- Expertreview idee 20: aanrechtmodus — de giet-instructie groot, leesbaar op afstand
+           (tablet op het aanrecht). Op een tablet standaard aan; op elk toestel aan/uit te zetten. -->
+      <button type="button" class="link-secondary counter-toggle" id="counter-toggle" aria-pressed="false">Aanrechtmodus</button>
       </div>
     </section>
 
@@ -14725,6 +14746,41 @@ function registerOfflineServiceWorker(){
   navigator.serviceWorker.register('./sw.js').catch(e => console.warn('Service worker registratie mislukt', e));
 }
 
+/* Expertreview idee 20: aanrechtmodus. Een per-toestel voorkeur (localStorage); zonder
+   voorkeur aan op een tablet (≥ 700 px breed) en uit op een telefoon. */
+const COUNTER_MODE_KEY = 'brewconsole_counter_mode';
+let counterModeMemory = null; // als opslag niet beschikbaar is, geldt de keuze alleen deze sessie
+function counterModeOn(){
+  let pref = counterModeMemory;
+  try { pref = localStorage.getItem(COUNTER_MODE_KEY) || counterModeMemory; } catch(e){ pref = counterModeMemory; }
+  if (pref === 'on') return true;
+  if (pref === 'off') return false;
+  return typeof window.matchMedia === 'function' && window.matchMedia('(min-width:700px)').matches === true;
+}
+function applyCounterMode(){
+  const on = counterModeOn();
+  const screen = document.getElementById('screen-brew');
+  if (screen) screen.dataset.counter = on ? 'on' : 'off';
+  const btn = document.getElementById('counter-toggle');
+  if (btn){
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.textContent = on ? 'Aanrechtmodus uit' : 'Aanrechtmodus: grote instructie';
+  }
+}
+function initCounterMode(){
+  const btn = document.getElementById('counter-toggle');
+  if (btn) btn.addEventListener('click', () => {
+    counterModeMemory = counterModeOn() ? 'off' : 'on';
+    try { localStorage.setItem(COUNTER_MODE_KEY, counterModeMemory); } catch(e){ /* alleen deze sessie */ }
+    applyCounterMode();
+  });
+  if (typeof window.matchMedia === 'function'){
+    const mq = window.matchMedia('(min-width:700px)');
+    if (mq && typeof mq.addEventListener === 'function') mq.addEventListener('change', applyCounterMode);
+  }
+  applyCounterMode();
+}
+
 /* ============================================================
    INIT
    ============================================================ */
@@ -14808,6 +14864,7 @@ if (beanSortSelectEl) beanSortSelectEl.addEventListener('change', (e)=>{
 });
 initInstallHint();
 registerOfflineServiceWorker();
+initCounterMode(); // idee 20
 
 // NIEUW (vervolgplan v2.3, Fase 3 — Navigatieshell): koppelt de vijf tabbalk-/zijbalk-
 // knoppen aan hun bestemming. Elke bestemming rendert zichzelf vers bij binnenkomst
