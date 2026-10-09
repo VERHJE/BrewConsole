@@ -27,13 +27,14 @@
    online toch al vers van het netwerk.
 
    CACHE_VERSION
+   Staat op 2 sinds de foto's bij installatie worden voorgeladen (PHOTOS).
    Hoeft alleen omhoog als de strategie in DIT bestand verandert, of als
    je een oude cache geforceerd wilt weggooien. Voor gewone inhouds-
    wijzigingen aan index.html is ophogen niet nodig — die worden door de
    netwerk-eerst-regel hierboven al opgehaald.
    ============================================================ */
 
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
 const CACHE = 'brew-console-v' + CACHE_VERSION;
 
 /* De app-shell is de scope-root zelf. Bij een manifest met
@@ -46,14 +47,40 @@ const APP_SHELL = './';
    maar niets doorlaat, lang genoeg voor een normale mobiele verbinding. */
 const NET_TIMEOUT_MS = 3000;
 
+/* Alle foto's uit photos/, vooraf opgehaald bij installatie (±1,7 MB), zodat
+   de app ook offline compleet is: de brandingsfoto van een boon die je nog
+   niet had geopend zit er dan al in. Een test bewaakt dat deze lijst gelijk
+   blijft aan de map photos/. */
+const PHOTOS = [
+  'photos/brew-chemex-square.webp',
+  'photos/brew-chemex-tall.webp',
+  'photos/brew-v60-square.webp',
+  'photos/brew-v60-tall.webp',
+  'photos/home-hero.webp',
+  'photos/logbook-empty.webp',
+  'photos/method-chemex.webp',
+  'photos/method-v60.webp',
+  'photos/roast-dark.webp',
+  'photos/roast-light.webp',
+  'photos/roast-light_medium.webp',
+  'photos/roast-medium.webp',
+  'photos/roast-medium_dark.webp',
+  'photos/splash-tall.webp',
+  'photos/splash-wide.webp'
+];
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) =>
-      /* cache:'reload' omzeilt de HTTP-cache, zodat we bij install
-         gegarandeerd de zojuist gedeployde versie opslaan. */
-      cache.add(new Request(APP_SHELL, { cache: 'reload' }))
-    )
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    /* cache:'reload' omzeilt de HTTP-cache, zodat we bij install
+       gegarandeerd de zojuist gedeployde versie opslaan. De app-shell
+       moet lukken; lukt dat niet, dan mislukt de installatie. */
+    await cache.add(new Request(APP_SHELL, { cache: 'reload' }));
+    /* De foto's halen we er best-effort bij: een foto die even niet
+       laadt mag de installatie niet breken, die komt dan alsnog via
+       cacheFirst() zodra hij een keer is opgevraagd. */
+    await Promise.allSettled(PHOTOS.map((url) => cache.add(url)));
+  })());
 });
 
 self.addEventListener('activate', (event) => {
