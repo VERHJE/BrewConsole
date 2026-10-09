@@ -9131,6 +9131,10 @@ const AB_TRIALS_KEY = 'brewconsole_ab_trials';
 const AB_LIGHTER_KEY = 'brewconsole_bright_lighter';
 const AB_MIN_TRIALS = 5;
 const AB_WIN_SHARE = 0.7;
+// De stap die de opt-in "Voortaan bij Helder & fris…" zet: een halve stap (−4%), op verzoek van
+// de gebruiker (eerst een hele stap, −8%, en dat bleek te slap). De blinde proef zelf vergelijkt
+// nog steeds met één hele stap lager; dit is de eigen, bewuste keuze na die proeven.
+const AB_LIGHTER_STEP = -0.5;
 function abArmForAnswer(answer, cupForVariant){
   if (answer === 'none') return 'none';
   if (answer == null) return null;
@@ -11955,13 +11959,14 @@ function loadAbTrials(){
 function saveAbTrials(){ try { localStorage.setItem(AB_TRIALS_KEY, JSON.stringify(abTrials)); } catch(e){} }
 function abLighterEnabled(){ try { return localStorage.getItem(AB_LIGHTER_KEY) === '1'; } catch(e){ return false; } }
 function setAbLighter(on){ try { if (on) localStorage.setItem(AB_LIGHTER_KEY, '1'); else localStorage.removeItem(AB_LIGHTER_KEY); } catch(e){} }
-// De opt-in-stap: bij Helder & fris één sterktestap lager, één keer per keuze (daarna kun je
-// gewoon zelf weer "Standaard" kiezen). Een ander doel draait de automatisch gezette stap terug.
+// De opt-in-stap: bij Helder & fris een halve sterktestap lager (AB_LIGHTER_STEP, −4%), één keer per
+// keuze (daarna kun je gewoon zelf een andere stand kiezen). Een ander doel draait de automatisch
+// gezette stap terug.
 function applyGoalStrengthPreference(){
   if (state.goal === 'bright' && abLighterEnabled()){
-    if (!state.goalLighterApplied && (state.strengthAdjust || 0) === 0){ state.strengthAdjust = -1; state.goalLighterApplied = true; }
+    if (!state.goalLighterApplied && (state.strengthAdjust || 0) === 0){ state.strengthAdjust = AB_LIGHTER_STEP; state.goalLighterApplied = true; }
   } else if (state.goalLighterApplied){
-    if (state.strengthAdjust === -1) state.strengthAdjust = 0;
+    if (state.strengthAdjust === AB_LIGHTER_STEP) state.strengthAdjust = 0;
     state.goalLighterApplied = false;
   }
 }
@@ -11996,8 +12001,8 @@ function renderAbTrial(){
       ${abLastReveal ? `<p class="ab-reveal" id="ab-reveal">${escapeHtml(abLastReveal)}</p>` : ''}
       <p class="ab-tally" data-ab-verdict="${v.verdict}">${escapeHtml(tally)} ${v.verdict === 'insufficient' ? `Nog ${v.needed} tot een oordeel.` : v.verdict === 'variant' ? 'Minder koffie wint duidelijk.' : v.verdict === 'control' ? 'Het gewone recept wint — niets veranderen.' : 'Geen duidelijke winnaar — niets veranderen.'}</p>
       ${possible ? `<button type="button" class="advisor-link" id="ab-start-btn">Start een proef</button>` : `<p class="ab-text">Bij dit watervolume zit de dosis al aan de rand van het bereik — een stap minder koffie kan hier niet.</p>`}
-      ${on ? `<p class="ab-text">Staat aan: bij Helder &amp; fris zet je een stap zwakker. <button type="button" class="link-secondary" id="ab-lighter-off">Uitzetten</button></p>`
-        : v.verdict === 'variant' ? `<button type="button" class="advisor-primary" id="ab-lighter-on">Voortaan bij Helder &amp; fris een stap zwakker</button>` : ''}`;
+      ${on ? `<p class="ab-text">Staat aan: bij Helder &amp; fris zet je een halve stap zwakker (−4% koffie). <button type="button" class="link-secondary" id="ab-lighter-off">Uitzetten</button></p>`
+        : v.verdict === 'variant' ? `<button type="button" class="advisor-primary" id="ab-lighter-on">Voortaan bij Helder &amp; fris een halve stap zwakker (−4%)</button>` : ''}`;
   }
   el.innerHTML = `<p class="ab-title">Blinde proef: smaakt helder beter met minder koffie?</p>${body}`;
 }
