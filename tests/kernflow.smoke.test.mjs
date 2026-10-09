@@ -3075,7 +3075,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       for (const c of [
         { viewport: { width: 390, height: 844 }, file: 'splash-tall.webp', fits: true },
         { viewport: { width: 320, height: 640 }, file: 'splash-tall.webp', fits: false },
-        { viewport: { width: 1280, height: 800 }, file: 'bean-macro.jpg', fits: false },
+        { viewport: { width: 1280, height: 800 }, file: 'splash-wide.webp', fits: false },
       ]){
         const page = await newTrackedPage({ viewport: c.viewport });
         await page.goto(FILE_URL, { waitUntil: 'load' });
@@ -3088,6 +3088,37 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
         if (c.fits) assert.ok(Math.abs(m.shown - m.img) < 0.03, `${c.viewport.width}: vlak ${m.shown.toFixed(2)} vs foto ${m.img.toFixed(2)} — splash wordt bijgesneden`);
         await page.close();
       }
+    });
+
+    test('zetscherm: staande foto op een telefoon, vierkante op tablet en desktop, per methode de eigen foto', async () => {
+      for (const c of [
+        { viewport: { width: 390, height: 844 }, kind: 'tall' },
+        { viewport: { width: 820, height: 1180 }, kind: 'square' },
+        { viewport: { width: 1280, height: 800 }, kind: 'square' },
+      ]){
+        for (const method of ['v60', 'chemex']){
+          const page = await newTrackedPage({ viewport: c.viewport });
+          await page.goto(FILE_URL, { waitUntil: 'load' });
+          await toPrep(page, method);
+          await page.click('#start-btn');
+          await assertBecomesActive(page, '#screen-brew');
+          await page.waitForFunction(() => { const i = document.getElementById('brew-hero-img'); return i.complete && i.naturalWidth > 0; });
+          const src = await page.evaluate(() => document.getElementById('brew-hero-img').currentSrc);
+          assert.ok(src.endsWith(`/brew-${method}-${c.kind}.webp`), `${c.viewport.width} ${method}: verwachtte brew-${method}-${c.kind}.webp, kreeg ${src}`);
+          await page.close();
+        }
+      }
+    });
+
+    test('Home-hero en lege logboekstaat tonen hun foto', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.waitForFunction(() => { const i = document.querySelector('#home-hero img'); return i.complete && i.naturalWidth > 0; });
+      assert.ok((await page.evaluate(() => document.querySelector('#home-hero img').currentSrc)).endsWith('/home-hero.webp'));
+      await page.click('.navbar [data-nav="brewlog-history"]');
+      await page.waitForFunction(() => { const i = document.querySelector('#brewlog-history-list img'); return !!i && i.complete && i.naturalWidth > 0; });
+      assert.ok((await page.evaluate(() => document.querySelector('#brewlog-history-list img').currentSrc)).endsWith('/logbook-empty.webp'));
+      await page.close();
     });
 
     test('desktop: de getallengrid blijft binnen de receptkolom', async () => {
