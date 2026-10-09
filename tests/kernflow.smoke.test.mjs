@@ -2438,7 +2438,14 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     assert.equal(await page.locator('#ab-lighter-on').count(), 0, 'na één proef nog niets aan te zetten');
 
     // Vier extra proeven waarin de variant wint → duidelijke uitslag → zelf aanzetten.
-    await page.evaluate(() => { for (let i = 0; i < 4; i++) abTrials.push({ id: 'x' + i, preferred: 'variant' }); saveAbTrials(); renderAbTrial(); });
+    assert.equal(stored[0].variantStep, -0.5, 'de proef vergelijkt met een halve stap (−4%)');
+    assert.ok(Math.abs(stored[0].variantDose - stored[0].controlDose * 0.96) <= 0.06, `${stored[0].variantDose} g is −4% van ${stored[0].controlDose} g`);
+    // Oudere proeven (met de hele stap, zonder variantStep) tellen niet mee voor −4% — wel zichtbaar gemeld.
+    await page.evaluate(() => { for (let i = 0; i < 3; i++) abTrials.push({ id: 'old' + i, preferred: 'variant' }); saveAbTrials(); renderAbTrial(); });
+    assert.match(await page.locator('.ab-tally').innerText(), /3 eerdere proeven met een grotere stap \(~8% minder koffie\) tellen niet mee voor 4%/);
+    assert.equal(await page.locator('.ab-tally').getAttribute('data-ab-verdict'), 'insufficient', 'oude −8%-proeven geven geen oordeel over −4%');
+    assert.equal(await page.locator('#ab-lighter-on').count(), 0);
+    await page.evaluate(() => { for (let i = 0; i < 4; i++) abTrials.push({ id: 'x' + i, preferred: 'variant', variantStep: -0.5 }); saveAbTrials(); renderAbTrial(); });
     assert.equal(await page.locator('.ab-tally').getAttribute('data-ab-verdict'), 'variant');
     assert.match(await page.locator('#ab-lighter-on').innerText(), /een halve stap zwakker \(−4%\)/);
     await page.click('#ab-lighter-on');

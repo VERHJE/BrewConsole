@@ -126,7 +126,7 @@ export function loadApp(){
       recommendNext, recommendationTexts, TASTING_GOAL_HIT, TASTING_VS_LAST,
       adviceOutcomeStats, ADVICE_GATE_MIN_TESTED, ADVICE_GATE_SUCCESS_MIN, ADVICE_GATE_HARM_MAX,
       extractBeanNameFromText, extractRoastDateFromText,
-      abTrialVerdict, abArmForAnswer, AB_MIN_TRIALS, AB_WIN_SHARE,
+      abTrialVerdict, abArmForAnswer, AB_MIN_TRIALS, AB_WIN_SHARE, AB_LIGHTER_STEP, abTrialsForStep,
       legacyBrewSuspects, beanSnapshotOf, legacyStockMove, legacyStockBeanId,
       doseEdgeFor, batchScaleFor, BATCH_REFERENCE, isComparableSetup, bypassKeyOfPlan,
       bestCupOf, adviceChainOf, cupSetupOf, BEST_CUP_MIN_LIKING

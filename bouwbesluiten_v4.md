@@ -110,6 +110,8 @@ Elk bestaand recept (standaard en ±8%) blijft byte-identiek (golden fixtures, B
 
 **Vervolg (op verzoek):** de opt-in "Voortaan bij Helder & fris…" zet voortaan een halve stap (−4%, `AB_LIGHTER_STEP`) in plaats van een hele (−8%, dat bleek te slap). De opt-in blijft een eigen, bewuste keuze na de blinde proeven en wordt nooit vanzelf aangezet; de proef zelf vergelijkt nog steeds met één hele stap lager.
 
+**Vervolg 2 (op verzoek):** ook de blinde helder-proef vergelijkt nu standaard met −4% (`AB_LIGHTER_STEP`), zodat wat getest wordt gelijk is aan wat de opt-in zet. Elke proef bewaart zijn `variantStep`; proeven tellen alleen mee voor de stap waarmee ze gedaan zijn. Oudere proeven (zonder `variantStep`, gedaan met −8%) blijven bewaard maar tellen niet mee voor het oordeel over −4%; de proefkaart meldt dat. Een al aangezette voorkeur blijft aan.
+
 ## Testresultaten
 
 808/808 tests groen (`npm run qa`), inclusief 12 nieuwe pure tests (advieskeuzes, landing op het raster, teksten, dosis, poortstatistiek) en 2 browsertests (vijf chips op één regel, volledige cyclus −8% → halve stap → ingesteld → getest "beter" → houd zo).
