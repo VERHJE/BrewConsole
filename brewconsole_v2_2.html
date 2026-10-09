@@ -4321,6 +4321,11 @@ const METHOD_INFO = {
     name:'Chemex', icon:'chemex',
     desc:'Dik filter, zachte body, extra schone kop',
     minMl:300, maxMl:850,
+    // Review R-11 (akkoord gebruiker): standaard 500 ml. Met de engine-standaard (300 ml, net als de
+    // V60) ligt er een dun bed in de grote Chemex-kegel dat te snel doorloopt — de app waarschuwde
+    // zelf al "klein brouwsel". 500 ml is een gangbare Chemex-hoeveelheid (2–3 koppen); de
+    // dosis volgt gewoon uit hetzelfde doelvenster.
+    defaultMl:500,
     tips:'Altijd: filter spoelen (3 lagen naar de tuit) · water binnen SCA-richtlijn (hardheid 50–175 mg/L, alkaliniteit 40–70 mg/L CaCO3, pH 6–8) · timer start bij het eerste water. Agitatie: giethoogte, tempo én straaldikte bepalen samen de turbulentie — dun en laag (~5cm) is rustig, dik en hoog (~15cm) is stevig (bron: Scott Rao). Sluit af met een korte "Rao spin" (swirl) om de bedding vlak te draaien.'
   }
 };
@@ -5086,6 +5091,7 @@ const STRENGTH_DOSE_STEP = 0.08;
    bereik als de engine onverhoopt niets teruggeeft. */
 function defaultWaterMlFor(methodKey, profileKey){
   const m = METHOD_INFO[methodKey] || METHOD_INFO.v60;
+  if (typeof m.defaultMl === 'number') return clamp(m.defaultMl, m.minMl, m.maxMl); // R-11
   const fallbackMid = Math.round(((m.minMl + m.maxMl) / 2) / 50) * 50;
   try {
     const B = window.BrewEngineBundle;
@@ -5167,7 +5173,11 @@ function coreOnlyReason(profileKey, methodKey, gen){
   if (prefId && gen && gen.excludedCandidates){
     const excluded = gen.excludedCandidates.find(c => c.styleOverlay.state === 'RESOLVED' && c.styleOverlay.value.id.split('::')[0] === prefId);
     if (excluded && excluded.excludedReason){
-      return `De overlay die bij dit profiel hoort is uitgesloten: ${excluded.excludedReason}`;
+      // De engine geeft een Engelse reden met een interne code; die hoort niet op het scherm.
+      const disp0 = OVERLAY_DISPLAY[prefId];
+      const m = /requested (\d+)\s*ml exceeds this overlay's (\d+)\s*ml ceiling/i.exec(excluded.excludedReason);
+      if (m) return `${disp0 ? disp0.name : 'Het schema van dit profiel'} is alleen beschreven voor brouwsels tot ${m[2]} ml; bij ${m[1]} ml gebruikt de app daarom het basisrecept.`;
+      return `Het schema dat bij dit profiel hoort, past niet bij deze hoeveelheid of methode; de app gebruikt daarom het basisrecept.`;
     }
   }
   if (!pref){
@@ -12986,7 +12996,8 @@ function renderPrep(){
       ${grindFromStand ? `<div class="stat-sub stat-sub--adjusted">zoals je vorige kop${rec.grindStartingPoint != null && rec.grindStartingPoint !== state.grindStand ? ` · basisrecept: klik ${rec.grindStartingPoint}` : ''}</div>` : ''}
       ${rec.grindShortContact ? `<div class="stat-sub">1 klik fijner: kort schema (${fmtTime(rec.totalTime)})</div>` : ''}
       ${rec.grindMicron == null && rec.grindStartingPoint != null && rec.grindStartingRange ? `<div class="stat-sub">${grindAdjusted || grindFromStand ? '' : 'start hier · '}klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} is het startgebied</div><div class="stat-sub">zuur en snel door? fijner · bitter en traag? grover</div>` : ''}
-      ${rec.grindMicron == null && rec.grindStartingPoint == null && rec.grindBandLabel ? `<div class="stat-sub">${escapeHtml(rec.grindBandLabel)}</div>` : ''}
+      ${rec.grindMicron == null && rec.grindStartingPoint == null && rec.grindBandLabel && grindValue !== rec.grindBandLabel ? `<div class="stat-sub">${escapeHtml(rec.grindBandLabel)}</div>` : ''}
+      ${rec.grindMicron == null && rec.grindStartingPoint == null && typeof state.grindStand !== 'number' ? `<div class="stat-sub" id="grind-own-click-hint">geen klikgetal bekend · vul na het zetten je klik in bij "Anders…", dan onthoudt de app jouw stand</div>` : ''}
       ${batchHint ? `<div class="stat-sub" id="batch-hint">${escapeHtml(batchHint)}</div>` : ''}
       ${rec.grindMicron != null ? `<div class="stat-sub">stand ${rec.grindStand} · Timemore C3S Pro</div>` : ''}
       ${grindMoreNotes.length || rec.grindMicron == null ? `

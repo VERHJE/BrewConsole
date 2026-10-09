@@ -162,3 +162,7 @@ Een model is geen echt panel: de richting is duidelijk, de precieze getallen nie
 ## Wat hierdoor niet verandert
 
 Geen enkel engine-receptgetal (golden fixtures, FORBIDDEN-edges en de break-it-matrix zijn ongewijzigd groen). Proces, hoogte en water sturen nog steeds geen receptgetal. De advies-poort (≥20 getest, ≥65% gelukt, ≤15% slechter) is ongewijzigd; Fase 5 blijft dicht tot die gehaald is.
+
+# Expertreview oktober 2026 — Chemex standaard 500 ml (R-11)
+
+Akkoord gekregen (receptgetal: de standaardhoeveelheid). De Chemex start voortaan op 500 ml i.p.v. de engine-standaard van 300 ml (dezelfde als de V60): een dun bed in de grote kegel loopt te snel door, wat de app zelf al als "klein brouwsel" meldde. Dosis en ratio volgen uit hetzelfde doelvenster (500 ml → 28,8 g, 1:17,4). Daarbij: op de Chemex staat de maalgraad niet meer dubbel ("middelgrof middelgrof"), en zonder bekend klikgetal zegt de tegel dat de app jouw klik onthoudt als je hem na het zetten invult (zie R-02). Een overlay die niet bij de hoeveelheid past (Rao Chemex tot een vast maximum) toonde een interne Engelse engine-code; die wordt nu in gewone taal uitgelegd.

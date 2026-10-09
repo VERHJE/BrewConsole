@@ -180,3 +180,15 @@ describe('Simulatie: komt de adviesmotor bij je beste kop?', () => {
     assert.ok(ok.filter(r => r.liking === 5).length >= 25, 'op hun beste kop');
   });
 });
+
+describe('R-11: Chemex standaard 500 ml', () => {
+  test('Chemex start op 500 ml, de V60 blijft op de engine-standaard', () => {
+    assert.equal(api.defaultWaterMlFor('chemex', 'klassiek'), 500);
+    assert.equal(api.defaultWaterMlFor('v60', 'klassiek'), 300);
+  });
+  test('bij 500 ml geen interne engine-code in de uitleg als een schema niet past', () => {
+    const r = api.computeRecipe('chemex', 'medium', 'fruitig_clean', 500, 'washed', false, 10, null, false, false, null, 0);
+    assert.doesNotMatch(r.notes, /GENERATION_|exceeds|ceiling/);
+    assert.match(r.notes, /alleen beschreven voor brouwsels tot \d+ ml/);
+  });
+});
