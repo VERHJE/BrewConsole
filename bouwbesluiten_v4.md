@@ -132,3 +132,33 @@ Uit de expertreview van oktober 2026 (bevindingen R-01 t/m R-22). Sprint A raakt
 | **R-18** | Na een boon opslaan via de Bonen-tab stond er toch "← Methode". | `showScreen(…, { keepTabRoot })`. |
 | **R-19** | Klaar-scherm toonde de plantemperatuur als resultaat. | Label "Temp. (plan)". |
 | **R-21** | Bonenkaart was een knop met knoppen erin; alkaliniteitseenheid zonder label. | De boonnaam is de knop; de kaart vangt alleen de tik eromheen. Label toegevoegd. |
+
+# Expertreview oktober 2026 — Sprint B (de smaaklus sluiten, diag-2026.3)
+
+Vooraf voorgelegd en akkoord gekregen: "Zet opnieuw" mag je vorige kop exact herhalen (herziet besluit C2 "sterkte per keer"), en de adviesregels mogen naar diag-2026.3.
+
+## Besluiten
+
+| # | Besluit | Gebouwd |
+| --- | --- | --- |
+| **R-02 / "Mijn recept per boon"** | "Zet opnieuw" herhaalt je vorige kop: maalstand (de bevestigde werkelijke klik, anders de geplande) en sterkte, naast methode, water en bypass. | `bean.stands[methode]` = de stand van de laatst gelogde kop (`standFromRecord()`, `updateBeanStand()`; een oudere kop overschrijft niets). `brewAgain()` zet hem; een klaargezette stap verandert daarna precies één ding. Receptscherm: "jouw stand" in de tegels en een kaart met "Terug naar het basisrecept". Na een kop van 2/5 of een "check eerst" vraagt die kaart of je liever het basisrecept wilt. Via het methode-advies begin je bewust opnieuw (C2 blijft daar gelden). Ook op de Chemex onthoudt dit jouw klik. "Zet je beste kop opnieuw" zet nu ook de maalstand van die kop. |
+| **R-03** | "Droog/wrang" blokkeert het advies alleen bij een goede sterkte; een sterkteklacht krijgt zijn dosisstap met een giettip. Bitter + droog + vlak zuur (zonder water dat de zuren dempt) = waarschijnlijk overextractie → 1 klik grover. "Te sterk" met alleen een zwakke aanwijzing voor overextractie (bv. alleen bitter) → eerst minder koffie. | `diagnoseTasting()` (`flat_over`), `recommendNext()`. |
+| **R-04** | Na een kop die het doel net niet haalde (of 4 of minder): "Wat miste je?" — meer fruit/helderheid → halve stap lichter; meer body → halve stap sterker; meer zoetheid → 1 klik fijner (niet bij bitter); minder bitter → 1 klik grover. Bij "meer fruit" eerst het water als dat de zuren dempt (alkaliniteit > 70). Een duidelijk extractie- of sterktesignaal gaat vóór de wens; geen heen-en-weer. | `TASTING_MISSED`, `missedQuestionApplies()`, `goalStepFor()`; de stap verschijnt alleen in de proefkaart als hij erbij hoort. |
+| **R-09** | Een geslaagde kop (4/5) mag je verfijnen, maar alleen als je zelf zegt wat beter kan; zonder antwoord blijft het "Houd dit recept zo". | `recommendNext()` (`refine`). |
+| **R-10** | "Houd zo" dat bij de volgende vergelijkbare kop weer geslaagd was, telt apart als "bevestigd". De poort en de drempels veranderen niet. | `adviceOutcomeStats().keep`, getoond onder Statistieken. |
+
+## Effect, gemeten met een virtuele proever
+
+30 virtuele bonen (beste klik 13–18, beste sterkte −8% … +8%), elke kop door de echte adviesmotor:
+
+| | Komen tot rust | Op hun beste kop (5/5) | Gem. koppen |
+| --- | --- | --- | --- |
+| Vóór (terug naar start na elke kop, diag-2026.2) | 7 / 30 | 1 | — |
+| Alleen onthouden (diag-2026.2) | 20 / 30 | 1 | — |
+| Onthouden + diag-2026.3 + "Wat miste je?" | 30 / 30 | 30 | 4,7 |
+
+Een model is geen echt panel: de richting is duidelijk, de precieze getallen niet. De simulatie staat als vaste test in `tests/dial-in-review.test.mjs` (minimaal 27/30).
+
+## Wat hierdoor niet verandert
+
+Geen enkel engine-receptgetal (golden fixtures, FORBIDDEN-edges en de break-it-matrix zijn ongewijzigd groen). Proces, hoogte en water sturen nog steeds geen receptgetal. De advies-poort (≥20 getest, ≥65% gelukt, ≤15% slechter) is ongewijzigd; Fase 5 blijft dicht tot die gehaald is.

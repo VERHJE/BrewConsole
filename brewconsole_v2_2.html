@@ -1072,6 +1072,7 @@
   .tasting-progress-label{font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.06em; text-transform:uppercase; color:var(--copper-light); margin:0;}
   .tasting-dots{display:flex; gap:0;}
   .tasting-dot{width:44px; min-height:44px; background:none; border:none; padding:0; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;}
+  .tasting-dot[hidden]{display:none;} /* R-04: "Wat miste je?" alleen als die vraag erbij hoort */
   .tasting-dot span{display:block; width:18px; height:5px; border-radius:4px; background:var(--border);}
   .tasting-dot[data-state="done"] span{background:var(--copper-dim);}
   .tasting-dot[data-state="current"] span{background:var(--copper); width:24px;}
@@ -2557,6 +2558,8 @@
       <div class="ab-trial" id="ab-trial" hidden></div>
       <!-- Fase 4: de stap die je na je vorige kop koos ("Gebruik voor volgende kop"). -->
       <div class="prep-next-adjust" id="prep-next-adjust" hidden></div>
+      <!-- Review R-02: "jouw stand" — de maalstand en sterkte van je vorige kop met deze boon. -->
+      <div class="prep-next-adjust prep-stand-note" id="prep-stand-note" hidden></div>
       <!-- Review R-08: een "check eerst" uit je vorige kop met deze boon. -->
       <div class="prep-next-adjust prep-check-note" id="prep-check-note" hidden></div>
       <!-- Sprint 6: vanuit "Zet je beste kop opnieuw" — wat die kop toen was. -->
@@ -4722,7 +4725,7 @@ const ICONS = {
   scale: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 5 V27"/><path d="M7 27 H25"/><path d="M16 8 L6 12 L16 12 Z" opacity=".7"/><path d="M16 8 L26 12 L16 12 Z" opacity=".7"/><path d="M3 12 L6 12 L4.5 17 A3 3 0 0 0 7.5 17 Z" opacity=".5"/><path d="M26 12 L29 12 L27.5 17 A3 3 0 0 0 30.5 17 Z" opacity=".5"/></svg>'
 };
 
-const state = { method:null, roast:null, profile:null, waterMl:null, recipe:null, process:null, experimental:false, roastDate:null, openedDate:null, intendedUse:null, altitude:null, bypass:false, bypassPct:30, bypassMoment:'achteraf', strengthAdjust:0, flavorScores:null, fermentEvidence:false, beanId:null, goal:null };
+const state = { method:null, roast:null, profile:null, waterMl:null, recipe:null, process:null, experimental:false, roastDate:null, openedDate:null, intendedUse:null, altitude:null, bypass:false, bypassPct:30, bypassMoment:'achteraf', strengthAdjust:0, flavorScores:null, fermentEvidence:false, beanId:null, goal:null, grindStand:null, standApplied:null };
 
 /* ============================================================
    VERSHEID/DEGASSING — op basis van een echte branddatum i.p.v. een
@@ -6363,7 +6366,8 @@ function applyAdvice(){
   state.bypass = false; // concentraat/bypass is een keuze per keer zetten, niet per boon
   state.bypassPct = 30; // BP-2: terug naar de standaardoptie bij een nieuwe sessie
   state.bypassMoment = 'achteraf';
-  state.strengthAdjust = 0; // C2: zelfde redenering — sterkte is ook een per-keer-keuze
+  state.strengthAdjust = 0; // C2: via het methode-advies begin je bewust opnieuw (R-02: "Zet opnieuw" onthoudt wél)
+  state.grindStand = null; state.standApplied = null; // R-02
   state.goalLighterApplied = false; // BC-10
   state.beanId = adviceState.beanId || null;
   // R-07: het profiel dat je voor deze boon koos (ook na een bijna-gelijke stand) is voortaan
@@ -6415,7 +6419,24 @@ function brewAgain(id, override){
   state.bypassMoment = 'achteraf'; // niet onthouden per boon, altijd de standaard-weeginstructie
   state.waterMl = last.waterMl || defaultWaterMlFor(state.method, state.profile);
   state.bestCupRef = override && override.bestRef ? override.bestRef : null; // Sprint 6
-  if (override && typeof override.strengthStep === 'number') state.strengthAdjust = override.strengthStep;
+  // Review R-02 ("Mijn recept per boon"): "Zet opnieuw" herhaalt je vorige kop met deze boon —
+  // ook de maalstand en de sterkte, niet alleen methode en water. Een klaargezette stap uit de
+  // proefkaart verandert daarna precies één ding (applyPendingAdjustToState()).
+  const stand = override ? null : beanStandFor(bean, state.method);
+  if (override){
+    state.strengthAdjust = typeof override.strengthStep === 'number' ? override.strengthStep : 0;
+    state.grindStand = typeof override.grindClick === 'number' ? override.grindClick : null;
+    state.standApplied = null;
+  } else if (stand){
+    state.strengthAdjust = typeof stand.strengthStep === 'number' ? stand.strengthStep : 0;
+    state.grindStand = typeof stand.grindClick === 'number' ? stand.grindClick : null;
+    state.standApplied = stand;
+  } else {
+    state.strengthAdjust = 0;
+    state.grindStand = null;
+    state.standApplied = null;
+  }
+  state.goalLighterApplied = false;
   applyPendingAdjustToState(); // Fase 4
   updateServingBounds();
   renderMethodGrid();
@@ -8124,6 +8145,13 @@ function beanStockLine(bean){
   const cups = dose ? Math.floor(remaining / dose) : null;
   return `${fmt(remaining, 0)} g over${cups != null ? ` · ± ${cups} ${cups === 1 ? 'kop' : 'koppen'}` : ''}`;
 }
+// R-02: welke stand "Zet opnieuw" zet, kort op de kaart (alleen als die afwijkt van het basisrecept).
+function standLineFor(bean){
+  const st = bean && bean.lastBrew ? beanStandFor(bean, bean.lastBrew.method) : null;
+  if (!st) return '';
+  const bits = [typeof st.grindClick === 'number' ? `klik ${st.grindClick}` : null, st.strengthStep ? strengthWords(st.strengthStep) : null].filter(Boolean);
+  return bits.length ? ` Jouw stand: ${bits.join(' · ')}.` : '';
+}
 function renderNextCupCard(targetId){
   const el = document.getElementById(targetId);
   if (!el) return false;
@@ -8137,7 +8165,7 @@ function renderNextCupCard(targetId){
   const line = t.adjust
     ? (adviceTitle ? `Advies uit je vorige kop: ${adviceTitle}` : 'Er staat een stap klaar uit je vorige kop.')
     : checkTx ? `${liking ? `Vorige kop: ${liking} van 5. ` : ''}${checkTx.title}.`
-    : (liking ? `Vorige kop: ${liking} van 5.` : 'Zet je vorige recept opnieuw.');
+    : (liking ? `Vorige kop: ${liking} van 5.${standLineFor(t.bean)}` : 'Zet je vorige recept opnieuw.');
   const stock = beanStockLine(t.bean);
   el.innerHTML = `<p class="next-cup-kicker">Je volgende kop${t.adjust ? ' · advies klaar' : ''}</p>
     <p class="next-cup-title">${escapeHtml(t.bean.name || 'Naamloze boon')} · ${escapeHtml(m ? m.name : t.bean.lastBrew.method)}</p>
@@ -8218,6 +8246,9 @@ function renderAdviceOutcomeSection(st){
     ap.mismatch ? `${ap.mismatch} getest op een kop met een andere opzet (bypass of hoeveelheid)` : null
   ].filter(Boolean);
   if (apartBits.length) body += `<p class="insights-note" id="advice-apart" style="margin:6px 0 0;">Apart gehouden, tellen niet mee in de drempel: ${escapeHtml(apartBits.join(' · '))}.</p>`;
+  // R-10: "houd zo" dat bij de volgende kop weer goed uitpakte — apart, telt niet mee in de drempel.
+  const kp = st.keep || { confirmed: 0, notConfirmed: 0 };
+  if (kp.confirmed + kp.notConfirmed > 0) body += `<p class="insights-note" id="advice-keep" style="margin:6px 0 0;">${escapeHtml(`"Houd zo" bevestigd: ${kp.confirmed} van ${kp.confirmed + kp.notConfirmed} keer was de volgende kop weer geslaagd. Telt apart, niet mee in de drempel.`)}</p>`;
   return `<div class="bean-detail-section" id="advice-outcome" style="margin-top:18px;">
       <p class="bean-detail-section-label">Hoe goed werken de adviezen?</p>
       ${body}
@@ -8912,7 +8943,10 @@ function createBrewRecord(input){
       appliedAdjust: input.appliedAdjust ? cloneJson(input.appliedAdjust) : null,
       grindTarget: input.appliedAdjust && input.appliedAdjust.lever === 'grind' && typeof input.appliedAdjust.toValue === 'number'
         ? input.appliedAdjust.toValue
-        : (typeof rec.grindStartingPoint === 'number' ? rec.grindStartingPoint : null)
+        // Review R-02: je eigen stand van de vorige kop met deze boon ("jouw stand").
+        : typeof input.grindStand === 'number' ? input.grindStand
+        : (typeof rec.grindStartingPoint === 'number' ? rec.grindStartingPoint : null),
+      grindFromStand: !(input.appliedAdjust && input.appliedAdjust.lever === 'grind') && typeof input.grindStand === 'number'
     },
     actual: {
       doseG: null, doseSource: null, grindClick: null, grindSource: null, confirmed: false,
@@ -9194,6 +9228,18 @@ const TASTING_FINISH = [
   { v: 'drying', label: 'Droog / wrang' }, { v: 'hollow', label: 'Leeg / kort' }
 ];
 const TASTING_LIKING = [1, 2, 3, 4, 5];
+// Review R-04/R-09 (diag-2026.3): "Wat miste je?" — één tik die het volgende advies richting
+// geeft als de kop niet helemaal was wat je wilde (doel bijna/niet gehaald, of 4 of minder).
+const TASTING_MISSED = [
+  { v: 'fruit', label: 'Meer fruit / helderheid' }, { v: 'sweet', label: 'Meer zoetheid' },
+  { v: 'body', label: 'Meer body' }, { v: 'less_bitter', label: 'Minder bitter' }, { v: 'unsure', label: 'Weet ik niet' }
+];
+// Wanneer de vraag verschijnt: een doel dat niet (helemaal) gehaald is, of een kop van 4 of minder.
+function missedQuestionApplies(a, goal){
+  const t = a || {};
+  if (goal && (t.goalHit === 'almost' || t.goalHit === 'no')) return true;
+  return typeof t.liking === 'number' && t.liking > 0 && t.liking <= 4;
+}
 const TASTING_GOAL_HIT = [{ v: 'yes', label: 'Ja' }, { v: 'almost', label: 'Bijna' }, { v: 'no', label: 'Nee' }];
 const TASTING_VS_LAST = [{ v: 'better', label: 'Beter' }, { v: 'same', label: 'Hetzelfde' }, { v: 'worse', label: 'Slechter' }];
 // Drie doelen (v2 §6). Het doel wordt per brouwsel bewaard; de sterkte-voorkeur per doel
@@ -9281,6 +9327,7 @@ function buildTasting(answers, nowMs, completedAt, goal){
     liking: a.liking || null,
     goal: goal || null, goalHit: goal ? (a.goalHit || null) : null,
     vsLast: a.vsLast || null, vsLastBrewId: a.vsLast ? (a.vsLastBrewId || null) : null,
+    missed: (a.missed && missedQuestionApplies(a, goal)) ? a.missed : null,
     note: a.note || '',
     complete: gate.complete, approved: gate.passed,
     scores: null, cuppingSuggestion: null
@@ -9366,7 +9413,7 @@ function findPreviousComparableBrew(store, rec){
    standaard ("te slap" / "te sterk", of "slechter dan de vorige"), dan zijn beide uiteinden
    geproefd en adviseert de app eerst het midden (±4%). Bij "veel te …" blijft het een hele stap
    terug; een halve stap wordt nooit direct weer teruggedraaid (geen heen-en-weer). */
-const DIAGNOSIS_RULESET_VERSION = 'diag-2026.2';
+const DIAGNOSIS_RULESET_VERSION = 'diag-2026.3';
 const KH_HIGH_CACO3 = 70; // bovengrens SCA-richtwaarde alkaliniteit (mg/L CaCO3)
 const CONFIDENCE_LABELS = { likely: 'Waarschijnlijk', possible: 'Mogelijk', uncertain: 'Onzeker' };
 
@@ -9391,7 +9438,11 @@ function diagnoseTasting(t, ctx){
     if (s === 'just_right') add('under', 1, 'finish', 'hollow_right_strength');
     else if (weak) evidence.push('hollow_weak'); // leeg + slap = sterkte, niet extractie
   }
-  if (a.acidity === 'flat') evidence.push('flat');
+  // diag-2026.3 (review R-03): vlak zuur samen met bitter of droog is een tweede, onafhankelijke
+  // aanwijzing voor overextractie — tenzij je water de zuren al dempt (dan eerst het water).
+  const waterDamps = typeof c.alkalinityCaCO3 === 'number' && c.alkalinityCaCO3 > KH_HIGH_CACO3;
+  if (a.acidity === 'flat' && (finish.includes('bitter') || finish.includes('drying')) && !waterDamps) add('over', 0.5, 'acidity', 'flat_over');
+  else if (a.acidity === 'flat') evidence.push('flat');
   const ranked = ['under', 'ok', 'over'].map(k => ({ k, p: pts[k] })).sort((x, y) => y.p - x.p);
   const lead = ranked[0].p - ranked[1].p;
   const state = ranked[0].p === 0 ? 'unknown' : lead === 0 ? 'uncertain' : ranked[0].k;
@@ -9451,6 +9502,20 @@ function landStrength(from, delta){
   return Math.max(-1, Math.min(1, to));
 }
 
+// R-04: welke ene stap hoort bij "wat miste je?" (of null). Fruit/helderheid = iets minder sterk
+// (Brewing Control Chart; ook jouw eigen blinde proef), body = iets sterker, zoetheid = 1 klik
+// fijner (niet als hij al bitter was), minder bitter = 1 klik grover.
+function goalStepFor(t){
+  const a = t || {};
+  const finish = Array.isArray(a.finish) ? a.finish : [];
+  switch (a.missed){
+    case 'fruit': return { lever: 'dose', delta: -0.5, reasonKey: 'goal_fruit' };
+    case 'body': return { lever: 'dose', delta: +0.5, reasonKey: 'goal_body' };
+    case 'sweet': return finish.includes('bitter') || finish.includes('drying') ? null : { lever: 'grind', delta: -1, reasonKey: 'goal_sweet' };
+    case 'less_bitter': return { lever: 'grind', delta: +1, reasonKey: 'goal_less_bitter' };
+    default: return null;
+  }
+}
 function recommendNext(input){
   const t = (input && input.tasting) || {};
   const goal = input && input.goal;
@@ -9464,7 +9529,9 @@ function recommendNext(input){
   const gate = tastingGate(t, goal);
   if (!gate.complete) return out({ type: 'NONE', reasonKey: 'incomplete', missing: gate.missing, confidence: null });
   if (!ctx.actualsConfirmed) notes.push('actuals_unconfirmed');
-  if (gate.passed) return out({ type: 'KEEP', reasonKey: 'gate_passed', confidence: null });
+  const missedStep = goalStepFor(t);
+  // R-09: ook een geslaagde kop mag je verfijnen, maar alleen als je zelf zegt wat er beter kan.
+  if (gate.passed && !missedStep) return out({ type: 'KEEP', reasonKey: 'gate_passed', confidence: null });
 
   // Geldigheid eerst: een recept aanpassen helpt niet als iets anders de kop bepaalt.
   if (ctx.freshnessKey === 'too_fresh') return out({ type: 'CHECK', reasonKey: 'very_fresh', confidence: null });
@@ -9490,6 +9557,20 @@ function recommendNext(input){
     return r.type === 'ADJUST' ? r : null;
   };
 
+  // R-04/R-09: de stap bij "wat miste je?". Eerst het water bij "meer fruit" als dat de zuren
+  // dempt; een stap die meteen de vorige terugdraait wacht eerst een kop (geen heen-en-weer).
+  const goalAdjust = (step, refine) => {
+    if (step.lever === 'dose' && step.reasonKey === 'goal_fruit' && typeof ctx.alkalinityCaCO3 === 'number' && ctx.alkalinityCaCO3 > KH_HIGH_CACO3){
+      return out({ type: 'CHECK', reasonKey: 'water_fruit', confidence: null, alkalinityCaCO3: ctx.alkalinityCaCO3 });
+    }
+    if (step.reasonKey === 'goal_fruit' && typeof ctx.alkalinityCaCO3 !== 'number') notes.push('water_unknown_fruit');
+    if (lastApplied && lastApplied.lever === step.lever && Math.sign(lastApplied.delta) === -Math.sign(step.delta)){
+      return out({ type: 'REPEAT', reasonKey: 'hysteresis', confidence: 'possible' });
+    }
+    const r = feasibleAdjust(step.lever, step.delta, step.reasonKey, 'possible');
+    return r.type === 'ADJUST' ? Object.assign(r, { refine: !!refine }) : r;
+  };
+
   // Mislukte stap: deze kop testte een wijziging en smaakte slechter → die stap terugdraaien.
   // Was het een hele dosisstap, dan alleen de helft terug (beide uiteinden zijn geproefd).
   if (lastApplied && t.vsLast === 'worse'){
@@ -9502,9 +9583,26 @@ function recommendNext(input){
   }
 
   const dark = ctx.roastId === 'dark' || ctx.roastId === 'medium_dark';
-  if (d.uneven && d.confidence !== 'likely') return out({ type: 'CHECK', reasonKey: 'uneven', confidence: null });
-  const cand = leverFromMatrix(d.strength.state, d.extraction.state, dark);
-  if (!cand) return out({ type: 'REPEAT', reasonKey: d.extraction.state === 'uncertain' ? 'uncertain' : 'no_clear_lever', confidence: d.extraction.state === 'uncertain' ? 'uncertain' : null });
+  // R-09/R-04: een geslaagde kop met "wat miste je?" → alleen die ene, gevraagde stap.
+  if (gate.passed) return goalAdjust(missedStep, true);
+  // diag-2026.3 (review R-03): "droog/wrang" blokkeert het advies alleen als de sterkte goed is.
+  // Een sterkteklacht krijgt gewoon zijn stap; de gietschets komt er dan als tip bij.
+  const strengthOff = d.strength.state === 'weak' || d.strength.state === 'strong';
+  if (d.uneven && d.confidence !== 'likely'){
+    if (!strengthOff) return out({ type: 'CHECK', reasonKey: 'uneven', confidence: null });
+    notes.push('uneven_tip');
+  }
+  let cand = leverFromMatrix(d.strength.state, d.extraction.state, dark);
+  if (cand && d.uneven && d.confidence !== 'likely' && cand.lever === 'grind') cand = { lever: 'dose', dir: d.strength.state === 'strong' ? -1 : +1, basis: 'strength' };
+  // diag-2026.3: "te sterk" met maar een zwakke aanwijzing voor overextractie (bv. alleen bitter)
+  // → eerst minder koffie. De sterktevraag is het directe signaal; bitter komt dan vaak van de
+  // concentratie, niet van de maling.
+  if (cand && cand.lever === 'grind' && cand.dir > 0 && d.strength.state === 'strong' && d.confidence !== 'likely') cand = { lever: 'dose', dir: -1, basis: 'both' };
+  if (!cand){
+    // R-04: sterkte en extractie in orde, maar het doel niet gehaald → de stap die bij "wat miste je?" hoort.
+    if (missedStep && d.extraction.state !== 'uncertain') return goalAdjust(missedStep, false);
+    return out({ type: 'REPEAT', reasonKey: d.extraction.state === 'uncertain' ? 'uncertain' : 'no_clear_lever', confidence: d.extraction.state === 'uncertain' ? 'uncertain' : null });
+  }
   let confidence = cand.basis === 'strength' ? (d.strength.much ? 'likely' : 'possible') : d.confidence;
   if (confidence === 'uncertain') return out({ type: 'REPEAT', reasonKey: 'uncertain', confidence: 'uncertain' });
   if (!ctx.actualsConfirmed && confidence === 'likely') confidence = 'possible';
@@ -9532,7 +9630,7 @@ function recommendNext(input){
 
 // Sjablonen — geen vrije tekst; elke zin hangt aan een reasonKey of evidence-sleutel.
 const EVIDENCE_PHRASES = {
-  sour: 'scherp zuur', sweet_clean: 'zoet en schoon', bitter: 'bitter', bitter_dark: 'bitter (bij donker branden minder zwaar gewogen)',
+  sour: 'scherp zuur', sweet_clean: 'zoet en schoon', bitter: 'bitter', bitter_dark: 'bitter (bij donker branden minder zwaar gewogen)', flat_over: 'vlak zuur',
   drying: 'droog/wrang', hollow_right_strength: 'leeg bij een goede sterkte', hollow_weak: 'leeg en slap', flat: 'vlak zuur'
 };
 function recommendationTexts(reco, diag, extra){
@@ -9557,7 +9655,13 @@ function recommendationTexts(reco, diag, extra){
     const stap = Math.abs(r.delta) === 0.5 ? 'Een halve stap' : 'Een stap';
     return r.delta > 0 ? `${stap} sterker: ~${pct}% meer koffie${dose}` : `${stap} lichter: ~${pct}% minder koffie${dose}`;
   };
-  const leverExpect = () => r.lever === 'grind'
+  const GOAL_EXPECT = {
+    goal_fruit: 'Verwacht: helderder en fruitiger, iets lichter van body.',
+    goal_body: 'Verwacht: voller en ronder, iets minder helder.',
+    goal_sweet: 'Verwacht: meer zoetheid en iets meer body.',
+    goal_less_bitter: 'Verwacht: minder bitter en droog, iets lichter.'
+  };
+  const leverExpect = () => GOAL_EXPECT[r.reasonKey] ? GOAL_EXPECT[r.reasonKey] : r.lever === 'grind'
     ? (r.delta < 0 ? 'Verwacht: meer zoetheid en minder scherp zuur, bij ongeveer dezelfde sterkte.' : 'Verwacht: minder bitter en droog, iets lichter van smaak.')
     : (r.reasonKey === 'halfway' || r.reasonKey === 'halfway_worse')
       ? (r.delta > 0 ? 'Verwacht: minder dun dan je vorige kop, maar nog lichter dan het standaardrecept.' : 'Verwacht: minder zwaar dan je vorige kop, maar nog sterker dan het standaardrecept.')
@@ -9575,11 +9679,12 @@ function recommendationTexts(reco, diag, extra){
       })[r.reasonKey] || '';
       break;
     case 'CHECK':
-      title = ({ very_fresh: 'Check eerst: heel vers gebrand', water_buffering: 'Check eerst je water', uneven: 'Check eerst je gieten',
+      title = ({ very_fresh: 'Check eerst: heel vers gebrand', water_buffering: 'Check eerst je water', water_fruit: 'Check eerst je water', uneven: 'Check eerst je gieten',
         grind_floor: 'Fijner malen kan hier niet verder', grind_ceiling: 'Grover malen kan hier niet verder', dose_limit: 'De dosis zit aan de grens' })[r.reasonKey] || 'Check eerst';
       body = ({
         very_fresh: 'De boon is hooguit 2 dagen gebrand en zit nog vol CO₂; dat geeft een onrustige doorloop. Laat hem een paar dagen rusten voordat je het recept aanpast.',
         water_buffering: `Vlak zuur én hoge alkaliniteit${x.alkalinity != null ? ` (${Math.round(x.alkalinity)} mg/L CaCO₃)` : ''}: je water buffert de zuren. Probeer eerst ander of verdund water.`,
+        water_fruit: `Je miste fruit, en je water heeft een hoge alkaliniteit${x.alkalinity != null ? ` (${Math.round(x.alkalinity)} mg/L CaCO₃)` : ''}: dat dempt juist de fruitige zuren. Probeer eerst je kraanwater 1:1 te mengen met gedemineraliseerd water, voordat je het recept aanpast.`,
         uneven: 'Een droge, wrange afdronk wijst vaak op ongelijkmatige extractie (kanaalvorming of veel fijn poeder). Giet rustig, houd het bed vlak — en verander het recept nog niet.',
         grind_floor: `Klik ${r.toValue} valt onder het praktische bereik${range ? ` (${range})` : ''}. Check eerst giettechniek en versheid voordat je nog fijner gaat.`,
         grind_ceiling: `Klik ${r.toValue} valt boven het praktische bereik${range ? ` (${range})` : ''}. Check eerst giettechniek en water.`,
@@ -9591,7 +9696,15 @@ function recommendationTexts(reco, diag, extra){
       {
         const eState = diag && diag.extraction ? diag.extraction.state : null;
         const strengthOnly = r.lever === 'dose' && eState !== 'under' && eState !== 'over';
-        body = r.reasonKey === 'revert_worse'
+        const GOAL_BODY = {
+          goal_fruit: 'Je miste fruit en helderheid, terwijl sterkte en extractie in orde leken. Een iets lichtere kop (minder koffie, zelfde maling en water) laat de zuren en het fruit meer spreken.',
+          goal_body: 'Je miste body, terwijl sterkte en extractie in orde leken. Een iets sterkere kop (meer koffie, zelfde maling en water) geeft meer volheid.',
+          goal_sweet: 'Je miste zoetheid. Iets fijner malen haalt meer suikers uit de koffie, zolang hij niet bitter wordt.',
+          goal_less_bitter: 'Je proefde te veel bitter. Iets grover malen haalt minder van de bittere stoffen uit de koffie.'
+        };
+        body = GOAL_BODY[r.reasonKey]
+          ? (r.refine ? 'Geslaagde kop. Je wilde er nog meer uit halen: ' : '') + GOAL_BODY[r.reasonKey]
+          : r.reasonKey === 'revert_worse'
           ? 'Deze kop testte een wijziging en smaakte slechter dan de vorige. Draai die stap terug.'
           : r.reasonKey === 'halfway_worse'
             ? 'Deze kop testte een hele stap en smaakte slechter dan de vorige. Draai hem maar een halve stap terug: zo proef je het midden tussen je twee koppen.'
@@ -9604,7 +9717,11 @@ function recommendationTexts(reco, diag, extra){
       expect = r.reasonKey === 'revert_worse' ? '' : leverExpect();
       break;
   }
-  const notes = (r.notes || []).map(k => ({ actuals_unconfirmed: 'Dosis en maling waren niet bevestigd — dit advies gaat uit van het plan.' })[k]).filter(Boolean);
+  const notes = (r.notes || []).map(k => ({
+    actuals_unconfirmed: 'Dosis en maling waren niet bevestigd — dit advies gaat uit van het plan.',
+    uneven_tip: 'Je proefde ook droog/wrang: giet rustig en houd het bed vlak, dat kan ongelijkmatige extractie zijn.',
+    water_unknown_fruit: 'Tip: je water heeft veel invloed op fruit en helderheid. Vul je water in bij Instellingen.'
+  })[k]).filter(Boolean);
   return { title, body, expect, confidence: r.confidence ? CONFIDENCE_LABELS[r.confidence] : null, notes };
 }
 
@@ -9642,11 +9759,24 @@ function adviceOutcomeStats(store){
       if (o === 'better' || (o !== 'worse' && testerPassed)) s.success++;
     }
   }
+  // Review R-10: een tevreden gebruiker krijgt "houd zo" en test dus weinig stappen. Hoe vaak
+  // "houd zo" bij de volgende kop met dezelfde opzet wéér een geslaagde kop gaf, telt apart
+  // ("bevestigd") — niet mee in de poort; de drempels blijven.
+  const keep = { confirmed: 0, notConfirmed: 0 };
+  const live = (store || []).filter(r => r && !r.deletedAt && isBrewInLogView(r));
+  for (const r of recs){
+    if (!r.recommendation || r.recommendation.type !== 'KEEP' || !r.beanId) continue;
+    const method = r.plan && r.plan.methodId;
+    const next = live.filter(n => n.id !== r.id && n.beanId === r.beanId && n.plan && n.plan.methodId === method
+      && (n.createdAt || 0) > (r.createdAt || 0) && isComparableSetup(r, n)).sort((a, b) => a.createdAt - b.createdAt)[0];
+    if (!next || !next.tasting || !next.tasting.complete) continue;
+    if (next.tasting.approved) keep.confirmed++; else keep.notConfirmed++;
+  }
   const successRate = s.tested ? s.success / s.tested : null;
   const harmRate = s.tested ? s.worse / s.tested : null;
   const gate = s.tested < ADVICE_GATE_MIN_TESTED ? 'insufficient'
     : (successRate >= ADVICE_GATE_SUCCESS_MIN && harmRate <= ADVICE_GATE_HARM_MAX) ? 'passed' : 'failed';
-  return Object.assign({ byType, successRate, harmRate, gate, needed: Math.max(0, ADVICE_GATE_MIN_TESTED - s.tested), apart }, s);
+  return Object.assign({ byType, successRate, harmRate, gate, needed: Math.max(0, ADVICE_GATE_MIN_TESTED - s.tested), apart, keep }, s);
 }
 
 let brewStore = [];
@@ -9866,6 +9996,7 @@ function beginBrewRecord(){
     bypass: state.bypass, bypassPct: state.bypassPct, bypassMoment: state.bypassMoment,
     goal: state.goal,
     appliedAdjust: pendingAdjustForState(), // Fase 4: de stap die deze kop test
+    grindStand: typeof state.grindStand === 'number' ? state.grindStand : null, // R-02
     water: currentWaterSnapshot(),
     inputs: {
       method: state.method, roast: state.roast, profile: state.profile, waterMl: state.waterMl,
@@ -10065,6 +10196,8 @@ function renderTastingCard(){
     const when = d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
     html += block('Vergeleken met je vorige kop van deze boon?', when, chips('vsLast', TASTING_VS_LAST));
   }
+  // R-04/R-09: alleen zichtbaar als het doel niet (helemaal) gehaald is of bij 4 of minder.
+  html += block('Wat miste je?', 'optioneel — geeft je volgende advies richting', chips('missed', TASTING_MISSED));
   html += `<p class="tasting-gate" id="tasting-gate" aria-live="polite"></p>`;
   el.innerHTML = html;
   buildTastingStepper(el, goal && BREW_GOALS[goal], !!prev);
@@ -10073,20 +10206,29 @@ function renderTastingCard(){
 /* Sprint 4 (UX-review F1): één vraag per stap. De vragen, hun volgorde en de gate blijven
    precies dezelfde — alleen tonen we er één tegelijk, met voortgang, Vorige/Volgende en
    automatisch door na een enkele keuze (afdronk is meerkeuze: daar zelf op Volgende). */
-const TASTING_STEP_LABELS = { strength: 'Sterkte', acidity: 'Zuur', finish: 'Afdronk', liking: 'Hoe lekker', goalHit: 'Doel', vsLast: 'Vorige kop' };
+const TASTING_STEP_LABELS = { strength: 'Sterkte', acidity: 'Zuur', finish: 'Afdronk', liking: 'Hoe lekker', goalHit: 'Doel', vsLast: 'Vorige kop', missed: 'Wat miste je?' };
+let tastingAllSteps = [];
 let tastingSteps = [];
 let tastingStepIdx = 0;
+// R-04: "Wat miste je?" hoort er alleen bij als het doel niet gehaald is of bij 4 of minder;
+// de stappenlijst volgt dus de antwoorden.
+function activeTastingSteps(){
+  const rec = activeBrewRecord();
+  const goal = rec && rec.goal ? rec.goal : null;
+  return tastingAllSteps.filter(k => k !== 'missed' || missedQuestionApplies(tastingDraft, goal));
+}
 function buildTastingStepper(el, hasGoal, hasPrev){
-  tastingSteps = ['strength', 'acidity', 'finish', 'liking'].concat(hasGoal ? ['goalHit'] : [], hasPrev ? ['vsLast'] : []);
+  tastingAllSteps = ['strength', 'acidity', 'finish', 'liking'].concat(hasGoal ? ['goalHit'] : [], hasPrev ? ['vsLast'] : [], ['missed']);
+  tastingSteps = activeTastingSteps();
   tastingStepIdx = 0;
   const blocks = [...el.querySelectorAll('.tasting-block')].filter(b => !b.classList.contains('tasting-actuals'));
-  blocks.forEach((b, i) => { b.dataset.stepKey = tastingSteps[i]; b.classList.add('tasting-step'); });
+  blocks.forEach((b, i) => { b.dataset.stepKey = tastingAllSteps[i]; b.classList.add('tasting-step'); });
   const first = blocks[0];
   if (!first) return;
   const head = document.createElement('div');
   head.className = 'tasting-progress';
   head.innerHTML = `<p class="tasting-progress-label" id="tasting-progress-label" aria-live="polite"></p>
-    <div class="tasting-dots">${tastingSteps.map((k, i) =>
+    <div class="tasting-dots">${tastingAllSteps.map((k, i) =>
       `<button type="button" class="tasting-dot" data-t-step="${k}" aria-label="Vraag ${i + 1}: ${TASTING_STEP_LABELS[k]}"><span></span></button>`).join('')}</div>`;
   first.parentNode.insertBefore(head, first);
   const nav = document.createElement('div');
@@ -10097,9 +10239,11 @@ function buildTastingStepper(el, hasGoal, hasPrev){
 }
 function tastingStepAnswered(key){
   const d = tastingDraft;
+  if (key === 'missed') return !!d.missed;
   return key === 'finish' ? d.finish.length > 0 : key === 'liking' ? !!d.liking : !!d[key];
 }
 function goToTastingStep(idx, focus){
+  tastingSteps = activeTastingSteps();
   if (!tastingSteps.length) return;
   tastingStepIdx = Math.max(0, Math.min(tastingSteps.length - 1, idx));
   refreshTastingCard();
@@ -10120,10 +10264,17 @@ function refreshTastingCard(){
     btn.setAttribute('aria-pressed', String(sel));
   });
   // Sprint 4: alleen de huidige vraag zichtbaar; stippen tonen beantwoord/huidig.
+  // R-04: de stappenlijst kan meegroeien ("Wat miste je?"); houd de huidige vraag vast.
+  const prevKey = tastingSteps[tastingStepIdx];
+  tastingSteps = activeTastingSteps();
+  if (prevKey && tastingSteps.includes(prevKey)) tastingStepIdx = tastingSteps.indexOf(prevKey);
+  else tastingStepIdx = Math.min(tastingStepIdx, Math.max(0, tastingSteps.length - 1));
+  if (d.missed && !tastingSteps.includes('missed')) d.missed = null;
   const curKey = tastingSteps[tastingStepIdx];
   el.querySelectorAll('.tasting-step').forEach(b => { b.hidden = b.dataset.stepKey !== curKey; });
   el.querySelectorAll('[data-t-step]').forEach(dot => {
     const k = dot.getAttribute('data-t-step');
+    dot.hidden = !tastingSteps.includes(k);
     dot.dataset.state = k === curKey ? 'current' : tastingStepAnswered(k) ? 'done' : 'open';
     if (k === curKey) dot.setAttribute('aria-current', 'step'); else dot.removeAttribute('aria-current');
   });
@@ -10180,6 +10331,7 @@ function handleTastingCardClick(e){
     else if (q === 'liking') d.liking = d.liking === Number(v) ? null : Number(v);
     else d[q] = d[q] === v ? null : v;
     // Sprint 4: een enkele keuze gemaakt (niet uitgezet) → door naar de volgende vraag.
+    tastingSteps = activeTastingSteps(); // R-04: een lage score of "bijna" voegt "Wat miste je?" toe
     const idx = tastingSteps.indexOf(q);
     if (q !== 'finish' && idx === tastingStepIdx && tastingStepAnswered(q) && idx < tastingSteps.length - 1){
       goToTastingStep(idx + 1, true);
@@ -10635,7 +10787,7 @@ function brewBestCup(recId){
   const dateText = rec.createdAt ? new Date(rec.createdAt).toLocaleDateString('nl-NL', { day:'numeric', month:'short' }) : '';
   brewAgain(bean.id, {
     method: setup.method, waterMl: setup.waterMl, bypass: setup.bypassPct != null, bypassPct: setup.bypassPct,
-    strengthStep: setup.strengthStep,
+    strengthStep: setup.strengthStep, grindClick: typeof setup.grind === 'number' ? setup.grind : null,
     bestRef: { beanId: bean.id, method: setup.method, liking: rec.tasting.liking, dateText, line: cupSetupLine(setup) }
   });
 }
@@ -11387,6 +11539,7 @@ function linkBrewToBean(recId, beanId){
    deden dat niet, en niets wiste hem ooit — waardoor een brouwsel stilzwijgend bij de
    boon van een EERDERE sessie (of bij geen boon) in het logboek belandde. */
 function setActiveBean(id){
+  if ((id || null) !== (state.beanId || null)){ state.grindStand = null; state.standApplied = null; } // R-02: stand hoort bij één boon
   adviceState.beanId = id || null;
   state.beanId = id || null;
   if (!id) state.goal = null; // Fase 3: een verse start zonder boon begint zonder doel
@@ -12405,6 +12558,7 @@ function attachDiagnosisAndRecommendation(next, prev, nowMs){
     }
     if (bean && bean.pendingAdjust && bean.pendingAdjust.fromBrewId === applied.fromBrewId){ delete bean.pendingAdjust; beansChanged = true; }
   }
+  if (bean && updateBeanStand(bean, next)) beansChanged = true; // R-02
   // Review R-08: een "check eerst"-advies (gieten, water, versheid) verdween na het Klaar-
   // scherm. Nu bewaart de boon het tot de volgende gelogde kop, en tonen Home en het
   // receptscherm het bij die kop.
@@ -12416,6 +12570,31 @@ function attachDiagnosisAndRecommendation(next, prev, nowMs){
     }
   }
   if (beansChanged) saveBeansToStorage();
+}
+/* Review R-02: "jouw stand" per boon en methode — de stand van je laatst gelogde kop. Wordt bij
+   opslaan bijgewerkt (alleen door de nieuwste kop van die boon), en is wat "Zet opnieuw" zet. */
+function beanStandFor(bean, method){
+  const st = bean && bean.stands && bean.stands[method];
+  return st && typeof st === 'object' ? st : null;
+}
+function standFromRecord(rec){
+  const plan = rec.plan || {}, a = rec.actual || {};
+  const grind = (a.grindSource === 'U' && typeof a.grindClick === 'number') ? a.grindClick
+    : (typeof plan.grindTarget === 'number' ? plan.grindTarget : null);
+  return {
+    method: plan.methodId, grindClick: grind, strengthStep: plan.strengthStep || 0, waterMl: plan.waterMl || null,
+    bypass: !!plan.bypass, bypassPct: plan.bypass ? plan.bypass.pct : null,
+    fromBrewId: rec.id, brewCreatedAt: rec.createdAt || 0,
+    liking: rec.tasting && typeof rec.tasting.liking === 'number' ? rec.tasting.liking : null,
+    check: !!(rec.recommendation && rec.recommendation.type === 'CHECK')
+  };
+}
+function updateBeanStand(bean, rec){
+  if (!bean || !rec || !rec.plan || !rec.plan.methodId) return false;
+  const cur = beanStandFor(bean, rec.plan.methodId);
+  if (cur && cur.fromBrewId !== rec.id && (cur.brewCreatedAt || 0) > (rec.createdAt || 0)) return false; // een oudere kop overschrijft de stand niet
+  bean.stands = Object.assign({}, bean.stands || {}, { [rec.plan.methodId]: standFromRecord(rec) });
+  return true;
 }
 // R-08: de tekst van een openstaande "check eerst" voor een boon (of null).
 function pendingCheckTexts(bean){
@@ -12505,6 +12684,36 @@ function renderPrepNextAdjust(){
     <button type="button" class="link-secondary" id="prep-next-adjust-cancel">Toch niet</button>`;
   el.hidden = false;
 }
+function strengthWords(step){
+  if (!step) return 'standaard sterkte';
+  return `${Math.abs(step) === 0.5 ? 'een halve stap' : 'een stap'} ${step > 0 ? 'sterker' : 'lichter'}`;
+}
+function renderPrepStandNote(){
+  const el = document.getElementById('prep-stand-note');
+  if (!el) return;
+  const st = state.standApplied;
+  const base = state.recipe && state.recipe.grindStartingPoint;
+  const grindDiffers = st && typeof st.grindClick === 'number' && st.grindClick !== base;
+  const strengthDiffers = st && (st.strengthStep || 0) !== 0;
+  if (!st || st.method !== state.method || !(grindDiffers || strengthDiffers)){ el.hidden = true; el.innerHTML = ''; return; }
+  const when = st.brewCreatedAt ? new Date(st.brewCreatedAt).toLocaleDateString('nl-NL', { day:'numeric', month:'short' }) : '';
+  const bits = [typeof st.grindClick === 'number' ? `klik ${st.grindClick}` : null, strengthWords(st.strengthStep || 0)].filter(Boolean).join(' · ');
+  const meta = [when, st.liking ? `${st.liking}/5` : null].filter(Boolean).join(', ');
+  const doubt = (st.liking != null && st.liking <= 2) || st.check;
+  el.innerHTML = `<p class="prep-next-adjust-title">Jouw stand voor deze boon</p>
+    <p class="prep-next-adjust-text">${escapeHtml(bits)}</p>
+    <p class="prep-next-adjust-note">${doubt ? `Dit was je vorige kop${meta ? ` (${escapeHtml(meta)})` : ''} en die beviel niet. Wil je liever het basisrecept?` : `Zoals je vorige kop${meta ? ` (${escapeHtml(meta)})` : ''}. Staat hieronder al ingesteld.`}</p>
+    <button type="button" class="link-secondary" id="prep-stand-reset">Terug naar het basisrecept</button>`;
+  el.hidden = false;
+}
+// R-02: terug naar het basisrecept — de klaargezette stap uit de proefkaart blijft staan.
+function resetStandToBase(){
+  state.grindStand = null;
+  state.standApplied = null;
+  const p = pendingAdjustForState();
+  state.strengthAdjust = (p && p.lever === 'dose' && typeof p.toValue === 'number') ? p.toValue : 0;
+  renderPrep();
+}
 function renderPrepCheckNote(){
   const el = document.getElementById('prep-check-note');
   if (!el) return;
@@ -12556,6 +12765,7 @@ function renderPrep(){
   renderAbTrial(); // BC-10
   renderPrepNextAdjust(); // Fase 4
   renderPrepCheckNote(); // R-08
+  renderPrepStandNote(); // R-02
   // Sprint 6: "Zet je beste kop opnieuw" — methode, water, bypass en sterkte staan klaar;
   // de maalstand van toen staat hier (het recept hieronder blijft het recept van nu).
   const bestRefEl = document.getElementById('prep-best-ref');
@@ -12563,7 +12773,7 @@ function renderPrep(){
     const r = state.bestCupRef;
     const show = !!(r && r.beanId === state.beanId && r.method === state.method);
     bestRefEl.hidden = !show;
-    bestRefEl.textContent = show ? `★ Je beste kop (${r.liking}/5, ${r.dateText}): ${r.line}. Methode, water en sterkte van toen staan klaar.` : '';
+    bestRefEl.textContent = show ? `★ Je beste kop (${r.liking}/5, ${r.dateText}): ${r.line}. Methode, water, sterkte en maalstand van toen staan klaar.` : '';
   }
 
   document.getElementById('technique-line').textContent = techniqueDisplayLine(rec);
@@ -12748,10 +12958,14 @@ function renderPrep(){
   const pAdj = pendingAdjustForState();
   const grindAdjusted = !!(pAdj && pAdj.lever === 'grind' && pAdj.toValue != null && rec.grindMicron == null);
   const doseAdjusted = !!(pAdj && pAdj.lever === 'dose');
-  const grindValue = grindAdjusted ? `Klik ${pAdj.toValue}` : grindHeadline;
+  // R-02: geen klaargezette maalstap → je eigen stand van de vorige kop (ook op de Chemex, waar
+  // de app zelf geen klik weet).
+  const grindFromStand = !grindAdjusted && typeof state.grindStand === 'number' && rec.grindMicron == null && state.grindStand !== rec.grindStartingPoint;
+  const doseFromStand = !doseAdjusted && !!state.standApplied && (state.standApplied.strengthStep || 0) !== 0 && state.strengthAdjust === state.standApplied.strengthStep;
+  const grindValue = grindAdjusted ? `Klik ${pAdj.toValue}` : (grindFromStand || typeof state.grindStand === 'number') && rec.grindMicron == null && typeof state.grindStand === 'number' ? `Klik ${state.grindStand}` : grindHeadline;
   document.getElementById('stats-grid').innerHTML = `
     <div class="stat-block stat-block--hero${doseAdjusted ? ' stat-block--adjusted' : ''}"${stockWarning ? ' style="border-color:var(--danger);"' : ''}>
-      <div class="stat-label">${statIconDose}Gemalen koffie${doseAdjusted ? ' · jouw stap' : ''}</div>
+      <div class="stat-label">${statIconDose}Gemalen koffie${doseAdjusted ? ' · jouw stap' : doseFromStand ? ' · jouw stand' : ''}</div>
       <div class="stat-value">${fmt(rec.dose,1)} g</div>
       <div class="stat-sub">voor ${rec.water} ml${state.strengthAdjust ? ` · ${Math.abs(state.strengthAdjust) === 0.5 ? 'een halve stap' : 'een stap'} ${state.strengthAdjust > 0 ? 'sterker' : 'zwakker'}` : ''}${doseEdgeSub}</div>
       ${stockWarning}
@@ -12766,11 +12980,12 @@ function renderPrep(){
       <div class="stat-sub">${state.bypass ? `waarvan ${rec.pourWaterMl} ml door de koffie` : '± 50 ml per tik, of tik het getal'}</div>
     </div>
     <div class="stat-block stat-block--hero stat-block--grind${grindAdjusted ? ' stat-block--adjusted' : ''}">
-      <div class="stat-label">Maalgraad${grindAdjusted ? ' · jouw stap' : ''}</div>
+      <div class="stat-label">Maalgraad${grindAdjusted ? ' · jouw stap' : grindFromStand ? ' · jouw stand' : ''}</div>
       <div class="stat-value${/\d/.test(grindValue) ? '' : ' stat-value--word'}">${escapeHtml(grindValue)}</div>
       ${grindAdjusted ? `<div class="stat-sub stat-sub--adjusted">was ${escapeHtml(String(pAdj.fromValue))} · stap uit je vorige kop</div>` : ''}
+      ${grindFromStand ? `<div class="stat-sub stat-sub--adjusted">zoals je vorige kop${rec.grindStartingPoint != null && rec.grindStartingPoint !== state.grindStand ? ` · basisrecept: klik ${rec.grindStartingPoint}` : ''}</div>` : ''}
       ${rec.grindShortContact ? `<div class="stat-sub">1 klik fijner: kort schema (${fmtTime(rec.totalTime)})</div>` : ''}
-      ${rec.grindMicron == null && rec.grindStartingPoint != null && rec.grindStartingRange ? `<div class="stat-sub">${grindAdjusted ? '' : 'start hier · '}klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} is het startgebied</div><div class="stat-sub">zuur en snel door? fijner · bitter en traag? grover</div>` : ''}
+      ${rec.grindMicron == null && rec.grindStartingPoint != null && rec.grindStartingRange ? `<div class="stat-sub">${grindAdjusted || grindFromStand ? '' : 'start hier · '}klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} is het startgebied</div><div class="stat-sub">zuur en snel door? fijner · bitter en traag? grover</div>` : ''}
       ${rec.grindMicron == null && rec.grindStartingPoint == null && rec.grindBandLabel ? `<div class="stat-sub">${escapeHtml(rec.grindBandLabel)}</div>` : ''}
       ${batchHint ? `<div class="stat-sub" id="batch-hint">${escapeHtml(batchHint)}</div>` : ''}
       ${rec.grindMicron != null ? `<div class="stat-sub">stand ${rec.grindStand} · Timemore C3S Pro</div>` : ''}
@@ -14167,6 +14382,9 @@ document.getElementById('prep-bean-line').addEventListener('click', (e)=>{ // R-
     if (bean && !state.roastDate && bean.roastDate) state.roastDate = bean.roastDate;
     renderPrep();
   });
+});
+document.getElementById('prep-stand-note').addEventListener('click', (e)=>{ // R-02
+  if (e.target.closest('#prep-stand-reset')) resetStandToBase();
 });
 document.getElementById('prep-next-adjust').addEventListener('click', (e)=>{
   if (e.target.closest('#prep-next-adjust-cancel')) cancelPendingAdjust();

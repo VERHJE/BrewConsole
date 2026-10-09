@@ -1908,7 +1908,10 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await brewToCard(page);
       assert.equal(await page.locator('#screen-brewlog input[type="range"]').count(), 0);
       const questions = await page.locator('#tasting-card .tasting-q').allTextContents();
-      assert.equal(questions.length, 5, `actuals + 4 vragen, kreeg ${JSON.stringify(questions)}`);
+      // Review R-04: "Wat miste je?" staat in de kaart, maar verschijnt pas als stap bij een
+      // doel dat niet gehaald is of bij 4 of minder.
+      assert.equal(questions.length, 6, `actuals + 4 vragen + "wat miste je?", kreeg ${JSON.stringify(questions)}`);
+      assert.equal(await page.locator('[data-t-step="missed"]').isVisible(), false, 'nog geen "wat miste je?"-stap');
       assert.equal(await page.locator('[data-t-q="goalHit"]').count(), 0);
       assert.equal(await page.locator('[data-t-q="vsLast"]').count(), 0);
       assert.match(await page.locator('#tasting-gate').textContent(), /Nog open: sterkte, zuur, afdronk, hoe lekker/);
@@ -2107,7 +2110,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       const p = await pending(page);
       assert.deepEqual([p.lever, p.delta, p.fromValue, p.toValue], ['dose', 0.5, -1, -0.5]);
       const s = await store(page);
-      assert.deepEqual([s[1].recommendation.reasonKey, s[1].recommendation.rulesetVersion], ['halfway', 'diag-2026.2']);
+      assert.deepEqual([s[1].recommendation.reasonKey, s[1].recommendation.rulesetVersion], ['halfway', 'diag-2026.3']);
 
       await toPrep(page);
       assert.equal(await page.evaluate(() => state.strengthAdjust), -0.5);
@@ -3426,6 +3429,122 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.focus('.bean-card .bean-card-open');
       await page.keyboard.press('Enter');
       await assertBecomesActive(page, '#screen-bean-detail');
+      await page.close();
+    });
+  });
+
+
+  describe('Review Sprint B: de smaaklus sluiten', () => {
+    const BEAN = { id:'bean-rb', name:'RB Boon', roastLevel:'light', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:0 };
+    async function seeded(){
+      const page = await newTrackedPage();
+      await page.addInitScript((bean) => {
+        if (sessionStorage.getItem('rb')) return;
+        sessionStorage.setItem('rb', '1');
+        localStorage.setItem('brewconsole_beans', JSON.stringify([bean]));
+      }, BEAN);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      return page;
+    }
+    async function firstPrep(page){
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('#advisor-link');
+      await page.click('[data-bean-pick="bean-rb"]');
+      await page.click('#advice-batch [data-adv-batch="single"]');
+      await page.waitForFunction(() => getComputedStyle(document.getElementById('advice-result')).display !== 'none');
+      await page.click('#advice-cta');
+      await assertBecomesActive(page, '#screen-prep');
+    }
+    async function brewToCard(page){
+      await page.click('#start-btn');
+      await page.clock.fastForward('03:20');
+      await page.click('#bed-dry-btn');
+      await page.click('#brewlog-open-btn');
+      await assertBecomesActive(page, '#screen-brewlog');
+    }
+    const store = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_brews') || '[]'));
+
+    test('R-02: "Zet opnieuw" herhaalt je vorige kop — ook na een herstart: maalstand én sterkte; terug naar basis kan', async () => {
+      const page = await seeded();
+      await firstPrep(page);
+      const base = await page.evaluate(() => ({ grind: state.recipe.grindStartingPoint, dose: state.recipe.dose }));
+      await page.evaluate(() => { document.getElementById('refine-details').open = true; });
+      await page.click('#strength-chip [data-strength="-0.5"]');
+      await brewToCard(page);
+      await page.click('#actuals-edit-btn');
+      await page.fill('#brewlog-actual-grind', String(base.grind - 1));
+      await answerTasting(page, { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: '5' });
+      await saveLog(page);
+      assert.equal((await page.locator('#reco-card .reco-title').textContent()).trim(), 'Houd dit recept zo');
+      const stand = await page.evaluate(() => beanLibrary[0].stands.v60);
+      assert.deepEqual([stand.grindClick, stand.strengthStep, stand.liking], [base.grind - 1, -0.5, 5]);
+
+      await page.reload({ waitUntil: 'load' });
+      await page.click('[data-next-cup-go]');
+      await assertBecomesActive(page, '#screen-prep');
+      assert.equal(await page.evaluate(() => state.strengthAdjust), -0.5, 'sterkte van je vorige kop');
+      assert.match(await page.locator('#stats-grid').innerText(), new RegExp(`MAALGRAAD · JOUW STAND\\s*Klik ${base.grind - 1}`, 'i'));
+      assert.match(await page.locator('#stats-grid').innerText(), /Gemalen koffie · jouw stand/i);
+      assert.match(await page.locator('#prep-stand-note').innerText(), new RegExp(`klik ${base.grind - 1} · een halve stap lichter`));
+      await page.click('#start-btn');
+      await page.clock.fastForward('03:20');
+      await page.click('#bed-dry-btn');
+      const s = await store(page);
+      assert.equal(s[1].plan.grindTarget, base.grind - 1, 'de stand gaat mee in het plan');
+      assert.equal(s[1].plan.strengthStep, -0.5);
+      await page.click('#brewlog-open-btn');
+      await page.click('#actuals-planned-btn');
+      await answerTasting(page, { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: '5', vsLast: 'same' });
+      await saveLog(page);
+      assert.equal((await store(page))[1].actual.grindClick, base.grind - 1, '"zoals gepland" = jouw stand');
+
+      // Terug naar het basisrecept.
+      await page.click('#brewlog-home-btn');
+      await page.click('[data-next-cup-go]');
+      await page.click('#prep-stand-reset');
+      assert.equal(await page.evaluate(() => state.strengthAdjust), 0);
+      assert.equal(await page.evaluate(() => state.recipe.dose), base.dose);
+      assert.equal(await page.locator('#prep-stand-note').isVisible(), false);
+      assert.doesNotMatch(await page.locator('#stats-grid').innerText(), /jouw stand/i);
+      await page.close();
+    });
+
+    test('R-04: "Wat miste je?" verschijnt bij een doel dat net niet gehaald is en geeft een halve stap lichter bij "meer fruit"', async () => {
+      const page = await seeded();
+      await firstPrep(page);
+      await page.click('#prep-goal [data-goal="bright"]');
+      await brewToCard(page);
+      await page.click('#actuals-planned-btn');
+      assert.equal(await page.locator('[data-t-step="missed"]').isVisible(), false);
+      await answerTasting(page, { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: '4', goalHit: 'almost' });
+      assert.equal(await page.locator('[data-t-step="missed"]').isVisible(), true, 'de vraag komt erbij');
+      assert.match(await page.locator('#tasting-progress-label').textContent(), /van 6/);
+      await page.click('[data-t-step="missed"]');
+      assert.match(await page.locator('#tasting-card').innerText(), /Wat miste je\?/);
+      await page.click('[data-t-q="missed"][data-t-v="fruit"]');
+      await saveLog(page);
+      assert.match((await page.locator('#reco-card .reco-title').textContent()).trim(), /^Een halve stap lichter: ~4% minder koffie/);
+      assert.match(await page.locator('#reco-card').innerText(), /Je miste fruit en helderheid/);
+      assert.match(await page.locator('#reco-card').innerText(), /Vul je water in bij Instellingen/);
+      const s = await store(page);
+      assert.equal(s[0].tasting.missed, 'fruit');
+      assert.equal(s[0].recommendation.reasonKey, 'goal_fruit');
+      await page.click('#reco-apply-btn');
+      await page.click('#brewlog-home-btn');
+      await page.click('[data-next-cup-go]');
+      assert.equal(await page.evaluate(() => state.strengthAdjust), -0.5);
+      await page.close();
+    });
+
+    test('R-03: te sterk + scherp + droog → minder koffie met giettip (niet langer alleen "check je gieten")', async () => {
+      const page = await seeded();
+      await firstPrep(page);
+      await brewToCard(page);
+      await page.click('#actuals-planned-btn');
+      await answerTasting(page, { strength: 'too_strong', acidity: 'sharp', finish: ['drying'], liking: '2' });
+      await saveLog(page);
+      assert.match((await page.locator('#reco-card .reco-title').textContent()).trim(), /^Een stap lichter/);
+      assert.match(await page.locator('#reco-card').innerText(), /giet rustig en houd het bed vlak/);
       await page.close();
     });
   });
