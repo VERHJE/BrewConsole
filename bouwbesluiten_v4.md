@@ -86,3 +86,28 @@ Vastgelegd bij de implementatie van `Implementatieplan Bypass v1.0` (`claude_Imp
 ## Testresultaten
 
 383/383 tests groen (`npm run qa`), inclusief 5 nieuwe tests specifiek voor dit plan (`bypassAdvice()`-klemgedrag, `computeRecipe()`'s 13e argument, vervuilingsregel 4, de Chemex-hide-guard, en een volledige rondgang met 40% bypass van percentagekeuze tot opgeslagen logvelden).
+
+# Bouwbesluit — halve sterktestap (diag-2026.2)
+
+Vastgelegd bij de wijziging die uit een gebruikersmelding kwam: de standaard miste de heldere, fruitige smaak; het advies "een stap lichter" (−8% koffie) was te slap; er bestond geen stand daartussen om te kiezen of om geadviseerd te krijgen.
+
+## Besluit (vooraf voorgelegd aan Jelle, akkoord gekregen)
+
+| # | Besluit | Genomen keuze | Motivering |
+| --- | --- | --- | --- |
+| **Halve stap** | Alleen zelf kunnen kiezen, of ook als advies? | **Kiezen én advies.** | Alleen kiezen laat de adviesketen in een doodlopende straat: na een hele stap die te ver ging, zei de app "herhaal deze stand eerst" of ging hij helemaal terug naar de standaard — de kop die het doel al miste. Het midden is dan de logische volgende test. De stapgrootte is de helft van de bestaande 8% (eigen keuze, geen evidence-claim, net als de hele stap). |
+
+## Wat is gebouwd
+
+- **Kiezen:** `strengthAdjust` loopt over −1, −½, 0, +½, +1 (dosis −8%, −4%, standaard, +4%, +8%; watervolume blijft gelijk). `computeRecipe()` rondt af op het halve-stappenraster; de dosisklem (15–22 g, B-1) blijft gelden en meldt een klem zoals voorheen. De chiprij op het receptscherm heeft vijf standen.
+- **Advies:** zit je op −8% of +8% en wijst het oordeel terug naar standaard ("te slap" / "te sterk", of "slechter dan de vorige"), dan adviseert de app eerst de halve stap (±4%) i.p.v. "herhaal" of helemaal terug. Bij "veel te slap/sterk" blijft het een hele stap terug. Een halve stap wordt nooit direct weer teruggedraaid (hysteresis). Is de halve stap niet haalbaar (geen effect op de dosis), dan geldt het oude gedrag. Een stap loopt nooit dwars over standaard heen (`landStrength()`).
+- **Teksten:** "Een halve stap sterker/lichter: ~4% meer/minder koffie (van → naar in gram)", met uitleg waarom het midden (`halfway` / `halfway_worse`).
+- `DIAGNOSIS_RULESET_VERSION` `diag-2026.1` → `diag-2026.2`. De advies-poort (≥20 getest, ≥65% gelukt, ≤15% schade) filtert niet op versie en telt een halve stap als elke andere stap mee.
+
+## Wat hierdoor niet verandert
+
+Elk bestaand recept (standaard en ±8%) blijft byte-identiek (golden fixtures, B-1-sweep, FORBIDDEN-edges en break-it-matrix lopen nu ook over ±4% en blijven groen). Advies vanaf standaard, na "veel te …" en bij maalstappen is ongewijzigd. De blinde helder-proef (A/B) blijft 0 tegen −8%.
+
+## Testresultaten
+
+808/808 tests groen (`npm run qa`), inclusief 12 nieuwe pure tests (advieskeuzes, landing op het raster, teksten, dosis, poortstatistiek) en 2 browsertests (vijf chips op één regel, volledige cyclus −8% → halve stap → ingesteld → getest "beter" → houd zo).

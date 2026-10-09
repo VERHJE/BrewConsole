@@ -917,7 +917,7 @@ describe('Reparatieplan v4.0 — Fase A (eerlijkheidsherstel)', () => {
 describe('B-1 — sterktehendel respecteert het harde dosisplafond (bevinding E-02)', () => {
   test('dosis blijft over het HELE geldige volumebereik en alle sterktestappen binnen 15–22 g (V60)', () => {
     for (let v = 265; v <= 380; v += 5){
-      for (const st of [-1, 0, 1]){
+      for (const st of [-1, -0.5, 0, 0.5, 1]){
         const rec = api.computeRecipe('v60','medium','klassiek',v,null,false,null,null,false,null,null,st);
         if (rec.dose === 0) continue;
         assert.ok(rec.dose >= 14.999 && rec.dose <= 22.001,

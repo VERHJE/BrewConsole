@@ -29,7 +29,7 @@ describe('FORBIDDEN edges — proces/hoogte/hardheid veranderen geen receptgetal
         const only = api.PROFILE_INFO[p].methodOnly;
         if (only && only !== m) continue;
         for (const roast of ['light', 'medium', 'dark']){
-          for (const st of [-1, 0, 1]){
+          for (const st of [-1, -0.5, 0, 0.5, 1]){
             const vol = m === 'v60' ? 300 : 600;
             const base = signature(api.computeRecipe(m, roast, p, vol, 'washed', false, 10, null, false, false, null, st));
             for (const proc of processes){
