@@ -3071,6 +3071,86 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       }
     });
 
+    test('splash: staand scherm toont splash-tall (zonder bijsnijden op een telefoon), liggend de brede foto', async () => {
+      for (const c of [
+        { viewport: { width: 390, height: 844 }, file: 'splash-tall.webp', fits: true },
+        { viewport: { width: 320, height: 640 }, file: 'splash-tall.webp', fits: false },
+        { viewport: { width: 1280, height: 800 }, file: 'splash-wide.webp', fits: false },
+      ]){
+        const page = await newTrackedPage({ viewport: c.viewport });
+        await page.goto(FILE_URL, { waitUntil: 'load' });
+        await page.waitForFunction(() => { const i = document.querySelector('.splash-bg'); return i.complete && i.naturalWidth > 0; });
+        const m = await page.evaluate(() => {
+          const i = document.querySelector('.splash-bg'); const r = i.getBoundingClientRect();
+          return { src: i.currentSrc, w: i.naturalWidth, shown: r.width / r.height, img: i.naturalWidth / i.naturalHeight };
+        });
+        assert.ok(m.src.endsWith('/' + c.file), `${c.viewport.width}: verwachtte ${c.file}, kreeg ${m.src}`);
+        if (c.fits) assert.ok(Math.abs(m.shown - m.img) < 0.03, `${c.viewport.width}: vlak ${m.shown.toFixed(2)} vs foto ${m.img.toFixed(2)} — splash wordt bijgesneden`);
+        await page.close();
+      }
+    });
+
+    test('zetscherm: staande foto op een telefoon, vierkante op tablet en desktop, per methode de eigen foto', async () => {
+      for (const c of [
+        { viewport: { width: 390, height: 844 }, kind: 'tall' },
+        { viewport: { width: 820, height: 1180 }, kind: 'square' },
+        { viewport: { width: 1280, height: 800 }, kind: 'square' },
+      ]){
+        for (const method of ['v60', 'chemex']){
+          const page = await newTrackedPage({ viewport: c.viewport });
+          await page.goto(FILE_URL, { waitUntil: 'load' });
+          await toPrep(page, method);
+          await page.click('#start-btn');
+          await assertBecomesActive(page, '#screen-brew');
+          await page.waitForFunction(() => { const i = document.getElementById('brew-hero-img'); return i.complete && i.naturalWidth > 0; });
+          const src = await page.evaluate(() => document.getElementById('brew-hero-img').currentSrc);
+          assert.ok(src.endsWith(`/brew-${method}-${c.kind}.webp`), `${c.viewport.width} ${method}: verwachtte brew-${method}-${c.kind}.webp, kreeg ${src}`);
+          await page.close();
+        }
+      }
+    });
+
+    test('Home-hero en lege logboekstaat tonen hun foto', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.waitForFunction(() => { const i = document.querySelector('#home-hero img'); return i.complete && i.naturalWidth > 0; });
+      assert.ok((await page.evaluate(() => document.querySelector('#home-hero img').currentSrc)).endsWith('/home-hero.webp'));
+      await page.click('.navbar [data-nav="brewlog-history"]');
+      await page.waitForFunction(() => { const i = document.querySelector('#brewlog-history-list img'); return !!i && i.complete && i.naturalWidth > 0; });
+      assert.ok((await page.evaluate(() => document.querySelector('#brewlog-history-list img').currentSrc)).endsWith('/logbook-empty.webp'));
+      await page.close();
+    });
+
+    test('branding-foto per boon: lijst, Home-strip en bonendetail tonen de foto van zijn brandingsgraad; roastkaarten ook', async () => {
+      const mk = (id, name, roastLevel, addedAt) => ({ id, name, roastLevel, profileKey: 'klassiek', process: 'washed', flavorNotes: [], addedAt, doseUsedG: 0 });
+      const beans = [mk('b-light', 'Lichte boon', 'light', 1), mk('b-dark', 'Donkere boon', 'dark', 2), mk('b-none', 'Zonder brandingsgraad', null, 3)];
+      const want = { 'b-light': 'roast-light.webp', 'b-dark': 'roast-dark.webp', 'b-none': 'roast-medium.webp' };
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.addInitScript((b) => localStorage.setItem('brewconsole_beans', JSON.stringify(b)), beans);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      const srcs = (sel) => page.evaluate((sel) => [...document.querySelectorAll(sel)].map(el => ({ id: el.closest('[data-open-detail]').getAttribute('data-open-detail'), src: el.querySelector('img').currentSrc.split('/').pop() })), sel);
+      for (const row of await srcs('#home-beans-strip [data-open-detail] .photo-slot')) assert.equal(row.src, want[row.id], `Home-strip ${row.id}`);
+      await page.click('.navbar [data-nav="beans"]');
+      const list = await srcs('.bean-card[data-open-detail] .photo-slot');
+      assert.equal(list.length, 3);
+      for (const row of list) assert.equal(row.src, want[row.id], `bonenlijst ${row.id}`);
+      for (const id of ['b-dark', 'b-light']){
+        await page.click(`.bean-card[data-open-detail="${id}"]`);
+        await assertBecomesActive(page, '#screen-bean-detail');
+        const d = await page.evaluate(() => ({ src: document.getElementById('bean-detail-photo').src.split('/').pop(), icon: getComputedStyle(document.querySelector('#screen-bean-detail .photo-slot svg')).display }));
+        assert.equal(d.src, want[id], `bonendetail ${id}`);
+        assert.equal(d.icon, 'none', 'geen druppel-icoon over de foto');
+        await page.click('#screen-bean-detail [data-back="beans"]');
+        await assertBecomesActive(page, '#screen-beans');
+      }
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('[data-method="v60"]');
+      await page.waitForFunction(() => [...document.querySelectorAll('#roast-grid img')].every(i => i.complete && i.naturalWidth > 0));
+      const grid = await page.evaluate(() => [...document.querySelectorAll('#roast-grid [data-roast]')].map(c => [c.getAttribute('data-roast'), c.querySelector('img').currentSrc.split('/').pop()]));
+      assert.deepEqual(grid, ['light', 'light_medium', 'medium', 'medium_dark', 'dark'].map(r => [r, `roast-${r}.webp`]));
+      await page.close();
+    });
+
     test('desktop: de getallengrid blijft binnen de receptkolom', async () => {
       const page = await newTrackedPage({ viewport: { width: 1280, height: 720 } });
       await page.goto(FILE_URL, { waitUntil: 'load' });
