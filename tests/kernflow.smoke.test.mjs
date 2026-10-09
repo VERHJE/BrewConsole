@@ -3549,6 +3549,52 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     });
   });
 
+
+  describe('Review ideeën 5, 6 en 7: deze zak en per brander', () => {
+    test('boondetail toont drinkvenster, zak-samenvatting, beste kop van de zak en "Bij deze brander"', async () => {
+      const page = await newTrackedPage();
+      const day = 86400000;
+      const roastDate = new Date(Date.now() - 10 * day).toISOString().slice(0, 10);
+      await page.addInitScript((roastDate) => {
+        if (sessionStorage.getItem('z')) return;
+        sessionStorage.setItem('z', '1');
+        const beans = [
+          { id:'bz1', name:'Zak Een', roaster:'Kawa Coffee Roasters', roastLevel:'light', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:40, bagSizeG:250, roastDate, lastBrew:{ method:'v60', waterMl:300, bypass:false, bypassPct:null } },
+          { id:'bz2', name:'Zak Twee', roaster:'Kawa Coffee Roasters', roastLevel:'light', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:20 }
+        ];
+        const rec = (id, beanId, liking, grind, at) => ({ id, schemaVersion: 6, createdAt: at, updatedAt: at, lifecycle: 'logged', beanId, beanSnapshot: null, equipment: {}, waterSnapshot: null, goal: null,
+          plan: { methodId: 'v60', profileId: 'klassiek', roastId: 'light', waterMl: 300, doseG: 20, ratioText: '1:15', tempC: 95, grindStartingPoint: 15, grindTarget: grind, strengthStep: 0, bypass: null, steps: [], expectedTotalSec: 210, inputs: null, appliedAdjust: null },
+          actual: { doseG: 20, doseSource: 'U', grindClick: grind, grindSource: 'U', confirmed: true, events: [], bedDrySec: 220, completedAt: at },
+          derived: {}, tasting: { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking, complete: true, approved: liking >= 4 }, diagnosis: null,
+          recommendation: { type: 'KEEP' }, flags: {}, favorite: false, sideEffectsAppliedAt: at, deletedAt: null });
+        localStorage.setItem('brewconsole_beans', JSON.stringify(beans));
+        localStorage.setItem('brewconsole_brews', JSON.stringify([rec('r1', 'bz1', 3, 15, 1000), rec('r2', 'bz1', 5, 14, 2000), rec('r3', 'bz2', 4, 14, 3000)]));
+      }, roastDate);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.click('.navbar [data-nav="beans"]');
+      await page.click('.bean-card[data-open-detail="bz1"] .bean-card-open');
+      await assertBecomesActive(page, '#screen-bean-detail');
+      const bag = await page.locator('#bean-detail-bag').innerText();
+      assert.match(bag, /Drinkvenster \(vuistregel\)/);
+      assert.match(bag, /nu dag 10: in het venster, nog 12 dagen/);
+      assert.match(bag, /2 koppen gezet · gemiddeld 4,0\/5 · nog ± 210 g \(± 10 koppen\)/);
+      assert.match(bag, /★ Beste kop van deze zak: 5\/5/);
+      assert.match(bag, /klik 14/);
+      assert.equal(await page.locator('#bean-detail-best-brew-block').isVisible(), false, 'geen dubbele beste-kop-kaart');
+      const roaster = await page.locator('#bean-detail-roaster-block').innerText();
+      assert.match(roaster, /Bij Kawa Coffee Roasters/);
+      assert.match(roaster, /2 bonen, 3 koppen/);
+      assert.match(roaster, /1 klik fijner dan de startklik/);
+      await page.click('#bean-detail-bag-best-again');
+      await assertBecomesActive(page, '#screen-prep');
+      assert.equal(await page.evaluate(() => state.grindStand), 14, 'de maalstand van de beste kop staat klaar');
+      await page.click('.navbar [data-nav="brewlog-history"]');
+      await page.click('[data-tab="statistieken"]');
+      assert.match(await page.locator('#roaster-overview').innerText(), /Kawa Coffee Roasters · 2 bonen · 3 koppen/);
+      await page.close();
+    });
+  });
+
   test('Geen console- of pageerrors opgetreden tijdens de hele kernflow', () => {
     assert.deepEqual(consoleErrors, [], 'Onverwachte console.error()-aanroepen tijdens de kernflow');
     assert.deepEqual(pageErrors, [], 'Onverwachte onafgevangen JS-fouten tijdens de kernflow');

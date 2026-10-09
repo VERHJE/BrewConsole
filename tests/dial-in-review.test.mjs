@@ -192,3 +192,45 @@ describe('R-11: Chemex standaard 500 ml', () => {
     assert.match(r.notes, /alleen beschreven voor brouwsels tot \d+ ml/);
   });
 });
+
+describe('Ideeën 5 + 6: deze zak (drinkvenster en beste kop)', () => {
+  const NOW = new Date('2026-10-09T09:00:00').getTime();
+  test('drinkvenster = dag 7 t/m 21 na branden (de bestaande versheidstabel)', () => {
+    const w = api.drinkWindowFor('2026-09-28', NOW);
+    assert.deepEqual([w.day, w.start, w.end, w.state, w.daysLeft], [11, 7, 21, 'in', 11]);
+    assert.equal(api.drinkWindowFor('2026-10-06', NOW).state, 'resting');
+    assert.equal(api.drinkWindowFor('2026-10-06', NOW).daysToStart, 4);
+    assert.equal(api.drinkWindowFor('2026-09-10', NOW).state, 'past');
+    assert.equal(api.drinkWindowFor('2026-08-01', NOW).state, 'old');
+    assert.equal(api.drinkWindowFor(null, NOW), null);
+  });
+  test('zak-samenvatting: koppen, gemiddeld, voorraad en de beste kop', () => {
+    const bean = { id: 'z', bagSizeG: 250, doseUsedG: 60 };
+    const rec = (id, liking, at) => ({ id, beanId: 'z', lifecycle: 'logged', createdAt: at, plan: { methodId: 'v60', doseG: 20 }, tasting: { liking, approved: liking >= 4 } });
+    const sum = j(api.bagSummaryFor(bean, [rec('a', 3, 1), rec('b', 5, 2), rec('c', 4, 3), { id: 'x', beanId: 'z', lifecycle: 'logged', deletedAt: 5 }]));
+    assert.equal(sum.cups, 3);
+    assert.equal(sum.avgLiking, 4);
+    assert.equal(sum.remainingG, 190);
+    assert.equal(sum.best.id, 'b');
+    assert.equal(sum.empty, false);
+    assert.equal(api.bagSummaryFor({ id: 'z', bagSizeG: 250, doseUsedG: 260 }, []).empty, true);
+  });
+});
+
+describe('Idee 7: per brander (alleen weergave)', () => {
+  const beans = [{ id: 'a', roaster: 'Kawa Coffee Roasters' }, { id: 'b', roaster: '  kawa coffee  roasters ' }, { id: 'c', roaster: 'Andere' }];
+  const rec = (id, beanId, liking, grind, base) => ({ id, beanId, lifecycle: 'logged', createdAt: 1,
+    plan: { methodId: 'v60', grindStartingPoint: base, grindTarget: grind }, actual: { grindSource: 'U', grindClick: grind }, tasting: { liking } });
+  test('telt bonen en koppen per brander (naam zonder hoofdletter-/spatieverschil) en de mediane klik t.o.v. de start', () => {
+    const s = j(api.roasterSummary('KAWA coffee roasters', beans, [rec('1', 'a', 5, 14, 15), rec('2', 'b', 4, 14, 16), rec('3', 'a', 2, 17, 15), rec('4', 'c', 5, 10, 15)]));
+    assert.deepEqual([s.beans, s.cups, s.goodCups, s.offsetN, s.medianOffset], [2, 3, 2, 2, -1]);
+    assert.ok(Math.abs(s.avgLiking - 11 / 3) < 1e-9);
+    const t = api.roasterSummaryText('Kawa Coffee Roasters', s);
+    assert.match(t, /Van Kawa Coffee Roasters zette je 2 bonen, 3 koppen, gemiddeld 3,7\/5\./);
+    assert.match(t, /1 klik fijner dan de startklik/);
+    assert.match(t, /de app past hier zelf niets op aan/);
+  });
+  test('geen brander → niets', () => {
+    assert.equal(api.roasterSummary('', beans, []), null);
+  });
+});

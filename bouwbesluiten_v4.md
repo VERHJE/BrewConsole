@@ -166,3 +166,11 @@ Geen enkel engine-receptgetal (golden fixtures, FORBIDDEN-edges en de break-it-m
 # Expertreview oktober 2026 — Chemex standaard 500 ml (R-11)
 
 Akkoord gekregen (receptgetal: de standaardhoeveelheid). De Chemex start voortaan op 500 ml i.p.v. de engine-standaard van 300 ml (dezelfde als de V60): een dun bed in de grote kegel loopt te snel door, wat de app zelf al als "klein brouwsel" meldde. Dosis en ratio volgen uit hetzelfde doelvenster (500 ml → 28,8 g, 1:17,4). Daarbij: op de Chemex staat de maalgraad niet meer dubbel ("middelgrof middelgrof"), en zonder bekend klikgetal zegt de tegel dat de app jouw klik onthoudt als je hem na het zetten invult (zie R-02). Een overlay die niet bij de hoeveelheid past (Rao Chemex tot een vast maximum) toonde een interne Engelse engine-code; die wordt nu in gewone taal uitgelegd.
+
+# Expertreview oktober 2026 — ideeën 5, 6 en 7 (deze zak, per brander)
+
+Gekozen uit de brainstorm. Geen van drieën verandert een receptgetal of adviesregel.
+
+- **Drinkvenster per zak (idee 5).** Bewust de bestaande versheidstabel: "uitgerust" = dag 7 t/m 21 na branden (`drinkWindowFor()`). Op de boondetail als vuistregel, nooit als meting ("Proef zelf"), met de rustdagen ervoor en een melding als je meer koppen over hebt dan dagen in het venster. Een roast-afhankelijk venster is bewust niet gebouwd: dat zou de versheidsmelding op het receptscherm tegenspreken.
+- **Deze zak (idee 6).** Aantal koppen, gemiddeld oordeel, voorraad en de beste kop van de zak (`bagSummaryFor()`, `bestCupOf()`), met "Zet deze kop opnieuw" (inclusief de maalstand, zie R-02). Bij een lege zak: bewaar deze stand voor als je de boon opnieuw koopt.
+- **Per brander (idee 7), alleen weergave.** Nieuw veld Brander op de boon (zie R-17). Op de boondetail en onder Statistieken: hoeveel bonen en koppen van die brander, gemiddeld oordeel, en waar je goede koppen meestal lagen t.o.v. de startklik (`roasterSummary()`). Dit stuurt bewust niets: leren uit je koppen (een startklik per brander voorstellen) hoort bij Fase 5 en wacht op de adviespoort.

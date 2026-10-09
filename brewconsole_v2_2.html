@@ -2264,6 +2264,15 @@
              sterrencijfer (Bouwbesluit B2 verwijderde eerder al zo'n composietscore) —
              getoond volgens de exacte regels uit de spec (0/1/meerdere-met-favoriet-logs),
              zie renderBeanDetailBestBrew(). -->
+        <!-- Expertreview, ideeën 5 + 6: "Deze zak" — drinkvenster (vuistregel), wat je van deze
+             zak zette en je beste kop ervan, met één tik om die opnieuw te zetten. -->
+        <div class="best-brew-card bag-card" id="bean-detail-bag" hidden>
+          <div class="best-brew-header">
+            <div class="best-brew-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M6 7h12l-1 13H7L6 7Z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg></div>
+            <p class="bean-detail-section-label" style="margin:0;">Deze zak</p>
+          </div>
+          <div id="bean-detail-bag-body"></div>
+        </div>
         <div class="best-brew-card" id="bean-detail-best-brew-block" hidden>
           <div class="best-brew-header">
             <div class="best-brew-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg></div>
@@ -2278,6 +2287,16 @@
              renderBeanDetailPersonalSignal(). -->
         <!-- HERZIEN (visuele afstemming referentiebeeld "Jouw signaal"): zelfde
              prep-intel-card-vorm als op het Recept-scherm — tekst/bron ongewijzigd. -->
+        <!-- Expertreview idee 7: "Bij deze brander" — alleen weergave van je eigen koppen met
+             bonen van dezelfde brander. Stuurt geen recept: leren uit je koppen wacht op de
+             adviespoort (Fase 5). -->
+        <div class="prep-intel-card" id="bean-detail-roaster-block" hidden>
+          <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/></svg></div>
+          <div class="prep-intel-body">
+            <p class="prep-intel-title" style="margin-bottom:5px;" id="bean-detail-roaster-title">Bij deze brander</p>
+            <p class="bean-detail-about" id="bean-detail-roaster-text" style="margin:0;"></p>
+          </div>
+        </div>
         <div class="prep-intel-card" id="bean-detail-personal-signal-block" hidden>
           <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 18 L9 11 L13 14 L20 5"/><path d="M15 5h5v5"/></svg></div>
           <div class="prep-intel-body">
@@ -8269,6 +8288,19 @@ function renderAdviceOutcomeSection(st){
 // dezelfde functie/tellingen ook in de nieuwe "Statistieken"-tab (Geschiedenis-scherm)
 // kunnen renderen, i.p.v. een tweede kopie van deze functie te onderhouden. Het losse
 // Inzichten-scherm is vervallen; #history-stats-body is nu het enige doel.
+// Idee 7: "Per brander" onder Statistieken — alleen branders met gezette koppen.
+function renderRoasterOverview(){
+  const names = new Map();
+  beanLibrary.forEach(b => { const k = normRoaster(b.roaster); if (k && !names.has(k)) names.set(k, b.roaster.trim()); });
+  const rows = [...names.values()].map(n => ({ n, s: roasterSummary(n, beanLibrary, brewStore) })).filter(x => x.s && x.s.cups > 0)
+    .sort((a, b) => b.s.cups - a.s.cups);
+  if (!rows.length) return '';
+  return `<div class="bean-detail-section" id="roaster-overview" style="margin-top:18px;">
+      <p class="bean-detail-section-label">Per brander</p>
+      ${rows.map(x => `<p class="insights-note" style="margin:0 0 6px;"><strong style="color:var(--text);">${escapeHtml(x.n)}</strong> · ${x.s.beans} ${x.s.beans === 1 ? 'boon' : 'bonen'} · ${x.s.cups} ${x.s.cups === 1 ? 'kop' : 'koppen'}${x.s.avgLiking != null ? ` · gemiddeld ${escapeHtml(fmt(x.s.avgLiking, 1))}/5` : ''}${x.s.offsetN >= 2 && x.s.medianOffset ? ` · goede koppen meestal ${Math.abs(x.s.medianOffset)} klik ${x.s.medianOffset < 0 ? 'fijner' : 'grover'}` : ''}</p>`).join('')}
+      <p class="insights-note" style="margin:6px 0 0;">Alleen ter info, uit je eigen koppen. De app past hier niets op aan.</p>
+    </div>`;
+}
 function renderInsightsScreen(targetId){
   const el = document.getElementById(targetId || 'history-stats-body');
   if (!el) return;
@@ -8298,6 +8330,7 @@ function renderInsightsScreen(targetId){
   </div>`;
 
   html += renderAdviceOutcomeSection(adviceOutcomeStats(brewStore));
+  html += renderRoasterOverview();
 
   if (brewLog.length < MIN_TREND_N){
     html += `<div class="insights-empty" style="margin-top:14px;">Nog ${MIN_TREND_N - brewLog.length} ${MIN_TREND_N - brewLog.length === 1 ? 'logging' : 'loggings'} tot een persoonlijk signaal (minimaal ${MIN_TREND_N}) — tot die tijd bewust geen trend, dat zou ruis zijn.</div>`;
@@ -8425,6 +8458,7 @@ function renderBeanDetail(bean){
   // NIEUW (visuele afstemming referentiebeeld): klein icoon per feit — puur decoratief,
   // labels/waarden/volgorde ongewijzigd. FACT_ROW_ICONS staat hieronder in het script.
   const facts = [
+    ['Brander', bean.roaster || '—'],
     ['Land', bean.country || '—'],
     ['Regio', bean.region || '—'],
     ['Hoogte', bean.altitude ? bean.altitude + ' m' : '—'],
@@ -8445,8 +8479,12 @@ function renderBeanDetail(bean){
   ).join('');
 
   renderBeanDetailRadar(bean.id);
+  const bag = renderBeanDetailBag(bean); // ideeën 5 + 6
   renderBeanDetailBestBrew(bean);
+  // De beste kop staat nu op de zakkaart; het oude blok alleen nog als die er (nog) geen heeft.
+  if (bag && bag.best){ const old = document.getElementById('bean-detail-best-brew-block'); if (old) old.hidden = true; }
   renderBeanDetailPersonalSignal(bean.id);
+  renderBeanDetailRoaster(bean); // idee 7
   renderBeanDetailHistoryTab(bean.id);
   renderBeanDetailRecipesTab(bean.id);
 }
@@ -8480,6 +8518,125 @@ function renderBeanDetailPersonalSignal(beanId){
 //                           worden gemaakt").
 // method/dose/water/temp/grind/time komen 1-op-1 uit het gekozen logging-record, nooit
 // herberekend. CTA's hergebruiken de bestaande brewAgain()/tab-navigatie, geen nieuwe flow.
+/* Expertreview idee 5: drinkvenster per zak. Bewust de bestaande versheidstabel (FRESHNESS_TIERS):
+   "uitgerust" = dag 7 t/m 21 na branden. Een vuistregel, geen meting — zo staat het er ook. */
+function drinkWindowFor(roastDateStr, nowMs){
+  const days = roastDateStr ? daysSinceRoastAt(roastDateStr, nowMs) : null;
+  if (days == null) return null;
+  const restEnd = FRESHNESS_TIERS.find(t => t.key === 'fresh').maxDays;     // 6
+  const peakEnd = FRESHNESS_TIERS.find(t => t.key === 'optimal').maxDays;   // 21
+  const oldEnd = FRESHNESS_TIERS.find(t => t.key === 'old').maxDays;        // 42
+  const start = restEnd + 1, end = peakEnd;
+  const state = days < start ? 'resting' : days <= end ? 'in' : days <= oldEnd ? 'past' : 'old';
+  const roast = new Date(roastDateStr + 'T00:00:00');
+  const dayDate = (n) => new Date(roast.getTime() + n * 86400000);
+  return { day: days, start, end, state, startDate: dayDate(start), endDate: dayDate(end),
+    daysToStart: Math.max(0, start - days), daysLeft: Math.max(0, end - days + 1) };
+}
+function daysSinceRoastAt(dateStr, nowMs){
+  const roast = new Date(dateStr + 'T00:00:00');
+  if (isNaN(roast.getTime())) return null;
+  const today = new Date(nowMs != null ? nowMs : Date.now());
+  today.setHours(0,0,0,0);
+  return Math.round((today - roast) / 86400000);
+}
+// Idee 6: wat je van deze zak zette — aantal koppen, gemiddeld oordeel, voorraad en de beste kop.
+function bagSummaryFor(bean, store){
+  const recs = (store || []).filter(r => r && r.beanId === bean.id && isBrewInLogView(r));
+  const liked = recs.filter(r => r.tasting && typeof r.tasting.liking === 'number');
+  const avg = liked.length ? liked.reduce((a, r) => a + r.tasting.liking, 0) / liked.length : null;
+  const remainingG = bean.bagSizeG ? Math.round((bean.bagSizeG - (bean.doseUsedG || 0)) * 10) / 10 : null;
+  const lastDose = beanLastDoseG(bean);
+  const cupsLeft = remainingG != null && lastDose ? Math.max(0, Math.floor(remainingG / lastDose)) : null;
+  return { cups: recs.length, avgLiking: avg, remainingG, cupsLeft, best: bestCupOf(recs), empty: remainingG != null && remainingG <= 0 };
+}
+function renderBeanDetailBag(bean){
+  const block = document.getElementById('bean-detail-bag');
+  const body = document.getElementById('bean-detail-bag-body');
+  if (!block || !body) return null;
+  const dw = drinkWindowFor(bean.roastDate, Date.now());
+  const sum = bagSummaryFor(bean, brewStore);
+  const d = (x) => x.toLocaleDateString('nl-NL', { day:'numeric', month:'short' });
+  const lines = [];
+  if (dw){
+    const head = `Drinkvenster (vuistregel): ${d(dw.startDate)} – ${d(dw.endDate)}`;
+    const now = dw.state === 'resting' ? `nu dag ${dw.day}: nog ${dw.daysToStart} ${dw.daysToStart === 1 ? 'dag' : 'dagen'} rusten. Zetten kan al, de bloom is dan onrustiger.`
+      : dw.state === 'in' ? `nu dag ${dw.day}: in het venster, nog ${dw.daysLeft} ${dw.daysLeft === 1 ? 'dag' : 'dagen'}.`
+      : dw.state === 'past' ? `nu dag ${dw.day}: voorbij het venster, verwacht minder frisse topnoten.`
+      : `nu dag ${dw.day}: waarschijnlijk voorbij de piek.`;
+    lines.push(`<p class="bean-detail-best-brew-facts">${escapeHtml(head)}</p><p class="bean-detail-best-brew-facts-sub">${escapeHtml(now)} Proef zelf: dit is een vuistregel, geen meting.</p>`);
+  } else {
+    lines.push(`<p class="bean-detail-best-brew-facts-sub">Vul de branddatum in voor een drinkvenster.</p>`);
+  }
+  const stockBits = [
+    sum.cups ? `${sum.cups} ${sum.cups === 1 ? 'kop' : 'koppen'} gezet` : null,
+    sum.avgLiking != null ? `gemiddeld ${fmt(sum.avgLiking, 1)}/5` : null,
+    sum.empty ? 'zak waarschijnlijk leeg' : sum.remainingG != null ? `nog ± ${fmt(sum.remainingG, 0)} g${sum.cupsLeft != null ? ` (± ${sum.cupsLeft} ${sum.cupsLeft === 1 ? 'kop' : 'koppen'})` : ''}` : null
+  ].filter(Boolean);
+  if (stockBits.length) lines.push(`<p class="bean-detail-best-brew-facts-sub">${escapeHtml(stockBits.join(' · '))}</p>`);
+  if (dw && dw.state === 'in' && sum.cupsLeft != null && sum.cupsLeft > dw.daysLeft){
+    lines.push(`<p class="bean-detail-best-brew-facts-sub">${escapeHtml(`Je hebt meer koppen over (${sum.cupsLeft}) dan dagen in het venster (${dw.daysLeft}).`)}</p>`);
+  }
+  if (sum.best){
+    const setup = cupSetupOf(sum.best);
+    const when = sum.best.createdAt ? d(new Date(sum.best.createdAt)) : '';
+    const bits = [cupSetupLine(setup), setup.strengthStep ? strengthWords(setup.strengthStep) : null].filter(Boolean).join(' · ');
+    lines.push(`<p class="bean-detail-best-brew-facts">★ Beste kop van deze zak: ${escapeHtml(String(sum.best.tasting.liking))}/5${when ? ` (${escapeHtml(when)})` : ''}</p>
+      <p class="bean-detail-best-brew-facts-sub">${escapeHtml(bits)}</p>
+      ${sum.empty ? `<p class="bean-detail-best-brew-facts-sub">${escapeHtml('Zak op? Bewaar deze stand voor als je deze boon opnieuw koopt.')}</p>` : ''}
+      <div class="bean-card-btnrow" style="margin-top:10px;"><button type="button" class="bean-use-btn bean-again-btn" id="bean-detail-bag-best-again">↻ Zet deze kop opnieuw</button></div>`);
+  }
+  body.innerHTML = lines.join('');
+  block.hidden = false;
+  const again = document.getElementById('bean-detail-bag-best-again');
+  if (again && sum.best) again.addEventListener('click', () => brewBestCup(sum.best.id));
+  return sum;
+}
+/* Expertreview idee 7: per brander, uit je eigen koppen. Alleen tellen en tonen — dit stuurt
+   geen enkel receptgetal (leren uit je koppen mag pas na de adviespoort, Fase 5). */
+function normRoaster(name){ return String(name || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+function roasterSummary(roaster, beans, store){
+  const key = normRoaster(roaster);
+  if (!key) return null;
+  const beanIds = new Set((beans || []).filter(b => normRoaster(b.roaster) === key).map(b => b.id));
+  const recs = (store || []).filter(r => r && beanIds.has(r.beanId) && isBrewInLogView(r));
+  const liked = recs.filter(r => r.tasting && typeof r.tasting.liking === 'number');
+  const good = liked.filter(r => r.tasting.liking >= BEST_CUP_MIN_LIKING);
+  const clickOffsets = good.map(r => {
+    const setup = cupSetupOf(r);
+    const base = r.plan && typeof r.plan.grindStartingPoint === 'number' ? r.plan.grindStartingPoint : null;
+    return setup.grind != null && base != null && setup.method === 'v60' ? setup.grind - base : null;
+  }).filter(x => x != null).sort((a, b) => a - b);
+  return {
+    beans: beanIds.size, cups: recs.length,
+    avgLiking: liked.length ? liked.reduce((a, r) => a + r.tasting.liking, 0) / liked.length : null,
+    goodCups: good.length,
+    medianOffset: clickOffsets.length ? clickOffsets[Math.floor(clickOffsets.length / 2)] : null,
+    offsetN: clickOffsets.length
+  };
+}
+function roasterSummaryText(name, sum){
+  if (!sum || !sum.cups) return '';
+  const parts = [`Van ${name} zette je ${sum.beans} ${sum.beans === 1 ? 'boon' : 'bonen'}, ${sum.cups} ${sum.cups === 1 ? 'kop' : 'koppen'}${sum.avgLiking != null ? `, gemiddeld ${fmt(sum.avgLiking, 1)}/5` : ''}.`];
+  if (sum.offsetN >= 2 && sum.medianOffset != null){
+    const o = sum.medianOffset;
+    parts.push(o === 0 ? `Je goede koppen (${sum.offsetN}× op de V60) zette je meestal op de startklik van het recept.`
+      : `Je goede koppen (${sum.offsetN}× op de V60) zette je meestal ${Math.abs(o)} klik${Math.abs(o) === 1 ? '' : 'ken'} ${o < 0 ? 'fijner' : 'grover'} dan de startklik van het recept.`);
+  }
+  parts.push('Alleen ter info: de app past hier zelf niets op aan.');
+  return parts.join(' ');
+}
+function renderBeanDetailRoaster(bean){
+  const block = document.getElementById('bean-detail-roaster-block');
+  const text = document.getElementById('bean-detail-roaster-text');
+  const title = document.getElementById('bean-detail-roaster-title');
+  if (!block || !text) return;
+  const sum = bean.roaster ? roasterSummary(bean.roaster, beanLibrary, brewStore) : null;
+  const t = sum && (sum.beans >= 2 || sum.cups >= 3) ? roasterSummaryText(bean.roaster, sum) : '';
+  block.hidden = !t;
+  if (title) title.textContent = `Bij ${bean.roaster || 'deze brander'}`;
+  text.textContent = t;
+}
 function renderBeanDetailBestBrew(bean){
   const block = document.getElementById('bean-detail-best-brew-block');
   const label = document.getElementById('bean-detail-best-brew-label');
