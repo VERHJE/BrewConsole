@@ -3121,6 +3121,36 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.close();
     });
 
+    test('branding-foto per boon: lijst, Home-strip en bonendetail tonen de foto van zijn brandingsgraad; roastkaarten ook', async () => {
+      const mk = (id, name, roastLevel, addedAt) => ({ id, name, roastLevel, profileKey: 'klassiek', process: 'washed', flavorNotes: [], addedAt, doseUsedG: 0 });
+      const beans = [mk('b-light', 'Lichte boon', 'light', 1), mk('b-dark', 'Donkere boon', 'dark', 2), mk('b-none', 'Zonder brandingsgraad', null, 3)];
+      const want = { 'b-light': 'roast-light.webp', 'b-dark': 'roast-dark.webp', 'b-none': 'roast-medium.webp' };
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.addInitScript((b) => localStorage.setItem('brewconsole_beans', JSON.stringify(b)), beans);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      const srcs = (sel) => page.evaluate((sel) => [...document.querySelectorAll(sel)].map(el => ({ id: el.closest('[data-open-detail]').getAttribute('data-open-detail'), src: el.querySelector('img').currentSrc.split('/').pop() })), sel);
+      for (const row of await srcs('#home-beans-strip [data-open-detail] .photo-slot')) assert.equal(row.src, want[row.id], `Home-strip ${row.id}`);
+      await page.click('.navbar [data-nav="beans"]');
+      const list = await srcs('.bean-card[data-open-detail] .photo-slot');
+      assert.equal(list.length, 3);
+      for (const row of list) assert.equal(row.src, want[row.id], `bonenlijst ${row.id}`);
+      for (const id of ['b-dark', 'b-light']){
+        await page.click(`.bean-card[data-open-detail="${id}"]`);
+        await assertBecomesActive(page, '#screen-bean-detail');
+        const d = await page.evaluate(() => ({ src: document.getElementById('bean-detail-photo').src.split('/').pop(), icon: getComputedStyle(document.querySelector('#screen-bean-detail .photo-slot svg')).display }));
+        assert.equal(d.src, want[id], `bonendetail ${id}`);
+        assert.equal(d.icon, 'none', 'geen druppel-icoon over de foto');
+        await page.click('#screen-bean-detail [data-back="beans"]');
+        await assertBecomesActive(page, '#screen-beans');
+      }
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('[data-method="v60"]');
+      await page.waitForFunction(() => [...document.querySelectorAll('#roast-grid img')].every(i => i.complete && i.naturalWidth > 0));
+      const grid = await page.evaluate(() => [...document.querySelectorAll('#roast-grid [data-roast]')].map(c => [c.getAttribute('data-roast'), c.querySelector('img').currentSrc.split('/').pop()]));
+      assert.deepEqual(grid, ['light', 'light_medium', 'medium', 'medium_dark', 'dark'].map(r => [r, `roast-${r}.webp`]));
+      await page.close();
+    });
+
     test('desktop: de getallengrid blijft binnen de receptkolom', async () => {
       const page = await newTrackedPage({ viewport: { width: 1280, height: 720 } });
       await page.goto(FILE_URL, { waitUntil: 'load' });

@@ -2193,8 +2193,8 @@
          smaakprofiel uit het brouwlogboek van déze boon. -->
     <section class="screen" id="screen-bean-detail" data-screen="bean-detail">
       <button class="back-btn" data-back="beans">← Mijn bonen</button>
-      <div class="photo-slot photo-slot--hero">
-        <img class="photo-slot-img" src="photos/bean-macro.jpg" alt="" loading="lazy" aria-hidden="true">
+      <div class="photo-slot photo-slot--hero" data-has-photo="true">
+        <img class="photo-slot-img" id="bean-detail-photo" src="photos/roast-medium.webp" alt="" loading="lazy" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 3c4 2 7 5.5 7 10a7 7 0 0 1-14 0c0-4.5 3-8 7-10Z"/></svg>
         <div class="photo-scrim" aria-hidden="true"></div>
         <!-- NIEUW (Visual Design 2.0 fase 3, boon-niveau favorieten): overlay-hartje op de
@@ -2504,11 +2504,6 @@
     <!-- STEP 4: PREP -->
     <section class="screen" id="screen-prep" data-screen="prep">
       <button class="back-btn" data-back="profile">← Profiel</button>
-      <div class="photo-slot photo-slot--banner" data-has-photo="true" aria-hidden="true">
-        <img class="photo-slot-img" src="photos/equipment.jpg" alt="" loading="lazy" style="object-position:center 60%;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 8h13v5a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6V8Z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/></svg>
-        <div class="photo-scrim"></div>
-      </div>
       <!-- Audit BC-19: twee wrappers zodat een breed scherm recept (links) en schema + Start
            (rechts, blijft in beeld) naast elkaar kan tonen. Op een telefoon verandert er niets. -->
       <div class="prep-main">
@@ -2861,11 +2856,6 @@
     <!-- BREW LOG ENTRY (expertreview B1) -->
     <section class="screen" id="screen-brewlog" data-screen="brewlog">
       <button class="back-btn" data-back="brew">← Terug naar timer</button>
-      <div class="photo-slot photo-slot--banner" data-has-photo="true" aria-hidden="true">
-        <img class="photo-slot-img" src="photos/cup-steam.jpg" alt="" loading="lazy" style="object-position:center 48%;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m5 13 4 4L19 7"/></svg>
-        <div class="photo-scrim"></div>
-      </div>
       <!-- NIEUW (Visual Design 2.0 fase 2, detail-referentie scherm 08 "Timer (Completed)"):
            groter, gecentreerd vinkje + korte statchips vóór de sliders, i.p.v. een kale
            inline check + platte mono-tekstregel. Zelfde éénscherm-verloop als voorheen
@@ -5932,11 +5922,11 @@ const METHOD_PHOTO = { v60: 'photos/method-v60.webp', chemex: 'photos/method-che
 // NIEUW (foto's roast-keuzekaarten): vervangt het kleurvlakje (ROAST_COLOR) door een foto van
 // die branddiepte; zonder foto viel dit terug op het kleurvlak, nu op het neutrale bonen-icoon.
 const ROAST_PHOTO = {
-  light: 'photos/roast-light.jpg',
-  light_medium: 'photos/roast-light_medium.jpg',
-  medium: 'photos/roast-medium.jpg',
-  medium_dark: 'photos/roast-medium_dark.jpg',
-  dark: 'photos/roast-dark.jpg'
+  light: 'photos/roast-light.webp',
+  light_medium: 'photos/roast-light_medium.webp',
+  medium: 'photos/roast-medium.webp',
+  medium_dark: 'photos/roast-medium_dark.webp',
+  dark: 'photos/roast-dark.webp'
 };
 // NIEUW (zetscherm-foto's): per methode een staande foto (telefoon, beeldverhouding smaller dan 3:5)
 // en een vierkante (tablet, desktop). Eigen foto's met het zetmoment boven en een donkere onderkant
@@ -5945,6 +5935,11 @@ const BREW_PHOTO = {
   v60:    { tall: 'photos/brew-v60-tall.webp',    square: 'photos/brew-v60-square.webp' },
   chemex: { tall: 'photos/brew-chemex-tall.webp', square: 'photos/brew-chemex-square.webp' }
 };
+// Branding-foto van een boon (bonenlijst, bonendetail, Home-strip). Een boon zonder brandingsgraad
+// valt terug op de medium-foto, net als ROAST_INFO elders in de app.
+function beanPhotoSrc(bean){
+  return ROAST_PHOTO[bean && bean.roastLevel] || ROAST_PHOTO.medium;
+}
 const BEAN_FALLBACK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3c4 2 7 5.5 7 10a7 7 0 0 1-14 0c0-4.5 3-8 7-10Z"/></svg>';
 
 function renderMethodGrid(){
@@ -7910,7 +7905,7 @@ function renderBeanLibraryScreen(){
              feature zijn: fotografie-upload/opslag per boon, niet gevraagd) — hetzelfde
              "neutraal vlak i.p.v. verzonnen specificiteit"-principe als elders (Bouwbesluit B6). -->
         <div class="photo-slot photo-slot--strip" data-has-photo="true" aria-hidden="true">
-          <img class="photo-slot-img" src="photos/bean-macro.jpg" alt="" loading="lazy">
+          <img class="photo-slot-img" src="${beanPhotoSrc(b)}" alt="" loading="lazy">
         </div>
         <div class="bean-card-top-text">
           <div class="bean-card-header">
@@ -7962,10 +7957,9 @@ function renderBeanLibraryScreen(){
    Nieuwe standaardbestemming bij het openen van de app. Leeg-eerst ontworpen
    (zelfde principe als Inzichten): een nieuwe gebruiker zonder bonen/loggings
    ziet een eerlijke lege staat, geen verzonnen aanbevelingen. Foto-klaar
-   (Bouwbesluit B6) — de hero toont sinds Fase 7 photos/home-hero.jpg. De bonenstrip
-   hieronder gebruikt daarentegen ÉÉN gedeelde placeholderfoto (photos/beans-bowl.jpg)
-   voor élke boon — er is nog geen fotografie per boon/oorsprong. Zodra die er is, moet
-   dit per boon een eigen src krijgen i.p.v. de huidige gedeelde foto.
+   (Bouwbesluit B6) — de hero toont sinds Fase 7 photos/home-hero.webp. De bonenstrip
+   hieronder toont per boon de branding-foto van zijn brandingsgraad (beanPhotoSrc());
+   er is nog geen fotografie per boon/oorsprong zelf.
    ============================================================ */
 function renderHomeScreen(){
   renderHomeActiveBrewBanner(); // Fase 2
@@ -8002,7 +7996,7 @@ function renderHomeScreen(){
     strip.innerHTML = recent.map(b => `
       <button type="button" class="home-strip-item" data-open-detail="${b.id}" style="text-align:left; background:none; border:none; cursor:pointer; padding:0;">
         <div class="photo-slot" data-has-photo="true" aria-hidden="true">
-          <img class="photo-slot-img" src="photos/beans-bowl.jpg" alt="" loading="lazy">
+          <img class="photo-slot-img" src="${beanPhotoSrc(b)}" alt="" loading="lazy">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3c4 2 7 5.5 7 10a7 7 0 0 1-14 0c0-4.5 3-8 7-10Z"/></svg>
           <div class="photo-scrim"></div>
         </div>
@@ -8256,6 +8250,7 @@ function renderBeanDetail(bean){
   const r = ROAST_INFO[bean.roastLevel] || ROAST_INFO.medium;
   const procName = PROCESS_INFO[bean.process] ? PROCESS_INFO[bean.process].name : null;
   document.getElementById('bean-detail-name').textContent = bean.name || 'Naamloze boon';
+  document.getElementById('bean-detail-photo').src = beanPhotoSrc(bean);
   const meta = [bean.country, bean.region, bean.altitude ? bean.altitude + ' m' : null].filter(Boolean).join(' · ');
   document.getElementById('bean-detail-meta').textContent = meta;
 
