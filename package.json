@@ -1,5 +1,5 @@
 {
-  "name": "brew-intelligence-2-0-tests",
+  "name": "brew-console-tests",
   "private": true,
   "description": "Testlaag voor brewconsole_v2_2.html — geen build/publish-package, puur het testfundament (zie tests/load-app.mjs).",
   "type": "module",
