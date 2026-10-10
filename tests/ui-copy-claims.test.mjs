@@ -27,7 +27,7 @@ describe('BC-02: UI-teksten beloven geen effecten die de engine niet heeft', () 
   test('de vervangende teksten staan in de UI', () => {
     assert.match(html, /Natural\/anaerobic\? Dat weegt mee in de methodekeuze \(V60 of Chemex\) en het voorgestelde profiel; dosis, maling en temperatuur veranderen er niet door\./);
     assert.match(html, /m\.a\.s\.l\. — ter info, verandert het recept niet/);
-    assert.match(html, /Bepaalt vooral het schenkschema\. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding \(een heel kort schema start één klik fijner\)\./);
+    assert.match(html, /Bepaalt het gietschema en wat de proefkaart straks vraagt\. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding \(een heel kort schema start één klik fijner\)\./);
   });
 
   test('profieltekst klopt met de engine: temperatuur en maling gelijk over profielen, dosis binnen 0,5 g', () => {
@@ -47,6 +47,24 @@ describe('BC-02: UI-teksten beloven geen effecten die de engine niet heeft', () 
         const spread = Math.max(...doses) - Math.min(...doses);
         assert.ok(spread <= 0.5 + 1e-9, `${m}/${roast}: dosisverschil ${spread.toFixed(2)} g is meer dan "een paar tiende gram"`);
       }
+    }
+  });
+
+  // Review R-05: twee teksten beloofden een "Hedrick-methode" terwijl de engine Hedrick nooit
+  // maakt (die profielen krijgen het basisrecept). Een profielbeschrijving mag alleen een
+  // bronnaam noemen als de engine voor dat profiel ook echt dat naam-gebonden schema maakt.
+  test('profielbeschrijvingen noemen geen bron waarvan de engine het schema niet maakt', () => {
+    assert.doesNotMatch(html, /Hedrick-methode|Naar Hedrick/);
+    const NAMES = ['Hedrick', 'Kasuya', 'Hoffmann', 'Rao', 'Perger', 'April'];
+    for (const [key, info] of Object.entries(api.PROFILE_INFO)){
+      const named = NAMES.filter(n => info.desc.includes(n));
+      if (!named.length) continue;
+      const methods = info.methodOnly ? [info.methodOnly] : ['v60', 'chemex'];
+      const ok = methods.some(m => {
+        const r = api.computeRecipe(m, 'medium', key, m === 'v60' ? 300 : 600, 'washed', false, 10, null, false, false, null, 0);
+        return r.hasNamedOverlay && named.every(n => (r.technique + ' ' + r.author).includes(n));
+      });
+      assert.ok(ok, `${key}: beschrijving noemt ${named.join(', ')}, maar de engine maakt dat schema niet`);
     }
   });
 

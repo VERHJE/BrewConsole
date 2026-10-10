@@ -522,7 +522,13 @@ describe('Fase 4 — advies: volgorde en regels', () => {
   test('over + te sterk: grover, maar bij donker branden liever de dosis (matrix)', () => {
     assert.deepEqual(j(api.leverFromMatrix('strong', 'over', false)), { lever: 'grind', dir: 1, basis: 'extraction' });
     assert.deepEqual(j(api.leverFromMatrix('strong', 'over', true)), { lever: 'dose', dir: -1, basis: 'both' });
+  });
+  test('diag-2026.3: te sterk met alleen "bitter" → eerst minder koffie (bitter komt dan vaak van de concentratie)', () => {
     const r = reco({ strength: 'too_strong', acidity: 'lively', finish: ['bitter'], liking: 2 });
+    assert.deepEqual([r.type, r.lever, r.delta], ['ADJUST', 'dose', -1]);
+  });
+  test('diag-2026.3: te sterk met een duidelijke overextractie (bitter + droog + vlak) → wél grover', () => {
+    const r = reco({ strength: 'too_strong', acidity: 'flat', finish: ['bitter', 'drying'], liking: 2 });
     assert.deepEqual([r.type, r.lever, r.delta], ['ADJUST', 'grind', 1]);
   });
   test('de volledige matrix', () => {
@@ -594,7 +600,7 @@ describe('Halve stap — tussen standaard en een hele sterktestap (diag-2026.2)'
   test('op −8% en "te slap" → de halve stap (−4%), niet "herhaal" en niet helemaal terug', () => {
     const r = api.recommendNext({ tasting: weak, ctx: ctxAt(-1), lastApplied: full(-1, 0, -1) });
     assert.deepEqual(pick(r), ['ADJUST', 'dose', 0.5, -1, -0.5, 'halfway']);
-    assert.equal(r.rulesetVersion, 'diag-2026.2');
+    assert.equal(r.rulesetVersion, 'diag-2026.3');
   });
   test('zonder geregistreerde vorige stap (eigen keuze of voorkeur) geldt hetzelfde', () => {
     assert.deepEqual(pick(api.recommendNext({ tasting: weak, ctx: ctxAt(-1) })), ['ADJUST', 'dose', 0.5, -1, -0.5, 'halfway']);

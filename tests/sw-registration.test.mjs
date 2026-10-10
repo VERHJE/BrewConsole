@@ -37,6 +37,12 @@ function startServer(){
   });
 }
 
+// Review R-15: "Naar de timer" opent eerst de klaar-check; de klok start met "Start de klok".
+async function startBrewing(page){
+  await page.click('#start-btn');
+  await page.click('#brew-ready-start');
+}
+
 describe('Service worker registratie (bijlage A — bevinding F, opgelost)', () => {
   let server, browser, base;
 
@@ -204,7 +210,7 @@ describe('Service worker registratie (bijlage A — bevinding F, opgelost)', () 
     // netwerk kunnen starten en doorlopen (alles hierna is pure client-side JS/timers).
     await ctx.setOffline(true);
 
-    await page.click('#start-btn');
+    await startBrewing(page);
     await page.waitForFunction(() => document.getElementById('screen-brew').classList.contains('active'));
 
     await page.clock.fastForward('20:00');
@@ -233,13 +239,15 @@ describe('Service worker registratie (bijlage A — bevinding F, opgelost)', () 
     await page.waitForFunction(() => document.getElementById('screen-profile').classList.contains('active'));
     await page.click('#profile-grid [data-profile="klassiek"]');
     await page.waitForFunction(() => document.getElementById('screen-prep').classList.contains('active'));
-    await page.click('#start-btn');
+    await startBrewing(page);
     await page.waitForFunction(() => document.getElementById('screen-brew').classList.contains('active'));
     await page.clock.fastForward('20:00');
     await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
     await page.click('#brewlog-open-btn');
     await page.waitForFunction(() => document.getElementById('screen-brewlog').classList.contains('active'));
     await page.click('#brewlog-save-btn');
+    // Review R-16: zonder "zoals gepland?" vraagt de app het nog één keer — toch opslaan.
+    if (await page.locator('#actuals-confirm').isVisible()) await page.click('#actuals-confirm-skip');
     await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
 
     const offlineLogCount = await page.evaluate(() => {

@@ -54,3 +54,28 @@ describe('BC-20: branddatum uit de etikettekst', () => {
     assert.equal(api.extractRoastDateFromText('Light roast — best before 12-09-2026', NOW), null);
   });
 });
+
+describe('Review R-17: brander en zakgrootte uit de etikettekst', () => {
+  const LABEL = 'Kawa Coffee Roasters\nETHIOPIA GUJI HAMBELA\nNatural process · Heirloom\nLight roast\n250g';
+  test('een regel met een branderwoord is de brander, niet de boonnaam', () => {
+    assert.equal(api.extractRoasterFromText(LABEL), 'Kawa Coffee Roasters');
+    assert.equal(api.extractBeanNameFromText(LABEL), 'Ethiopia Guji Hambela');
+    assert.equal(api.extractRoasterFromText('Koffiebranderij De Zwaan\nKenya Kiambu'), 'Koffiebranderij De Zwaan');
+    assert.equal(api.extractBeanNameFromText('Koffiebranderij De Zwaan\nKenya Kiambu'), 'Kenya Kiambu');
+  });
+  test('zonder branderregel blijft de naam zoals voorheen', () => {
+    assert.equal(api.extractRoasterFromText('7AM Coproca\nWashed'), null);
+    assert.equal(api.extractBeanNameFromText('7AM Coproca\nWashed'), '7AM Coproca');
+  });
+  test('alleen een branderregel → die regel als naam (niets beters)', () => {
+    assert.equal(api.extractBeanNameFromText('Kawa Coffee Roasters'), 'Kawa Coffee Roasters');
+  });
+  test('zakgrootte in gram of kilo, alleen plausibele zakken', () => {
+    assert.equal(api.extractBagSizeFromText(LABEL), 250);
+    assert.equal(api.extractBagSizeFromText('Inhoud: 1 kg'), 1000);
+    assert.equal(api.extractBagSizeFromText('Zak 500 gram'), 500);
+    assert.equal(api.extractBagSizeFromText('Altitude 2100 masl'), null);
+    assert.equal(api.extractBagSizeFromText('15g per 250ml'), null, 'een dosis of watervolume is geen zak');
+    assert.equal(api.extractBagSizeFromText('geen gewicht'), null);
+  });
+});

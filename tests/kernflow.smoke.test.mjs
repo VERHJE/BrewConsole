@@ -21,6 +21,29 @@ const executablePath = fs.existsSync(FIXED_CHROMIUM_PATH) ? FIXED_CHROMIUM_PATH 
 
 const FAST_FORWARD = '20:00';
 
+// Review R-15: "Naar de timer" opent eerst de klaar-check; de klok start met "Start de klok".
+async function startBrewing(page){
+  await page.click('#start-btn');
+  await page.click('#brew-ready-start');
+}
+
+// Review R-12: bij je eerste boon vraagt de app één keer welk water je gebruikt. Bestaande tests
+// kiezen "Later" — het oude gedrag (geen water ingevuld).
+async function saveBean(page){
+  await page.click('#save-bean-btn');
+  const ask = page.locator('#water-ask');
+  if (await ask.isVisible()) await page.click('#water-ask-later');
+}
+
+// Review R-16: wie opslaat zonder "Gezet zoals gepland?" te beantwoorden, krijgt die vraag nog
+// één keer. Deze helper kiest dan "Weet ik niet, toch opslaan" — precies het oude gedrag
+// (niet bevestigd), zodat bestaande tests hetzelfde blijven testen.
+async function saveLog(page){
+  await page.click('#brewlog-save-btn');
+  const prompt = page.locator('#actuals-confirm');
+  if (await prompt.isVisible()) await page.click('#actuals-confirm-skip');
+}
+
 describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → Klaar)', () => {
   let browser;
   const consoleErrors = [];
@@ -100,7 +123,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     const summaryText = (await page.locator('#summary-tag').textContent()).trim();
     assert.ok(summaryText.length > 0, 'Recept-scherm: summary-tag mag niet leeg zijn');
 
-    await page.click('#start-btn');
+    await startBrewing(page);
     await assertBecomesActive(page, '#screen-brew');
     const dialVariant = await page.locator('#dial-time').evaluate(el => getComputedStyle(el).fontVariantNumeric);
     assert.equal(dialVariant, 'tabular-nums', 'Task 20: .dial-time moet font-variant-numeric:tabular-nums hebben');
@@ -138,7 +161,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     });
     assert.equal(order, 'card-first', 'B2: de proefkaart moet vóór de eerlijke samenvatting staan, niet erna');
 
-    await page.click('#brewlog-save-btn');
+    await saveLog(page);
     await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
 
     await page.close();
@@ -163,7 +186,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#profile-grid [data-profile="fresh_clean"]');
     await assertBecomesActive(page, '#screen-prep');
 
-    await page.click('#start-btn');
+    await startBrewing(page);
     await assertBecomesActive(page, '#screen-brew');
     await page.clock.fastForward(FAST_FORWARD);
     await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
@@ -192,26 +215,21 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#roast-grid [data-roast] >> nth=0');
     await assertBecomesActive(page, '#screen-profile');
 
-    const gridProfileCount = await page.locator('#profile-grid [data-profile]').count();
-    // BIJGEWERKT (Reparatieplan v4.0, C-1 / Bouwbesluit BB-2): zie de toelichting bij de
-    // adviceProfileCount hierboven — 10 zichtbaar sinds 'zoet' niet meer wordt samengevoegd.
-    assert.equal(gridProfileCount, 10, 'profile-grid: verwacht 10 zichtbare profielen op V60 (methodOnly-profielen blijven zichtbaar op v60)');
+    // Review R-13: één smaakvraag (Helder & fris / Gebalanceerd / Rond & vol) en daaronder de
+    // gietstijlen met een eigen schema op deze methode (V60: Hoffmann, Rao, April, Snel, Basisrecept).
+    // Profielen zonder eigen recept (vol_rond, bloemig_delicaat, sirooprig_vol) staan er niet meer.
+    assert.deepEqual(await page.locator('#profile-grid [data-taste]').evaluateAll(els => els.map(e => e.getAttribute('data-taste'))), ['bright', 'balanced', 'rich']);
+    assert.equal(await page.locator('#profile-grid [data-style]').count(), 5);
     await assertNoZeroSizeElements(page, '#profile-grid [data-profile]', 'profile-grid buttons');
-    // BIJGEWERKT (Reparatieplan v4.0, B-4 / bevinding E-09): findProfileTwins() vergelijkt
-    // sinds B-4 het WERKELIJKE recept i.p.v. het gemapte overlay-id, en detecteert daardoor
-    // nu ook twee eerder gemiste tweelinggroepen — fruitig_clean/bloemig_delicaat (Rao's
-    // pulseCount is RESEARCH_GAP, dus beide vallen terug op hetzelfde generieke schema) en
-    // sirooprig_vol/evenwichtig_flex (Hedrick is nooit generatable). Die twee groepen zijn
-    // NIET samengevoegd tot één knop (dat is alleen klassiek/vol_rond), dus elk van hun 4
-    // leden krijgt terecht een zichtbare tweelingnotitie — precies de winst van B-4: een
-    // schijnkeuze die eerder onopgemerkt bleef, is dat nu niet meer.
-    const twinNoteCount = await page.locator('#profile-grid .profile-twin-note').count();
-    assert.equal(twinNoteCount, 4, 'profile-grid: verwacht 4 tweelingnotities (fruitig_clean/bloemig_delicaat + sirooprig_vol/evenwichtig_flex), sinds B-4 correct gedetecteerd');
+    // Op de V60 geeft elke keuze een eigen recept: geen "zelfde recept als …".
+    assert.equal(await page.locator('#profile-grid .profile-twin-note').count(), 0);
 
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
     const twinNoteVisible = await page.locator('#prep-twin-note').isHidden().catch(() => true);
-    assert.ok(twinNoteVisible, 'Recept-scherm: prep-twin-note hoort verborgen te zijn voor de samengevoegde klassiek-groep');
+    assert.ok(twinNoteVisible, 'Recept-scherm: geen tweelingnotitie bij Gebalanceerd op de V60');
+    assert.match(await page.locator('#summary-tag').innerText(), /Gebalanceerd/i);
+    assert.equal(await page.evaluate(() => state.goal), null, 'Gebalanceerd heeft geen aparte doelvraag');
 
     await page.close();
   });
@@ -235,7 +253,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await assertBecomesActive(page, '#screen-beans');
     await page.click('#bean-add-link');
     await assertBecomesActive(page, '#screen-bean-add');
-    await page.click('#save-bean-btn');
+    await saveBean(page);
     await assertBecomesActive(page, '#screen-beans');
 
     const hasBeanCard = await page.locator('#bean-list .bean-card').count();
@@ -307,7 +325,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('[data-method="v60"]');
     await page.click('#roast-grid [data-roast] >> nth=0');
     await page.click('#profile-grid [data-profile="klassiek"]');
-    await page.click('#start-btn');
+    await startBrewing(page);
     await assertBecomesActive(page, '#screen-brew');
     const navHidden = await page.evaluate(() => {
       const nav = document.querySelector('.navbar');
@@ -443,7 +461,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
 
     // Standaard staat het moment op "achteraf" — Brew Mode moet de proef-en-vul-instructie
     // tonen, niet de oude dubbelzinnige "aanvullen tot X g totaal".
-    await page.click('#start-btn');
+    await startBrewing(page);
     await assertBecomesActive(page, '#screen-brew');
     // Zit in de collapsed "Volledig schema"-accordion (focus-herontwerp) — expliciet
     // openen vóór lezen, zelfde patroon als refine-details hierboven.
@@ -468,7 +486,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     assert.equal(await page.locator('#brewlog-bypass-actual').inputValue(), '120');
     await page.fill('#brewlog-bypass-actual', '115'); // simuleert "iets minder toegevoegd dan gepland"
 
-    await page.click('#brewlog-save-btn');
+    await saveLog(page);
     await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
 
     const savedEntry = await page.evaluate(() => brewLog[brewLog.length - 1]);
@@ -750,7 +768,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#roast-grid [data-roast] >> nth=0');
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
-    await page.click('#start-btn');
+    await startBrewing(page);
     await assertBecomesActive(page, '#screen-brew');
 
     await page.clock.fastForward(FAST_FORWARD);
@@ -769,7 +787,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.fill('#brewlog-actual-grind', '22');
     await page.click('#brewlog-more > summary'); // Sprint 4: kopgewicht staat onder "Meer meten"
     await page.fill('#brewlog-cup-weight', '268');
-    await page.click('#brewlog-save-btn');
+    await saveLog(page);
     await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
 
     await page.click('.navbar [data-nav="brewlog-history"]');
@@ -1058,10 +1076,14 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#bean-list .bean-card >> nth=0 >> .bean-card-name');
     await assertBecomesActive(page, '#screen-bean-detail');
     await page.click('#bean-detail-use-btn');
-    await assertBecomesActive(page, '#screen-advice');
-    await page.click('#advice-batch [data-adv-batch="single"]');
-    await page.waitForFunction(() => getComputedStyle(document.getElementById('advice-result')).display !== 'none');
-    await page.click('#advice-cta');
+    // Review R-07: een boon die al eens gezet is, gaat vanaf de boondetail direct naar het
+    // recept (zoals "Zet opnieuw" op Home); alleen de eerste keer via het methode-advies.
+    await page.waitForFunction(() => ['screen-advice', 'screen-prep'].includes(document.querySelector('.screen.active').id));
+    if (await page.locator('#screen-advice.active').count()){
+      await page.click('#advice-batch [data-adv-batch="single"]');
+      await page.waitForFunction(() => getComputedStyle(document.getElementById('advice-result')).display !== 'none');
+      await page.click('#advice-cta');
+    }
     await assertBecomesActive(page, '#screen-prep');
   }
 
@@ -1090,13 +1112,13 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
 
     // NIEUW (Fase 3): een nieuwere kop met de proefkaart laat de oude hypothese vervallen —
     // het voorstel hoort altijd bij de láátste kop, niet bij de laatste met scores.
-    await page.click('#start-btn');
+    await startBrewing(page);
     await assertBecomesActive(page, '#screen-brew');
     await page.clock.fastForward(FAST_FORWARD);
     await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
     await page.click('#brewlog-open-btn');
     await assertBecomesActive(page, '#screen-brewlog');
-    await page.click('#brewlog-save-btn');
+    await saveLog(page);
     await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
     await goViaBeanToBatchStep();
     assert.ok(await page.locator('#prep-cupping-suggestion').isHidden(), 'na een nieuwere kop geen verouderde hypothese meer');
@@ -1136,7 +1158,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await assertBecomesActive(page, '#screen-beans');
     await page.click('#bean-add-link');
     await assertBecomesActive(page, '#screen-bean-add');
-    await page.click('#save-bean-btn'); // standaardwaarden: roast "medium", proces "washed"
+    await saveBean(page); // standaardwaarden: roast "medium", proces "washed"
     await assertBecomesActive(page, '#screen-beans');
 
     async function goToPrepForTheBean(){
@@ -1145,10 +1167,13 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('#bean-list .bean-card >> nth=0 >> .bean-card-name');
       await assertBecomesActive(page, '#screen-bean-detail');
       await page.click('#bean-detail-use-btn');
-      await assertBecomesActive(page, '#screen-advice');
-      await page.click('#advice-batch [data-adv-batch="single"]');
-      await page.waitForFunction(() => getComputedStyle(document.getElementById('advice-result')).display !== 'none');
-      await page.click('#advice-cta');
+      // Review R-07: na de eerste kop direct naar het recept, zonder methode-advies.
+      await page.waitForFunction(() => ['screen-advice', 'screen-prep'].includes(document.querySelector('.screen.active').id));
+      if (await page.locator('#screen-advice.active').count()){
+        await page.click('#advice-batch [data-adv-batch="single"]');
+        await page.waitForFunction(() => getComputedStyle(document.getElementById('advice-result')).display !== 'none');
+        await page.click('#advice-cta');
+      }
       await assertBecomesActive(page, '#screen-prep');
     }
     async function logApprovedBrew(offsetFromStartingPoint){
@@ -1156,7 +1181,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       const startingPoint = await page.evaluate(() => state.recipe && state.recipe.grindStartingPoint);
       assert.equal(typeof startingPoint, 'number', `verwacht een numeriek grindStartingPoint op het Recept-scherm, kreeg ${startingPoint}`);
 
-      await page.click('#start-btn');
+      await startBrewing(page);
       await assertBecomesActive(page, '#screen-brew');
       await page.clock.fastForward(FAST_FORWARD);
       await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
@@ -1164,7 +1189,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await assertBecomesActive(page, '#screen-brewlog');
 
       await enterGrindAndPassGate(startingPoint + offsetFromStartingPoint);
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
       await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
     }
     // BIJGEWERKT (Fase 3): "goedgekeurd" is geen losse checkbox meer maar de gate van de
@@ -1191,7 +1216,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     assert.match(textAtN2, /2 goedgekeurde/);
     assert.doesNotMatch(textAtN2, /klikken (fijner|grover)/, 'bij n=2 mag er nog geen concreet klikgetal gepresenteerd worden');
 
-    await page.click('#start-btn');
+    await startBrewing(page);
     await assertBecomesActive(page, '#screen-brew');
     await page.clock.fastForward(FAST_FORWARD);
     await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
@@ -1199,7 +1224,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await assertBecomesActive(page, '#screen-brewlog');
     const thirdStartingPoint = await page.evaluate(() => state.recipe && state.recipe.grindStartingPoint);
     await enterGrindAndPassGate(thirdStartingPoint - 2);
-    await page.click('#brewlog-save-btn');
+    await saveLog(page);
     await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
 
     // Na het derde goedgekeurde brouwsel (n=3): de correctie moet nu verschijnen.
@@ -1328,13 +1353,13 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await assertBecomesActive(page, '#screen-prep');
     }
     async function brewAndLog(page){
-      await page.click('#start-btn');
+      await startBrewing(page);
       await assertBecomesActive(page, '#screen-brew');
       await page.clock.fastForward(FAST_FORWARD);
       await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
       await page.click('#brewlog-open-btn');
       await assertBecomesActive(page, '#screen-brewlog');
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
       await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
       // BIJGEWERKT (Fase 1): loggings leven als v6-records onder 'brewconsole_brews';
       // brewLog is de platte weergave die alle lezers gebruiken.
@@ -1395,7 +1420,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('#advice-scan-new');
       await assertBecomesActive(page, '#screen-bean-add');
       await page.fill('#f-name', 'Verse Boon');
-      await page.click('#save-bean-btn');
+      await saveBean(page);
       await assertBecomesActive(page, '#screen-advice');
       await adviceToPrep(page);
       assert.match(await beanLine(page), /Boon: Verse Boon/);
@@ -1446,7 +1471,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('#triage-to-recipe-btn');
       await assertBecomesActive(page, '#screen-prep');
       assert.ok((await page.locator('#summary-tag').textContent()).trim().length > 0);
-      await page.click('#start-btn');
+      await startBrewing(page);
       await assertBecomesActive(page, '#screen-brew');
       assert.equal(pageErrors.length, errorsBefore, `onverwachte JS-fout: ${pageErrors.slice(errorsBefore).join(' | ')}`);
       await page.close();
@@ -1492,7 +1517,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     test('Start maakt meteen een bewaard brewing-record; voorraad wordt pas bij voltooien afgeboekt, precies één keer', async () => {
       const page = await pageWith({ brewconsole_beans: [BEAN] });
       await toPrepWithBean(page);
-      await page.click('#start-btn');
+      await startBrewing(page);
       await assertBecomesActive(page, '#screen-brew');
       let s = await store(page);
       assert.equal(s.length, 1);
@@ -1512,9 +1537,9 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
 
       await page.click('#brewlog-open-btn');
       await assertBecomesActive(page, '#screen-brewlog');
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
       await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
-      await page.click('#brewlog-save-btn'); // dubbel opslaan
+      await saveLog(page); // dubbel opslaan
       s = await store(page);
       assert.equal(s.length, 1, 'nogmaals opslaan werkt hetzelfde record bij, geen tweede logging');
       assert.equal(s[0].lifecycle, 'logged');
@@ -1526,7 +1551,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     test('stoppen midden in een brouwsel → abandoned: geen voorraadverbruik en niet in het logboek', async () => {
       const page = await pageWith({ brewconsole_beans: [BEAN] });
       await toPrepWithBean(page);
-      await page.click('#start-btn');
+      await startBrewing(page);
       await assertBecomesActive(page, '#screen-brew');
       await page.clock.fastForward('00:30');
       await page.click('#stop-btn');
@@ -1545,7 +1570,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     test('reset → het lopende brouwsel wordt abandoned; opnieuw starten maakt een nieuw record', async () => {
       const page = await pageWith({ brewconsole_beans: [BEAN] });
       await toPrepWithBean(page);
-      await page.click('#start-btn');
+      await startBrewing(page);
       await page.clock.fastForward('00:20');
       await page.click('#pause-btn');
       await page.click('#pause-btn'); // hervat
@@ -1564,7 +1589,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     test('herladen midden in een brouwsel: het record blijft bewaard (brewing); lang daarna wordt het voltooid met bed-droog onbekend', async () => {
       const page = await pageWith({ brewconsole_beans: [BEAN] });
       await toPrepWithBean(page);
-      await page.click('#start-btn');
+      await startBrewing(page);
       await page.clock.fastForward('00:40');
       await page.reload({ waitUntil: 'load' });
       let s = await store(page);
@@ -1625,7 +1650,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     test('backup: export bevat de volledige v6-opslag (ook niet-gelogde records) en import herstelt ze zonder dubbelingen', async () => {
       const page = await pageWith({ brewconsole_beans: [BEAN] });
       await toPrepWithBean(page);
-      await page.click('#start-btn');
+      await startBrewing(page);
       await page.clock.fastForward('00:10');
       await page.click('#reset-btn');
       await page.click('#confirm-modal-ok'); // één abandoned record
@@ -1658,7 +1683,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('#roast-grid [data-roast] >> nth=0');
       await page.click('#profile-grid [data-profile="klassiek"]');
       await assertBecomesActive(page, '#screen-prep');
-      await page.click('#start-btn');
+      await startBrewing(page);
       await assertBecomesActive(page, '#screen-brew');
     }
     const store = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_brews') || '[]'));
@@ -1707,7 +1732,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await assertBecomesActive(page, '#screen-brewlog');
       assert.match(await page.locator('#brewlog-complete-meta').innerText(), /bed droog\s*3:4\d/i);
       assert.match(await page.locator('#brewlog-honest-summary').textContent() /* Sprint 4: staat onder "Meer meten" (dicht) */, /Bed droog na 3:4\d — rond de schatting van het schema \(3:30\)/);
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
       await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
       await page.click('.navbar [data-nav="brewlog-history"]');
       await assertBecomesActive(page, '#screen-brewlog-history');
@@ -1801,7 +1826,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('#home-active-brew');
       await assertBecomesActive(page, '#screen-brewlog');
       assert.match(await page.locator('#brewlog-honest-summary').textContent() /* Sprint 4: staat onder "Meer meten" (dicht) */, /Bed droog na 3:2\d/);
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
       await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
       const s = await store(page);
       assert.equal(s.length, 1);
@@ -1820,7 +1845,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('[data-method="v60"]');
       await page.click('#roast-grid [data-roast] >> nth=0');
       await page.click('#profile-grid [data-profile="klassiek"]');
-      await page.click('#start-btn');
+      await startBrewing(page);
       await page.clock.fastForward('00:05');
       assert.match(await page.locator('#dial-time').textContent(), /^0:0[45]$/, 'geen restant van de oude klok');
       const s = await store(page);
@@ -1877,7 +1902,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await assertBecomesActive(page, '#screen-prep');
     }
     async function brewToCard(page){
-      await page.click('#start-btn');
+      await startBrewing(page);
       await page.clock.fastForward('03:20');
       await page.click('#bed-dry-btn');
       await page.click('#brewlog-open-btn');
@@ -1892,18 +1917,25 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await brewToCard(page);
       assert.equal(await page.locator('#screen-brewlog input[type="range"]').count(), 0);
       const questions = await page.locator('#tasting-card .tasting-q').allTextContents();
-      assert.equal(questions.length, 5, `actuals + 4 vragen, kreeg ${JSON.stringify(questions)}`);
+      // Review R-04: "Wat miste je?" staat in de kaart, maar verschijnt pas als stap bij een
+      // doel dat niet gehaald is of bij 4 of minder.
+      assert.equal(questions.length, 6, `actuals + 4 vragen + "wat miste je?", kreeg ${JSON.stringify(questions)}`);
+      assert.equal(await page.locator('[data-t-step="missed"]').isVisible(), false, 'nog geen "wat miste je?"-stap');
       assert.equal(await page.locator('[data-t-q="goalHit"]').count(), 0);
       assert.equal(await page.locator('[data-t-q="vsLast"]').count(), 0);
       assert.match(await page.locator('#tasting-gate').textContent(), /Nog open: sterkte, zuur, afdronk, hoe lekker/);
       await page.close();
     });
 
-    test('doel op het receptscherm → doelvraag op de proefkaart; gate bepaalt "geslaagd"; actuals bevestigd = U', async () => {
+    test('smaak Helder & fris → doelvraag op de proefkaart; gate bepaalt "geslaagd"; actuals bevestigd = U', async () => {
       const page = await seeded();
       await toPrep(page);
-      await page.click('#prep-goal [data-goal="bright"]');
-      assert.equal(await page.getAttribute('#prep-goal [data-goal="bright"]', 'data-selected'), 'true');
+      // Review R-13: het doel is de smaakkeuze (← Smaak), geen aparte chip op het receptscherm.
+      await page.click('#screen-prep .back-btn[data-back="profile"]');
+      await page.click('#profile-grid [data-taste="bright"]');
+      await assertBecomesActive(page, '#screen-prep');
+      assert.equal(await page.locator('#prep-goal').count(), 0, 'geen tweede doelvraag op het receptscherm');
+      assert.match(await page.locator('#summary-tag').innerText(), /Helder & fris/i);
       await brewToCard(page);
       assert.match(await page.locator('#tasting-card').textContent(), /Kwam hij uit zoals je wilde — Helder & fris\?/);
       assert.match(await page.locator('#tasting-progress-label').textContent(), /Vraag 1 van 5/, 'het doel is een extra stap');
@@ -1920,7 +1952,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.match(await page.locator('#tasting-gate').textContent(), /Telt niet als geslaagde kop \(doel niet gehaald\)/);
       await q(page, 'goalHit', 'yes');
       assert.match(await page.locator('#tasting-gate').textContent(), /Geslaagde kop/);
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
 
       const s = await store(page);
       assert.equal(s[0].goal, 'bright');
@@ -1946,7 +1978,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await brewToCard(page);
       await q(page, 'strength', 'just_right'); await q(page, 'acidity', 'lively');
       await q(page, 'finish', 'sweet_clean'); await q(page, 'liking', '4');
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
       const s = await store(page);
       assert.equal(s[0].actual.confirmed, false);
       assert.equal(s[0].actual.grindSource, 'I');
@@ -1958,12 +1990,12 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       const page = await seeded();
       await toPrep(page);
       await brewToCard(page);
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
       await toPrep(page);
       await brewToCard(page);
       assert.equal(await page.locator('[data-t-q="vsLast"]').count(), 3);
       await q(page, 'vsLast', 'better');
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
       const s = await store(page);
       assert.equal(s[1].tasting.vsLast, 'better');
       assert.equal(s[1].tasting.vsLastBrewId, s[0].id);
@@ -1994,7 +2026,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await assertBecomesActive(page, '#screen-prep');
     }
     async function brewToCard(page){
-      await page.click('#start-btn');
+      await startBrewing(page);
       await page.clock.fastForward('03:20');
       await page.click('#bed-dry-btn');
       await page.click('#brewlog-open-btn');
@@ -2003,7 +2035,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     async function answer(page, a){
       if (a.planned !== false) await page.click('#actuals-planned-btn');
       await answerTasting(page, { strength: a.strength, acidity: a.acidity, finish: a.finish, liking: String(a.liking), vsLast: a.vsLast });
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
     }
     const store = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_brews') || '[]'));
     const pending = (page) => page.evaluate(() => beanLibrary.find(b => b.id === 'bean-f4').pendingAdjust || null);
@@ -2091,7 +2123,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       const p = await pending(page);
       assert.deepEqual([p.lever, p.delta, p.fromValue, p.toValue], ['dose', 0.5, -1, -0.5]);
       const s = await store(page);
-      assert.deepEqual([s[1].recommendation.reasonKey, s[1].recommendation.rulesetVersion], ['halfway', 'diag-2026.2']);
+      assert.deepEqual([s[1].recommendation.reasonKey, s[1].recommendation.rulesetVersion], ['halfway', 'diag-2026.3']);
 
       await toPrep(page);
       assert.equal(await page.evaluate(() => state.strengthAdjust), -0.5);
@@ -2112,7 +2144,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       const page = await seeded();
       await toPrep(page);
       await brewToCard(page);
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
       assert.match(await page.locator('#reco-card').innerText(), /Nog geen advies[\s\S]*Beantwoord eerst: sterkte, zuur, afdronk, hoe lekker/);
       await answer(page, { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: 4 });
       assert.equal((await page.locator('#reco-card .reco-title').textContent()).trim(), 'Houd dit recept zo');
@@ -2229,7 +2261,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await assertBecomesActive(page, '#screen-profile');
     assert.equal(await page.evaluate(() => history.length), lenAtPrep, 'in-app terug groeit de geschiedenis niet');
     await page.click('#profile-grid [data-profile="klassiek"]');
-    await page.click('#start-btn');
+    await startBrewing(page);
     await assertBecomesActive(page, '#screen-brew');
     await page.goBack();
     await page.waitForTimeout(150);
@@ -2372,7 +2404,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     const page = await newTrackedPage();
     await page.goto(FILE_URL, { waitUntil: 'load' });
     await page.evaluate(() => { selectMethod('chemex'); selectRoast('medium'); selectProfile('klassiek'); state.waterMl = 300; renderPrep(); });
-    await page.click('#start-btn');
+    await startBrewing(page);
     await assertBecomesActive(page, '#screen-brew');
     await page.clock.fastForward(FAST_FORWARD);
     await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
@@ -2418,10 +2450,14 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.goto(FILE_URL, { waitUntil: 'load' });
     await page.evaluate(() => { selectMethod('v60'); selectRoast('medium'); selectProfile('klassiek'); });
     assert.equal(await page.locator('#ab-trial').isVisible(), false, 'zonder helder-doel geen proefkaart');
-    const dose0 = await page.evaluate(() => state.recipe.dose);
-    await page.click('[data-goal="bright"]');
+    const doseBalanced = await page.evaluate(() => state.recipe.dose);
+    // Review R-13: Helder & fris kies je op het smaakscherm.
+    await page.evaluate(() => showScreen('profile'));
+    await page.click('[data-taste="bright"]');
     assert.equal(await page.locator('#ab-trial').isVisible(), true);
-    assert.equal(await page.evaluate(() => state.recipe.dose), dose0, 'standaard verandert het recept niet');
+    const dose0 = await page.evaluate(() => state.recipe.dose);
+    assert.equal(await page.evaluate(() => state.strengthAdjust), 0, 'standaard geen sterktestap');
+    assert.equal(dose0, await page.evaluate(() => computeRecipe(state.method, state.roast, 'heel_fruitig', state.waterMl, null, false, null, null, false, false, null, 0).dose), 'het recept van Helder & fris, zonder stap');
     await page.click('#ab-start-btn');
     const cup = await page.evaluate(() => abOpenTrial.cupForVariant);
     assert.match(await page.locator('#ab-trial').innerText(), /Kop 1: [\d,]+ g · Kop 2: [\d,]+ g/);
@@ -2454,9 +2490,10 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     assert.ok(doseLight < dose0, 'nu minder koffie');
     assert.ok(Math.abs(doseLight - dose0 * 0.96) <= 0.06, `−4% van ${dose0} g is ${doseLight} g`);
     assert.match(await page.locator('#ab-trial').innerText(), /Staat aan: bij Helder & fris zet je een halve stap zwakker \(−4% koffie\)/);
-    await page.click('[data-goal="balanced"]');
-    assert.equal(await page.evaluate(() => state.strengthAdjust), 0, 'ander doel → automatische stap terug');
-    assert.equal(await page.evaluate(() => state.recipe.dose), dose0);
+    await page.evaluate(() => showScreen('profile'));
+    await page.click('[data-taste="balanced"]');
+    assert.equal(await page.evaluate(() => state.strengthAdjust), 0, 'andere smaak → automatische stap terug');
+    assert.equal(await page.evaluate(() => state.recipe.dose), doseBalanced);
     await page.close();
   });
 
@@ -2528,7 +2565,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('[data-method="v60"]');
       await page.click('#roast-grid [data-roast] >> nth=0');
       await page.click('#profile-grid [data-profile="klassiek"]');
-      await page.click('#start-btn');
+      await startBrewing(page);
       await page.clock.fastForward('00:20');
       await page.click('#reset-btn');
       assert.equal(await page.locator('#confirm-modal').isVisible(), true);
@@ -2615,7 +2652,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('#advice-batch [data-adv-batch="single"]');
       await page.click('#advice-cta');
       await assertBecomesActive(page, '#screen-prep');
-      await page.click('#start-btn');
+      await startBrewing(page);
       await assertBecomesActive(page, '#screen-brew');
       await page.clock.fastForward('03:20');
       await page.click('#bed-dry-btn');
@@ -2646,7 +2683,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.ok(await page.locator('#brewlog-save-btn').evaluate(el => el.classList.contains('start-btn')), 'opslaan is de primaire knop');
       await page.click('#actuals-planned-btn');
       await answerTasting(page, { strength: 'just_right', acidity: 'sharp', finish: 'hollow', liking: '2' });
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
       await page.waitForFunction(() => {
         const card = document.getElementById('reco-card');
         const nav = document.getElementById('navbar');
@@ -2701,8 +2738,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       const prep = await page.locator('#screen-prep').innerText();
       assert.doesNotMatch(prep, /Brew Intelligence|Start brew/i);
       assert.match(prep, /Waarom dit recept\?/);
-      assert.match((await page.locator('#start-btn').textContent()).trim(), /^Start · \d+:\d\d$/, 'Sprint 3: Start noemt de schemalengte');
-      await page.click('#start-btn');
+      assert.match((await page.locator('#start-btn').textContent()).trim(), /^Naar de timer · \d+:\d\d$/, 'Sprint 3: Start noemt de schemalengte');
+      await startBrewing(page);
       assert.doesNotMatch(await page.locator('#screen-brew').innerText(), /pour-over/i);
       await page.close();
     });
@@ -2730,7 +2767,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('#advice-batch [data-adv-batch="single"]');
       await page.click('#advice-cta');
       await assertBecomesActive(page, '#screen-prep');
-      await page.click('#start-btn');
+      await startBrewing(page);
       await page.clock.fastForward('03:20');
       await page.click('#bed-dry-btn');
       await page.click('#brewlog-open-btn');
@@ -2781,7 +2818,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       const start = await page.evaluate(() => state.recipe.grindStartingPoint);
       await page.click('#actuals-planned-btn');
       await answerTasting(page, { strength: 'just_right', acidity: 'sharp', finish: 'hollow', liking: '2' });
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
       assert.equal(await page.getAttribute('#screen-brewlog', 'data-mode'), 'result');
       assert.equal(await page.locator('#tasting-card').isVisible(), false);
       assert.equal(await page.locator('#brewlog-save-btn').isVisible(), false);
@@ -2797,7 +2834,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     test('onvolledig opgeslagen: het formulier blijft staan met wat er nog open is', async () => {
       const page = await phonePage();
       await brewToCard(page);
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
       assert.equal(await page.getAttribute('#screen-brewlog', 'data-mode'), 'form');
       assert.match(await page.locator('#reco-card').innerText(), /Nog geen advies/);
       assert.equal(await page.locator('#tasting-card').isVisible(), true);
@@ -2810,7 +2847,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       const start = await page.evaluate(() => state.recipe.grindStartingPoint);
       await page.click('#actuals-planned-btn');
       await answerTasting(page, { strength: 'just_right', acidity: 'sharp', finish: 'hollow', liking: '2' });
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
       await page.click('#reco-apply-btn');
       await page.click('#brewlog-home-btn');
       await assertBecomesActive(page, '#screen-home');
@@ -2834,7 +2871,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await brewToCard(page);
       await page.click('#actuals-planned-btn');
       await answerTasting(page, { strength: 'just_right', acidity: 'sharp', finish: 'hollow', liking: '2' });
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
       await page.click('#reco-apply-btn');
       await page.click('#brewlog-home-btn');
       await page.click('[data-next-cup-skip="bean-s2"]');
@@ -2894,7 +2931,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       });
       assert.ok(box.top >= 0 && box.bottom <= box.zetTop, `Start in beeld boven de Zet-knop: ${JSON.stringify(box)}`);
       const total = await page.evaluate(() => fmtTime(state.recipe.totalTime));
-      assert.equal((await page.locator('#start-btn').textContent()).trim(), `Start · ${total}`);
+      assert.equal((await page.locator('#start-btn').textContent()).trim(), `Naar de timer · ${total}`);
       assert.equal(await page.locator('#why-recipe-details').getAttribute('open'), null);
       assert.equal(await page.locator('#prep-tips-details').getAttribute('open'), null);
       await page.close();
@@ -2903,13 +2940,13 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     test('een klaargezette maalstap staat in de tegel: "Klik 14 · was 15", het engine-recept blijft gelijk', async () => {
       const page = await toPrep();
       const start = await page.evaluate(() => state.recipe.grindStartingPoint);
-      await page.click('#start-btn');
+      await startBrewing(page);
       await page.clock.fastForward('03:20');
       await page.click('#bed-dry-btn');
       await page.click('#brewlog-open-btn');
       await page.click('#actuals-planned-btn');
       await answerTasting(page, { strength: 'just_right', acidity: 'sharp', finish: 'hollow', liking: '2' });
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
       await page.click('#reco-apply-btn');
       await page.click('#brewlog-home-btn');
       await page.click('[data-next-cup-go="bean-s3"]');
@@ -2950,13 +2987,13 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
         await page.click('#advice-cta');
       }
       await assertBecomesActive(page, '#screen-prep');
-      await page.click('#start-btn');
+      await startBrewing(page);
       await page.clock.fastForward('03:20');
       await page.click('#bed-dry-btn');
       await page.click('#brewlog-open-btn');
       await page.click('#actuals-planned-btn');
       await answerTasting(page, answers);
-      await page.click('#brewlog-save-btn');
+      await saveLog(page);
       if (apply) await page.click('#reco-apply-btn');
     }
 
@@ -3013,7 +3050,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('.navbar [data-nav="method"]');
       await page.click(`[data-method="${method}"]`);
       await page.click('#roast-grid [data-roast] >> nth=0');
-      await page.click('#profile-grid [data-profile] >> nth=0');
+      await page.click('#profile-grid [data-taste="balanced"]'); // R-13: het standaardpad (Gebalanceerd)
       await assertBecomesActive(page, '#screen-prep');
     }
     // Zichtbare tekst op het actieve scherm (+ tabbalk): welke lettergroottes komen voor?
@@ -3148,7 +3185,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
           const page = await newTrackedPage({ viewport: c.viewport });
           await page.goto(FILE_URL, { waitUntil: 'load' });
           await toPrep(page, method);
-          await page.click('#start-btn');
+          await startBrewing(page);
           await assertBecomesActive(page, '#screen-brew');
           await page.waitForFunction(() => { const i = document.getElementById('brew-hero-img'); return i.complete && i.naturalWidth > 0; });
           const src = await page.evaluate(() => document.getElementById('brew-hero-img').currentSrc);
@@ -3237,6 +3274,518 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
         return [...document.querySelectorAll('#stats-grid .stat-block')].map(b => b.getBoundingClientRect().right - main.right);
       });
       for (const d of m) assert.ok(d <= 1, `tegel steekt ${d}px buiten de kolom`);
+      await page.close();
+    });
+  });
+
+
+  describe('Review Sprint A: fouten en vertrouwen', () => {
+    const BEAN = { id:'bean-ra', name:'RA Boon', roastLevel:'medium', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:0 };
+    async function seeded(beans){
+      const page = await newTrackedPage();
+      await page.addInitScript((list) => {
+        if (sessionStorage.getItem('ra')) return;
+        sessionStorage.setItem('ra', '1');
+        if (list) localStorage.setItem('brewconsole_beans', JSON.stringify(list));
+      }, beans || null);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      return page;
+    }
+    async function toPrepWithBean(page){
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('#advisor-link');
+      await page.click('[data-bean-pick="bean-ra"]');
+      await page.click('#advice-batch [data-adv-batch="single"]');
+      await page.waitForFunction(() => getComputedStyle(document.getElementById('advice-result')).display !== 'none');
+      await page.click('#advice-cta');
+      await assertBecomesActive(page, '#screen-prep');
+    }
+    async function toPrepWithoutBean(page){
+      await page.click('#home-start-brew-btn');
+      await page.click('[data-method="v60"]');
+      await page.click('[data-roast="medium"]');
+      await page.click('[data-profile="klassiek"]');
+      await assertBecomesActive(page, '#screen-prep');
+    }
+    async function brewToCard(page){
+      await startBrewing(page);
+      await page.clock.fastForward('03:20');
+      await page.click('#bed-dry-btn');
+      await page.click('#brewlog-open-btn');
+      await assertBecomesActive(page, '#screen-brewlog');
+    }
+    const store = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_brews') || '[]'));
+
+    test('R-01: een gelogde kop opnieuw openen toont je antwoorden en het advies; opnieuw opslaan wist niets', async () => {
+      const page = await seeded([BEAN]);
+      await toPrepWithBean(page);
+      await brewToCard(page);
+      await page.click('#actuals-planned-btn');
+      await answerTasting(page, { strength: 'just_right', acidity: 'sharp', finish: ['hollow'], liking: '2' });
+      await saveLog(page);
+      const title = (await page.locator('#reco-card .reco-title').textContent()).trim();
+      await page.click('#screen-brewlog [data-back="brew"]');
+      await assertBecomesActive(page, '#screen-brew');
+      await page.click('#brewlog-open-btn');
+      await assertBecomesActive(page, '#screen-brewlog');
+      assert.equal(await page.locator('#screen-brewlog').getAttribute('data-mode'), 'result', 'het advies staat er weer');
+      assert.equal((await page.locator('#reco-card .reco-title').textContent()).trim(), title);
+      await page.click('#brewlog-edit-btn');
+      assert.equal(await page.locator('[data-t-q="strength"][data-t-v="just_right"]').getAttribute('data-selected'), 'true');
+      assert.equal(await page.locator('#actuals-planned-btn').getAttribute('data-selected'), 'true');
+      await saveLog(page);
+      const s = await store(page);
+      assert.equal(s.length, 1);
+      assert.equal(s[0].tasting.strength, 'just_right');
+      assert.equal(s[0].tasting.liking, 2);
+      assert.equal(s[0].actual.confirmed, true);
+      assert.equal(s[0].recommendation.type, 'ADJUST');
+      await page.close();
+    });
+
+    test('R-16: opslaan zonder bevestiging vraagt het nog één keer; "Ja, opslaan" telt als bevestigd', async () => {
+      const page = await seeded([BEAN]);
+      await toPrepWithBean(page);
+      await brewToCard(page);
+      await answerTasting(page, { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: '4' });
+      await page.click('#brewlog-save-btn');
+      assert.equal(await page.locator('#actuals-confirm').isVisible(), true, 'de vraag verschijnt');
+      assert.equal((await store(page))[0].lifecycle, 'completed', 'nog niet opgeslagen');
+      assert.match(await page.locator('#actuals-confirm-plan').innerText(), /Plan: \d+,\d g · klik \d+/);
+      await page.click('#actuals-confirm-yes');
+      await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
+      const s = await store(page);
+      assert.equal(s[0].lifecycle, 'logged');
+      assert.equal(s[0].actual.confirmed, true);
+      assert.equal(s[0].actual.grindSource, 'U');
+      assert.equal(await page.locator('#actuals-confirm').isVisible(), false);
+      await page.close();
+    });
+
+    test('R-06: zonder boon gezet → na opslaan alsnog een (nieuwe) boon koppelen; de stap is dan bruikbaar', async () => {
+      const page = await seeded(null);
+      await toPrepWithoutBean(page);
+      assert.equal(await page.locator('#prep-bean-link-btn').isVisible(), true, 'receptscherm biedt "Kies een boon"');
+      await brewToCard(page);
+      await page.click('#actuals-planned-btn');
+      await answerTasting(page, { strength: 'just_right', acidity: 'sharp', finish: ['hollow'], liking: '2' });
+      await saveLog(page);
+      assert.equal(await page.locator('#reco-apply-btn').count(), 0);
+      await page.click('#reco-link-bean-btn');
+      assert.equal(await page.locator('#bean-picker').isVisible(), true);
+      await page.fill('#bean-picker-name', 'Snelle boon');
+      await page.click('#bean-picker-create');
+      assert.equal(await page.locator('#bean-picker').isVisible(), false);
+      const s = await store(page);
+      const beans = await page.evaluate(() => beanLibrary);
+      assert.equal(beans.length, 1);
+      assert.equal(beans[0].name, 'Snelle boon');
+      assert.equal(beans[0].roastLevel, 'medium', 'de branding van het recept');
+      assert.equal(s[0].beanId, beans[0].id);
+      assert.equal(beans[0].lastBrew.method, 'v60');
+      assert.ok(beans[0].doseUsedG > 0, 'voorraad afgeboekt');
+      await page.click('#reco-apply-btn');
+      assert.equal((await page.evaluate(() => beanLibrary[0].pendingAdjust)).lever, 'grind');
+      await page.close();
+    });
+
+    test('R-06: op het receptscherm een opgeslagen boon kiezen koppelt hem aan dit brouwsel', async () => {
+      const page = await seeded([BEAN]);
+      await toPrepWithoutBean(page);
+      await page.click('#prep-bean-link-btn');
+      await page.click('[data-pick-bean="bean-ra"]');
+      assert.match(await page.locator('#prep-bean-line').innerText(), /Boon: RA Boon/);
+      await brewToCard(page);
+      assert.equal((await store(page))[0].beanId, 'bean-ra');
+      await page.close();
+    });
+
+    test('R-08: een "check eerst"-advies staat bij de volgende kop op Home en het receptscherm', async () => {
+      const page = await seeded([BEAN]);
+      await toPrepWithBean(page);
+      await brewToCard(page);
+      await page.click('#actuals-planned-btn');
+      await answerTasting(page, { strength: 'just_right', acidity: 'lively', finish: ['drying'], liking: '2' });
+      await saveLog(page);
+      assert.equal((await page.locator('#reco-card .reco-title').textContent()).trim(), 'Check eerst je gieten');
+      await page.click('#brewlog-home-btn');
+      assert.match(await page.locator('#home-next-cup').innerText(), /Check eerst je gieten/);
+      await page.click('[data-next-cup-go]');
+      await assertBecomesActive(page, '#screen-prep');
+      assert.equal(await page.locator('#prep-check-note').isVisible(), true);
+      assert.match(await page.locator('#prep-check-note').innerText(), /Uit je vorige kop[\s\S]*Check eerst je gieten[\s\S]*Giet rustig/i);
+      // De volgende gelogde kop ruimt de melding op.
+      await brewToCard(page);
+      await page.click('#actuals-planned-btn');
+      await answerTasting(page, { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: '4', vsLast: 'better' });
+      await saveLog(page);
+      assert.equal(await page.evaluate(() => beanLibrary[0].pendingCheck || null), null);
+      await page.close();
+    });
+
+    test('R-07: "Zet deze boon" op de boondetail gaat na de eerste kop direct naar het recept', async () => {
+      const page = await seeded([Object.assign({}, BEAN, { lastBrew: { method: 'v60', waterMl: 300, bypass: false, bypassPct: null } })]);
+      await page.click('.navbar [data-nav="beans"]');
+      await page.click('#bean-list .bean-card >> nth=0 >> .bean-card-name');
+      await assertBecomesActive(page, '#screen-bean-detail');
+      await page.click('#bean-detail-use-btn');
+      await assertBecomesActive(page, '#screen-prep');
+      assert.match(await page.locator('#prep-bean-line').innerText(), /Boon: RA Boon/);
+      await page.close();
+    });
+
+    test('R-18 en R-21: na een boon opslaan via de tab geen terugknop; de bonenkaart nest geen knoppen', async () => {
+      const page = await seeded(null);
+      await page.click('.navbar [data-nav="beans"]');
+      await page.click('#bean-add-link');
+      await page.fill('#f-name', 'Tabboon');
+      await saveBean(page);
+      await assertBecomesActive(page, '#screen-beans');
+      assert.equal(await page.locator('#screen-beans [data-back="method"]').isVisible(), false);
+      assert.equal(await page.locator('.bean-card[role="button"]').count(), 0);
+      assert.equal(await page.locator('.bean-card .bean-card-open').evaluate(el => el.tagName), 'BUTTON');
+      await page.focus('.bean-card .bean-card-open');
+      await page.keyboard.press('Enter');
+      await assertBecomesActive(page, '#screen-bean-detail');
+      await page.close();
+    });
+  });
+
+
+  describe('Review Sprint B: de smaaklus sluiten', () => {
+    const BEAN = { id:'bean-rb', name:'RB Boon', roastLevel:'light', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:0 };
+    async function seeded(){
+      const page = await newTrackedPage();
+      await page.addInitScript((bean) => {
+        if (sessionStorage.getItem('rb')) return;
+        sessionStorage.setItem('rb', '1');
+        localStorage.setItem('brewconsole_beans', JSON.stringify([bean]));
+      }, BEAN);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      return page;
+    }
+    async function firstPrep(page){
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('#advisor-link');
+      await page.click('[data-bean-pick="bean-rb"]');
+      await page.click('#advice-batch [data-adv-batch="single"]');
+      await page.waitForFunction(() => getComputedStyle(document.getElementById('advice-result')).display !== 'none');
+      await page.click('#advice-cta');
+      await assertBecomesActive(page, '#screen-prep');
+    }
+    async function brewToCard(page){
+      await startBrewing(page);
+      await page.clock.fastForward('03:20');
+      await page.click('#bed-dry-btn');
+      await page.click('#brewlog-open-btn');
+      await assertBecomesActive(page, '#screen-brewlog');
+    }
+    const store = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_brews') || '[]'));
+
+    test('R-02: "Zet opnieuw" herhaalt je vorige kop — ook na een herstart: maalstand én sterkte; terug naar basis kan', async () => {
+      const page = await seeded();
+      await firstPrep(page);
+      const base = await page.evaluate(() => ({ grind: state.recipe.grindStartingPoint, dose: state.recipe.dose }));
+      await page.evaluate(() => { document.getElementById('refine-details').open = true; });
+      await page.click('#strength-chip [data-strength="-0.5"]');
+      await brewToCard(page);
+      await page.click('#actuals-edit-btn');
+      await page.fill('#brewlog-actual-grind', String(base.grind - 1));
+      await answerTasting(page, { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: '5' });
+      await saveLog(page);
+      assert.equal((await page.locator('#reco-card .reco-title').textContent()).trim(), 'Houd dit recept zo');
+      const stand = await page.evaluate(() => beanLibrary[0].stands.v60);
+      assert.deepEqual([stand.grindClick, stand.strengthStep, stand.liking], [base.grind - 1, -0.5, 5]);
+
+      await page.reload({ waitUntil: 'load' });
+      await page.click('[data-next-cup-go]');
+      await assertBecomesActive(page, '#screen-prep');
+      assert.equal(await page.evaluate(() => state.strengthAdjust), -0.5, 'sterkte van je vorige kop');
+      assert.match(await page.locator('#stats-grid').innerText(), new RegExp(`MAALGRAAD · JOUW STAND\\s*Klik ${base.grind - 1}`, 'i'));
+      assert.match(await page.locator('#stats-grid').innerText(), /Gemalen koffie · jouw stand/i);
+      assert.match(await page.locator('#prep-stand-note').innerText(), new RegExp(`klik ${base.grind - 1} · een halve stap lichter`));
+      await startBrewing(page);
+      await page.clock.fastForward('03:20');
+      await page.click('#bed-dry-btn');
+      const s = await store(page);
+      assert.equal(s[1].plan.grindTarget, base.grind - 1, 'de stand gaat mee in het plan');
+      assert.equal(s[1].plan.strengthStep, -0.5);
+      await page.click('#brewlog-open-btn');
+      await page.click('#actuals-planned-btn');
+      await answerTasting(page, { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: '5', vsLast: 'same' });
+      await saveLog(page);
+      assert.equal((await store(page))[1].actual.grindClick, base.grind - 1, '"zoals gepland" = jouw stand');
+
+      // Terug naar het basisrecept.
+      await page.click('#brewlog-home-btn');
+      await page.click('[data-next-cup-go]');
+      await page.click('#prep-stand-reset');
+      assert.equal(await page.evaluate(() => state.strengthAdjust), 0);
+      assert.equal(await page.evaluate(() => state.recipe.dose), base.dose);
+      assert.equal(await page.locator('#prep-stand-note').isVisible(), false);
+      assert.doesNotMatch(await page.locator('#stats-grid').innerText(), /jouw stand/i);
+      await page.close();
+    });
+
+    test('R-04: "Wat miste je?" verschijnt bij een doel dat net niet gehaald is en geeft een halve stap lichter bij "meer fruit"', async () => {
+      const page = await seeded();
+      await firstPrep(page);
+      await page.click('#screen-prep .back-btn[data-back="profile"]');
+      await page.click('#profile-grid [data-taste="bright"]'); // R-13: de smaakkeuze is het doel
+      await brewToCard(page);
+      await page.click('#actuals-planned-btn');
+      assert.equal(await page.locator('[data-t-step="missed"]').isVisible(), false);
+      await answerTasting(page, { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: '4', goalHit: 'almost' });
+      assert.equal(await page.locator('[data-t-step="missed"]').isVisible(), true, 'de vraag komt erbij');
+      assert.match(await page.locator('#tasting-progress-label').textContent(), /van 6/);
+      await page.click('[data-t-step="missed"]');
+      assert.match(await page.locator('#tasting-card').innerText(), /Wat miste je\?/);
+      await page.click('[data-t-q="missed"][data-t-v="fruit"]');
+      await saveLog(page);
+      assert.match((await page.locator('#reco-card .reco-title').textContent()).trim(), /^Een halve stap lichter: ~4% minder koffie/);
+      assert.match(await page.locator('#reco-card').innerText(), /Je miste fruit en helderheid/);
+      assert.match(await page.locator('#reco-card').innerText(), /Vul je water in bij Instellingen/);
+      const s = await store(page);
+      assert.equal(s[0].tasting.missed, 'fruit');
+      assert.equal(s[0].recommendation.reasonKey, 'goal_fruit');
+      await page.click('#reco-apply-btn');
+      await page.click('#brewlog-home-btn');
+      await page.click('[data-next-cup-go]');
+      assert.equal(await page.evaluate(() => state.strengthAdjust), -0.5);
+      await page.close();
+    });
+
+    test('R-03: te sterk + scherp + droog → minder koffie met giettip (niet langer alleen "check je gieten")', async () => {
+      const page = await seeded();
+      await firstPrep(page);
+      await brewToCard(page);
+      await page.click('#actuals-planned-btn');
+      await answerTasting(page, { strength: 'too_strong', acidity: 'sharp', finish: ['drying'], liking: '2' });
+      await saveLog(page);
+      assert.match((await page.locator('#reco-card .reco-title').textContent()).trim(), /^Een stap lichter/);
+      assert.match(await page.locator('#reco-card').innerText(), /giet rustig en houd het bed vlak/);
+      await page.close();
+    });
+  });
+
+
+  describe('Review ideeën 5, 6 en 7: deze zak en per brander', () => {
+    test('boondetail toont drinkvenster, zak-samenvatting, beste kop van de zak en "Bij deze brander"', async () => {
+      const page = await newTrackedPage();
+      const day = 86400000;
+      const roastDate = new Date(Date.now() - 10 * day).toISOString().slice(0, 10);
+      await page.addInitScript((roastDate) => {
+        if (sessionStorage.getItem('z')) return;
+        sessionStorage.setItem('z', '1');
+        const beans = [
+          { id:'bz1', name:'Zak Een', roaster:'Kawa Coffee Roasters', roastLevel:'light', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:40, bagSizeG:250, roastDate, lastBrew:{ method:'v60', waterMl:300, bypass:false, bypassPct:null } },
+          { id:'bz2', name:'Zak Twee', roaster:'Kawa Coffee Roasters', roastLevel:'light', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:20 }
+        ];
+        const rec = (id, beanId, liking, grind, at) => ({ id, schemaVersion: 6, createdAt: at, updatedAt: at, lifecycle: 'logged', beanId, beanSnapshot: null, equipment: {}, waterSnapshot: null, goal: null,
+          plan: { methodId: 'v60', profileId: 'klassiek', roastId: 'light', waterMl: 300, doseG: 20, ratioText: '1:15', tempC: 95, grindStartingPoint: 15, grindTarget: grind, strengthStep: 0, bypass: null, steps: [], expectedTotalSec: 210, inputs: null, appliedAdjust: null },
+          actual: { doseG: 20, doseSource: 'U', grindClick: grind, grindSource: 'U', confirmed: true, events: [], bedDrySec: 220, completedAt: at },
+          derived: {}, tasting: { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking, complete: true, approved: liking >= 4 }, diagnosis: null,
+          recommendation: { type: 'KEEP' }, flags: {}, favorite: false, sideEffectsAppliedAt: at, deletedAt: null });
+        localStorage.setItem('brewconsole_beans', JSON.stringify(beans));
+        localStorage.setItem('brewconsole_brews', JSON.stringify([rec('r1', 'bz1', 3, 15, 1000), rec('r2', 'bz1', 5, 14, 2000), rec('r3', 'bz2', 4, 14, 3000)]));
+      }, roastDate);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.click('.navbar [data-nav="beans"]');
+      await page.click('.bean-card[data-open-detail="bz1"] .bean-card-open');
+      await assertBecomesActive(page, '#screen-bean-detail');
+      const bag = await page.locator('#bean-detail-bag').innerText();
+      assert.match(bag, /Drinkvenster \(vuistregel\)/);
+      assert.match(bag, /nu dag 10: in het venster, nog 12 dagen/);
+      assert.match(bag, /2 koppen gezet · gemiddeld 4,0\/5 · nog ± 210 g \(± 10 koppen\)/);
+      assert.match(bag, /★ Beste kop van deze zak: 5\/5/);
+      assert.match(bag, /klik 14/);
+      assert.equal(await page.locator('#bean-detail-best-brew-block').isVisible(), false, 'geen dubbele beste-kop-kaart');
+      const roaster = await page.locator('#bean-detail-roaster-block').innerText();
+      assert.match(roaster, /Bij Kawa Coffee Roasters/);
+      assert.match(roaster, /2 bonen, 3 koppen/);
+      assert.match(roaster, /1 klik fijner dan de startklik/);
+      await page.click('#bean-detail-bag-best-again');
+      await assertBecomesActive(page, '#screen-prep');
+      assert.equal(await page.evaluate(() => state.grindStand), 14, 'de maalstand van de beste kop staat klaar');
+      await page.click('.navbar [data-nav="brewlog-history"]');
+      await page.click('[data-tab="statistieken"]');
+      assert.match(await page.locator('#roaster-overview').innerText(), /Kawa Coffee Roasters · 2 bonen · 3 koppen/);
+      await page.close();
+    });
+  });
+
+
+  describe('Review idee 20: aanrechtmodus', () => {
+    async function toBrew(page){
+      await page.click('#home-start-brew-btn');
+      await page.click('[data-method="v60"]');
+      await page.click('[data-roast="light"]');
+      await page.click('[data-profile="klassiek"]');
+      await startBrewing(page);
+      await assertBecomesActive(page, '#screen-brew');
+    }
+    test('op een liggende iPad standaard aan (wijzerplaat links, grote instructie rechts); op een telefoon uit, aan te zetten en onthouden', async () => {
+      const ipad = await newTrackedPage({ viewport: { width: 1180, height: 820 } });
+      await ipad.goto(FILE_URL, { waitUntil: 'load' });
+      await toBrew(ipad);
+      assert.equal(await ipad.locator('#screen-brew').getAttribute('data-counter'), 'on');
+      assert.equal(await ipad.locator('#screen-brew .brew-fg').evaluate(el => getComputedStyle(el).display), 'grid');
+      const fs = await ipad.locator('#brew-action-main').evaluate(el => parseFloat(getComputedStyle(el).fontSize));
+      assert.ok(fs >= 60, `grote instructie (${fs}px)`);
+      const [dial, action] = await Promise.all([ipad.locator('.dial-wrap').boundingBox(), ipad.locator('#brew-action-main').boundingBox()]);
+      assert.ok(dial.x + dial.width <= action.x + 1, 'wijzerplaat links van de instructie');
+      assert.equal(await ipad.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      await ipad.close();
+
+      const phone = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await phone.goto(FILE_URL, { waitUntil: 'load' });
+      await toBrew(phone);
+      assert.equal(await phone.locator('#screen-brew').getAttribute('data-counter'), 'off');
+      await phone.click('#counter-toggle');
+      assert.equal(await phone.locator('#screen-brew').getAttribute('data-counter'), 'on');
+      assert.equal(await phone.locator('#counter-toggle').getAttribute('aria-pressed'), 'true');
+      assert.ok(await phone.locator('#brew-action-main').evaluate(el => parseFloat(getComputedStyle(el).fontSize)) >= 40);
+      assert.equal(await phone.evaluate(() => localStorage.getItem('brewconsole_counter_mode')), 'on');
+      await phone.close();
+    });
+  });
+
+  describe('Review Sprint C', () => {
+    async function toPrepKlassiek(page){
+      await page.click('#home-start-brew-btn');
+      await page.click('[data-method="v60"]');
+      await page.click('[data-roast="light"]');
+      await page.click('[data-profile="klassiek"]');
+      await assertBecomesActive(page, '#screen-prep');
+    }
+    test('R-15: "Naar de timer" opent een klaar-check; de klok en het brouwsel starten pas met "Start de klok"', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await toPrepKlassiek(page);
+      await page.click('#start-btn');
+      await assertBecomesActive(page, '#screen-brew');
+      assert.equal(await page.locator('#brew-ready').isVisible(), true);
+      const list = await page.locator('#brew-ready-list').innerText();
+      assert.match(list, /Spoel het filter/);
+      assert.match(list, /\d+,\d g koffie, gemalen op klik \d+/);
+      assert.match(list, /weegschaal en zet hem op 0/);
+      assert.match(list, /Water op \d+°C/);
+      assert.equal((await page.locator('#brew-action-main').textContent()).trim(), 'Klaar?');
+      assert.match(await page.locator('#brew-action-sub').textContent(), /Eerste giet: tot \d+ g/);
+      await page.clock.fastForward(30_000);
+      assert.equal((await page.locator('#dial-time').textContent()).trim(), '0:00', 'de klok loopt nog niet');
+      assert.equal(await page.evaluate(() => isActiveBrewBrewing()), false, 'nog geen brouwsel');
+      // Terug naar Home vanuit de klaar-check: niets te bevestigen.
+      await page.click('#home-btn');
+      await assertBecomesActive(page, '#screen-home');
+      assert.equal(await page.locator('#confirm-modal').isVisible().catch(() => false), false);
+
+      await toPrepKlassiek(page);
+      await page.click('#start-btn');
+      await page.click('#brew-ready-start');
+      assert.equal(await page.locator('#brew-ready').isVisible(), false);
+      await page.clock.fastForward(5_000);
+      assert.notEqual((await page.locator('#dial-time').textContent()).trim(), '0:00');
+      assert.equal(await page.evaluate(() => isActiveBrewBrewing()), true);
+      assert.match(await page.locator('#brew-action-sub').textContent(), /in ~\d+ s/, 'R-14: de giettijd staat bij de giet');
+      await page.close();
+    });
+    test('R-15: ▶ in de klaar-check start ook de klok; ↻ brengt je terug naar de klaar-check', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await toPrepKlassiek(page);
+      await page.click('#start-btn');
+      await page.click('#pause-btn');
+      await page.clock.fastForward(5_000);
+      assert.equal(await page.evaluate(() => isActiveBrewBrewing()), true);
+      await page.click('#reset-btn');
+      await page.click('#confirm-modal-ok', { timeout: 2000 });
+      await page.waitForFunction(() => !document.getElementById('brew-ready').hidden);
+      assert.equal(await page.evaluate(() => isActiveBrewBrewing()), false);
+      await page.close();
+    });
+    test('R-12: bij de eerste boon één keer de watervraag; Dunea → mengtip bij Helder & fris, weg na 1:1 mengen', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.click('.navbar [data-nav="beans"]');
+      await page.click('#bean-add-link');
+      await page.fill('#f-name', 'Waterboon');
+      await page.click('#save-bean-btn');
+      assert.equal(await page.locator('#water-ask').isVisible(), true, 'de watervraag verschijnt');
+      await page.click('[data-water-ask="dunea"]');
+      assert.equal(await page.locator('#water-ask').isVisible(), false);
+      const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_water_hardness')));
+      assert.deepEqual([saved.hardnessMgL, saved.alkalinity.value, saved.alkalinity.unit, saved.dilution.demiParts], [140, 170, 'HCO3', 0]);
+
+      // Tweede boon: niet nog eens vragen.
+      await page.click('.navbar [data-nav="beans"]');
+      await page.click('#bean-add-header-btn');
+      await page.fill('#f-name', 'Tweede boon');
+      await page.click('#save-bean-btn');
+      assert.equal(await page.locator('#water-ask').isVisible(), false);
+
+      // Helder & fris met Dunea-water → één regel met de mengtip; Gebalanceerd → niets.
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('[data-method="v60"]');
+      await page.click('[data-roast="light"]');
+      await page.click('[data-taste="bright"]');
+      assert.match(await page.locator('#prep-water-tip').innerText(), /buffert veel \(±139 mg\/L.*1:1 met gedemineraliseerd/);
+      await page.click('#screen-prep .back-btn[data-back="profile"]');
+      await page.click('[data-taste="balanced"]');
+      assert.equal(await page.locator('#prep-water-tip').isVisible(), false);
+
+      // Instellingen: de snelkeuze noemt zijn bron; 1:1 mengen haalt de tip weg.
+      await page.click('.navbar [data-nav="settings"]');
+      assert.match(await page.locator('#water-preset-source').innerText(), /Dunea: gemiddelde uit de kwaliteitsrapporten/);
+      await page.selectOption('#prep-water-dilution', '1:1');
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('[data-method="v60"]');
+      await page.click('[data-roast="light"]');
+      await page.click('[data-taste="bright"]');
+      assert.equal(await page.locator('#prep-water-tip').isVisible(), false);
+      await page.close();
+    });
+    test('R-14: het receptscherm noemt het tempo (4–8 g/s) en per giet de giettijd', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await toPrepKlassiek(page);
+      const note = await page.locator('#recipe-rate-note').textContent();
+      assert.match(note, /4–8 g per seconde/);
+      assert.doesNotMatch(await page.locator('#screen-prep').innerText(), /g\/sec/);
+      await page.close();
+    });
+  });
+
+  describe('Review Sprint D', () => {
+    test('R-20: na 30 dagen zonder back-up een herinnering op Home; "Later" = een week stil; Instellingen toont de opslag', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.addInitScript(() => {
+        if (sessionStorage.getItem('bk')) return;
+        sessionStorage.setItem('bk', '1');
+        const at = Date.now() - 40 * 86400000;
+        const rec = (id) => ({ id, schemaVersion: 6, createdAt: at, updatedAt: at, lifecycle: 'logged', beanId: 'bk1', beanSnapshot: null, equipment: {}, waterSnapshot: null, goal: null,
+          plan: { methodId: 'v60', profileId: 'klassiek', roastId: 'light', waterMl: 300, doseG: 17.3, ratioText: '1:17', tempC: 95, grindStartingPoint: 15, grindTarget: 15, strengthStep: 0, bypass: null, steps: [], expectedTotalSec: 210, inputs: null, appliedAdjust: null },
+          actual: { doseG: 17.3, doseSource: 'P', grindClick: 15, grindSource: 'P', confirmed: true, events: [], bedDrySec: 210, completedAt: at },
+          derived: {}, tasting: { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: 4, complete: true, approved: true }, diagnosis: null,
+          recommendation: { type: 'KEEP' }, flags: {}, favorite: false, sideEffectsAppliedAt: at, deletedAt: null });
+        localStorage.setItem('brewconsole_beans', JSON.stringify([{ id: 'bk1', name: 'Back-upboon', roastLevel: 'light', profileKey: 'klassiek', process: 'washed', flavorNotes: [], addedAt: at, doseUsedG: 0 }]));
+        localStorage.setItem('brewconsole_brews', JSON.stringify([rec('k1'), rec('k2'), rec('k3')]));
+      });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      assert.equal(await page.locator('#home-backup').isVisible(), true);
+      assert.match(await page.locator('#home-backup').innerText(), /Je 3 koppen en 1 boon staan alleen op dit toestel/);
+      await page.click('#home-backup-later');
+      assert.equal(await page.locator('#home-backup').isVisible(), false);
+      assert.ok(await page.evaluate(() => Number(localStorage.getItem('brewconsole_backup_snooze_until')) > Date.now() + 6 * 86400000));
+
+      await page.evaluate(() => localStorage.removeItem('brewconsole_backup_snooze_until'));
+      await page.reload({ waitUntil: 'load' });
+      const download = page.waitForEvent('download');
+      await page.click('#home-backup-btn');
+      await download;
+      assert.equal(await page.locator('#home-backup').isVisible(), false, 'na een back-up is de herinnering weg');
+      await page.click('.navbar [data-nav="settings"]');
+      assert.match(await page.locator('#storage-status').innerText(), /In gebruik: \d+ kB .*Laatste back-up: vandaag\./);
       await page.close();
     });
   });

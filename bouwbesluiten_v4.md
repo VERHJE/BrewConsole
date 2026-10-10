@@ -115,3 +115,89 @@ Elk bestaand recept (standaard en ±8%) blijft byte-identiek (golden fixtures, B
 ## Testresultaten
 
 808/808 tests groen (`npm run qa`), inclusief 12 nieuwe pure tests (advieskeuzes, landing op het raster, teksten, dosis, poortstatistiek) en 2 browsertests (vijf chips op één regel, volledige cyclus −8% → halve stap → ingesteld → getest "beter" → houd zo).
+
+# Expertreview oktober 2026 — Sprint A (fouten en vertrouwen)
+
+Uit de expertreview van oktober 2026 (bevindingen R-01 t/m R-22). Sprint A raakt geen receptgetal en geen adviesregel; akkoord gekregen om te starten.
+
+| # | Wat was er mis | Wat is gebouwd |
+| --- | --- | --- |
+| **R-01** | Een gelogde kop opnieuw openen ("← Terug naar timer" → "Proeven & loggen") toonde een lege proefkaart; opslaan overschreef proefkaart, advies en bevestiging. | `openBrewLogEntry()` vult de kaart uit het bewaarde record (`tastingDraftFromRecord()`, `actualsModeOfRecord()`) en toont het bewaarde advies. |
+| **R-05** | "Bloemig & delicaat (Hedrick-methode)" en "Naar Hedrick's aanpak", terwijl de engine Hedrick nooit maakt. | Teksten eerlijk gemaakt; de tekstentest controleert nu dat een profielbeschrijving alleen een bronnaam noemt als de engine dat schema ook maakt. |
+| **R-06** | Wie zonder boon begon, kon nergens alsnog een boon koppelen; de leerlus deed dan niets. | Boonkiezer (`openBeanPicker()`) op het receptscherm en na opslaan, met snel een boon aanmaken (alleen een naam; branding en profiel van het recept). `linkBrewToBean()` koppelt achteraf met dezelfde bijwerkingen als bij het zetten. |
+| **R-07** | "Zet deze boon" (boondetail) liep altijd via het methode-advies en vroeg het profiel opnieuw. | Na de eerste kop gaat de boondetail direct naar het recept (`brewBean()`); op de bonenkaart heet de tweede knop dan "Anders zetten →". Een profiel gekozen in het advies wordt het profiel van de boon. |
+| **R-08** | Een "check eerst"-advies verdween na het Klaar-scherm. | De boon bewaart het (`pendingCheck`) tot de volgende gelogde kop; Home en het receptscherm tonen het. |
+| **R-16** | "Gezet zoals gepland?" werd makkelijk overgeslagen; de kop telde dan niet mee. | Opslaan zonder bevestiging vraagt het nog één keer: "Ja, opslaan", "Anders…" of "Weet ik niet, toch opslaan". |
+| **R-17** | De brander werd de boonnaam; "250g" werd niet herkend. | Nieuw veld Brander; `extractRoasterFromText()`, `extractBagSizeFromText()`; regels in hoofdletters worden netjes gemaakt. |
+| **R-18** | Na een boon opslaan via de Bonen-tab stond er toch "← Methode". | `showScreen(…, { keepTabRoot })`. |
+| **R-19** | Klaar-scherm toonde de plantemperatuur als resultaat. | Label "Temp. (plan)". |
+| **R-21** | Bonenkaart was een knop met knoppen erin; alkaliniteitseenheid zonder label. | De boonnaam is de knop; de kaart vangt alleen de tik eromheen. Label toegevoegd. |
+
+# Expertreview oktober 2026 — Sprint B (de smaaklus sluiten, diag-2026.3)
+
+Vooraf voorgelegd en akkoord gekregen: "Zet opnieuw" mag je vorige kop exact herhalen (herziet besluit C2 "sterkte per keer"), en de adviesregels mogen naar diag-2026.3.
+
+## Besluiten
+
+| # | Besluit | Gebouwd |
+| --- | --- | --- |
+| **R-02 / "Mijn recept per boon"** | "Zet opnieuw" herhaalt je vorige kop: maalstand (de bevestigde werkelijke klik, anders de geplande) en sterkte, naast methode, water en bypass. | `bean.stands[methode]` = de stand van de laatst gelogde kop (`standFromRecord()`, `updateBeanStand()`; een oudere kop overschrijft niets). `brewAgain()` zet hem; een klaargezette stap verandert daarna precies één ding. Receptscherm: "jouw stand" in de tegels en een kaart met "Terug naar het basisrecept". Na een kop van 2/5 of een "check eerst" vraagt die kaart of je liever het basisrecept wilt. Via het methode-advies begin je bewust opnieuw (C2 blijft daar gelden). Ook op de Chemex onthoudt dit jouw klik. "Zet je beste kop opnieuw" zet nu ook de maalstand van die kop. |
+| **R-03** | "Droog/wrang" blokkeert het advies alleen bij een goede sterkte; een sterkteklacht krijgt zijn dosisstap met een giettip. Bitter + droog + vlak zuur (zonder water dat de zuren dempt) = waarschijnlijk overextractie → 1 klik grover. "Te sterk" met alleen een zwakke aanwijzing voor overextractie (bv. alleen bitter) → eerst minder koffie. | `diagnoseTasting()` (`flat_over`), `recommendNext()`. |
+| **R-04** | Na een kop die het doel net niet haalde (of 4 of minder): "Wat miste je?" — meer fruit/helderheid → halve stap lichter; meer body → halve stap sterker; meer zoetheid → 1 klik fijner (niet bij bitter); minder bitter → 1 klik grover. Bij "meer fruit" eerst het water als dat de zuren dempt (alkaliniteit > 70); bij een zak van meer dan 3 weken na branden komt er een eerlijke versheidstip bij (`old_fruit`, geen receptfix: die bestaat niet). Een duidelijk extractie- of sterktesignaal gaat vóór de wens; geen heen-en-weer. | `TASTING_MISSED`, `missedQuestionApplies()`, `goalStepFor()`; de stap verschijnt alleen in de proefkaart als hij erbij hoort. |
+| **R-09** | Een geslaagde kop (4/5) mag je verfijnen, maar alleen als je zelf zegt wat beter kan; zonder antwoord blijft het "Houd dit recept zo". | `recommendNext()` (`refine`). |
+| **R-10** | "Houd zo" dat bij de volgende vergelijkbare kop weer geslaagd was, telt apart als "bevestigd". De poort en de drempels veranderen niet. | `adviceOutcomeStats().keep`, getoond onder Statistieken. |
+
+## Effect, gemeten met een virtuele proever
+
+30 virtuele bonen (beste klik 13–18, beste sterkte −8% … +8%), elke kop door de echte adviesmotor:
+
+| | Komen tot rust | Op hun beste kop (5/5) | Gem. koppen |
+| --- | --- | --- | --- |
+| Vóór (terug naar start na elke kop, diag-2026.2) | 7 / 30 | 1 | — |
+| Alleen onthouden (diag-2026.2) | 20 / 30 | 1 | — |
+| Onthouden + diag-2026.3 + "Wat miste je?" | 30 / 30 | 30 | 4,7 |
+
+Een model is geen echt panel: de richting is duidelijk, de precieze getallen niet. De simulatie staat als vaste test in `tests/dial-in-review.test.mjs` (minimaal 27/30).
+
+## Wat hierdoor niet verandert
+
+Geen enkel engine-receptgetal (golden fixtures, FORBIDDEN-edges en de break-it-matrix zijn ongewijzigd groen). Proces, hoogte en water sturen nog steeds geen receptgetal. De advies-poort (≥20 getest, ≥65% gelukt, ≤15% slechter) is ongewijzigd; Fase 5 blijft dicht tot die gehaald is.
+
+# Expertreview oktober 2026 — Chemex standaard 500 ml (R-11)
+
+Akkoord gekregen (receptgetal: de standaardhoeveelheid). De Chemex start voortaan op 500 ml i.p.v. de engine-standaard van 300 ml (dezelfde als de V60): een dun bed in de grote kegel loopt te snel door, wat de app zelf al als "klein brouwsel" meldde. Dosis en ratio volgen uit hetzelfde doelvenster (500 ml → 28,8 g, 1:17,4). Daarbij: op de Chemex staat de maalgraad niet meer dubbel ("middelgrof middelgrof"), en zonder bekend klikgetal zegt de tegel dat de app jouw klik onthoudt als je hem na het zetten invult (zie R-02). Een overlay die niet bij de hoeveelheid past (Rao Chemex tot een vast maximum) toonde een interne Engelse engine-code; die wordt nu in gewone taal uitgelegd.
+
+# Expertreview oktober 2026 — ideeën 5, 6 en 7 (deze zak, per brander)
+
+Gekozen uit de brainstorm. Geen van drieën verandert een receptgetal of adviesregel.
+
+- **Drinkvenster per zak (idee 5).** Bewust de bestaande versheidstabel: "uitgerust" = dag 7 t/m 21 na branden (`drinkWindowFor()`). Op de boondetail als vuistregel, nooit als meting ("Proef zelf"), met de rustdagen ervoor en een melding als je meer koppen over hebt dan dagen in het venster. Een roast-afhankelijk venster is bewust niet gebouwd: dat zou de versheidsmelding op het receptscherm tegenspreken.
+- **Deze zak (idee 6).** Aantal koppen, gemiddeld oordeel, voorraad en de beste kop van de zak (`bagSummaryFor()`, `bestCupOf()`), met "Zet deze kop opnieuw" (inclusief de maalstand, zie R-02). Bij een lege zak: bewaar deze stand voor als je de boon opnieuw koopt.
+- **Per brander (idee 7), alleen weergave.** Nieuw veld Brander op de boon (zie R-17). Op de boondetail en onder Statistieken: hoeveel bonen en koppen van die brander, gemiddeld oordeel, en waar je goede koppen meestal lagen t.o.v. de startklik (`roasterSummary()`). Dit stuurt bewust niets: leren uit je koppen (een startklik per brander voorstellen) hoort bij Fase 5 en wacht op de adviespoort.
+
+# Expertreview oktober 2026 — aanrechtmodus (idee 20)
+
+Gekozen uit de brainstorm. De timer krijgt een aanrechtmodus: de giet-instructie ("Giet tot 120 g", "Wacht · 0:18") groot en leesbaar op afstand, de "Bed droog"-knop groter, en de minder belangrijke regels (lopend totaal, giet-snelheid) weg. Op een liggende tablet staat de wijzerplaat links en de instructie rechts. Standaard aan vanaf 700 px breed (tablet), standaard uit op een telefoon; met "Aanrechtmodus" op het timerscherm per toestel aan of uit te zetten (een per-toestel voorkeur in de browseropslag). Welke instructie er staat en wanneer, verandert niet. De verdere vormgeving komt mee in de visuele review.
+
+# Expertreview oktober 2026 — Sprint C (tempo, voorbereiding, water, één smaakvraag)
+
+Uit het verbeterplan van de review; geen receptgetal en geen adviesregel veranderd.
+
+| # | Besluit | Gebouwd |
+| --- | --- | --- |
+| **R-14** | Giet-snelheid als een rustig straaltje: 4–8 g/s. Boven ±8 g/s roer je het bed op; het oude label ("~6–17 g/sec") kwam van een aangenomen 5–15 s per giet. Het schema (de starttijden) blijft gelijk. | `POUR_RATE_GPS`, `pourTimeLabel()`: per giet de giettijd bij 4–8 g/s ("~8–15 s"); een giet met een gepubliceerd eindmoment (Hoffmann) toont zijn eigen venster. De timer houdt "Giet tot …" vast zolang de giet bij 6 g/s duurt (`pourSecFor()`, minstens 5 s) en toont "+60 g in ~10 s". Vervangt `ASSUMED_SINGLE_POUR_SEC`. |
+| **R-15** | De klok start niet meer direct vanaf het receptscherm. "Naar de timer" opent een klaar-check (filter spoelen, koffie en maalstand, weegschaal op 0, watertemperatuur) met "Start de klok"; het brouwsel (v6-record) ontstaat pas bij die tik. ▶ doet hetzelfde, ↻ brengt je terug naar de klaar-check, weggaan vanuit de klaar-check vraagt geen bevestiging. | `timer.armed`, `startBrewClock()`, `brewReadyItems()`, `renderBrewReady()`; de maalstand komt uit dezelfde bron als de maaltegel (`prepGrindValue()`). |
+| **R-13** | Eén smaakvraag i.p.v. "profiel" (scherm) + "doel" (chips op het receptscherm). Het smaakscherm vraagt "Wat wil je proeven?": **Helder & fris** = heel_fruitig (Kasuya 4:6 met een grotere eerste giet, iets minder koffie) en doel Helder & fris; **Gebalanceerd** = klassiek (gelijke beurten), zonder aparte doelvraag op de proefkaart; **Rond & vol** = zoet (Kasuya 4:6 met een kleinere eerste giet) en doel Rond & vol. Alle drie bestaande profielen: geen nieuw receptgetal. Daaronder optioneel een gietstijl (Hoffmann, Rao, April, Snel/Perger, Basisrecept), met zijn eigen recept en zonder smaakdoel; een stijl met een naam staat er alleen als hij op die methode een eigen schema heeft (April en Rao niet op de Chemex). Profielen zonder eigen recept (vol_rond = klassiek, bloemig_delicaat, sirooprig_vol) staan niet meer als keuze; bonen die er een hebben werken door. Via het methode-advies volgt het doel uit het gekozen profiel (`goalForProfile()`). | `TASTE_CHOICES`, `STYLE_CHOICES`, `styleChoicesFor()`, `tasteDetail()` (de uitleg per smaak komt uit het recept zelf), `choiceTwinLabels()` (op de Chemex: "zelfde recept als …", het verschil zit dan in de proefkaart), `setGoalForChoice()`. De doel-chips op het receptscherm zijn weg; de samenvatting bovenaan noemt de smaak. |
+| **R-12** | Water vroeg en concreet, zonder receptgetal. Bij je eerste boon één keer: "Welk water gebruik je?" met Dunea, Waternet, PWN (Andijk), "ander waterbedrijf of flessenwater" (naar Instellingen) en "Ik meng 1:1 met gedemineraliseerd water". Alleen bedrijven met één gepubliceerde, stabiele samenstelling; de waarden komen uit hun eigen kwaliteitsrapporten en de bron staat erbij. Bij Helder & fris met water dat veel buffert (> 70 mg/L CaCO3) één regel op het receptscherm met de mengtip. | `WATER_COMPANY_PRESETS` (Dunea ±170 mg/L HCO3 / 1,4 mmol/L, rapporten 2021–2024; Waternet 207 / 1,38, jaaroverzicht 2025; PWN Andijk 136 / 1,35, Q1 2023), `waterTipFor()`, `openWaterAsk()` (één keer, `brewconsole_water_asked`). |
+
+**Correctie die hierbij hoort (R-12):** de adviesmotor keek naar de alkaliniteit van je kraanwater zonder de verdunning. Wie 1:1 mengde, kreeg dus bij een vlakke kop toch "Check eerst je water". Het advies gebruikt nu het water dat je echt gebruikte (`effectiveAlkalinityCaCO3()`, uit de watersnapshot van de kop). De regel zelf en de grens (70) zijn ongewijzigd.
+
+**Gevolg om te weten (R-13):** wie Helder & fris kiest, krijgt op de V60 het Kasuya-schema met de grotere eerste giet en begint op 350 ml (de standaard van dat profiel); de blinde proef staat dan op het receptscherm, waardoor dat scherm langer is dan bij Gebalanceerd. Een boon met een eerdere combinatie (bijv. Klassiek + doel Helder & fris) houdt die bij "Zet opnieuw".
+
+# Expertreview oktober 2026 — Sprint D (data en code)
+
+| # | Besluit | Gebouwd |
+| --- | --- | --- |
+| **R-20** | Alles staat alleen in de browseropslag van één toestel. (1) Na je eerste gelogde kop vraagt de app de browser om blijvende opslag (`navigator.storage.persist()`; niet eerder, want Firefox vraagt daarvoor toestemming). (2) Op Home een rustige herinnering als je laatste back-up 30+ dagen oud is (of er nooit een was en je eerste gegevens 30+ dagen oud zijn), pas vanaf 3 gelogde koppen; "Later" houdt het een week stil; "Back-up maken" exporteert meteen. (3) Instellingen → Data toont of de opslag blijvend is, hoeveel er in gebruik is (van de ±5 MB die een browser meestal toestaat, met "bijna vol" vanaf 80%) en wanneer je laatste back-up was. | `backupReminderDue()` (puur, getest), `renderHomeBackupReminder()`, `requestPersistentStorage()`, `storageStatusText()`, `markBackupDone()` (`brewconsole_last_backup_at`). Geen gegevens verlaten het toestel. |
+| **R-22** | Historisch commentaar uit de code. Alle 303 commentaarblokken met een geschiedenismarkering (NIEUW, FIX, HERZIEN, BIJGEWERKT, UITGEBREID, HERAUDIT) buiten de gebundelde engine zijn één voor één herschreven tot het *waarom van vandaag* (bronnen, invarianten, grenzen en verwijzingen naar tests en besluiten blijven staan); 19 blokken zonder actuele uitleg zijn weg. Twee commentaren die niet meer klopten zijn gecorrigeerd (reset start als nieuwe gebruiker, niet met voorbeeldbonen; de "Verfijn"-sectie is altijd bereikbaar). De oorspronkelijke teksten staan woordelijk in `docs/codegeschiedenis.md`. Het app-bestand is ±95 kB kleiner (1,05 MB → 0,96 MB). De engine-bundel blijft ongemoeid: die wordt gegenereerd uit de TypeScript-bron. Afspraak voortaan: geschiedenis hoort in deze bouwbesluiten, in de code alleen het waarom. | `docs/codegeschiedenis.md`. Geen gedragswijziging: alle 877 tests groen. |
+| **R-22 (staat per boon)** | Wat per boon hoort, staat sinds Sprint B op de boon: maalstand en sterkte (`bean.stands`, R-02), het smaakdoel (`bean.goal`), methode/water/bypass (`bean.lastBrew`), een klaargezette stap (`pendingAdjust`) en een openstaande check (`pendingCheck`). De ±40 overige globale variabelen zijn formulier-, filter-, timer- of opslagstaat die bewust per sessie of per toestel geldt. Ze naar modules verhuizen is een herstructurering zonder gebruikerswinst in één bestand zonder build-stap; niet gedaan. | — |
