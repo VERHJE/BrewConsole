@@ -35,7 +35,7 @@
     --ink-a35:rgba(0,0,0,.35); --ink-a40:rgba(0,0,0,.40); --ink-a45:rgba(0,0,0,.45); --ink-a55:rgba(0,0,0,.55);
     --ink-a60:rgba(0,0,0,.6); --ink-a68:rgba(0,0,0,.68); --ink-a75:rgba(0,0,0,.75); --ink-a90:rgba(0,0,0,.90);
     --white:#fff; --white-a10:rgba(255,255,255,.1); --white-a16:rgba(255,255,255,.16);
-    --splash-a35:rgba(8,11,10,.35); --splash-a55:rgba(8,11,10,.55); --splash-a94:rgba(8,11,10,.94); --splash-track:rgba(237,230,217,.15);
+    --splash-a35:rgba(8,11,10,.35); --splash-a55:rgba(8,11,10,.55); --splash-a94:rgba(8,11,10,.94);
     --backdrop:rgba(10,7,5,.6); --photo-bg:#0B0908; --photo-btn-bg:rgba(20,16,14,.8); --berry-on-photo:#F08DA0;
     --danger-a10:rgba(194,68,92,.1);
     /* Beoordelingsschaal (lekker 1–5), van rood-bruin naar groen. */
@@ -93,6 +93,7 @@
     /* Audit VA-01: tekst op de timerfoto krijgt eigen kleuren, los van het thema; de foto en
        de scrim zijn altijd donker. */
     --on-photo:#F5F0E6;
+    --on-swatch-light:#2B1810; --on-swatch-dark:#F5F0E6; /* VA-47: initialen op een lichte of donkere roaststaal */
     --on-photo-dim:rgba(245,240,230,.84);
     --on-photo-faint:rgba(245,240,230,.72);
     --on-photo-accent:#E6C199;
@@ -189,15 +190,6 @@
     font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.18em; text-transform:uppercase;
     color:var(--text-faint); margin:0;
   }
-  .splash-loadbar{
-    position:relative; width:120px; height:2px; background:var(--splash-track);
-    border-radius:var(--radius-pill); overflow:hidden; margin-top:26px;
-  }
-  .splash-loadbar-fill{
-    position:absolute; inset:0; width:40%; background:var(--copper-light); border-radius:var(--radius-pill);
-    animation:splashLoad 1.4s ease-in-out infinite;
-  }
-  @keyframes splashLoad{ 0%{transform:translateX(-100%);} 100%{transform:translateX(250%);} }
   @keyframes splashOut{ from{opacity:1;} to{opacity:0; visibility:hidden;} }
 
   /* In-thema bevestigingsmodal: zie #confirm-modal en showConfirmModal(). */
@@ -240,9 +232,10 @@
   .bean-picker-new-row .form-input{flex:1; min-width:0;}
   .bean-picker-new-row .modal-btn{flex:0 0 auto; padding:0 14px;}
   .water-ask-mix{display:flex; gap:10px; align-items:center; min-height:44px; font-family:var(--font-body); font-size:var(--fs-small); color:var(--text); margin:0 0 12px;}
-  .water-ask-mix input{width:20px; height:20px; flex-shrink:0;}
+  .water-ask-mix input{width:24px; height:24px; flex-shrink:0;} /* VA-44 */
   /* Inline in de boonregel (niet de volle breedte van .link-secondary): het receptscherm blijft kort. */
-  .prep-bean-line .prep-bean-link{display:inline-flex; align-items:center; width:auto; vertical-align:middle; margin:0 0 0 4px; min-height:44px; padding:0 4px;}
+  /* VA-39: de link op een eigen regel, zodat de 44 px hoge knop de regelafstand niet verstoort. */
+  .prep-bean-line .prep-bean-link{display:flex; align-items:center; width:auto; margin:0; min-height:44px; padding:0;}
 
   /* Microscopische grain (±1–2% opacity) op grote donkere vlakken, alleen CSS (geen afbeelding,
      dus offline veilig). Via ::after op de achtergrond, nooit over tekst. */
@@ -326,7 +319,7 @@
     min-height:44px; display:inline-flex; align-items:center;
     transition:color var(--motion-standard) var(--ease-out);
   }
-  .back-btn:hover{color:var(--copper-light);}
+  @media (hover:hover){ .back-btn:hover{color:var(--copper-light);} }
   .back-btn:active{color:var(--copper-light);}
 
   .title{
@@ -346,7 +339,7 @@
     display:flex; align-items:center; justify-content:center;
     transition:border-color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
-  .header-icon-btn:hover{ border-color:var(--copper); }
+  @media (hover:hover){ .header-icon-btn:hover{ border-color:var(--copper); } }
   .header-icon-btn:active{ transform:scale(.94); }
 
   /* Triage: icoon boven de titel; één vraag per stap met genummerde categorie, radiokaarten
@@ -358,7 +351,7 @@
     font-family:var(--font-display); font-size:var(--fs-heading); font-weight:600;
   }
   .triage-step-meta{ display:flex; align-items:baseline; gap:10px; margin-bottom:8px; }
-  .triage-step-number{ font-family:var(--font-mono); font-size:var(--fs-number); color:var(--copper-light); font-weight:600; font-variant-numeric:tabular-nums; }
+  .triage-step-number{ font-family:var(--font-body); font-size:var(--fs-number); color:var(--copper-light); font-weight:600; font-variant-numeric:tabular-nums; }
   .triage-step-category{ font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); }
   .triage-step-question{ font-family:var(--font-display); font-size:var(--fs-heading); font-weight:600; line-height:1.35; margin:0 0 18px; }
   .triage-options{ display:flex; flex-direction:column; gap:8px; }
@@ -384,7 +377,7 @@
   }
   .triage-option:active{ transform:scale(.99); }
   .triage-step-footer{ display:flex; align-items:center; justify-content:space-between; margin-top:14px; min-height:32px; }
-  .triage-progress{ font-family:var(--font-mono); font-size:var(--fs-label); color:var(--text-faint); font-variant-numeric:tabular-nums; }
+  .triage-progress{ font-family:var(--font-body); font-size:var(--fs-label); color:var(--text-faint); font-variant-numeric:tabular-nums; }
   /* Resultaatkaarten: vraag → waarom → praktische volgende stap per gevlagde oorzaak
      (spec §6.3) — bewust GEEN percentage/waarschijnlijkheidsgetal (§14 "geen Triage
      probability"). */
@@ -416,7 +409,7 @@
     box-shadow:var(--shadow-card);
     transition:border-color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out), background var(--motion-standard) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
-  .choice-card:hover{border-color:var(--copper-dim); transform:translateY(-1px); box-shadow:var(--shadow-card), 0 0 0 1px var(--accent-glow);}
+  @media (hover:hover){ .choice-card:hover{border-color:var(--copper-dim); transform:translateY(-1px); box-shadow:var(--shadow-card), 0 0 0 1px var(--accent-glow);} }
   .choice-card:active{transform:scale(.98);}
   .choice-card[data-selected="true"]{
     border-color:var(--copper);
@@ -439,10 +432,9 @@
     box-shadow:var(--shadow-card);
     transition:border-color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
-  .roast-card:hover{transform:translateY(-1px); box-shadow:var(--shadow-card), 0 0 0 1px var(--accent-glow);}
+  @media (hover:hover){ .roast-card:hover{transform:translateY(-1px); box-shadow:var(--shadow-card), 0 0 0 1px var(--accent-glow);} }
   .roast-card:active{transform:scale(.98);}
-  .roast-card[data-selected="true"]{border-color:var(--copper);}
-  .roast-swatch{width:100%; height:20px; border-radius:var(--radius-xs); margin-bottom:12px;}
+  .roast-card[data-selected="true"]{border-color:var(--copper); box-shadow:0 0 0 1px var(--copper), var(--shadow-card);} /* VA-40: dubbele koperen rand */
   .roast-name{font-family:var(--font-display); font-weight:600; font-size:var(--fs-body); display:block;}
   .roast-desc{font-size:var(--fs-label); color:var(--text-dim); margin-top:3px;}
 
@@ -461,9 +453,12 @@
     box-shadow:var(--shadow-card);
     transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out);
   }
-  .profile-row:hover{background:var(--surface-2);}
+  @media (hover:hover){ .profile-row:hover{background:var(--surface-2);} }
   .profile-row:active{transform:scale(.99);}
-  .profile-row[data-selected="true"]{background:var(--surface-2);}
+  .profile-row[data-selected="true"]{background:var(--surface-2); border-color:var(--copper); border-left-color:var(--copper);}
+  /* VA-23: één accentkleur. Iconen neutraal; koper alleen voor de gekozen regel. */
+  .profile-icon{display:flex; color:var(--text-faint);}
+  .profile-row[data-selected="true"] .profile-icon{color:var(--copper-light);}
   .profile-row svg{width:24px; height:24px; flex-shrink:0;}
   .profile-name{font-family:var(--font-display); font-weight:600; font-size:var(--fs-body); display:block;}
   .profile-desc{font-size:var(--fs-label); color:var(--text-dim); margin-top:2px;}
@@ -479,11 +474,12 @@
     color:var(--text-dim);
     margin-bottom:4px;
   }
-  .summary-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+  .summary-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0; background:var(--copper);} /* VA-23: koper, geen kleur per smaak */
   /* Fase 4: advies-paneel + klaargezette stap. */
   .reco-card{background:var(--surface); border:1px solid var(--copper); border-radius:var(--radius-lg); padding:16px; margin:14px 0 8px; display:flex; flex-direction:column; gap:8px;}
   .reco-card[data-type="KEEP"]{border-color:var(--border);}
   .reco-kicker{margin:0; font-size:var(--fs-label); letter-spacing:.04em; text-transform:uppercase; color:var(--text-faint); display:flex; align-items:center; gap:8px;}
+  .reco-kicker .badge{flex-shrink:0;} /* één woord: niet laten krimpen */
   .reco-title{margin:0; font-size:var(--fs-heading); font-weight:700; color:var(--copper-light);}
   .reco-card[data-type="KEEP"] .reco-title{color:var(--text);}
   .reco-body{margin:0; font-size:var(--fs-small); color:var(--text-dim);}
@@ -641,7 +637,7 @@
     font-size:var(--fs-heading); cursor:pointer; line-height:1;
     transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-micro) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
-  .stepper button:hover{border-color:var(--copper);}
+  @media (hover:hover){ .stepper button:hover{border-color:var(--copper);} }
   .stepper button:active{background:var(--copper-dim); transform:scale(.94);}
   .stepper span{font-size:var(--fs-body); min-width:60px; text-align:center; font-variant-numeric:tabular-nums;}
 
@@ -675,7 +671,10 @@
   }
   .stat-icon{ width:13px; height:13px; flex-shrink:0; opacity:.85; }
   @media (max-width:359px){ #stats-grid .stat-icon{display:none;} }
-  .stat-value{font-family:var(--font-mono); font-size:var(--fs-heading); color:var(--copper-light); font-variant-numeric:tabular-nums;}
+  /* VA-43 (keuze Jelle): getallen buiten de timer in de tekstletter met even brede cijfers; de
+     eenheid kleiner en gedempt (.unit). De timer en het woordmerk blijven monospace. */
+  .stat-value{font-family:var(--font-body); font-weight:600; letter-spacing:-.01em; font-size:var(--fs-heading); color:var(--copper-light); font-variant-numeric:tabular-nums;}
+  .unit{font-size:var(--fs-small); font-weight:500; letter-spacing:0; color:var(--text-dim);} /* met een gewone spatie ervoor: "17,3 g" blijft één tekst */
   .stat-sub{font-size:var(--fs-label); color:var(--text-faint); margin-top:3px;}
   /* "Meer info"-toggle binnen een tegel (vandaag Maalgraad): de kaart blijft compact. */
   .stat-more-toggle{
@@ -683,7 +682,7 @@
     font-size:var(--fs-label); font-family:var(--font-body); letter-spacing:.02em; padding:0; margin-top:2px;
     text-align:left; min-height:44px; /* VA-32: tikdoel ≥ 44 px */
   }
-  .stat-more-toggle:hover{ text-decoration:underline; }
+  @media (hover:hover){ .stat-more-toggle:hover{ text-decoration:underline; } }
   .stat-more-body{ margin-top:4px; }
   /* Secundaire tegels (ratio, brouwtijd): kleiner en gedempt. */
   .stat-block--secondary .stat-value{font-size:var(--fs-small); color:var(--text-dim); font-variant-numeric:tabular-nums;}
@@ -696,7 +695,7 @@
   }
   .stat-stepper button:not(.stat-value--btn):active{background:var(--copper-dim); transform:scale(.94);}
   .stat-value--btn{background:none; border:none; padding:0; min-height:44px; cursor:pointer; flex:1; text-align:center; white-space:nowrap;}
-  .stat-value--btn:hover{text-decoration:underline; text-underline-offset:3px;}
+  @media (hover:hover){ .stat-value--btn:hover{text-decoration:underline; text-underline-offset:3px;} }
   .stat-block--hero .stat-value{font-size:var(--fs-number);}
   /* Sprint 5: mono alleen voor getallen — een maalgraad als woord ("middelgrof") in de gewone letter. */
   .stat-block--hero .stat-value.stat-value--word{font-family:var(--font-body); font-size:var(--fs-heading); white-space:normal; overflow-wrap:anywhere;}
@@ -715,7 +714,7 @@
     #stats-grid .stat-block--water .stat-value--btn{flex:0 1 auto; min-width:120px;}
     #stats-grid .stat-block--grind{grid-column:2; grid-row:span 2; align-self:stretch;}
   }
-  #stats-grid{align-items:start;}
+  #stats-grid{align-items:stretch;} /* VA-36: tegels in één rij even hoog */
   .stat-block--secondary .stat-label{color:var(--text-faint);}
   /* Sprint 5: ratio en brouwtijd compact — label en waarde op één regel, uitleg eronder. */
   .stat-block--secondary{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; column-gap:8px; padding:10px 14px;}
@@ -757,10 +756,11 @@
     border-top:1px solid var(--border);
     color:var(--text); font-weight:500;
   }
-  .recipe-table td.mono{font-family:var(--font-mono); color:var(--text); white-space:nowrap;}
+  .recipe-table td.mono{font-family:var(--font-body); font-variant-numeric:tabular-nums; color:var(--text); white-space:nowrap;}
   /* Elke zetstap-rij is tikbaar (opent #pourstep-modal). */
   .recipe-table tbody tr{ cursor:pointer; transition:background var(--motion-standard) var(--ease-out); }
-  .recipe-table tbody tr:hover, .recipe-table tbody tr:focus-visible{ background:var(--surface-2); }
+  .recipe-table tbody tr:focus-visible{ background:var(--surface-2); }
+  @media (hover:hover){ .recipe-table tbody tr:hover{ background:var(--surface-2); } }
   .recipe-table tbody tr:active{ background:var(--copper-dim); }
   .recipe-table .step-note{display:block; font-size:var(--fs-label); color:var(--text-faint); margin-top:1px;}
   .recipe-table .step-flow{display:block; font-size:var(--fs-label); color:var(--copper-light); margin-top:1px; font-style:italic;}
@@ -906,7 +906,7 @@
     padding:10px 14px; cursor:pointer; min-height:44px; min-width:44px; /* VA-32: tikdoel ≥ 44 px */
     transition:border-color var(--motion-standard) var(--ease-out), color var(--motion-standard) var(--ease-out);
   }
-  .stop-btn:hover{border-color:var(--copper); color:var(--copper-light);}
+  @media (hover:hover){ .stop-btn:hover{border-color:var(--copper); color:var(--copper-light);} }
   @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)){
     .stop-btn{
       background:var(--surface-floating); border-color:var(--surface-floating-border);
@@ -935,9 +935,10 @@
     border-radius:50%;
     box-shadow:0 0 60px 10px var(--accent-glow);
   }
-  /* Ademende gloed zolang de timer loopt (data-running, gezet door setDialRunning()); los van
-     .flash, de eenmalige pre-alert-puls. Reduced-motion zet alle animaties uit. */
-  .dial-wrap[data-running="true"]{animation:dialGlowPulse 3.2s ease-in-out infinite;}
+  /* VA-38: beweging met betekenis. De gloed ademt alleen tijdens de voorwaarschuwing (5 s vóór een
+     giet, .pre-alert via checkPreAlert()), niet doorlopend; .flash is de puls bij een nieuwe stap.
+     Reduced-motion zet alle animaties uit. */
+  .dial-wrap.pre-alert{animation:dialGlowPulse 1.6s ease-in-out 3;}
   @keyframes dialGlowPulse{
     0%, 100%{box-shadow:0 0 60px 10px var(--accent-glow);}
     50%{box-shadow:0 0 84px 18px var(--accent-glow);}
@@ -988,7 +989,7 @@
   /* Sprint 1 (UX-review F2): na bed droog/einde geen ▶/× Stop meer — zie syncBrewFinishedUi(). */
   #screen-brew[data-finished] #pause-btn,
   #screen-brew[data-finished] #stop-btn{display:none;}
-  .brewlog-open-btn{margin-top:14px;}
+  .brewlog-open-btn{margin-top:14px; margin-bottom:14px;} /* VA-42: ruimte tot het uitklapblok */
   /* Sprint 1 (UX-review F1): "Opgeslagen ✓" + advies komen in beeld, niet tegen de rand. */
   .brewlog-saved-msg{scroll-margin-top:16px;}
   /* Sprint 4 (UX-review F1): proefkaart als stepper + adviesscherm. */
@@ -1021,7 +1022,7 @@
   .reco-fromto{display:flex; align-items:stretch; gap:8px; margin:4px 0;}
   .reco-fromto-tile{flex:1; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; display:flex; flex-direction:column; gap:2px;}
   .reco-fromto-tile--next{border-color:var(--copper);}
-  .reco-fromto-val{font-family:var(--font-mono); font-weight:700; font-size:var(--fs-number); color:var(--text);}
+  .reco-fromto-val{font-family:var(--font-body); font-variant-numeric:tabular-nums; font-weight:700; font-size:var(--fs-number); color:var(--text);}
   .reco-fromto-arrow{align-self:center; color:var(--copper-light); font-size:var(--fs-heading);}
   .brewlog-saved-msg:focus{outline:none;}
   /* Sprint 1 (UX-review F5): via de tabbalk geopend = hoofdscherm, geen terugknop. */
@@ -1071,14 +1072,14 @@
     box-shadow:var(--shadow-card);
     transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
-  .brew-controls button:hover{border-color:var(--copper);}
+  @media (hover:hover){ .brew-controls button:hover{border-color:var(--copper);} }
   .brew-controls button:active{background:var(--surface-2); transform:translateY(1px) scale(.96);}
   /* Safari/WebKit: expliciete afmeting naast de width/height-attributen op de svg's (zonder
      valt WebKit terug op een te grote standaardmaat). */
   .brew-controls button svg{width:24px; height:24px; display:block; flex-shrink:0;}
   .brew-controls #home-btn{width:44px; height:44px; color:var(--text-faint);}
   .brew-controls #home-btn svg{width:19px; height:19px;}
-  .brew-controls #home-btn:hover{color:var(--copper-light);}
+  @media (hover:hover){ .brew-controls #home-btn:hover{color:var(--copper-light);} }
   .brew-controls #pause-btn{
     width:76px; height:76px; font-size:var(--fs-small); font-weight:600; font-family:var(--font-body);
     background:var(--primary); color:var(--on-primary); border:none;
@@ -1109,8 +1110,9 @@
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
     padding:8px 14px; text-align:center; box-shadow:var(--shadow-card);
   }
-  .brewlog-complete-stat .stat-label{ font-size:var(--fs-label); margin-bottom:2px; }
-  .brewlog-complete-stat .stat-value{ font-size:var(--fs-small); font-family:var(--font-mono); color:var(--text); font-variant-numeric:tabular-nums; }
+  .brewlog-complete-stat .stat-label{ font-size:var(--fs-label); margin-bottom:2px; white-space:nowrap; } /* VA-42: labels op één regel */
+  .brewlog-complete-stat .stat-sub{ font-size:var(--fs-label); color:var(--text-faint); }
+  .brewlog-complete-stat .stat-value{ font-size:var(--fs-small); font-family:var(--font-body); font-weight:600; color:var(--text); font-variant-numeric:tabular-nums; }
   /* VA-29: tijdens het proeven een compacte kop (vinkje naast de titel, de meetwaarden als één
      regel), zodat vraag 1 met alle opties ook op een iPhone SE in beeld staat. */
   #screen-brewlog[data-mode="form"] .brewlog-complete-header{flex-direction:row; flex-wrap:wrap; justify-content:center; gap:4px 12px; margin:0 0 8px;}
@@ -1136,7 +1138,7 @@
   }
   .brewlog-slider-row{margin-bottom:14px;}
   .brewlog-slider-row .brewlog-slider-label{display:flex; justify-content:space-between; font-size:var(--fs-small); margin-bottom:4px;}
-  .brewlog-slider-row .brewlog-slider-label span:last-child{color:var(--copper-light); font-family:var(--font-mono);}
+  .brewlog-slider-row .brewlog-slider-label span:last-child{color:var(--copper-light); font-variant-numeric:tabular-nums;}
   .brewlog-slider-row input[type="range"]{width:100%; accent-color:var(--copper);}
   /* VA-12: per kop één regel (datum · methode · lekker · wat veranderde · advies); de details
      klappen open met een tik. Het hartje staat los rechts, buiten de uitklapregel. */
@@ -1151,7 +1153,7 @@
   .brewlog-entry-details[open] > .brewlog-entry-summary::before{content:"−";}
   .brewlog-entry-line{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-dim);}
   .brewlog-entry-line strong{color:var(--text); font-weight:600;}
-  .brewlog-entry-liking{font-family:var(--font-mono); color:var(--text);}
+  .brewlog-entry-liking{font-variant-numeric:tabular-nums; color:var(--text);}
   .brewlog-entry-body{padding:0 14px 12px 32px;}
   /* Favoriet per logging (entry.favorite, toggleBrewLogFavorite()); --berry voor "aan". */
   .brewlog-entry-fav{
@@ -1188,14 +1190,14 @@
     padding:12px; color:var(--text-dim); font-size:var(--fs-small); cursor:pointer; text-align:center;
     transition:border-color var(--motion-standard) var(--ease-out), color var(--motion-standard) var(--ease-out);
   }
-  .advisor-link:hover{border-color:var(--copper); color:var(--copper-light);}
+  @media (hover:hover){ .advisor-link:hover{border-color:var(--copper); color:var(--copper-light);} }
   .advisor-link:active{transform:scale(.99);}
   /* Pil-vormige primaire actie, voor plekken waar de hoge .start-btn te zwaar is. */
   .pill-cta{ margin-top:14px; } /* VA-20: uiterlijk = .btn-primary--sm */
   /* Destructieve variant van de secundaire knop: nooit gevuld, zodat hij niet concurreert met een
      primaire actie. */
   .settings-danger-btn{ border-color:var(--danger); color:var(--danger-text); border-style:solid; }
-  .settings-danger-btn:hover{ border-color:var(--danger); color:var(--danger-text); background:var(--danger-a10); }
+  @media (hover:hover){ .settings-danger-btn:hover{ border-color:var(--danger); color:var(--danger-text); background:var(--danger-a10); } }
   /* Secundaire knop: zelfde press-diepte als .start-btn, maar bescheidener. */
   .advisor-primary, .btn-secondary{
     display:flex; align-items:center; justify-content:center; gap:8px;
@@ -1205,7 +1207,7 @@
     cursor:pointer; text-align:center; box-shadow:var(--shadow-card);
     transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
-  .advisor-primary:hover, .btn-secondary:hover{border-color:var(--copper); background:var(--surface-2);}
+  @media (hover:hover){ .advisor-primary:hover, .btn-secondary:hover{border-color:var(--copper); background:var(--surface-2);} }
   .advisor-primary:active{transform:translateY(1px) scale(.99);}
   .link-secondary, .btn-tertiary{
     display:block; width:100%; margin-top:10px; min-height:44px;
@@ -1213,7 +1215,7 @@
     padding:10px; cursor:pointer; text-align:center; text-decoration:underline; text-underline-offset:2px;
     transition:color var(--motion-standard) var(--ease-out);
   }
-  .link-secondary:hover{color:var(--copper-light);}
+  @media (hover:hover){ .link-secondary:hover{color:var(--copper-light);} }
 
   .section-divider{
     display:flex; align-items:center; gap:12px; margin:24px 0 18px;
@@ -1231,7 +1233,7 @@
     box-shadow:var(--shadow-card);
     transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out);
   }
-  .bean-pick-card:hover{border-color:var(--copper-dim);}
+  @media (hover:hover){ .bean-pick-card:hover{border-color:var(--copper-dim);} }
   .bean-pick-card:active{background:var(--surface-2);}
   .bean-pick-card[data-selected="true"]{border-color:var(--copper); background:linear-gradient(160deg, var(--copper-a14), var(--surface) 70%);}
   .bean-pick-name{font-family:var(--font-display); font-weight:600; font-size:var(--fs-body); display:block;}
@@ -1243,7 +1245,7 @@
     padding:13px; color:var(--text-dim); font-size:var(--fs-small);
     transition:border-color var(--motion-standard) var(--ease-out), color var(--motion-standard) var(--ease-out);
   }
-  .bean-pick-new:hover{border-color:var(--copper); color:var(--copper-light);}
+  @media (hover:hover){ .bean-pick-new:hover{border-color:var(--copper); color:var(--copper-light);} }
 
   .advice-q{margin-bottom:20px;}
   .advice-q-label{
@@ -1272,7 +1274,7 @@
     background:var(--surface); color:var(--text-dim); font-size:var(--fs-small); cursor:pointer;
     transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out), color var(--motion-standard) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
-  .chip:hover{border-color:var(--copper-dim);}
+  @media (hover:hover){ .chip:hover{border-color:var(--copper-dim);} }
   .chip:active{background:var(--surface-2); transform:scale(.97);}
   .chip[data-selected="true"]{border-color:var(--copper); color:var(--copper-light); background:var(--surface-2); box-shadow:inset 0 1px 3px var(--ink-a30), 0 0 0 1px var(--accent-glow);}
   /* Sterkte: vijf standen (−8% … +8%) passen zo op één regel op een telefoon; op een heel smal scherm breken ze netjes af. */
@@ -1296,7 +1298,9 @@
   .advice-secondary-notes li{margin-bottom:4px;}
 
   /* bean library + form */
-  .form-label{display:block; font-size:var(--fs-label); color:var(--text-dim); margin:0 0 14px;}
+  .form-label{display:block; font-size:var(--fs-small); color:var(--text-dim); margin:0 0 14px;} /* VA-24: 14 px */
+  .form-optional{margin-left:4px; font-size:var(--fs-label); font-weight:400; color:var(--text-faint); text-transform:none; letter-spacing:0;}
+  .form-hint{display:block; margin:6px 0 0; font-size:var(--fs-label); line-height:1.45; color:var(--text-faint); text-transform:none; letter-spacing:0;}
   .form-input{
     display:block; width:100%; margin-top:6px;
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
@@ -1356,8 +1360,9 @@
     transition:color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
   .bean-edit{font-size:var(--fs-body);}
-  .bean-edit:hover, .bean-edit:active{color:var(--copper-light);}
-  .bean-delete:hover{color:var(--danger);}
+  .bean-edit:active{color:var(--copper-light);}
+  @media (hover:hover){ .bean-edit:hover{color:var(--copper-light);} }
+  @media (hover:hover){ .bean-delete:hover{color:var(--danger);} }
   .bean-delete:active{color:var(--danger);}
   .bean-edit:active, .bean-delete:active{transform:scale(.9);}
   /* Favoriet op boonniveau: zelfde vorm als .bean-edit/.bean-delete, --berry voor "aan". */
@@ -1368,17 +1373,14 @@
   }
   .bean-fav[aria-pressed="true"]{ color:var(--berry); }
   .bean-fav:active{ transform:scale(.85); }
-  /* Overlay-hartje op de Bean Detail hero-foto — vaste positie rechtsboven op het beeld,
-     zodat het los van de scrim-gradient (onderin) altijd goed leesbaar blijft. */
-  .bean-detail-hero-fav{
-    position:absolute; top:10px; right:10px; z-index:1;
-    width:44px; height:44px; border-radius:50%; border:none; cursor:pointer; /* VA-32 */
-    display:flex; align-items:center; justify-content:center; font-size:var(--fs-heading); line-height:1;
-    background:var(--photo-btn-bg); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); /* VA-03: hartje leesbaar op elke foto */
-    color:var(--white); transition:color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
+  /* VA-28: hartje naast de naam in de kop van het boondetail (favoriet op boonniveau). */
+  .bean-detail-fav{
+    width:44px; height:44px; border-radius:50%; border:none; cursor:pointer; flex-shrink:0; /* VA-32 */
+    display:flex; align-items:center; justify-content:center; background:none; color:var(--text-faint);
+    transition:color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
-  .bean-detail-hero-fav[aria-pressed="true"]{ color:var(--berry-on-photo); }
-  .bean-detail-hero-fav:active{ transform:scale(.88); }
+  .bean-detail-fav[aria-pressed="true"]{ color:var(--berry); }
+  .bean-detail-fav:active{ transform:scale(.88); }
   .bean-detail-delete{margin-top:14px; color:var(--danger-text);}
   .bean-card-meta{font-size:var(--fs-label); color:var(--text-dim); margin:0 0 10px;}
   .bean-tags{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;}
@@ -1391,7 +1393,7 @@
     box-shadow:var(--shadow-card);
     transition:border-color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
-  .bean-use-btn:hover{border-color:var(--copper);}
+  @media (hover:hover){ .bean-use-btn:hover{border-color:var(--copper);} }
   .bean-use-btn:active{transform:translateY(1px) scale(.99); box-shadow:none;}
   .bean-card-btnrow{display:flex; gap:8px;}
   .bean-card-btnrow .bean-use-btn{width:auto; flex:1; font-size:var(--fs-small);}
@@ -1438,7 +1440,7 @@
   }
   details.flavor-category summary::-webkit-details-marker{display:none;}
   .flavor-category-count{
-    font-family:var(--font-mono); font-size:var(--fs-label); font-weight:400;
+    font-family:var(--font-body); font-size:var(--fs-label); font-weight:400;
     color:var(--text-faint); margin-left:auto; margin-right:8px;
   }
   .flavor-category-arrow{font-family:var(--font-mono); color:var(--text-faint); font-size:var(--fs-small);}
@@ -1608,7 +1610,7 @@
   .navbar-btn[aria-current="page"] span:last-child::after{
     content:""; position:absolute; left:0; right:0; bottom:-4px; height:2px; background:var(--copper-light);
   }
-  .navbar-btn:hover{color:var(--copper-light);}
+  @media (hover:hover){ .navbar-btn:hover{color:var(--copper-light);} }
   .navbar-btn:active{transform:scale(.94); transition:transform var(--motion-micro) var(--ease-out);}
   /* Sprint 2 (UX-review F5): de zetknop als verhoogde, gevulde middenknop — met label, niet
      alleen een icoon. Actief = een ring i.p.v. het streepje (de knop is al gevuld). */
@@ -1633,7 +1635,7 @@
     border:1px solid var(--border); background:var(--surface-2);
     font-family:var(--font-body); font-size:var(--fs-label); font-weight:600;
     text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim);
-    white-space:nowrap;
+    max-width:100%; white-space:normal; /* VA-45: een lange badge breekt tussen woorden af in plaats van buiten beeld te lopen */
   }
   .badge::before{content:""; width:7px; height:7px; border-radius:50%; background:var(--text-faint); flex-shrink:0;}
   .badge[data-tone="good"]{border-color:var(--sage); color:var(--text);}
@@ -1687,7 +1689,7 @@
     box-shadow:var(--shadow-card);
     transition:border-color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
-  .home-cta:hover{border-color:var(--copper); box-shadow:var(--shadow-card), 0 0 0 1px var(--accent-glow);}
+  @media (hover:hover){ .home-cta:hover{border-color:var(--copper); box-shadow:var(--shadow-card), 0 0 0 1px var(--accent-glow);} }
   .home-cta:active{transform:scale(.99);}
   .home-cta-title{font-family:var(--font-body); font-weight:700; font-size:var(--fs-body); display:block; margin-bottom:3px;} /* VA-20: knoppen in de sansletter */
   .home-cta-desc{font-size:var(--fs-small); color:var(--text-dim);}
@@ -1704,7 +1706,7 @@
   .home-strip{display:flex; gap:10px; overflow-x:auto; padding-bottom:4px;}
   .home-strip-item{flex-shrink:0; width:130px; display:flex; flex-direction:column; justify-content:flex-start; align-items:stretch; transition:transform var(--motion-standard) var(--ease-out);} /* VA-14: een <button> centreert zijn inhoud verticaal; zo begint elk kaartje bovenaan */
   .home-strip-item .photo-slot{width:130px; height:88px; margin-bottom:6px;}
-  .home-strip-item:hover{transform:translateY(-2px);}
+  @media (hover:hover){ .home-strip-item:hover{transform:translateY(-2px);} }
   .home-strip-item:active{transform:translateY(0) scale(.97);}
   .home-strip-name{font-size:var(--fs-label); color:var(--text-dim);}
   .home-strip-stock{display:block; font-size:var(--fs-label); color:var(--text-faint); margin-top:2px;}
@@ -1812,10 +1814,15 @@
       flex-direction:column; justify-content:flex-start; align-items:stretch; gap:2px;
       width:172px; flex-shrink:0; border-top:none; border-right:1px solid var(--border);
       background:none; padding:0 14px 0 0;
+      min-height:calc(100dvh - 2 * max(18px, var(--safe-t))); /* VA-35: de lijn loopt over de volle hoogte */
     }
+    /* VA-35: precies één bestemming gemarkeerd (ook Zet alleen als hij actief is); tekst en knoppen
+       hoogstens 720 px breed. */
+    .navbar-btn[aria-current="page"]{color:var(--copper-light); font-weight:600;}
+    .btn-primary, .home-cta, .btn-secondary, .advisor-primary, .advisor-link, .bean-use-btn, .next-cup,
+    .screen > p, .screen > .subtitle, .more-info, .bean-detail-section > p{max-width:720px;}
     .navbar-btn{flex-direction:row; justify-content:flex-start; gap:10px; min-width:0; min-height:44px; font-size:var(--fs-small); padding:10px 10px;}
     .navbar-btn[aria-current="page"]{background:var(--surface-2); border-radius:var(--radius-sm);}
-    .navbar-btn--zet{color:var(--copper-light); font-weight:700;}
     /* "Split view" (Bouwbesluit): de twee lijstschermen (Bonen, Historie) tonen hun
        kaarten in twee kolommen i.p.v. één, zodat de zijbalk-breedte goed benut wordt. */
     .bean-list{display:grid; grid-template-columns:repeat(2,1fr); gap:12px;}
@@ -1903,10 +1910,8 @@
   #prep-water-hardness{max-width:220px !important;}
   #prep-water-alkalinity{max-width:150px !important;}
   #prep-water-alkalinity-unit{max-width:150px !important;}
-  #prep-water-dilution{max-width:220px !important;}
   #hardness-readout{font-size:var(--fs-small) !important; color:var(--text-faint) !important; margin:10px 0 0 !important;}
   #alkalinity-readout{font-size:var(--fs-small) !important; color:var(--text-faint) !important; margin:4px 0 0 !important;}
-  #ph-readout{font-size:var(--fs-small) !important; color:var(--text-faint) !important; margin:4px 0 0 !important;}
   #water-confidence-readout{font-size:var(--fs-label) !important; color:var(--text-faint) !important; margin:8px 0 0 !important;}
   #storage-status{font-size:var(--fs-label) !important; color:var(--text-faint) !important; margin:8px 0 0 !important;}
   #settings-reset-btn{margin-top:10px !important;}
@@ -1968,6 +1973,75 @@
   .ta-left{text-align:left !important;}
   .tt-none{text-transform:none !important;}
   .w-20{width:20px !important;}
+
+  /* ==== Visuele audit fase 3 (afwerking) ==== */
+  /* VA-22: één iconenset. Lijniconen tekenen met 1,7 px, ook als hun viewBox groter is dan ze
+     getoond worden; .icon zet een icoon op de tekstregel. */
+  svg[stroke="currentColor"] :is(path, circle, rect, line, polyline, polygon, ellipse){vector-effect:non-scaling-stroke;}
+  .icon{display:inline-block; width:1.15em; height:1.15em; vertical-align:-.2em; flex-shrink:0;}
+  .brewlog-entry-fav .icon{width:22px; height:22px;}
+  .bean-detail-fav .icon{width:24px; height:24px;}
+  .bean-card-fav-mark .icon{width:.85em; height:.85em; vertical-align:-.05em;}
+  .home-cta-title .icon{margin-right:4px;}
+  /* VA-35: Home in twee kolommen vanaf 1100 px; de bonen als raster in plaats van een strip. */
+  /* VA-36: vanaf tablet de bonen als raster dat de breedte vult, niet als smalle strip. */
+  @media (min-width:700px){
+    .home-strip{display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:12px; overflow:visible;}
+    .home-strip-item{width:auto;}
+    .home-strip-item .photo-slot{width:100%; height:auto; aspect-ratio:3/2;}
+  }
+  @media (min-width:1100px){
+    #screen-home.active{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); column-gap:28px; align-items:start;}
+    #screen-home > .title{grid-column:1 / -1;}
+    .home-side .home-section-label{margin-top:0;}
+    .home-side .home-strip{grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));}
+  }
+  /* VA-47/28/40: kleurstaal van de roastgraad (roastSwatchHtml()). De staal vult zijn vak; de
+     initialen zijn alleen decoratie (de naam staat ernaast). */
+  .roast-swatch-fill{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    background:var(--swatch); background:linear-gradient(150deg, var(--swatch) 0%, color-mix(in srgb, var(--swatch) 74%, black) 100%);
+    font-family:var(--font-display); font-weight:600; font-size:clamp(14px, 32cqi, 30px); letter-spacing:.03em; line-height:1;
+    color:var(--on-swatch-light);
+  }
+  .roast-swatch-fill[data-tone="dark"]{color:var(--on-swatch-dark);}
+  .bean-swatch{container-type:inline-size; border:none; background:none;}
+  .bean-swatch svg, .bean-swatch .photo-scrim{display:none;}
+  /* Boondetail: compacte kop. */
+  .bean-detail-head{display:flex; align-items:center; gap:14px; margin:4px 0 12px;}
+  .bean-detail-swatch{width:64px; height:64px; border-radius:var(--radius-md); flex-shrink:0;}
+  .bean-detail-head-text{flex:1; min-width:0;}
+  .bean-detail-head .title{margin:0;}
+  .bean-detail-head .bean-detail-meta{margin:2px 0 0;}
+  .bean-detail-use{width:100%; margin:6px 0 4px;}
+  /* Roastkaarten: op de telefoon een lijst (staal, naam, uitleg, vinkje); vanaf 700 px vijf kaarten
+     naast elkaar met de staal als beeld. */
+  .roast-card{position:relative; display:flex; align-items:center; gap:14px; padding:12px 14px;}
+  .roast-swatch-slot{position:relative; width:56px; height:56px; border-radius:var(--radius-sm); overflow:hidden; flex-shrink:0;}
+  .roast-text{flex:1; min-width:0;}
+  .roast-check{display:none; width:28px; height:28px; border-radius:50%; align-items:center; justify-content:center; background:var(--copper); color:var(--on-primary); flex-shrink:0;}
+  .roast-check .icon{width:18px; height:18px;}
+  .roast-card[data-selected="true"] .roast-check{display:flex;}
+  @media (max-width:699px){ #roast-grid.choice-grid--4{grid-template-columns:1fr; gap:10px;} }
+  @media (min-width:700px){
+    .roast-card{flex-direction:column; align-items:stretch; gap:10px; padding:14px;}
+    .roast-swatch-slot{width:100%; height:auto; aspect-ratio:16/10;}
+    .roast-check{position:absolute; top:20px; right:20px;}
+  }
+  #scan-photo-btn .icon{margin-right:6px;}
+  /* Uitleg achter een kleine uitklapper (VA-23 smaakscherm, VA-25 water, VA-24 formulier): eerst
+     het veld of de keuze, de achtergrond op verzoek. */
+  /* VA-27/44: geen systeemblauw — selectievakjes, keuzerondjes en schuiven in koper. */
+  input[type="checkbox"], input[type="radio"], input[type="range"]{accent-color:var(--copper);}
+  /* VA-31: voortgang naar het minimum aantal geteste stappen. */
+  .gate-progress{height:6px; margin:12px 0 0; border-radius:var(--radius-pill); background:var(--surface-2); overflow:hidden;}
+  .gate-progress > span{display:block; height:100%; background:var(--copper); border-radius:inherit;}
+  .more-info{margin:-4px 0 14px; font-size:var(--fs-small); color:var(--text-dim);}
+  .more-info > summary{cursor:pointer; list-style:none; display:inline-flex; align-items:center; gap:6px; min-height:44px; color:var(--copper-light); font-weight:600;}
+  .more-info > summary::-webkit-details-marker{display:none;}
+  .more-info > summary::after{content:"+"; font-weight:400; color:var(--text-faint);}
+  .more-info[open] > summary::after{content:"−";}
+  .more-info > p{margin:0 0 8px; line-height:1.5;}
 </style>
 </head>
 <body>
@@ -1982,7 +2056,6 @@
     <h1 class="splash-title">Brew Console <span class="splash-version">2.0</span></h1>
     <p class="splash-tagline">Vertrouwd. Verfijnd. Bijzonder.</p>
   </div>
-  <div class="splash-loadbar"><div class="splash-loadbar-fill"></div></div>
 </div>
 <!-- In-thema vervanging voor window.confirm(): labels via JS, herbruikbaar (showConfirmModal()). -->
 <div class="modal-overlay" id="confirm-modal" hidden>
@@ -2033,7 +2106,7 @@
 <div class="modal-overlay" id="water-modal" hidden>
   <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="water-modal-title">
     <p id="water-modal-title">Waterhoeveelheid aanpassen</p>
-    <p class="mono" id="water-modal-value">250 ml</p>
+    <p class="stat-value" id="water-modal-value">250 ml</p>
     <div class="stepper jc-center mb-14">
       <button type="button" id="water-modal-minus" aria-label="Minder water">−</button>
       <input type="range" id="water-modal-slider" step="1">
@@ -2107,6 +2180,8 @@
     <!-- Home is de startbestemming; de zet-stappen (Methode … Recept) zitten onder de Zet-tab. -->
     <section class="screen active" id="screen-home" data-screen="home">
       <h1 class="title" data-screen-heading tabindex="-1" id="home-title">Welkom terug</h1>
+      <!-- VA-35: vanaf 1100 px twee kolommen (je kop links, je bonen rechts); op de telefoon één. -->
+      <div class="home-main">
       <!-- Fase 2 (§20): een lopend of nog niet geproefd brouwsel blijft zichtbaar als je wegnavigeert. -->
       <button type="button" class="home-active-brew" id="home-active-brew" hidden>
         <span class="home-active-brew-title" id="home-active-brew-title"></span>
@@ -2118,18 +2193,21 @@
       <div class="next-cup next-cup--compact home-backup" id="home-backup" hidden></div>
       <div class="photo-slot photo-slot--hero" id="home-hero" data-has-photo="true" aria-hidden="true">
         <img class="photo-slot-img" src="photos/home-hero.webp" alt="" loading="lazy">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 8h13v5a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6V8Z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 8h13v5a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6V8Z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/></svg>
         <div class="photo-scrim"></div>
       </div>
       <button type="button" class="home-cta" id="home-start-brew-btn">
-        <span class="home-cta-title">☕ Nieuw brouwsel starten →</span>
+        <span class="home-cta-title"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 10h11v4a5.5 5.5 0 0 1-5.5 5.5H10A5.5 5.5 0 0 1 4.5 14v-4Z"/><path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5c-.6.8-.6 1.4 0 2.2M11.5 3.5c-.6.8-.6 1.4 0 2.2"/></svg> Nieuw brouwsel starten →</span>
         <span class="home-cta-desc">Kies je zetmethode en ga direct naar een recept op maat.</span>
       </button>
+      </div>
+      <div class="home-side">
       <h2 class="home-section-label" id="home-beans-label" hidden>Jouw bonen</h2>
       <div class="home-strip" id="home-beans-strip"></div>
       <div class="home-empty" id="home-empty-hint" hidden>
         <p class="empty-hint">Nog geen bonen opgeslagen. Met een boon onthoudt de app je maalstand en leert hij van elke kop.</p>
         <button type="button" class="advisor-link" id="home-empty-add-bean">Boon toevoegen</button>
+      </div>
       </div>
     </section>
 
@@ -2140,7 +2218,7 @@
       <div class="choice-grid choice-grid--2" id="method-grid"></div>
       <!-- VA-14: "Je volgende kop" onder de methodekeuze, niet erboven. -->
       <div class="next-cup next-cup--compact" id="method-next-cup" hidden></div>
-      <button class="advisor-primary" id="advisor-link">☕ Niet zeker? Advies op basis van je boon →</button>
+      <button class="advisor-primary" id="advisor-link">Niet zeker? Advies bij je boon →</button>
       <button class="link-secondary" id="beans-link">Bonen beheren</button>
     </section>
 
@@ -2191,7 +2269,7 @@
         </div>
         <!-- Camera-icoon: het boonformulier begint met de scan-sectie (openBeanAddFromList()). -->
         <button type="button" class="header-icon-btn" id="bean-add-header-btn" aria-label="Nieuwe boon toevoegen (scannen of handmatig)">
-          <svg class="w-20 h-20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h2.2l1.1-2h9.4l1.1 2H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="14" r="3.4"/></svg>
+          <svg class="w-20 h-20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 8h2.2l1.1-2h9.4l1.1 2H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="14" r="3.4"/></svg>
         </button>
       </div>
       <div class="bean-search-row" id="bean-search-row" hidden>
@@ -2213,7 +2291,7 @@
         Of importeer een eerdere backup
         <button type="button" class="link-secondary" id="bean-empty-backup-link">via Instellingen →</button>
       </p>
-      <button class="advisor-link" id="triage-open-btn">🔍 Waarom smaakt dit anders dan normaal?</button>
+      <button class="advisor-link" id="triage-open-btn">Waarom smaakt dit anders dan normaal?</button>
       <!-- VERPLAATST (Visual Design 2.0 fase 2): backup-export/import + #backup-status
            staan nu op het nieuwe Instellingen-scherm (Data-sectie) — zelfde ID's, dus
            dezelfde luisteraars verderop in het script blijven ongewijzigd werken. -->
@@ -2223,19 +2301,21 @@
          (#screen-bean-add). De radar gebruikt dezelfde assen als de cupping-radar. -->
     <section class="screen" id="screen-bean-detail" data-screen="bean-detail">
       <button class="back-btn" data-back="beans">← Mijn bonen</button>
-      <div class="photo-slot photo-slot--hero" data-has-photo="true">
-        <img class="photo-slot-img" id="bean-detail-photo" src="photos/roast-medium.webp" alt="" loading="lazy" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 3c4 2 7 5.5 7 10a7 7 0 0 1-14 0c0-4.5 3-8 7-10Z"/></svg>
-        <div class="photo-scrim" aria-hidden="true"></div>
-        <!-- Hartje op de foto = favoriet op boonniveau (bean.favorite, toggleBeanFavorite()), los van
-             favorieten per logging. -->
-        <button type="button" class="bean-detail-hero-fav" id="bean-detail-fav-btn" aria-pressed="false" aria-label="Toevoegen aan favorieten">♡</button>
+      <!-- VA-28: een kleine kop (kleurstaal, naam, herkomst, hartje) en direct de hoofdactie. Het
+           hartje = favoriet op boonniveau (bean.favorite, toggleBeanFavorite()), los van favorieten
+           per logging. -->
+      <div class="bean-detail-head">
+        <div class="photo-slot bean-swatch bean-detail-swatch" id="bean-detail-swatch" aria-hidden="true"></div>
+        <div class="bean-detail-head-text">
+          <h1 class="title" data-screen-heading tabindex="-1" id="bean-detail-name"></h1>
+          <p class="bean-detail-meta" id="bean-detail-meta"></p>
+        </div>
+        <button type="button" class="bean-detail-fav" id="bean-detail-fav-btn" aria-pressed="false" aria-label="Toevoegen aan favorieten"></button>
       </div>
-      <h1 class="title" data-screen-heading tabindex="-1" id="bean-detail-name"></h1>
-      <p class="bean-detail-meta" id="bean-detail-meta"></p>
       <div id="bean-detail-badges" class="badge-row"></div>
       <!-- Smaak-tags per categorie gekleurd, direct onder de titel (flavorTagChipsHtml()). -->
       <div id="bean-detail-flavor-tags" class="bean-tags"></div>
+      <button type="button" class="btn-primary bean-detail-use" id="bean-detail-use-btn">Zet deze boon →</button>
 
       <!-- Tabs boven de bestaande secties; alleen welke container zichtbaar is wisselt. -->
       <div class="detail-tabs" id="bean-detail-tabs" role="tablist" aria-label="Boondetails">
@@ -2253,14 +2333,14 @@
              zak zette en je beste kop ervan, met één tik om die opnieuw te zetten. -->
         <div class="best-brew-card bag-card" id="bean-detail-bag" hidden>
           <div class="best-brew-header">
-            <div class="best-brew-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M6 7h12l-1 13H7L6 7Z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg></div>
+            <div class="best-brew-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M6 7h12l-1 13H7L6 7Z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg></div>
             <h2 class="bean-detail-section-label m-0">Deze zak</h2>
           </div>
           <div id="bean-detail-bag-body"></div>
         </div>
         <div class="best-brew-card" id="bean-detail-best-brew-block" hidden>
           <div class="best-brew-header">
-            <div class="best-brew-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg></div>
+            <div class="best-brew-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg></div>
             <h2 class="bean-detail-section-label" id="bean-detail-best-brew-label"></h2>
           </div>
           <div id="bean-detail-best-brew-body"></div>
@@ -2271,14 +2351,14 @@
              bonen van dezelfde brander. Stuurt geen recept: leren uit je koppen wacht op de
              adviespoort (Fase 5). -->
         <div class="prep-intel-card" id="bean-detail-roaster-block" hidden>
-          <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/></svg></div>
+          <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/></svg></div>
           <div class="prep-intel-body">
             <p class="prep-intel-title" id="bean-detail-roaster-title">Bij deze brander</p>
             <p class="bean-detail-about" id="bean-detail-roaster-text"></p>
           </div>
         </div>
         <div class="prep-intel-card" id="bean-detail-personal-signal-block" hidden>
-          <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 18 L9 11 L13 14 L20 5"/><path d="M15 5h5v5"/></svg></div>
+          <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 18 L9 11 L13 14 L20 5"/><path d="M15 5h5v5"/></svg></div>
           <div class="prep-intel-body">
             <p class="prep-intel-title mb-5">Uit je eigen logboek</p>
             <p class="bean-detail-about" id="bean-detail-personal-signal-text"></p>
@@ -2305,12 +2385,11 @@
            bestaande loggings. -->
       <div class="detail-tab-panel" data-tab-panel="recepten" id="bean-detail-panel-recepten" hidden>
         <div id="bean-detail-recipes-list"></div>
-        <p class="empty-hint" id="bean-detail-recipes-empty" hidden>Nog geen recepten gelogd voor deze boon — gebruik "Zet deze boon →" hieronder om te starten.</p>
+        <p class="empty-hint" id="bean-detail-recipes-empty" hidden>Nog geen recepten gelogd voor deze boon — gebruik "Zet deze boon" bovenaan om te starten.</p>
       </div>
 
       <div class="bean-card-btnrow mt-4">
-        <button type="button" class="bean-use-btn" id="bean-detail-edit-btn">✎ Bewerken</button>
-        <button type="button" class="bean-use-btn bean-again-btn" id="bean-detail-use-btn">Zet deze boon →</button>
+        <button type="button" class="bean-use-btn" id="bean-detail-edit-btn">Bewerken</button>
       </div>
       <!-- VA-13: verwijderen staat hier (niet meer op de kaart), met "Ongedaan maken". -->
       <button type="button" class="link-secondary bean-detail-delete" id="bean-detail-delete-btn">Boon verwijderen</button>
@@ -2320,18 +2399,19 @@
     <section class="screen" id="screen-bean-add" data-screen="bean-add">
       <button class="back-btn" data-back="beans">← Mijn bonen</button>
       <h1 class="title" id="bean-add-title">Boon toevoegen</h1>
-      <p class="subtitle">Scan het etiket of plak een omschrijving om te starten — of vul zelf naam, roast en proces in.</p>
+      <p class="subtitle">Scan het etiket, plak een omschrijving of vul zelf in.</p>
 
       <form id="bean-form">
         <div class="scan-block">
           <h2 class="advice-q-label">Snel invullen</h2>
-          <button type="button" class="advisor-primary" id="scan-photo-btn">📷 Foto van verpakking scannen</button>
-          <p class="scan-status mt-6">De rest van deze app werkt altijd offline. Foto-scannen leunt op een externe OCR-bibliotheek en heeft daarom éénmalig internet nodig — daarna blijft ook dit onderdeel offline werken. Geen verbinding? Plak de tekst hieronder in plaats daarvan.</p>
+          <button type="button" class="advisor-primary" id="scan-photo-btn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 8h2.2l1.1-2h9.4l1.1 2H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="14" r="3.4"/></svg> Foto van verpakking scannen</button>
+          <p class="form-hint">Foto-scannen heeft één keer internet nodig voor de tekstherkenning; daarna werkt ook dit offline. Geen verbinding? Plak de tekst hieronder.</p>
           <input type="file" id="f-scan-photo" accept="image/*" capture="environment" hidden>
           <p class="scan-status" id="scan-status" hidden></p>
 
-          <label class="form-label m-14-0-0">Of plak een omschrijving (website/verpakking)
-            <textarea id="f-scan-text" class="form-input" rows="3" placeholder="bijv. Ethiopia Guji — washed — light roast. Notes: jasmine, peach, black tea"></textarea>
+          <label class="form-label m-14-0-0">Of plak een omschrijving
+            <textarea id="f-scan-text" class="form-input" rows="3" placeholder="bijv. Ethiopia Guji — washed — light roast. Notes: jasmine, peach, black tea" aria-describedby="f-scan-text-hint"></textarea>
+            <span class="form-hint" id="f-scan-text-hint">Van de website of de verpakking.</span>
           </label>
           <button type="button" class="advisor-link" id="scan-text-btn">Herken kenmerken uit tekst →</button>
           <div class="process-note scan-review" id="scan-result" hidden></div>
@@ -2343,7 +2423,7 @@
           <input type="text" id="f-name" class="form-input" placeholder="bijv. Ethiopia Guji Hambela" aria-required="true" aria-describedby="f-name-error">
         </label>
         <p class="form-error" id="f-name-error" role="alert" hidden>Geef de boon een naam.</p>
-        <label class="form-label">Brander (optioneel)
+        <label class="form-label">Brander <span class="form-optional">optioneel</span>
           <input type="text" id="f-roaster" class="form-input" placeholder="bijv. 7AM Coffee Roasters" autocomplete="off">
         </label>
 
@@ -2352,14 +2432,14 @@
         <p class="form-error" id="f-roast-error" role="alert" hidden>Kies de branding — die bepaalt temperatuur en maling.</p>
         <div class="h-18"></div>
 
-        <h2 class="advice-q-label">Beoogd gebruik <span class="tt-none ls-0 c-faint">(optioneel — los van branddiepte)</span></h2>
+        <h2 class="advice-q-label">Beoogd gebruik <span class="form-optional">optioneel</span></h2>
         <div class="chip-row" id="f-intended-use-chips"></div>
-        <p class="fs-label c-faint m-0-0-20">Waar de rooster de boon voor ontwikkelde — een espresso-roast kan via filter vlakker uitpakken, ook bij dezelfde branddiepte.</p>
+        <p class="form-hint m-0-0-20">Waar de brander de boon voor ontwikkelde, los van de branddiepte: een espresso-roast kan via filter vlakker uitpakken.</p>
 
         <h2 class="advice-q-label">Proces</h2>
         <div class="chip-row" id="f-process-chips"></div>
         <div class="chip-row" id="f-experimental-chip"></div>
-        <p class="fs-label c-faint m-0-0-20">Natural/anaerobic? Dat weegt mee in de methodekeuze (V60 of Chemex) en het voorgestelde profiel; dosis, maling en temperatuur veranderen er niet door.</p>
+        <p class="form-hint m-0-0-20">Natural/anaerobic? Dat weegt mee in de methodekeuze (V60 of Chemex) en het voorgestelde profiel; dosis, maling en temperatuur veranderen er niet door.</p>
 
         <details class="flavor-category">
           <summary class="c-accent">
@@ -2417,13 +2497,14 @@
               </select>
               <input type="text" id="f-country-other" class="form-input" placeholder="Typ het land">
             </label>
-            <label class="form-label">Regio (optioneel)
+            <label class="form-label">Regio <span class="form-optional">optioneel</span>
               <input type="text" id="f-region" class="form-input">
             </label>
-            <label class="form-label">Farm / washing station <span class="tt-none ls-0 c-faint">(optioneel — staat op veel specialty-zakken, geen vaste lijst)</span>
+            <label class="form-label">Farm / washing station <span class="form-optional">optioneel</span>
               <input type="text" id="f-farm" class="form-input" placeholder="bijv. Primrose-Gutity">
+              <span class="form-hint">Staat op veel specialty-zakken.</span>
             </label>
-            <label class="form-label mb-0">Variëteit (optioneel)
+            <label class="form-label mb-0">Variëteit <span class="form-optional">optioneel</span>
               <select id="f-variety" class="form-input">
                 <option value="">— Kies een variëteit —</option>
                 <optgroup label="Typica-familie">
@@ -2483,17 +2564,21 @@
               </select>
               <input type="text" id="f-variety-other" class="form-input" placeholder="Typ de variëteit">
             </label>
-            <label class="form-label">Branddatum <span class="tt-none ls-0 c-faint">(optioneel, staat vaak op de zak — voor bloom-advies)</span>
+            <label class="form-label mt-14">Branddatum <span class="form-optional">optioneel</span>
               <input type="date" id="f-roast-date" class="form-input">
+              <span class="form-hint">Staat vaak op de zak; voor het bloom-advies.</span>
             </label>
-            <label class="form-label">Zak geopend op <span class="tt-none ls-0 c-faint">(optioneel — los van branddatum: waarschuwt voor oxidatie/verschalen na openen)</span>
+            <label class="form-label">Zak geopend op <span class="form-optional">optioneel</span>
               <input type="date" id="f-opened-date" class="form-input">
+              <span class="form-hint">Los van de branddatum; waarschuwt als de zak lang open is.</span>
             </label>
-            <label class="form-label">Hoogteligging <span class="tt-none ls-0 c-faint">(optioneel, m.a.s.l. — ter info, verandert het recept niet)</span>
+            <label class="form-label">Hoogteligging <span class="form-optional">optioneel</span>
               <input type="number" id="f-altitude" class="form-input" placeholder="bijv. 1900" min="0" max="3000" step="1">
+              <span class="form-hint">In m.a.s.l. — ter info, verandert het recept niet.</span>
             </label>
-            <label class="form-label mb-0">Zakgrootte <span class="tt-none ls-0 c-faint">(optioneel, gram — voor voorraadtracking)</span>
+            <label class="form-label mb-0">Zakgrootte <span class="form-optional">optioneel</span>
               <input type="number" id="f-bagsize" class="form-input" placeholder="bijv. 250" min="0" max="5000" step="1">
+              <span class="form-hint">In gram; voor je voorraad.</span>
             </label>
           </div>
         </details>
@@ -2505,17 +2590,27 @@
             <span class="flavor-category-arrow">+</span>
           </summary>
           <div class="flavor-category-body">
-            <h2 class="advice-q-label mt-12">Smaakdiagram — SCA Flavor Wheel</h2>
-            <div class="radar-wrap">
-              <svg class="radar-svg" id="flavor-radar" viewBox="0 0 260 260"></svg>
-            </div>
-            <h2 class="advice-q-label">Smaaknotities — tik aan wat past (volledig SCA-wiel)</h2>
-            <div id="flavor-defect-warning" class="advice-secondary-notes"></div>
-            <div id="flavor-tag-groups"></div>
-            <label class="form-label">Overige notities (optioneel, komma-gescheiden)
-              <input type="text" id="f-notes-extra" class="form-input" placeholder="bijv. kombucha, hubba bubba">
+            <!-- VA-24: eerst zoeken of een suggestie aantikken; het volledige SCA-wiel (met het
+                 smaakdiagram) staat achter een knop. renderFlavorQuick() vult #flavor-quick. -->
+            <label class="form-label mt-12">Zoek een smaaknotitie
+              <input type="search" id="f-flavor-search" class="form-input" placeholder="bijv. perzik, jasmijn" autocomplete="off" enterkeyhint="search">
             </label>
-            <h2 class="advice-q-label">Smaakprofiel (automatisch ingeschat — pas aan indien nodig)</h2>
+            <p class="form-hint" id="flavor-quick-label">Veelgekozen — tik aan wat op de zak staat of wat je proeft.</p>
+            <div class="chip-row" id="flavor-quick" aria-labelledby="flavor-quick-label"></div>
+            <div id="flavor-defect-warning" class="advice-secondary-notes"></div>
+            <button type="button" class="advisor-link mt-10" id="flavor-wheel-toggle" aria-expanded="false" aria-controls="flavor-wheel">Volledig smaakwiel</button>
+            <div id="flavor-wheel" hidden>
+              <h2 class="advice-q-label mt-12">Smaakdiagram</h2>
+              <div class="radar-wrap">
+                <svg class="radar-svg" id="flavor-radar" viewBox="0 0 260 260"></svg>
+              </div>
+              <div id="flavor-tag-groups"></div>
+            </div>
+            <label class="form-label mt-14">Overige notities <span class="form-optional">optioneel</span>
+              <input type="text" id="f-notes-extra" class="form-input" placeholder="bijv. kombucha, hubba bubba" aria-describedby="f-notes-extra-hint">
+              <span class="form-hint" id="f-notes-extra-hint">Gescheiden door komma's.</span>
+            </label>
+            <h2 class="advice-q-label">Smaakprofiel <span class="form-optional">ingeschat, pas aan als het niet klopt</span></h2>
             <div class="chip-row" id="f-profile-chips"></div>
           </div>
         </details>
@@ -2537,7 +2632,8 @@
     <section class="screen" id="screen-profile" data-screen="profile">
       <button class="back-btn" data-back="roast">← Roast</button>
       <h1 class="title">Wat wil je proeven?</h1>
-      <p class="subtitle">Bepaalt het gietschema en wat de proefkaart straks vraagt. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding (een heel kort schema start één klik fijner). Liever een bekende gietstijl? Die staat eronder.</p>
+      <p class="subtitle">Kies wat je wilt proeven, of hieronder een bekende gietstijl.</p>
+      <details class="more-info"><summary>Wat verandert je keuze?</summary><p>Bepaalt het gietschema en wat de proefkaart straks vraagt. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding (een heel kort schema start één klik fijner).</p></details>
       <p class="advice-tie-note" id="profile-tie-note" data-pending="true" hidden></p>
       <div class="choice-grid choice-grid--1" id="profile-grid"></div>
     </section>
@@ -2592,7 +2688,7 @@
             <!-- "Vorige keer"-vergelijking (personalHistoryInsight()); de badge is een richtingswoord
                  (Hoger/Lager), geen schijnprecisie. -->
             <div class="prep-intel-card" id="prep-history-insight" hidden>
-              <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 18 L9 11 L13 14 L20 5"/><path d="M15 5h5v5"/></svg></div>
+              <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 18 L9 11 L13 14 L20 5"/><path d="M15 5h5v5"/></svg></div>
               <div class="prep-intel-body">
                 <div class="prep-intel-header">
                   <span class="prep-intel-title">Jouw signaal</span>
@@ -2668,7 +2764,7 @@
             <!-- Experimentkaart voor bypass: hypothese, verwacht effect, voordeel, risico, evidence-niveau en
                  vertrouwen (renderBypassToggle()). Leeg en verborgen zolang bypass uit staat. -->
             <div class="prep-intel-card" id="bypass-experiment-card" hidden>
-              <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 3h6M10 3v5.2L5.5 17a2 2 0 0 0 1.8 2.9h9.4a2 2 0 0 0 1.8-2.9L14 8.2V3"/></svg></div>
+              <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 3h6M10 3v5.2L5.5 17a2 2 0 0 0 1.8 2.9h9.4a2 2 0 0 0 1.8-2.9L14 8.2V3"/></svg></div>
               <div class="prep-intel-body">
                 <div class="prep-intel-header">
                   <span class="prep-intel-title">Experimenteel</span>
@@ -2708,7 +2804,7 @@
       <div class="prep-side">
       <table class="recipe-table" id="recipe-table">
         <thead>
-          <tr><th>Stap</th><th>Tijd</th><th>Water erbij</th><th>Totaal</th></tr>
+          <tr><th>Stap</th><th>Tijd</th><th>Erbij</th><th>Totaal</th></tr>
         </thead>
         <tbody id="recipe-body"></tbody>
       </table>
@@ -2722,7 +2818,7 @@
         </summary>
         <div class="flavor-category-body">
           <p class="method-tips" id="method-tips"></p>
-          <button type="button" class="link-secondary" id="test-sound-btn">🔔 Test geluid &amp; trilling</button>
+          <button type="button" class="link-secondary" id="test-sound-btn">Test geluid &amp; trilling</button>
           <p class="process-note" id="test-sound-result" hidden></p>
         </div>
       </details>
@@ -2822,7 +2918,7 @@
         </div>
 
         <p class="dial-flow" id="dial-flow"></p>
-        <p class="finish-note" id="finish-note">☕ Klaar — laat volledig doorlopen.</p>
+        <p class="finish-note" id="finish-note">Klaar — laat volledig doorlopen.</p>
         <button class="start-btn brewlog-open-btn btn-primary" id="brewlog-open-btn">Proeven &amp; loggen →</button>
 
       <!-- Volledig schema (ook de bypass-weeginstructies) achter een inklapbare sectie, zoals
@@ -2838,11 +2934,11 @@
       <div class="brew-controls">
         <!-- Home-knop: zelfde stop-bevestiging als #stop-btn (stopBrewTimer()), alleen het doel verschilt.
              Wegnavigeren tijdens een lopend brouwsel kan dus nooit zonder bevestiging. -->
-        <button id="home-btn" aria-label="Naar home"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg></button>
+        <button id="home-btn" aria-label="Naar home"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg></button>
         <button id="pause-btn"></button>
         <!-- Safari/WebKit: zonder expliciete width/height valt een svg met alleen een viewBox terug op een
              te grote standaardmaat en blijft er in de knop niets zichtbaar. Ook PAUSE_ICON/PLAY_ICON in de JS. -->
-        <button id="reset-btn" aria-label="Reset"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 1 2.6 6.4"/><path d="M3 20v-5h5"/></svg></button>
+        <button id="reset-btn" aria-label="Reset"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 1 1 2.6 6.4"/><path d="M3 20v-5h5"/></svg></button>
       </div>
       <!-- Expertreview idee 20: aanrechtmodus — de giet-instructie groot, leesbaar op afstand
            (tablet op het aanrecht). Op een tablet standaard aan; op elk toestel aan/uit te zetten. -->
@@ -2983,8 +3079,8 @@
       <div class="bean-detail-section" id="settings-water-section">
         <h2 class="bean-detail-section-label">Water</h2>
       <div class="advice-q m-0">
-        <p class="empty-hint m-0-0-10">Eenmalig invullen: het blijft onthouden, los van boon of methode. Het verandert geen receptgetal, maar helpt bij vlakke of doffe koppen (alkaliniteit dempt zuren).</p>
-        <p class="freshness-readout fs-label c-faint m-0-0-6">Snel invullen:</p>
+        <p class="empty-hint m-0-0-10">Eenmalig invullen; het blijft onthouden en verandert geen receptgetal, maar helpt bij vlakke of doffe koppen.</p>
+        <p class="form-hint m-0-0-6">Snel invullen</p>
         <div class="chip-row" id="water-presets">
           <button type="button" class="chip" data-water-preset="dunea">Dunea</button>
           <button type="button" class="chip" data-water-preset="waternet">Waternet</button>
@@ -2993,13 +3089,11 @@
           <button type="button" class="chip" data-water-preset="clear">Wissen</button>
         </div>
         <p class="freshness-readout" id="water-preset-source" hidden></p>
-        <p class="freshness-readout fs-label c-faint m-6-0-10">Kraanwater: zoek op je postcode het kwaliteitsoverzicht van je waterbedrijf ("totale hardheid" en "waterstofcarbonaat/HCO3"). Mineralenzakje of flessenwater: neem de waarden van de verpakking over. De SCA-richtwaarde is bedoeld voor wie water zelf mengt.</p>
-        <p class="freshness-readout fs-label c-faint m-0-0-8">Vereenvoudiging: hardheid (calcium/magnesium) is niet hetzelfde als alkaliniteit (bufferende werking tegen zuren) — vooral bij fruitige/zure profielen bepaalt alkaliniteit minstens zo sterk hoe zuur de kop aankomt. Elke parameter hieronder krijgt daarom een eigen oordeel, nooit één samengevoegd "water is goed".</p>
 
-        <label class="fs-label c-faint d-block m-10-0-4" for="prep-water-hardness">Hardheid (mg/L als CaCO3)</label>
+        <label class="form-label mt-12" for="prep-water-hardness">Hardheid (mg/L als CaCO3)</label>
         <input type="number" id="prep-water-hardness" class="form-input" placeholder="bijv. 128" min="0" max="600" step="1">
 
-        <label class="fs-label c-faint d-block m-12-0-4" for="prep-water-alkalinity">Alkaliniteit</label>
+        <label class="form-label mt-12 mb-0" for="prep-water-alkalinity">Alkaliniteit</label>
         <div class="d-flex gap-8 ai-center f-wrap">
           <input type="number" id="prep-water-alkalinity" class="form-input" placeholder="bijv. 50" min="0" max="600" step="1">
           <select id="prep-water-alkalinity-unit" class="form-input" aria-label="Eenheid alkaliniteit">
@@ -3007,9 +3101,8 @@
             <option value="HCO3">mg/L HCO3</option>
           </select>
         </div>
-        <p class="freshness-readout fs-label c-faint m-6-0-0">Te vinden op het kwaliteitsoverzicht per productiebedrijf van je waterbedrijf, of met een KH-druppeltest. HCO3 wordt omgerekend naar CaCO3-equivalent (×0,82) voor de SCA-vergelijking hieronder.</p>
 
-        <label class="fs-label c-faint d-block m-12-0-4" for="prep-water-dilution">Verdunning kraan : gedemineraliseerd <span class="tt-none ls-0">(optioneel — herberekent het effectieve profiel hieronder, puur rekenkundig, geen receptinvloed)</span></label>
+        <label class="form-label mt-12 mb-0" for="prep-water-dilution">Verdunning kraan : gedemineraliseerd <span class="form-optional">optioneel</span></label>
         <select id="prep-water-dilution" class="form-input">
           <option value="1:0">Geen verdunning (1:0, puur kraanwater)</option>
           <option value="2:1">2 : 1</option>
@@ -3018,21 +3111,29 @@
 
         <p class="freshness-readout" id="hardness-readout"></p>
         <p class="freshness-readout" id="alkalinity-readout"></p>
-        <p class="freshness-readout" id="ph-readout"></p>
         <p class="freshness-readout" id="water-confidence-readout"></p>
+        <!-- VA-25: eerst de velden en de uitkomst; de uitleg op verzoek. -->
+        <details class="more-info mt-12" id="water-howto">
+          <summary>Hoe vind ik dit?</summary>
+          <p>Kraanwater: zoek op je postcode het kwaliteitsoverzicht van je waterbedrijf ("totale hardheid" en "waterstofcarbonaat/HCO3"). Mineralenzakje of flessenwater: neem de waarden van de verpakking over. De SCA-richtwaarde is bedoeld voor wie water zelf mengt. De app zoekt zelf niets op via je postcode.</p>
+          <p>Alkaliniteit staat op het kwaliteitsoverzicht per productiebedrijf, of meet je met een KH-druppeltest. HCO3 wordt omgerekend naar CaCO3-equivalent (×0,82) voor de SCA-vergelijking.</p>
+          <p>Hardheid (calcium/magnesium) is niet hetzelfde als alkaliniteit (bufferende werking tegen zuren); vooral bij fruitige profielen bepaalt alkaliniteit minstens zo sterk hoe zuur de kop aankomt. Elke waarde krijgt daarom een eigen oordeel, nooit één samengevoegd "water is goed".</p>
+          <p>Verdunning herberekent alleen de effectieve waarden hierboven, puur rekenkundig; het recept verandert niet.</p>
+          <p>pH vul je hier niet in, dus de app geeft er geen oordeel over (SCA-richtwaarde 6–8).</p>
+        </details>
       </div>
       </div>
 
       <div class="bean-detail-section">
         <h2 class="bean-detail-section-label">Data</h2>
         <div class="backup-row">
-          <button class="advisor-link" id="backup-export-btn">⬇️ Back-up exporteren</button>
-          <button class="advisor-link" id="backup-import-btn">⬆️ Back-up importeren</button>
+          <button class="advisor-link" id="backup-export-btn">Back-up exporteren</button>
+          <button class="advisor-link" id="backup-import-btn">Back-up importeren</button>
           <input type="file" id="backup-import-file" accept="application/json" hidden>
         </div>
         <p class="scan-status" id="backup-status" hidden></p>
         <p class="freshness-readout" id="storage-status"></p>
-        <button type="button" class="advisor-link settings-danger-btn" id="settings-reset-btn">🗑️ Alles wissen en opnieuw beginnen</button>
+        <button type="button" class="advisor-link settings-danger-btn" id="settings-reset-btn">Alles wissen en opnieuw beginnen</button>
       </div>
 
       <div class="bean-detail-section">
@@ -4597,19 +4698,19 @@ const ENGINE_TARGET_WINDOWS = {
    STATE
    ============================================================ */
 const ICONS = {
-  v60: '<svg aria-hidden="true" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M9 9 H39 L28 39 H20 Z"/><path d="M14 15 H34" opacity=".5"/><path d="M17 21 H31" opacity=".5"/><path d="M19.5 27 H28.5" opacity=".5"/></svg>',
-  chemex: '<svg aria-hidden="true" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M14 6 H34 L26 23 L35 42 H13 L22 23 Z"/><path d="M12.5 15.5 H35.5" opacity=".5"/></svg>',
-  berries: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="14" r="6"/><circle cx="20" cy="14" r="6"/><circle cx="16" cy="21" r="6"/></svg>',
-  drop: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M16 4 C22 14 24 18 24 22 A8 8 0 0 1 8 22 C8 18 10 14 16 4 Z"/></svg>',
-  leaf: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 26 C6 14 14 6 26 6 C26 18 18 26 6 26 Z"/><path d="M6 26 L20 12"/></svg>',
-  target: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="5.5"/></svg>',
-  sphere: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="16" cy="16" r="10"/><path d="M8 16 A8 4 0 0 0 24 16" opacity=".6"/></svg>',
-  crystal: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M16 4 L26 16 L16 28 L6 16 Z"/><path d="M6 16 H26" opacity=".5"/></svg>',
-  bolt: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M18 3 L8 18 H15 L13 29 L25 13 H17 Z"/></svg>',
-  flower: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><circle cx="16" cy="16" r="3.2"/><circle cx="16" cy="8" r="4"/><circle cx="16" cy="24" r="4"/><circle cx="8" cy="16" r="4"/><circle cx="24" cy="16" r="4"/></svg>',
-  drip: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M16 4 C16 4 10 14 10 20 A6 6 0 0 0 22 20 C22 14 16 4 16 4 Z" opacity=".85"/><path d="M16 24 V29" opacity=".5"/></svg>',
-  spiral: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M16 16 A2 2 0 1 1 15.99 16"/><path d="M16 16 A5 5 0 1 1 15.9 16" opacity=".75"/><path d="M16 16 A9 9 0 1 1 15.7 16" opacity=".5"/><path d="M16 16 A13 13 0 1 1 15.5 16" opacity=".3"/></svg>',
-  scale: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 5 V27"/><path d="M7 27 H25"/><path d="M16 8 L6 12 L16 12 Z" opacity=".7"/><path d="M16 8 L26 12 L16 12 Z" opacity=".7"/><path d="M3 12 L6 12 L4.5 17 A3 3 0 0 0 7.5 17 Z" opacity=".5"/><path d="M26 12 L29 12 L27.5 17 A3 3 0 0 0 30.5 17 Z" opacity=".5"/></svg>'
+  v60: '<svg aria-hidden="true" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M9 9 H39 L28 39 H20 Z"/><path d="M14 15 H34" opacity=".5"/><path d="M17 21 H31" opacity=".5"/><path d="M19.5 27 H28.5" opacity=".5"/></svg>',
+  chemex: '<svg aria-hidden="true" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M14 6 H34 L26 23 L35 42 H13 L22 23 Z"/><path d="M12.5 15.5 H35.5" opacity=".5"/></svg>',
+  berries: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="14" r="6"/><circle cx="20" cy="14" r="6"/><circle cx="16" cy="21" r="6"/></svg>',
+  drop: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M16 4 C22 14 24 18 24 22 A8 8 0 0 1 8 22 C8 18 10 14 16 4 Z"/></svg>',
+  leaf: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 26 C6 14 14 6 26 6 C26 18 18 26 6 26 Z"/><path d="M6 26 L20 12"/></svg>',
+  target: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="5.5"/></svg>',
+  sphere: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="16" cy="16" r="10"/><path d="M8 16 A8 4 0 0 0 24 16" opacity=".6"/></svg>',
+  crystal: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M16 4 L26 16 L16 28 L6 16 Z"/><path d="M6 16 H26" opacity=".5"/></svg>',
+  bolt: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M18 3 L8 18 H15 L13 29 L25 13 H17 Z"/></svg>',
+  flower: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><circle cx="16" cy="16" r="3.2"/><circle cx="16" cy="8" r="4"/><circle cx="16" cy="24" r="4"/><circle cx="8" cy="16" r="4"/><circle cx="24" cy="16" r="4"/></svg>',
+  drip: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M16 4 C16 4 10 14 10 20 A6 6 0 0 0 22 20 C22 14 16 4 16 4 Z" opacity=".85"/><path d="M16 24 V29" opacity=".5"/></svg>',
+  spiral: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M16 16 A2 2 0 1 1 15.99 16"/><path d="M16 16 A5 5 0 1 1 15.9 16" opacity=".75"/><path d="M16 16 A9 9 0 1 1 15.7 16" opacity=".5"/><path d="M16 16 A13 13 0 1 1 15.5 16" opacity=".3"/></svg>',
+  scale: '<svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 5 V27"/><path d="M7 27 H25"/><path d="M16 8 L6 12 L16 12 Z" opacity=".7"/><path d="M16 8 L26 12 L16 12 Z" opacity=".7"/><path d="M3 12 L6 12 L4.5 17 A3 3 0 0 0 7.5 17 Z" opacity=".5"/><path d="M26 12 L29 12 L27.5 17 A3 3 0 0 0 30.5 17 Z" opacity=".5"/></svg>'
 };
 
 const state = { method:null, roast:null, profile:null, waterMl:null, recipe:null, process:null, experimental:false, roastDate:null, openedDate:null, intendedUse:null, altitude:null, bypass:false, bypassPct:30, bypassMoment:'achteraf', strengthAdjust:0, flavorScores:null, fermentEvidence:false, beanId:null, goal:null, grindStand:null, standApplied:null };
@@ -5603,25 +5704,28 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
 // Foto per methode-keuzekaart; zonder foto het neutrale vlak (bouwbesluit B6).
 const METHOD_PHOTO = { v60: 'photos/method-v60.webp', chemex: 'photos/method-chemex.webp' };
 // Foto per branddiepte op de roast-keuzekaarten; zonder foto het neutrale bonen-icoon.
-const ROAST_PHOTO = {
-  light: 'photos/roast-light.webp',
-  light_medium: 'photos/roast-light_medium.webp',
-  medium: 'photos/roast-medium.webp',
-  medium_dark: 'photos/roast-medium_dark.webp',
-  dark: 'photos/roast-dark.webp'
-};
 // Zetscherm-foto's per methode: staand voor een telefoon (smaller dan 3:5), vierkant voor tablet
 // en desktop; zetmoment boven, donkere onderkant voor de timer (prepareBrewScreen()).
 const BREW_PHOTO = {
   v60:    { tall: 'photos/brew-v60-tall.webp',    square: 'photos/brew-v60-square.webp' },
   chemex: { tall: 'photos/brew-chemex-tall.webp', square: 'photos/brew-chemex-square.webp' }
 };
-// Branding-foto van een boon (bonenlijst, bonendetail, Home-strip). Een boon zonder brandingsgraad
-// valt terug op de medium-foto, net als ROAST_INFO elders in de app.
-function beanPhotoSrc(bean){
-  return ROAST_PHOTO[bean && bean.roastLevel] || ROAST_PHOTO.medium;
+/* VA-47/28/40 (keuze Jelle): een boon zonder eigen foto krijgt een kleurstaal van zijn roastgraad
+   met zijn initialen, geen stockfoto die op een foto van de zak lijkt (Colombia en Ethiopia kregen
+   dezelfde). De roastkaarten gebruiken dezelfde kleurstaal. Een boon zonder brandingsgraad valt
+   terug op medium, net als ROAST_INFO elders in de app. Lichte stalen krijgen donkere letters,
+   donkere stalen lichte. */
+function roastSwatchHtml(roastKey, label){
+  const key = ROAST_COLOR[roastKey] ? roastKey : 'medium';
+  const tone = (key === 'medium_dark' || key === 'dark') ? 'dark' : 'light';
+  return `<span class="roast-swatch-fill" data-roast-swatch="${key}" data-tone="${tone}" style="--swatch:${ROAST_COLOR[key]}" aria-hidden="true">${label ? escapeHtml(label) : ''}</span>`;
 }
-const BEAN_FALLBACK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3c4 2 7 5.5 7 10a7 7 0 0 1-14 0c0-4.5 3-8 7-10Z"/></svg>';
+function beanInitials(name){
+  const words = String(name || '').trim().split(/\s+/).filter(Boolean);
+  return words.length ? words.slice(0, 2).map(w => w[0]).join('').toUpperCase() : '';
+}
+const CHECK_ICON = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg>';
+const BEAN_FALLBACK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3c4 2 7 5.5 7 10a7 7 0 0 1-14 0c0-4.5 3-8 7-10Z"/></svg>';
 
 function renderMethodGrid(){
   const el = document.getElementById('method-grid');
@@ -5646,15 +5750,11 @@ function renderRoastGrid(){
   const el = document.getElementById('roast-grid');
   el.innerHTML = Object.keys(ROAST_INFO).map(key=>{
     const r = ROAST_INFO[key];
-    const photo = ROAST_PHOTO[key];
-    return `<button class="roast-card" data-roast="${key}" data-selected="${state.roast===key}">
-      <div class="photo-slot photo-slot--card" data-has-photo="${!!photo}" aria-hidden="true">
-        ${photo ? `<img class="photo-slot-img" src="${photo}" alt="" loading="lazy">` : `<div class="roast-swatch" style="background:${ROAST_COLOR[key]}"></div>`}
-        ${photo ? BEAN_FALLBACK_ICON : ''}
-        ${photo ? `<div class="photo-scrim"></div>` : ''}
-      </div>
-      <span class="roast-name">${r.name}</span>
-      <span class="roast-desc">${r.desc}</span>
+    // VA-40: de kleurstaal is het beeld; de keuze herken je ook zonder kleur aan het vinkje.
+    return `<button class="roast-card" data-roast="${key}" data-selected="${state.roast===key}" aria-pressed="${state.roast===key}">
+      <span class="roast-swatch-slot">${roastSwatchHtml(key)}</span>
+      <span class="roast-text"><span class="roast-name">${r.name}</span><span class="roast-desc">${r.desc}</span></span>
+      <span class="roast-check">${CHECK_ICON}</span>
     </button>`;
   }).join('');
   el.querySelectorAll('[data-roast]').forEach(btn=>{
@@ -5766,8 +5866,8 @@ function renderProfileGrid(){
     const selected = isTaste ? current === c : (!current && state.profile === c.profile);
     const detail = isTaste ? `<span class="profile-desc profile-detail">${escapeHtml(tasteDetail(c, method))}</span>` : '';
     const attrs = isTaste ? `data-taste="${c.taste}"` : 'data-style="true"';
-    return `<button class="profile-row" data-profile="${c.profile}" ${attrs} data-selected="${selected}" style="border-left-color:${p.color}">
-      <span style="color:${p.color}">${ICONS[p.icon]}</span>
+    return `<button class="profile-row" data-profile="${c.profile}" ${attrs} data-selected="${selected}">
+      <span class="profile-icon">${ICONS[p.icon]}</span>
       <span><span class="profile-name">${escapeHtml(c.label)}</span><span class="profile-desc">${escapeHtml(c.desc)}</span>${detail}${twinHtml}</span>
     </button>`;
   };
@@ -5955,7 +6055,7 @@ function renderAdviceChips(){
     `<button class="chip" data-adv-process="${k}" data-selected="${adviceState.process===k}">${PROCESS_INFO[k].name}</button>`
   ).join('');
   document.getElementById('advice-experimental').innerHTML =
-    `<button class="chip" id="advice-experimental-btn" data-selected="${adviceState.experimental}">🧪 Experimenteel / dubbele fermentatie</button>`;
+    `<button class="chip" id="advice-experimental-btn" data-selected="${adviceState.experimental}">Experimenteel / dubbele fermentatie</button>`;
   const expBtn = document.getElementById('advice-experimental-btn');
   if (expBtn) expBtn.addEventListener('click', ()=>{
     adviceState.experimental = !adviceState.experimental;
@@ -6006,7 +6106,7 @@ function maybeShowAdviceResult(){
      zou een sterk bloemige boon het "Bloemig & delicaat"-profiel nooit als suggestie zien. */
   const floralNote = floralDominanceNote(adviceState.flavorTags);
   const floralHtml = floralNote
-    ? `<div class="advice-secondary-notes"><ul><li>🌸 ${floralNote}</li></ul></div>`
+    ? `<div class="advice-secondary-notes"><ul><li>${floralNote}</li></ul></div>`
     : '';
   resEl.style.display = 'block';
   resEl.innerHTML = `
@@ -6572,7 +6672,7 @@ const DEFECT_TAGS = new Set([
 function defectTagWarning(tags){
   const hit = (tags || []).filter(t => DEFECT_TAGS.has(t));
   if (!hit.length) return '';
-  return `⚠️ ${hit.join(', ')}: dit zijn defect-smaken, geen smaakprofiel-signaal — wijst eerder op een beschadigde boon, verkeerde opslag of te oude bonen dan op hoe deze koffie hoort te smaken. Ze tellen bewust niet mee voor het profieladvies hieronder.`;
+  return `${hit.join(', ')}: dit zijn defect-smaken, geen smaakprofiel-signaal — wijst eerder op een beschadigde boon, verkeerde opslag of te oude bonen dan op hoe deze koffie hoort te smaken. Ze tellen bewust niet mee voor het profieladvies hieronder.`;
 }
 
 /* Telt de geselecteerde tags om per cupping-as tot een 0-RADAR_LEVELS-waarde te komen.
@@ -7206,7 +7306,7 @@ function summariseScan(found){
   if (found.roast) parts.push(ROAST_INFO[found.roast].name);
   if (found.intendedUse) parts.push(INTENDED_USE_INFO[found.intendedUse].name);
   if (found.process) parts.push(PROCESS_INFO[found.process].name);
-  if (found.experimental) parts.push('🧪 experimenteel/dubbele fermentatie');
+  if (found.experimental) parts.push('experimenteel/dubbele fermentatie');
   if (found.country) parts.push((found.countryFuzzy ? '~' : '') + found.country);
   if (found.region) parts.push((found.regionFuzzy ? '~' : '') + found.region);
   if (found.farm) parts.push(`farm: ${found.farm}`);
@@ -7619,12 +7719,10 @@ function renderBeanLibraryScreen(){
     const methodName = b.lastBrew ? (METHOD_INFO[b.lastBrew.method] ? METHOD_INFO[b.lastBrew.method].name : b.lastBrew.method) : null;
     return `<div class="bean-card" data-open-detail="${b.id}">
       <div class="bean-card-top">
-        <!-- Foto-thumbnail per boonkaart: de gedeelde branding-foto, geen foto per boon (B6). -->
-        <div class="photo-slot photo-slot--strip" data-has-photo="true" aria-hidden="true">
-          <img class="photo-slot-img" src="${beanPhotoSrc(b)}" alt="" loading="lazy">
-        </div>
+        <!-- VA-47: kleurstaal van de roastgraad met de initialen van de boon. -->
+        <div class="photo-slot photo-slot--strip bean-swatch" aria-hidden="true">${roastSwatchHtml(b.roastLevel, beanInitials(b.name))}</div>
         <div class="bean-card-top-text">
-          <button type="button" class="bean-card-name bean-card-open" data-open-detail="${b.id}" aria-label="Bekijk ${escapeHtml(b.name || 'boon')}${b.favorite ? ' (favoriet)' : ''}">${escapeHtml(b.name || 'Naamloze boon')}${b.favorite ? ' <span class="bean-card-fav-mark" aria-hidden="true">♥</span>' : ''}</button>
+          <button type="button" class="bean-card-name bean-card-open" data-open-detail="${b.id}" aria-label="Bekijk ${escapeHtml(b.name || 'boon')}${b.favorite ? ' (favoriet)' : ''}">${escapeHtml(b.name || 'Naamloze boon')}${b.favorite ? ` <span class="bean-card-fav-mark" aria-hidden="true">${HEART_ICON_FILLED}</span>` : ''}</button>
           ${metaLine ? `<p class="bean-card-meta"${lowStock ? ' data-low-stock="true"' : ''}>${escapeHtml(metaLine)}</p>` : ''}
           ${visibleFlavorTags.length ? `<p class="bean-card-tags">${visibleFlavorTags.map(escapeHtml).join(' · ')}${overflowCount > 0 ? ` · +${overflowCount}` : ''}</p>` : ''}
         </div>
@@ -7645,8 +7743,8 @@ function renderBeanLibraryScreen(){
 
 /* ============================================================
    HOME — de startbestemming. Leeg-eerst ontworpen: zonder bonen of loggings een eerlijke lege
-   staat, geen verzonnen aanbevelingen. De bonenstrip toont per boon de branding-foto
-   (beanPhotoSrc()); er is geen foto per boon.
+   staat, geen verzonnen aanbevelingen. De bonenstrip toont per boon een kleurstaal van de
+   roastgraad (roastSwatchHtml()); er is geen foto per boon.
    ============================================================ */
 function renderHomeScreen(){
   renderHomeActiveBrewBanner(); // Fase 2
@@ -7679,11 +7777,7 @@ function renderHomeScreen(){
     const recent = beanLibrary.slice(-6).reverse();
     strip.innerHTML = recent.map(b => `
       <button type="button" class="home-strip-item ta-left bg-none b-none cur-pointer p-0" data-open-detail="${b.id}">
-        <div class="photo-slot" data-has-photo="true" aria-hidden="true">
-          <img class="photo-slot-img" src="${beanPhotoSrc(b)}" alt="" loading="lazy">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3c4 2 7 5.5 7 10a7 7 0 0 1-14 0c0-4.5 3-8 7-10Z"/></svg>
-          <div class="photo-scrim"></div>
-        </div>
+        <div class="photo-slot bean-swatch" aria-hidden="true">${roastSwatchHtml(b.roastLevel, beanInitials(b.name))}</div>
         <span class="home-strip-name">${escapeHtml(b.name || 'Naamloze boon')}</span>
         ${beanStockLine(b) ? `<span class="home-strip-stock">${escapeHtml(beanStockLine(b))}</span>` : ''}
       </button>
@@ -7803,11 +7897,19 @@ function renderAdviceOutcomeSection(st){
         ? `✓ De adviezen werken voor jou: ${pct(st.successRate)} gelukt, ${pct(st.harmRate)} slechter (drempel ≥${Math.round(ADVICE_GATE_SUCCESS_MIN * 100)}% / ≤${Math.round(ADVICE_GATE_HARM_MAX * 100)}%). Leren van jouw koppen is nu verantwoord.`
         : `De adviezen halen de drempel (nog) niet: ${pct(st.successRate)} gelukt, ${pct(st.harmRate)} slechter (nodig ≥${Math.round(ADVICE_GATE_SUCCESS_MIN * 100)}% / ≤${Math.round(ADVICE_GATE_HARM_MAX * 100)}%). Eerst de adviesregels bijstellen — nog niet leren.`;
     const untested = st.applied + st.proposed + st.ignored;
+    // VA-31: onder de drempel geen percentage (100% bij één test leest als een oordeel); alleen de
+    // tellingen en een balk naar het minimum. Alleen weergave: de poort zelf verandert niet.
+    const early = st.gate === 'insufficient';
+    const share = (n) => early ? `${n} van ${st.tested}` : null;
+    const progress = early
+      ? `<div class="gate-progress" role="progressbar" aria-label="Geteste stappen tot een oordeel" aria-valuemin="0" aria-valuemax="${ADVICE_GATE_MIN_TESTED}" aria-valuenow="${st.tested}"><span style="width:${Math.min(100, Math.round(st.tested / ADVICE_GATE_MIN_TESTED * 100))}%"></span></div>`
+      : '';
     body = `<div class="stats-grid stats-grid--three">
-        <div class="stat-block"><div class="stat-label">Getest</div><div class="stat-value">${st.tested}</div><div class="stat-sub">${st.tested === 1 ? 'stap' : 'stappen'}</div></div>
-        <div class="stat-block"><div class="stat-label">Gelukt</div><div class="stat-value">${pct(st.successRate)}</div><div class="stat-sub">${st.success} van ${st.tested}</div></div>
-        <div class="stat-block"><div class="stat-label">Slechter</div><div class="stat-value">${pct(st.harmRate)}</div><div class="stat-sub">${st.worse} van ${st.tested}</div></div>
+        <div class="stat-block"><div class="stat-label">Getest</div><div class="stat-value">${st.tested}</div><div class="stat-sub">${early ? `van de ${ADVICE_GATE_MIN_TESTED} nodig` : (st.tested === 1 ? 'stap' : 'stappen')}</div></div>
+        <div class="stat-block"><div class="stat-label">Gelukt</div><div class="stat-value">${early ? share(st.success) : pct(st.successRate)}</div><div class="stat-sub">${early ? (st.tested === 1 ? 'stap' : 'stappen') : `${st.success} van ${st.tested}`}</div></div>
+        <div class="stat-block"><div class="stat-label">Slechter</div><div class="stat-value">${early ? share(st.worse) : pct(st.harmRate)}</div><div class="stat-sub">${early ? (st.tested === 1 ? 'stap' : 'stappen') : `${st.worse} van ${st.tested}`}</div></div>
       </div>
+      ${progress}
       <p class="insights-note m-10-0-0" data-advice-gate="${st.gate}">${escapeHtml(verdict)}</p>
       ${untested ? `<p class="insights-note m-6-0-0">Nog niet getest: ${st.applied} klaargezet · ${st.proposed + st.ignored} niet gebruikt.</p>` : ''}`;
   }
@@ -7953,24 +8055,24 @@ function openBeanDetail(id){
 }
 // Klein icoon per feit-label; _default voor elk toekomstig label.
 const FACT_ROW_ICONS = {
-  'Land': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 4 5.5 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.5-4-9s1.5-6.5 4-9Z"/></svg>',
-  'Regio': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.3"/></svg>',
-  'Hoogte': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m3 19 6.5-11L14 15l2-3 5 7Z"/></svg>',
-  'Proces': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 3h6M10 3v5.5L5.5 17a2 2 0 0 0 1.8 3h9.4a2 2 0 0 0 1.8-3L14 8.5V3"/></svg>',
-  'Variëteit': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21V9c0-3.5 2.5-6 6-6 .3 2.7-.7 8-6 8"/><path d="M12 13c0-2.5-1.8-4.3-5-4.5-.3 2 .5 4.7 5 4.7"/></svg>',
-  'Farm / washing station': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg>',
-  'Roast': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21c4 0 6-2.5 6-6 0-2.5-1.5-4-2.5-5.5.3 2-.5 3-1.5 3 .5-3-1-5-3-6.5.5 2.5-1 4-2.5 6C7.2 13.5 6 15 6 17c0 2.5 2.5 4 6 4Z"/></svg>',
-  'Smaakprofiel': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m12 3 2.6 5.9L21 9.6l-4.8 4.2L17.6 21 12 17.6 6.4 21l1.4-7.2L3 9.6l6.4-.7Z"/></svg>',
-  'Branddatum': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>',
-  'Zak geopend op': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3.5 9 12 5l8.5 4M4 9.5v9l8 3.5 8-3.5v-9"/><path d="M12 12.5V22"/></svg>',
-  _default: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/></svg>'
+  'Land': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 4 5.5 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.5-4-9s1.5-6.5 4-9Z"/></svg>',
+  'Regio': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.3"/></svg>',
+  'Hoogte': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m3 19 6.5-11L14 15l2-3 5 7Z"/></svg>',
+  'Proces': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 3h6M10 3v5.5L5.5 17a2 2 0 0 0 1.8 3h9.4a2 2 0 0 0 1.8-3L14 8.5V3"/></svg>',
+  'Variëteit': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 21V9c0-3.5 2.5-6 6-6 .3 2.7-.7 8-6 8"/><path d="M12 13c0-2.5-1.8-4.3-5-4.5-.3 2 .5 4.7 5 4.7"/></svg>',
+  'Farm / washing station': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg>',
+  'Roast': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 21c4 0 6-2.5 6-6 0-2.5-1.5-4-2.5-5.5.3 2-.5 3-1.5 3 .5-3-1-5-3-6.5.5 2.5-1 4-2.5 6C7.2 13.5 6 15 6 17c0 2.5 2.5 4 6 4Z"/></svg>',
+  'Smaakprofiel': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 3 2.6 5.9L21 9.6l-4.8 4.2L17.6 21 12 17.6 6.4 21l1.4-7.2L3 9.6l6.4-.7Z"/></svg>',
+  'Branddatum': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>',
+  'Zak geopend op': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3.5 9 12 5l8.5 4M4 9.5v9l8 3.5 8-3.5v-9"/><path d="M12 12.5V22"/></svg>',
+  _default: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/></svg>'
 };
 function renderBeanDetail(bean){
   const p = PROFILE_INFO[bean.profileKey] || PROFILE_INFO.fresh_clean;
   const r = ROAST_INFO[bean.roastLevel] || ROAST_INFO.medium;
   const procName = PROCESS_INFO[bean.process] ? PROCESS_INFO[bean.process].name : null;
   document.getElementById('bean-detail-name').textContent = bean.name || 'Naamloze boon';
-  document.getElementById('bean-detail-photo').src = beanPhotoSrc(bean);
+  document.getElementById('bean-detail-swatch').innerHTML = roastSwatchHtml(bean.roastLevel, beanInitials(bean.name)); // VA-28/47
   const meta = [bean.country, bean.region, bean.altitude ? bean.altitude + ' m' : null].filter(Boolean).join(' · ');
   document.getElementById('bean-detail-meta').textContent = meta;
 
@@ -7993,35 +8095,32 @@ function renderBeanDetail(bean){
   if (favBtn){
     favBtn.setAttribute('aria-pressed', bean.favorite ? 'true' : 'false');
     favBtn.setAttribute('aria-label', bean.favorite ? 'Verwijderen uit favorieten' : 'Toevoegen aan favorieten');
-    favBtn.textContent = bean.favorite ? '♥' : '♡';
+    favBtn.innerHTML = bean.favorite ? HEART_ICON_FILLED : HEART_ICON; // VA-22
   }
 
-  const fmtDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('nl-NL', { day:'numeric', month:'short', year:'numeric' }) : '—';
-  // Samenvattende zin uit door de gebruiker ingevulde velden; niets verzonnen.
-  const aboutParts = [];
-  // 'overig' (PROCESS_INFO) is expliciet de "weet ik niet"-placeholder, geen echt proces —
-  // die hoort hier niet in een "..., X verwerkt"-zin (zou onzin-Nederlands opleveren).
+  const fmtDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('nl-NL', { day:'numeric', month:'short', year:'numeric' }) : null;
+  // VA-28: geen gegenereerde beschrijving meer (die herhaalde naam, herkomst en labels); een eigen
+  // beschrijving kent de boon (nog) niet. 'overig' is de "weet ik niet"-placeholder, geen proces.
+  const aboutEl = document.getElementById('bean-detail-about');
+  if (aboutEl){ aboutEl.textContent = ''; aboutEl.hidden = true; }
   const knownProcName = (procName && bean.process !== 'overig') ? procName : null;
-  aboutParts.push(`${escapeHtml(bean.name || 'Deze boon')} is een ${escapeHtml(r.name.toLowerCase())} roast, smaakprofiel ${escapeHtml(beanProfileLabel(bean))}${knownProcName ? `, ${escapeHtml(knownProcName.toLowerCase())} verwerkt` : ''}.`);
-  if (meta) aboutParts.push(`Herkomst: ${escapeHtml(meta)}.`);
-  if (bean.flavorNotes && bean.flavorNotes.length) aboutParts.push(`Smaaknotities: ${escapeHtml(bean.flavorNotes.join(', '))}.`);
-  document.getElementById('bean-detail-about').innerHTML = aboutParts.join(' ');
 
   // Herkomst en details in één grid op de Overzicht-tab, met een klein icoon per feit
   // (FACT_ROW_ICONS).
+  // VA-28: alleen ingevulde feiten; geen rijen met "—".
   const facts = [
-    ['Brander', bean.roaster || '—'],
-    ['Land', bean.country || '—'],
-    ['Regio', bean.region || '—'],
-    ['Hoogte', bean.altitude ? bean.altitude + ' m' : '—'],
-    ['Proces', procName || '—'],
-    ['Variëteit', bean.variety || '—'],
-    ['Farm / washing station', bean.farm || '—'],
+    ['Brander', bean.roaster],
+    ['Land', bean.country],
+    ['Regio', bean.region],
+    ['Hoogte', bean.altitude ? bean.altitude + ' m' : null],
+    ['Proces', knownProcName],
+    ['Variëteit', bean.variety],
+    ['Farm / washing station', bean.farm],
     ['Roast', r.name],
     ['Smaakprofiel', beanProfileLabel(bean)], // VA-10
     ['Branddatum', fmtDate(bean.roastDate)],
     ['Zak geopend op', fmtDate(bean.openedDate)]
-  ];
+  ].filter(([, val]) => val != null && String(val).trim() !== '');
   document.getElementById('bean-detail-facts').innerHTML = facts.map(([label,val])=>
     `<div class="bean-detail-fact-row">
       <div class="bean-detail-fact-row-icon" aria-hidden="true">${FACT_ROW_ICONS[label] || FACT_ROW_ICONS._default}</div>
@@ -8126,7 +8225,7 @@ function renderBeanDetailBag(bean){
     lines.push(`<p class="bean-detail-best-brew-facts">★ Beste kop van deze zak: ${escapeHtml(String(sum.best.tasting.liking))}/5${when ? ` (${escapeHtml(when)})` : ''}</p>
       <p class="bean-detail-best-brew-facts-sub">${escapeHtml(bits)}</p>
       ${sum.empty ? `<p class="bean-detail-best-brew-facts-sub">${escapeHtml('Zak op? Bewaar deze stand voor als je deze boon opnieuw koopt.')}</p>` : ''}
-      <div class="bean-card-btnrow mt-10"><button type="button" class="bean-use-btn bean-again-btn" id="bean-detail-bag-best-again">↻ Zet deze kop opnieuw</button></div>`);
+      <div class="bean-card-btnrow mt-10"><button type="button" class="bean-use-btn bean-again-btn" id="bean-detail-bag-best-again">Zet deze kop opnieuw</button></div>`);
   }
   body.innerHTML = lines.join('');
   block.hidden = false;
@@ -8213,7 +8312,7 @@ function renderBeanDetailBestBrew(bean){
     ${line1 ? `<p class="bean-detail-best-brew-facts">${escapeHtml(line1)}</p>` : ''}
     ${line2 ? `<p class="bean-detail-best-brew-facts-sub">${escapeHtml(line2)}</p>` : ''}
     <div class="bean-card-btnrow mt-10">
-      <button type="button" class="bean-use-btn bean-again-btn" id="bean-detail-best-brew-again">↻ Zet opnieuw</button>
+      <button type="button" class="bean-use-btn bean-again-btn" id="bean-detail-best-brew-again">Zet opnieuw</button>
       <button type="button" class="bean-use-btn" id="bean-detail-best-brew-log">Bekijk logboek</button>
     </div>`;
   const againBtn = document.getElementById('bean-detail-best-brew-again');
@@ -9486,7 +9585,10 @@ function recommendationTexts(reco, diag, extra){
     water_unknown_fruit: 'Tip: je water heeft veel invloed op fruit en helderheid. Vul je water in bij Instellingen.',
     old_fruit: 'Je bonen zijn meer dan 3 weken geleden gebrand: frisse fruitnoten nemen dan af. Deze stap helpt, maar verwacht minder fruit dan bij een verse zak.'
   })[k]).filter(Boolean);
-  return { title, body, expect, confidence: r.confidence ? CONFIDENCE_LABELS[r.confidence] : null, notes };
+  // VA-41: korte titel voor waar de tegels "Nu → Volgende" de klikken al tonen.
+  const titleShort = (r.type === 'ADJUST' && r.lever === 'grind' && r.fromValue != null && r.toValue != null)
+    ? `Maal ${clicks(n)} ${r.delta < 0 ? 'fijner' : 'grover'}` : title;
+  return { title, titleShort, body, expect, confidence: r.confidence ? CONFIDENCE_LABELS[r.confidence] : null, notes };
 }
 
 /* ---- Slagboom na Fase 4: werken de adviezen voor deze gebruiker? (pure functie) ----
@@ -9892,7 +9994,7 @@ function openBrewLogEntry(){
     metaEl.innerHTML = `
       <div class="brewlog-complete-stat"><div class="stat-label">Bed droog</div><div class="stat-value">${activeBedDrySec() != null ? fmtTime(activeBedDrySec()) : '—'}</div></div>
       <div class="brewlog-complete-stat"><div class="stat-label">Water</div><div class="stat-value">${state.waterMl} ml</div></div>
-      <div class="brewlog-complete-stat"><div class="stat-label">Temp. (plan)</div><div class="stat-value">${state.recipe.temp}°C</div></div>
+      <div class="brewlog-complete-stat"><div class="stat-label">Temp.</div><div class="stat-value">${state.recipe.temp} °C</div><div class="stat-sub">gepland</div></div>
     `;
   }
   renderTastingCard();
@@ -10371,7 +10473,7 @@ function renderBrewLogEntryCard(e, beanId){
     <button type="button" class="brewlog-entry-delete" data-delete-brew="${e.id}">Verwijderen</button>
     </div>
     </details>
-    <button type="button" class="brewlog-entry-fav" data-fav-toggle="${e.id}" aria-pressed="${e.favorite ? 'true' : 'false'}" aria-label="${e.favorite ? 'Verwijderen uit favorieten' : 'Toevoegen aan favorieten'}">${e.favorite ? '♥' : '♡'}</button>
+    <button type="button" class="brewlog-entry-fav" data-fav-toggle="${e.id}" aria-pressed="${e.favorite ? 'true' : 'false'}" aria-label="${e.favorite ? 'Verwijderen uit favorieten' : 'Toevoegen aan favorieten'}">${e.favorite ? HEART_ICON_FILLED : HEART_ICON}</button>
   </div>`;
 }
 // Hartje-bekabeling per container (Historie, boondetail-tab, beste-kop-kaart), zodat herhaalde
@@ -11292,7 +11394,7 @@ function renderBeanChipsInAdvice(){
     const r = ROAST_INFO[b.roastLevel] || ROAST_INFO.medium;
     const p = PROFILE_INFO[b.profileKey] || PROFILE_INFO.klassiek;
     const proc = PROCESS_INFO[b.process] ? PROCESS_INFO[b.process].name : null;
-    const meta = [r.name, proc, b.experimental ? '🧪 experimenteel' : null, p ? beanProfileLabel(b) : null].filter(Boolean).join(' · '); // VA-10
+    const meta = [r.name, proc, b.experimental ? 'experimenteel' : null, p ? beanProfileLabel(b) : null].filter(Boolean).join(' · '); // VA-10
     return `<button type="button" class="bean-pick-card" data-bean-pick="${b.id}" data-selected="${isSelected}">
       <span><span class="bean-pick-name">${escapeHtml(b.name || 'Naamloze boon')}</span><span class="bean-pick-meta">${escapeHtml(meta)}</span></span>
       <span class="bean-pick-arrow">→</span>
@@ -11315,6 +11417,63 @@ function useBeanChipInline(id){
   renderBeanChipsInAdvice();
   maybeShowAdviceResult();
 }
+
+/* VA-24: snelle smaaknotities. Zonder zoekterm: je gekozen notities plus aangevuld tot twaalf met
+   wat je het vaakst koos (uit je bonen), daarna met veelvoorkomende notities. Met een zoekterm: alle
+   wiel-notities die erop lijken (hoofdletters en accenten tellen niet). */
+const FLAVOR_QUICK_DEFAULTS = ['Chocolade', 'Gekarameliseerd', 'Hazelnoot', 'Honing', 'Rietsuiker', 'Perzik', 'Citroen', 'Bosbes', 'Jasmijn', 'Zwarte thee', 'Appel', 'Melkchocolade'];
+const FLAVOR_QUICK_COUNT = 12;
+const foldText = (t) => String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+function flavorQuickTags(query){
+  const all = Object.keys(FLAVOR_TAG_HINTS);
+  const q = foldText(query || '').trim();
+  if (q) return all.filter(t => foldText(t).includes(q)).slice(0, 24);
+  const counts = {};
+  beanLibrary.forEach(b => (b.flavorNotes || []).forEach(t => { if (FLAVOR_TAG_HINTS[t] !== undefined) counts[t] = (counts[t] || 0) + 1; }));
+  const used = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b, 'nl'));
+  const out = [...selectedFlavorTags];
+  for (const t of [...used, ...FLAVOR_QUICK_DEFAULTS]){
+    if (out.length >= Math.max(FLAVOR_QUICK_COUNT, selectedFlavorTags.length)) break;
+    if (!out.includes(t) && FLAVOR_TAG_HINTS[t] !== undefined) out.push(t);
+  }
+  return out;
+}
+function renderFlavorQuick(){
+  const wrap = document.getElementById('flavor-quick');
+  if (!wrap) return;
+  const searchEl = document.getElementById('f-flavor-search');
+  const query = searchEl ? searchEl.value : '';
+  const tags = flavorQuickTags(query);
+  const label = document.getElementById('flavor-quick-label');
+  if (label) label.textContent = query.trim()
+    ? (tags.length ? `${tags.length === 24 ? 'De eerste 24 notities' : tags.length === 1 ? '1 notitie' : `${tags.length} notities`} met "${query.trim()}".` : `Geen notitie met "${query.trim()}" — zet hem dan bij Overige notities.`)
+    : 'Veelgekozen — tik aan wat op de zak staat of wat je proeft.';
+  wrap.innerHTML = tags.map(t => `<button type="button" class="chip" data-flavor-tag="${escapeHtml(t)}" data-selected="${selectedFlavorTags.includes(t)}"><span class="chip-check">✓ </span>${escapeHtml(t)}</button>`).join('');
+  wrap.querySelectorAll('[data-flavor-tag]').forEach(btn => btn.addEventListener('click', () => toggleFlavorTag(btn.getAttribute('data-flavor-tag'))));
+  const toggle = document.getElementById('flavor-wheel-toggle');
+  if (toggle){
+    const open = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.textContent = open ? 'Volledig smaakwiel verbergen' : `Volledig smaakwiel (${Object.keys(FLAVOR_TAG_HINTS).length} notities)`;
+  }
+}
+function toggleFlavorTag(tag){
+  const idx = selectedFlavorTags.indexOf(tag);
+  if (idx >= 0) selectedFlavorTags.splice(idx, 1); else selectedFlavorTags.push(tag);
+  renderFlavorTagChips();
+  suggestProfileFromForm();
+}
+function setFlavorWheelOpen(open){
+  const wheel = document.getElementById('flavor-wheel');
+  const toggle = document.getElementById('flavor-wheel-toggle');
+  if (wheel) wheel.hidden = !open;
+  if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  renderFlavorQuick();
+}
+document.getElementById('flavor-wheel-toggle').addEventListener('click', (e) => {
+  setFlavorWheelOpen(e.currentTarget.getAttribute('aria-expanded') !== 'true');
+});
+document.getElementById('f-flavor-search').addEventListener('input', renderFlavorQuick);
+document.getElementById('f-flavor-search').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); }); // geen formulier-verzending
 
 function renderFlavorTagChips(){
   const wrap = document.getElementById('flavor-tag-groups');
@@ -11351,14 +11510,9 @@ function renderFlavorTagChips(){
       if (det.open) openFlavorCategories.add(key); else openFlavorCategories.delete(key);
     });
   });
-  wrap.querySelectorAll('[data-flavor-tag]').forEach(btn=>btn.addEventListener('click', ()=>{
-    const tag = btn.getAttribute('data-flavor-tag');
-    const idx = selectedFlavorTags.indexOf(tag);
-    if (idx >= 0) selectedFlavorTags.splice(idx, 1); else selectedFlavorTags.push(tag);
-    renderFlavorTagChips();
-    suggestProfileFromForm();
-  }));
+  wrap.querySelectorAll('[data-flavor-tag]').forEach(btn=>btn.addEventListener('click', ()=> toggleFlavorTag(btn.getAttribute('data-flavor-tag'))));
   renderFlavorRadar();
+  renderFlavorQuick();
 }
 
 /* Live radar-diagram — vijf cupping-kernwaarden (Aroma, Zuurgraad, Zoetheid, Body,
@@ -11620,10 +11774,6 @@ function renderWaterHardnessInput(){
       ? `${parts.join(' · ')}${dilutionSuffix}. Verandert geen receptgetal.`
       : 'Niet ingesteld — eenmalig invullen helpt bij vlakke of doffe koppen.';
   }
-  const phEl = document.getElementById('ph-readout');
-  if (phEl){
-    phEl.textContent = 'pH: niet in te vullen in deze app — geen oordeel mogelijk (SCA-richtwaarde 6–8, zie methode-tips).';
-  }
 
   // Voedt deriveWaterConfidenceInputs()/applyWaterProvenanceCeiling() van de engine met de echte
   // herkomst van het alkaliniteitsgegeven. postcodeLookupUsed is altijd false (de app schat niet op
@@ -11637,8 +11787,8 @@ function renderWaterHardnessInput(){
         : B.researchGap('ALKALINITY_NOT_ENTERED', 'Niet ingevuld door de gebruiker.');
       const inputs = B.deriveWaterConfidenceInputs({ alkalinityKH, postcodeLookupUsed: false }, true);
       confEl.textContent = inputs.waterLoadBearingAndCoarseProvenance
-        ? 'Herkomst van je alkaliniteitsgegeven: nog niet ingevuld — telt (net als een postcode-schatting) als een grove herkomst.'
-        : 'Herkomst van je alkaliniteitsgegeven: door jou zelf ingevuld — dat telt (net als een meetreeks van je waterbedrijf) als een sterkere herkomst dan een postcode-schatting. Deze app gebruikt zelf geen postcode-lookup.';
+        ? 'Alkaliniteit nog niet ingevuld: telt als een grove schatting.' // VA-25: kort; de uitleg staat onder "Hoe vind ik dit?"
+        : 'Alkaliniteit door jou ingevuld: telt sterker dan een schatting, net als een meetreeks van je waterbedrijf.';
     } else {
       confEl.textContent = '';
     }
@@ -11768,7 +11918,7 @@ function renderBypassToggle(){
 function renderFormExperimentalToggle(){
   const el = document.getElementById('f-experimental-chip');
   if (!el) return;
-  el.innerHTML = `<button type="button" class="chip" id="f-experimental-btn" data-selected="${formExperimentalFlag}">🧪 Experimenteel / dubbele fermentatie</button>`;
+  el.innerHTML = `<button type="button" class="chip" id="f-experimental-btn" data-selected="${formExperimentalFlag}">Experimenteel / dubbele fermentatie</button>`;
   const btn = document.getElementById('f-experimental-btn');
   if (btn) btn.addEventListener('click', ()=>{
     formExperimentalFlag = !formExperimentalFlag;
@@ -12322,7 +12472,7 @@ function renderRecommendationPanel(rec){
   el.dataset.type = r.type;
   el.innerHTML =
     `<p class="reco-kicker">Advies voor je volgende kop${tx.confidence ? ` <span class="badge" data-tone="info">${escapeHtml(tx.confidence)}</span>` : ''}</p>` +
-    `<p class="reco-title">${escapeHtml(tx.title)}</p>` +
+    `<p class="reco-title">${escapeHtml(tx.titleShort)}</p>` + // VA-41: de getallen staan in de tegels
     // Sprint 4 (UX-review F1): bij een maalstap "Nu → Volgende" als twee tegels.
     (r.type === 'ADJUST' && r.lever === 'grind' && r.fromValue != null && r.toValue != null
       ? `<div class="reco-fromto"><div class="reco-fromto-tile"><span class="stat-label">Nu</span><span class="reco-fromto-val">klik ${escapeHtml(String(r.fromValue))}</span></div><span class="reco-fromto-arrow" aria-hidden="true">→</span><div class="reco-fromto-tile reco-fromto-tile--next"><span class="stat-label">Volgende</span><span class="reco-fromto-val">klik ${escapeHtml(String(r.toValue))}</span></div></div>`
@@ -12536,7 +12686,7 @@ function renderPrep(){
   renderBypassToggle();
 
   document.getElementById('summary-tag').innerHTML =
-    `<span class="summary-dot" style="background:${p.color}"></span>${m.name} · ${r.name} · ${escapeHtml(choiceLabelForState())}`;
+    `<span class="summary-dot"></span>${m.name} · ${r.name} · ${escapeHtml(choiceLabelForState())}`;
 
   // BC-01: een beanId die naar een verwijderde boon wijst, telt als "geen boon" — anders
   // logt saveBrewLogEntry() een wees-verwijzing die in geen enkele bonengeschiedenis opduikt.
@@ -12643,7 +12793,7 @@ function renderPrep(){
   }
 
   const servingValueEl = document.getElementById('serving-value'); // Sprint 3: zit in de watertegel, die hieronder opnieuw wordt opgebouwd
-  if (servingValueEl) servingValueEl.textContent = state.waterMl + ' ml';
+  if (servingValueEl) servingValueEl.innerHTML = `${state.waterMl}<span class="unit"> ml</span>`; // VA-43
 
   /* Voorraadwaarschuwing (expertreview B6): alleen relevant als deze brouw via een
      opgeslagen boon loopt én die boon een zakgrootte heeft — vergelijkt de dosis van
@@ -12690,9 +12840,9 @@ function renderPrep(){
     grindMoreNotes.push(`Micron per klik: onopgeloste tegenstrijdigheid tussen bronnen, geen van beide instrumenteel gemeten. ~83 micron/klik (Timemore's eigen opgave, herhaald door meerdere winkels) tegenover 50 micron/klik (afwijkende winkelbron, specifiek voor dit model). Verandert niets aan de klikrange hierboven — puur ter info, niet als gevalideerd getal te lezen.`);
   }
 
-  const statIconDose = `<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3c4 2 7 5.5 7 10a7 7 0 0 1-14 0c0-4.5 3-8 7-10Z"/></svg>`;
-  const statIconTemp = `<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 14.5V4a2 2 0 1 0-4 0v10.5a4 4 0 1 0 4 0Z"/></svg>`;
-  const statIconWater = `<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3c3 3.5 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7.5 6-11Z"/></svg>`;
+  const statIconDose = `<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3c4 2 7 5.5 7 10a7 7 0 0 1-14 0c0-4.5 3-8 7-10Z"/></svg>`;
+  const statIconTemp = `<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 14.5V4a2 2 0 1 0-4 0v10.5a4 4 0 1 0 4 0Z"/></svg>`;
+  const statIconWater = `<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3c3 3.5 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7.5 6-11Z"/></svg>`;
   // D2-1: dosis op de toestelgrens → zeggen, en (zonder sterkteknop) dat de ratio daardoor
   // naar de rand van het doel schuift maar erbinnen blijft.
   const doseEdgeSub = rec.doseEdge ? (rec.doseEdge.side === 'min' ? ' · ondergrens van dit toestel' : ' · bovengrens van dit toestel') : '';
@@ -12724,7 +12874,7 @@ function renderPrep(){
   document.getElementById('stats-grid').innerHTML = `
     <div class="stat-block stat-block--hero${doseAdjusted ? ' stat-block--adjusted' : ''}${stockWarning ? ' bc-danger' : ''}">
       <div class="stat-label">${statIconDose}Gemalen koffie${doseAdjusted ? ' · jouw stap' : doseFromStand ? ' · jouw stand' : ''}</div>
-      <div class="stat-value">${fmt(rec.dose,1)} g</div>
+      <div class="stat-value">${fmt(rec.dose,1)}<span class="unit"> g</span></div>
       <div class="stat-sub">voor ${rec.water} ml${state.strengthAdjust ? ` · ${Math.abs(state.strengthAdjust) === 0.5 ? 'een halve stap' : 'een stap'} ${state.strengthAdjust > 0 ? 'sterker' : 'zwakker'}` : ''}${doseEdgeSub}</div>
       ${stockWarning}
     </div>
@@ -12732,7 +12882,7 @@ function renderPrep(){
       <div class="stat-label">${statIconWater}${state.bypass ? 'Water totaal' : 'Water'}</div>
       <div class="stat-stepper">
         <button type="button" id="serving-minus" aria-label="Minder water">−</button>
-        <button type="button" class="stat-value stat-value--btn" id="stats-water-open" aria-label="Waterhoeveelheid kiezen"><span id="serving-value">${state.waterMl} ml</span></button>
+        <button type="button" class="stat-value stat-value--btn" id="stats-water-open" aria-label="Waterhoeveelheid kiezen"><span id="serving-value">${state.waterMl}<span class="unit"> ml</span></span></button>
         <button type="button" id="serving-plus" aria-label="Meer water">+</button>
       </div>
       <div class="stat-sub">${state.bypass ? `waarvan ${rec.pourWaterMl} ml door de koffie` : '± 50 ml per tik, of tik het getal'}</div>
@@ -12754,13 +12904,13 @@ function renderPrep(){
     </div>
     <div class="stat-block stat-block--hero">
       <div class="stat-label">${statIconTemp}Temperatuur</div>
-      <div class="stat-value">${rec.tempBand.min}–${rec.tempBand.max} °C</div>
+      <div class="stat-value">${rec.tempBand.min}–${rec.tempBand.max}<span class="unit"> °C</span></div>
       <div class="stat-sub">${escapeHtml(rec.tempInstruction || '')}</div>
     </div>
     ${state.bypass ? `
     <div class="stat-block stat-block--wide bc-accent">
       <div class="stat-label">+ Toevoegen na het zetten</div>
-      <div class="stat-value c-accent">+${rec.bypassMl} ml</div>
+      <div class="stat-value c-accent">+${rec.bypassMl}<span class="unit"> ml</span></div>
       <div class="stat-sub">vers heet water — brengt het volume terug op ${rec.water} ml (niet gegarandeerd dezelfde sterkte, zie toelichting)</div>
     </div>` : ''}
     <div class="stat-block stat-block--secondary">
@@ -13000,7 +13150,7 @@ function syncWaterModal(){
   const range = engineValidVolumeRange(state.method, state.profile);
   const slider = document.getElementById('water-modal-slider');
   slider.min = range.min; slider.max = range.max; slider.value = state.waterMl;
-  document.getElementById('water-modal-value').textContent = state.waterMl + ' ml';
+  document.getElementById('water-modal-value').innerHTML = `${state.waterMl}<span class="unit"> ml</span>`; // VA-43
   document.getElementById('water-modal-range-note').textContent =
     `Past bij dit recept: ${range.min}–${range.max} ml.`; // VA-27/33
 }
@@ -13384,6 +13534,19 @@ document.getElementById('bean-form').addEventListener('submit', (e)=>{
    ============================================================ */
 const CIRC = 2 * Math.PI * 90;
 document.getElementById('dial-fill').style.strokeDasharray = CIRC.toFixed(2);
+/* VA-38: de ring begint leeg. Een sprong terug (nieuw brouwsel, reset) zet hem zonder overgang;
+   alleen het verstrijken van de tijd animeert. */
+let dialFillFraction = 0;
+function setDialFill(fraction){
+  const el = document.getElementById('dial-fill');
+  if (!el) return;
+  const jumpBack = fraction < dialFillFraction - 1e-6;
+  if (jumpBack) el.style.transition = 'none';
+  el.style.strokeDashoffset = (CIRC * (1 - fraction)).toFixed(2);
+  if (jumpBack){ void el.getBoundingClientRect(); el.style.transition = ''; }
+  dialFillFraction = fraction;
+}
+document.getElementById('dial-fill').style.strokeDashoffset = CIRC.toFixed(2);
 
 function renderDialTicks(){
   const g = document.getElementById('dial-ticks');
@@ -13474,6 +13637,10 @@ document.addEventListener('visibilitychange', ()=>{
 // Icoon op de pauzeknop; de sr-only tekst houdt de toegankelijke naam ("Pauze"/"Hervat").
 // width/height="24" naast de viewBox voor Safari/WebKit (anders een lege knop).
 const PAUSE_ICON = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
+/* VA-22: één iconenset — lijniconen van 24 px met lijndikte 1,7 (zoals de tabbalk); geen emoji
+   of losse tekens in knoppen. Het hartje: omtrek = geen favoriet, gevuld = favoriet. */
+const HEART_ICON = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.2s-7.6-4.6-7.6-10.4A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.6 2.6c0 5.8-7.6 10.4-7.6 10.4Z"/></svg>';
+const HEART_ICON_FILLED = '<svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.2s-7.6-4.6-7.6-10.4A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.6 2.6c0 5.8-7.6 10.4-7.6 10.4Z"/></svg>';
 const PLAY_ICON = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M7 4.5v15l13-7.5Z"/></svg>';
 function setPauseBtnLabel(running){
   const btn = document.getElementById('pause-btn');
@@ -13856,7 +14023,7 @@ function updateDial(){
   renderBrewReady();
   const total = state.recipe.totalTime;
   const fraction = clamp(timer.elapsed/total, 0, 1);
-  document.getElementById('dial-fill').style.strokeDashoffset = (CIRC*(1-fraction)).toFixed(2);
+  setDialFill(fraction); // VA-38
   document.getElementById('dial-time').textContent = fmtTime(timer.elapsed);
   // "van {totaal}" tot het verwachte einde; daarna loopt de klok door (Fase 2).
   const totalEl = document.getElementById('dial-total');
@@ -14000,6 +14167,8 @@ function checkPreAlert(){
     el.classList.remove('pre-alert');
     void el.offsetWidth; // herstart animatie
     el.classList.add('pre-alert');
+    const wrap = document.getElementById('dial-wrap'); // VA-38: de gloed alleen nu
+    if (wrap){ wrap.classList.remove('pre-alert'); void wrap.offsetWidth; wrap.classList.add('pre-alert'); }
   }
 }
 
