@@ -178,3 +178,12 @@ Gekozen uit de brainstorm. Geen van drieën verandert een receptgetal of adviesr
 # Expertreview oktober 2026 — aanrechtmodus (idee 20)
 
 Gekozen uit de brainstorm. De timer krijgt een aanrechtmodus: de giet-instructie ("Giet tot 120 g", "Wacht · 0:18") groot en leesbaar op afstand, de "Bed droog"-knop groter, en de minder belangrijke regels (lopend totaal, giet-snelheid) weg. Op een liggende tablet staat de wijzerplaat links en de instructie rechts. Standaard aan vanaf 700 px breed (tablet), standaard uit op een telefoon; met "Aanrechtmodus" op het timerscherm per toestel aan of uit te zetten (een per-toestel voorkeur in de browseropslag). Welke instructie er staat en wanneer, verandert niet. De verdere vormgeving komt mee in de visuele review.
+
+# Expertreview oktober 2026 — Sprint C (tempo, voorbereiding, water, één smaakvraag)
+
+Uit het verbeterplan van de review; geen receptgetal en geen adviesregel veranderd.
+
+| # | Besluit | Gebouwd |
+| --- | --- | --- |
+| **R-14** | Giet-snelheid als een rustig straaltje: 4–8 g/s. Boven ±8 g/s roer je het bed op; het oude label ("~6–17 g/sec") kwam van een aangenomen 5–15 s per giet. Het schema (de starttijden) blijft gelijk. | `POUR_RATE_GPS`, `pourTimeLabel()`: per giet de giettijd bij 4–8 g/s ("~8–15 s"); een giet met een gepubliceerd eindmoment (Hoffmann) toont zijn eigen venster. De timer houdt "Giet tot …" vast zolang de giet bij 6 g/s duurt (`pourSecFor()`, minstens 5 s) en toont "+60 g in ~10 s". Vervangt `ASSUMED_SINGLE_POUR_SEC`. |
+| **R-15** | De klok start niet meer direct vanaf het receptscherm. "Naar de timer" opent een klaar-check (filter spoelen, koffie en maalstand, weegschaal op 0, watertemperatuur) met "Start de klok"; het brouwsel (v6-record) ontstaat pas bij die tik. ▶ doet hetzelfde, ↻ brengt je terug naar de klaar-check, weggaan vanuit de klaar-check vraagt geen bevestiging. | `timer.armed`, `startBrewClock()`, `brewReadyItems()`, `renderBrewReady()`; de maalstand komt uit dezelfde bron als de maaltegel (`prepGrindValue()`). |

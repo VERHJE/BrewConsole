@@ -119,7 +119,7 @@ export function loadApp(){
       createBrewRecord, applyBrewEvent, migrateLegacyLogEntry, brewRecordToLogView, isBrewInLogView,
       purgeDeletedBrews, staleBrewingOutcome,
       elapsedFromEvents, brewPhaseAt, endBrewDecision, completeWithBedDry, recipeInputsFromRecord, recomputeRecipeForRecord,
-      ASSUMED_SINGLE_POUR_SEC,
+      POUR_RATE_GPS, pourSecFor, pourTimeLabel,
       TASTING_STRENGTH, TASTING_ACIDITY, TASTING_FINISH, BREW_GOALS, LATE_TASTING_MIN,
       toggleFinish, tastingGate, buildTasting, applyActuals, findPreviousComparableBrew,
       DIAGNOSIS_RULESET_VERSION, KH_HIGH_CACO3, diagnoseTasting, leverFromMatrix, adjustFeasibility, landStrength,

@@ -175,6 +175,9 @@ describe('Adversarial robustness — import/storage/rapid-click (Full QA §18/§
       await page.click('#start-btn', { timeout: 500 }).catch(()=>{});
     }
     await assertBecomesActive(page, '#screen-brew');
+    // Review R-15: daarna de klaar-check — ook "Start de klok" vijf keer snel achter elkaar.
+    for (let i=0;i<5;i++) await page.click('#brew-ready-start', { timeout: 500 }).catch(()=>{});
+    assert.equal(await page.evaluate(() => brewStore.filter(r => r.lifecycle === 'brewing').length), 1, 'precies één lopend brouwsel');
     assert.deepEqual(pageErrors, [], 'herhaald klikken op start-btn mag nooit een onafgevangen JS-fout geven');
 
     // Timer moet nog steeds normaal aflopen naar precies één "Klaar"-status, geen

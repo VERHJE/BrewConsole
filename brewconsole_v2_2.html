@@ -568,6 +568,12 @@
   .bed-dry-btn[hidden]{display:none;}
   .bed-dry-btn:active{transform:translateY(1px) scale(.99);}
   .bed-dry-hint{font-size:var(--fs-label); color:var(--text-faint); text-align:center; margin:0 0 10px;}
+  .brew-ready{margin:0 0 12px;}
+  .brew-ready-list{margin:0 auto 12px; max-width:34em; padding-left:1.3em; text-align:left; font-size:var(--fs-body); line-height:1.45; color:var(--text); text-shadow:0 1px 3px rgba(0,0,0,.75);}
+  .brew-ready-list li{margin:4px 0;}
+  .brew-ready-start{margin-top:0;}
+  .brew-ready-note{font-size:var(--fs-label); color:var(--text-faint); text-align:center; margin:6px 0 0; text-shadow:0 1px 3px rgba(0,0,0,.75);}
+  #screen-brew[data-armed] .brew-pour-progress{display:none;}
   .bed-dry-hint[hidden]{display:none;}
   /* Fase 1: verwijderen van een logging + "Ongedaan maken"-balk. */
   /* Sprint 6 (UX-review F5): logboek per boon. */
@@ -2888,6 +2894,12 @@
             <div class="brew-action-main mono" id="brew-action-main"></div>
             <div class="brew-action-sub" id="brew-action-sub"></div>
           </div>
+          <!-- Review R-15: eerst klaarzetten, dan pas de klok. -->
+          <div class="brew-ready" id="brew-ready" hidden>
+            <ol class="brew-ready-list" id="brew-ready-list"></ol>
+            <button type="button" class="start-btn brew-ready-start" id="brew-ready-start">Start de klok</button>
+            <p class="brew-ready-note">Tik op het moment dat je de eerste keer giet.</p>
+          </div>
           <button type="button" class="bed-dry-btn" id="bed-dry-btn" hidden>Bed droog</button>
           <p class="bed-dry-hint" id="bed-dry-hint" hidden>Bed droog = het moment dat er geen water meer óp het koffiebed staat: het oppervlak wordt mat en het druppelen wordt dun. Tik dan — elke keer op hetzelfde moment, zodat de tijden vergelijkbaar zijn.</p>
           <div class="brew-pour-badge" id="brew-pour-badge"></div>
@@ -4997,7 +5009,7 @@ const INTENDED_USE_INFO = {
   espresso: { name:'Espresso', desc:'Ontworpen voor druk-extractie — kan via filter vlakker/minder helder proeven' },
   omni:     { name:'Omni',     desc:'Bewust ontworpen voor zowel filter als espresso' }
 };
-const timer = { elapsed:0, running:false, intervalId:null, lastStepIndex:-1, preAlertedFor:-1, startTs:0, finished:false };
+const timer = { elapsed:0, running:false, intervalId:null, lastStepIndex:-1, preAlertedFor:-1, startTs:0, finished:false, armed:false }; // armed = R-15 klaar-check, klok nog niet gestart
 
 /* ============================================================
    HELPERS
@@ -5022,38 +5034,27 @@ function fmtStepTime(s){
   return s.endT ? fmtTime(s.t) + '–' + fmtTime(s.endT) : fmtTime(s.t);
 }
 
-/* Giet-snelheid (g/sec) per stap. Voor stappen mét een expliciete endT (sinds de
-   Hoffmann-timing-heraudit: Hoffmanns twee doorlopende hoofdpours, expliciet gepubliceerd
-   als giet-VENSTERS van 0:45-1:15 en 1:15-1:45 — zie HOFFMANN_POUR_WINDOW_SEC) is dit een
-   exacte afgeleide uit de al aanwezige, gebronde stap-tijden — geen nieuwe aanname. Voor
-   stappen zonder endT (elke andere pour, incl. Hoffmanns eigen bloom — dat is een
-   wachttijd, geen giet-duur, zie de toelichting bij buildPourSchedule()) bestaat geen
-   vaste bron voor de exacte duur: meerdere beschrijvingen van bv. Kasuya's eigen methode
-   noemen uiteenlopend 5, 10 of 15 seconden per pour. ASSUMED_SINGLE_POUR_SEC gebruikt het
-   middelste, vaakst genoemde getal (10 sec) — dit blijft de tijdsbasis voor het gietschema
-   zelf én voor de live-interpolatie tijdens het brouwen (zie updateDial()), dus hier
-   bewust ongewijzigd. */
-const ASSUMED_SINGLE_POUR_SEC = 10;
-/* FIX (expertaudit, bevinding 2): pourRateLabel() toonde voorheen één decimaal op basis
-   van uitsluitend het MIDDEN van de aanname (10 sec) — bv. "~9,0 g/sec" voor een 90g-pour.
-   Dat suggereert een precisie die de onderliggende aanname niet heeft: de bronnen noemen
-   5-15 sec, dus diezelfde 90g-pour is in werkelijkheid ergens tussen 6 en 18 g/sec. De
-   MIN/MAX hieronder zijn dezelfde 5/15-sec-uitersten uit de toelichting hierboven, nu ook
-   als getal — het label toont voortaan dat hele bereik i.p.v. een schijnbaar precies punt.
-   Alleen dit label verandert; ASSUMED_SINGLE_POUR_SEC (en dus het gietschema/de
-   live-interpolatie) blijft exact zoals het was. */
-const ASSUMED_SINGLE_POUR_SEC_MIN = 5;
-const ASSUMED_SINGLE_POUR_SEC_MAX = 15;
-function pourRateLabel(s){
-  if (!s.add || s.add <= 0) return '';
-  const exact = s.endT != null;
-  if (exact){
-    const duration = Math.max(1, s.endT - s.t);
-    return fmt(s.add / duration, 1) + ' g/sec';
+/* Review R-14: giet-snelheid. Een rustig straaltje uit een tuitketel is ±4–8 g/s; daarboven
+   roer je het bed op. Het schema (de starttijden) verandert niet; per giet tonen we hoe lang
+   hij bij die snelheid duurt, en de timer houdt "Giet tot …" zo lang vast (typisch 6 g/s).
+   Een giet met een gepubliceerd eindmoment (endT, Hoffmann) houdt zijn eigen venster. */
+const POUR_RATE_GPS = { min: 4, max: 8, typical: 6 };
+const POUR_MIN_SEC = 5;
+function pourSecFor(s){
+  if (!s || !(s.add > 0)) return 0;
+  if (s.endT != null) return Math.max(1, s.endT - s.t);
+  return Math.max(POUR_MIN_SEC, Math.round(s.add / POUR_RATE_GPS.typical));
+}
+// "~8–15 s" bij 4–8 g/s; met een eindmoment: "in 30 s (~8 g/s)".
+function pourTimeLabel(s){
+  if (!s || !(s.add > 0)) return '';
+  if (s.endT != null){
+    const sec = Math.max(1, s.endT - s.t);
+    return `in ${sec} s (~${fmt(s.add / sec, 0)} g/s)`;
   }
-  const rateMax = s.add / ASSUMED_SINGLE_POUR_SEC_MIN;
-  const rateMin = s.add / ASSUMED_SINGLE_POUR_SEC_MAX;
-  return `~${fmt(rateMin, 0)}–${fmt(rateMax, 0)} g/sec`;
+  const lo = Math.max(1, Math.round(s.add / POUR_RATE_GPS.max));
+  const hi = Math.max(lo, Math.round(s.add / POUR_RATE_GPS.min));
+  return `~${lo}–${hi} s`;
 }
 function clamp(v, lo, hi){ return Math.min(hi, Math.max(lo, v)); }
 function escapeHtml(s){
@@ -5306,7 +5307,7 @@ var APRIL_FIRST_POUR_EXTRA_SEC = 10;
    wezenlijk anders dan het generieke model (korte, losse "in één beweging"-pours op vaste
    cadans): de twee hoofdpours zijn zelf giet-VENSTERS van 30 sec, geen momentopnames — dat
    modelleert deze functie voortaan via het endT-veld (start/eind van de giet-actie), dat
-   voorheen alleen door fmtStepTime()/pourRateLabel()/updateDial() werd GELEZEN maar door
+   voorheen alleen door fmtStepTime()/updateDial() werd GELEZEN maar door
    geen enkele overlay ooit werd GEZET (dode code). Bloomtijd was al 30 sec (generiek) en
    is nu voor Hoffmann specifiek 45 sec, net als bij Kasuya/April een losse constante i.p.v.
    de gedeelde default aan te passen. De 105 sec tussen het einde van pour 2 (1:45) en de
@@ -5450,7 +5451,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
     // aandeel bij pour 1 (60% i.p.v. een gelijke verdeling) zijn Hoffmann-specifiek.
     // Geen endT op de bloomstap: de 45 sec is de totale wachttijd tot pour 1 (t hieronder),
     // niet de duur van het ingieten van de bloom zelf — dat blijft, net als bij elke andere
-    // overlay, de generieke ASSUMED_SINGLE_POUR_SEC-aanname (5-15 sec) voor een korte pour.
+    // overlay, de generieke giettijd bij 4–8 g/s (pourSecFor()) voor een korte pour.
     const bloomWater = Math.max(0, Math.min(Math.round(dose * 2 / 5) * 5, Math.round(water * 0.2 / 5) * 5));
     runningTo = bloomWater;
     steps.push({ label:'Bloom', t:0, add:bloomWater, to:runningTo, note:'', flow:'' });
@@ -9340,9 +9341,8 @@ function brewPhaseAt(steps, totalSec, tSec){
   let idx = 0;
   for (let i = 0; i < list.length; i++){ if (tSec >= list[i].t) idx = i; }
   const cur = list[idx];
-  const pourDur = (s) => s.endT != null ? Math.max(1, s.endT - s.t) : ASSUMED_SINGLE_POUR_SEC;
-  if (cur && cur.add > 0 && tSec < cur.t + pourDur(cur)){
-    return { kind: 'pour', targetG: cur.to, addG: cur.add, pourIndex: pours.indexOf(cur) + 1, pourCount: pours.length, label: cur.label, stepIndex: idx };
+  if (cur && cur.add > 0 && tSec < cur.t + pourSecFor(cur)){
+    return { kind: 'pour', targetG: cur.to, addG: cur.add, pourSec: pourSecFor(cur), pourIndex: pours.indexOf(cur) + 1, pourCount: pours.length, label: cur.label, stepIndex: idx };
   }
   const next = list.slice(idx + 1).find(s => s.add > 0);
   if (next){
@@ -12876,6 +12876,21 @@ function renderPrepNextAdjust(){
     <button type="button" class="link-secondary" id="prep-next-adjust-cancel">Toch niet</button>`;
   el.hidden = false;
 }
+function grindHeadlineFor(rec){
+  if (rec.grindMicron != null) return `${rec.grindMicron} µm`;
+  if (rec.grindStartingPoint != null) return `Klik ${rec.grindStartingPoint}`;
+  if (rec.grindStartingRange) return `Klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax}`;
+  if (rec.grindPracticalRange) return `Klik ${rec.grindPracticalRange.clicksMin}–${rec.grindPracticalRange.clicksMax}`;
+  return rec.grindBandLabel || '—';
+}
+// De maalstand waar deze kop mee begint: een klaargezette maalstap, anders jouw stand, anders het recept.
+// Gedeeld door de maaltegel en de klaar-check op de timer (R-15).
+function prepGrindValue(rec){
+  const pAdj = pendingAdjustForState();
+  if (pAdj && pAdj.lever === 'grind' && pAdj.toValue != null && rec.grindMicron == null) return `Klik ${pAdj.toValue}`;
+  if (typeof state.grindStand === 'number' && rec.grindMicron == null) return `Klik ${state.grindStand}`;
+  return grindHeadlineFor(rec);
+}
 function strengthWords(step){
   if (!step) return 'standaard sterkte';
   return `${Math.abs(step) === 0.5 ? 'een halve stap' : 'een stap'} ${step > 0 ? 'sterker' : 'lichter'}`;
@@ -13087,12 +13102,7 @@ function renderPrep(){
   // bestond al en werd al getoond als stat-sub-toelichting hieronder, nu ook als kopregel.
   // Geen nieuw getal berekend — puur welk al-bestaand veld de hoofdwaarde wordt.
   // Audit BC-12: het getal waar je mee begint staat vooraan; het startgebied eronder.
-  let grindHeadline;
-  if (rec.grindMicron != null) grindHeadline = `${rec.grindMicron} µm`;
-  else if (rec.grindStartingPoint != null) grindHeadline = `Klik ${rec.grindStartingPoint}`;
-  else if (rec.grindStartingRange) grindHeadline = `Klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax}`;
-  else if (rec.grindPracticalRange) grindHeadline = `Klik ${rec.grindPracticalRange.clicksMin}–${rec.grindPracticalRange.clicksMax}`;
-  else grindHeadline = rec.grindBandLabel || '—';
+  const grindHeadline = grindHeadlineFor(rec);
 
   // NIEUW (visuele afstemming referentiebeeld): de langere kalibratie-/range-toelichtingen
   // bij Maalgraad (voorheen altijd alle tegelijk zichtbaar, samen een muur tekst die het
@@ -13154,7 +13164,7 @@ function renderPrep(){
   // de app zelf geen klik weet).
   const grindFromStand = !grindAdjusted && typeof state.grindStand === 'number' && rec.grindMicron == null && state.grindStand !== rec.grindStartingPoint;
   const doseFromStand = !doseAdjusted && !!state.standApplied && (state.standApplied.strengthStep || 0) !== 0 && state.strengthAdjust === state.standApplied.strengthStep;
-  const grindValue = grindAdjusted ? `Klik ${pAdj.toValue}` : (grindFromStand || typeof state.grindStand === 'number') && rec.grindMicron == null && typeof state.grindStand === 'number' ? `Klik ${state.grindStand}` : grindHeadline;
+  const grindValue = prepGrindValue(rec);
   document.getElementById('stats-grid').innerHTML = `
     <div class="stat-block stat-block--hero${doseAdjusted ? ' stat-block--adjusted' : ''}"${stockWarning ? ' style="border-color:var(--danger);"' : ''}>
       <div class="stat-label">${statIconDose}Gemalen koffie${doseAdjusted ? ' · jouw stap' : doseFromStand ? ' · jouw stand' : ''}</div>
@@ -13209,9 +13219,10 @@ function renderPrep(){
       <div class="stat-sub">schema · tik "Bed droog" voor je echte tijd</div>
     </div>
   `;
-  // Sprint 3: de Start-knop noemt de schemalengte ("Start · 3:30").
+  // Sprint 3: de knop noemt de schemalengte. R-15: hij start de klok nog niet — dat doe je op de
+  // timer, als het filter gespoeld en de weegschaal op 0 staat.
   const startBtnEl = document.getElementById('start-btn');
-  if (startBtnEl) startBtnEl.textContent = `Start · ${fmtTime(rec.totalTime)}`;
+  if (startBtnEl) startBtnEl.textContent = `Naar de timer · ${fmtTime(rec.totalTime)}`;
 
   // Audit BC-12: de techniek in één zin; de rest van de uitleg op verzoek.
   const styleNoteEl = document.getElementById('style-note');
@@ -13352,16 +13363,19 @@ function renderPrep(){
   }
 
   const recipeBodyEl = document.getElementById('recipe-body');
-  // Sprint 5: staat bij elke giet dezelfde snelheid, dan één regel onder de tabel i.p.v. per rij.
-  const rates = rec.steps.filter(s=>s.add>0).map(pourRateLabel);
+  // R-14: één regel over het tempo; per giet de giettijd (staat bij elke giet dezelfde, dan alleen in die regel).
+  const rates = rec.steps.filter(s=>s.add>0).map(pourTimeLabel);
   const oneRate = rates.length > 1 && rates.every(r => r === rates[0]) ? rates[0] : null;
   const rateNoteEl = document.getElementById('recipe-rate-note');
-  if (rateNoteEl){ rateNoteEl.hidden = !oneRate; rateNoteEl.textContent = oneRate ? `Giet steeds rustig: ${oneRate}.` : ''; }
+  if (rateNoteEl){
+    rateNoteEl.hidden = false;
+    rateNoteEl.textContent = `Giet rustig, ${POUR_RATE_GPS.min}–${POUR_RATE_GPS.max} g per seconde` + (oneRate ? `: elke giet ${oneRate}.` : ' (giettijd per giet hieronder).');
+  }
   recipeBodyEl.innerHTML = rec.steps.map((s,i)=>`
     <tr data-pourstep="${i}" role="button" tabindex="0" aria-label="Details voor ${escapeHtml(s.label)}">
       <td>${s.label}${s.note?`<span class="step-note">${s.note}</span>`:''}${s.flow?`<span class="step-flow">${s.flow}</span>`:''}</td>
       <td class="mono">${fmtStepTime(s)}</td>
-      <td class="mono">${s.add>0? '+'+s.add+' ml' : '—'}${s.add>0 && !oneRate ? `<span class="step-rate">${pourRateLabel(s)}</span>` : ''}</td>
+      <td class="mono">${s.add>0? '+'+s.add+' ml' : '—'}${s.add>0 && !oneRate ? `<span class="step-rate">${pourTimeLabel(s)}</span>` : ''}</td>
       <td class="mono">${s.to} ml</td>
     </tr>
   `).join('');
@@ -13407,7 +13421,7 @@ function renderPrep(){
   // doelvenster hieronder is bewust ongewijzigd gelaten: dat is een stabiele, toetsbare
   // evidence-ID, geen intern planningsdocument — zie tests/kernflow.smoke.test.mjs "A-1".)
   document.getElementById('disclaimer').textContent =
-    '* Dosis/water/ratio komen algebraïsch uit een sterkte-/extractievenster (zie het doelvenster-blok hierboven — door de app aangeleverd, niet uit het eigen onderzoekscorpus) en het gevalideerde dosisbereik van dit toestel — nooit gekopieerd uit een naam-gebonden receptentabel. De ratio bevat een retentieaanname (2,0 g achtergebleven water per g droge koffie bij percolatie, tier 3-4/klasse C, gebaseerd op Rao en Coffee ad Astra) — zonder die aanname zou de ratio het achtergebleven water in het koffiebed negeren en te sterk lijken. Temperatuur is een ankerpunt + instructie binnen de apparaatband, gepositioneerd op branddiepte — géén los geteste claim: de bevinding dat temperatuur weinig zelfstandig smaakeffect heeft (Batali, Ristenpart & Guinard, 2020) hield maling en zettijd bewust vast om TDS/extractie gelijk te houden en testte alleen 87/90/93°C, en die voorwaarde geldt hier niet. Eerlijk erbij: het ankerpunt voor lichte branding (94–96°C) ligt zélf boven dat geteste bereik — het steunt op gangbare praktijk voor lichte brandingen, niet op deze studie, en is dus een vertrekpunt, geen getest getal. Maling is de eerlijke drieling instelling, vertrouwensband en korrelgrootte-doel — vandaag voor elke molen "onvoldoende" (geen gevalideerde kalibratiecurve); waar een community-startklikrange wél bestaat, positioneert branddiepte alleen wáár je daarbinnen begint (fijner/lichter, grover/donkerder) — geen nieuw maalgetal. Branddiepte stuurt in beide gevallen nooit de ratio of dosis (die blijven voor elke branddiepte identiek). Een eventueel giet-schema hierboven is óf een gecorroboreerde, aan een naam gebonden pour-structuur (zie de recept-notitie), óf — als die er niet is — een eigen, gelijkmatige verdeling; giet-snelheid (g/sec) is altijd een generieke aanname, geen letterlijk gepubliceerd getal. De totale schemalengte (en dus de brouwtimer) volgt uit het aantal giet-momenten van dit schema, niet meer uit de apparaatbrede contacttijd-diagnostiek — die diagnostische band staat los, als plausibiliteitscontrole achteraf op het Klaar-scherm.';
+    '* Dosis/water/ratio komen algebraïsch uit een sterkte-/extractievenster (zie het doelvenster-blok hierboven — door de app aangeleverd, niet uit het eigen onderzoekscorpus) en het gevalideerde dosisbereik van dit toestel — nooit gekopieerd uit een naam-gebonden receptentabel. De ratio bevat een retentieaanname (2,0 g achtergebleven water per g droge koffie bij percolatie, tier 3-4/klasse C, gebaseerd op Rao en Coffee ad Astra) — zonder die aanname zou de ratio het achtergebleven water in het koffiebed negeren en te sterk lijken. Temperatuur is een ankerpunt + instructie binnen de apparaatband, gepositioneerd op branddiepte — géén los geteste claim: de bevinding dat temperatuur weinig zelfstandig smaakeffect heeft (Batali, Ristenpart & Guinard, 2020) hield maling en zettijd bewust vast om TDS/extractie gelijk te houden en testte alleen 87/90/93°C, en die voorwaarde geldt hier niet. Eerlijk erbij: het ankerpunt voor lichte branding (94–96°C) ligt zélf boven dat geteste bereik — het steunt op gangbare praktijk voor lichte brandingen, niet op deze studie, en is dus een vertrekpunt, geen getest getal. Maling is de eerlijke drieling instelling, vertrouwensband en korrelgrootte-doel — vandaag voor elke molen "onvoldoende" (geen gevalideerde kalibratiecurve); waar een community-startklikrange wél bestaat, positioneert branddiepte alleen wáár je daarbinnen begint (fijner/lichter, grover/donkerder) — geen nieuw maalgetal. Branddiepte stuurt in beide gevallen nooit de ratio of dosis (die blijven voor elke branddiepte identiek). Een eventueel giet-schema hierboven is óf een gecorroboreerde, aan een naam gebonden pour-structuur (zie de recept-notitie), óf — als die er niet is — een eigen, gelijkmatige verdeling; giet-snelheid (4–8 g/s, een rustig straaltje) en de giettijd per beurt zijn een generieke aanname, geen letterlijk gepubliceerd getal. De totale schemalengte (en dus de brouwtimer) volgt uit het aantal giet-momenten van dit schema, niet meer uit de apparaatbrede contacttijd-diagnostiek — die diagnostische band staat los, als plausibiliteitscontrole achteraf op het Klaar-scherm.';
 
   // NIEUW (Visual Design 2.0 fase 3): het waterhoeveelheid-statblok hierboven opnieuw
   // tikbaar maken na elke render (het element wordt via innerHTML vervangen, dus oude
@@ -13477,6 +13491,7 @@ function openPourStepModal(stepIndex){
     ['Water erbij', s.add > 0 ? `+${s.add} ml` : '—'],
     ['Totaal', `${s.to} ml`]
   ];
+  if (s.add > 0) facts.push(['Giettijd', pourTimeLabel(s)]);
   document.getElementById('pourstep-modal-facts').innerHTML = facts.map(([l,v])=>
     `<div><div class="bean-detail-fact-label">${escapeHtml(l)}</div><div class="bean-detail-fact-value">${escapeHtml(String(v))}</div></div>`
   ).join('');
@@ -13942,19 +13957,53 @@ function startBrew(){
   clearInterval(timer.intervalId); // Fase 2: een vorig brouwsel kan nog op de achtergrond lopen (Home stopt het niet meer)
   timer.elapsed = 0; timer.running = false; timer.lastStepIndex = -1; timer.preAlertedFor = -1; timer.startTs = 0; timer.finished = false;
   hideBrewRecovery();
+  abandonActiveBrew('superseded'); // zoals vroeger bij Start: een vergeten brouwsel loopt niet door naast dit nieuwe
+  timer.recordId = null;
   setPauseBtnEnabled(true);
   unlockAudioForIOS(); // binnen deze user-gesture, zodat latere beeps op iOS altijd geluid geven
-  /* Fase 1 (Brew Intelligence v2): het brouwsel bestaat vanaf nu als v6-record, meteen
-     bewaard. De bijwerkingen die hier vroeger stonden (bean.lastBrew = "brouw opnieuw"-
-     keuzes, voorraadverbruik) gebeuren nu pas bij COMPLETED — zie
-     applyCompletionSideEffects(). Een afgebroken brouwsel verbruikt dus geen voorraad. */
-  const rec = beginBrewRecord();
-  timer.recordId = rec.id;
+  // R-15: eerst klaarzetten (filter spoelen, koffie erin, weegschaal op 0); de klok start pas
+  // met "Start de klok". Het record ontstaat ook pas dan — zie startBrewClock().
+  timer.armed = true;
   prepareBrewScreen();
-  setPauseBtnLabel(true);
+  setPauseBtnLabel(false);
+  setDialRunning(false);
   showScreen('brew');
   updateDial();
-  runTimer();
+  requestWakeLock(); // het scherm blijft aan tijdens het klaarzetten
+}
+/* Fase 1 (Brew Intelligence v2): het brouwsel bestaat vanaf de start van de klok als v6-record,
+   meteen bewaard. De bijwerkingen (bean.lastBrew, voorraadverbruik) gebeuren pas bij
+   COMPLETED — zie applyCompletionSideEffects(). Een afgebroken brouwsel verbruikt dus niets. */
+function startBrewClock(){
+  if (!timer.armed || !state.recipe) return;
+  timer.armed = false;
+  unlockAudioForIOS();
+  const rec = beginBrewRecord();
+  timer.recordId = rec.id;
+  startTimerLoop();
+}
+// R-15: de klaar-check op de timer, uit het recept zoals het op het receptscherm stond.
+function brewReadyItems(rec, method){
+  const g = prepGrindValue(rec);
+  const grindTxt = g === '—' ? '' : /^Klik|µm$/.test(g) ? `, gemalen op ${g.replace(/^Klik/, 'klik')}` : `, ${g.toLowerCase()} gemalen`;
+  const mName = (METHOD_INFO[method] && METHOD_INFO[method].name) || 'dripper';
+  return [
+    `Spoel het filter met heet water en giet dat water weg.`,
+    `${fmt(rec.dose, 1)} g koffie${grindTxt}, in het filter. Schud het bed vlak.`,
+    `Zet de ${mName} op de weegschaal en zet hem op 0.`,
+    `Water op ${rec.temp}°C.`
+  ];
+}
+function renderBrewReady(){
+  const el = document.getElementById('brew-ready');
+  const screen = document.getElementById('screen-brew');
+  const armed = !!(timer.armed && state.recipe);
+  if (screen) screen.toggleAttribute('data-armed', armed);
+  if (!el) return;
+  el.hidden = !armed;
+  if (!armed) return;
+  const list = document.getElementById('brew-ready-list');
+  if (list) list.innerHTML = brewReadyItems(state.recipe, state.method).map(t => `<li>${escapeHtml(t)}</li>`).join('');
 }
 // Het brouwscherm opbouwen voor state.recipe — gedeeld door Start en herstel (Fase 2).
 function prepareBrewScreen(){
@@ -13983,6 +14032,7 @@ function prepareBrewScreen(){
 
 function runTimer(){
   if (timer.running || timer.finished) return; // Fase 2: na bed droog/einde loopt de klok niet meer door
+  if (timer.armed){ startBrewClock(); return; } // R-15: ▶ in de klaar-check = Start de klok
   // Fase 2: ▶ op het herstelpaneel betekent hetzelfde als "Doorgaan".
   const recoveryEl = document.getElementById('brew-recovery');
   if (recoveryEl && !recoveryEl.hidden){ recoveryContinue(); return; }
@@ -14013,6 +14063,7 @@ function resetTimer(){
   abandonActiveBrew('reset'); // Fase 1: reset = dit brouwsel afgebroken; opnieuw starten maakt een nieuw record
   clearInterval(timer.intervalId);
   timer.elapsed = 0; timer.running = false; timer.lastStepIndex = -1; timer.preAlertedFor = -1; timer.startTs = 0; timer.finished = false;
+  timer.armed = !!state.recipe; // R-15: opnieuw beginnen = opnieuw klaarzetten
   setPauseBtnEnabled(true);
   // FIX (bestaand gedrag gecorrigeerd tijdens icoon-omzetting): na reset staat de timer
   // stil (running=false) — de knop start 'm dus weer op, net als runTimer(). De oude
@@ -14145,7 +14196,7 @@ function showBrewRecovery(rec){
   const nowMs = Date.now();
   const el = elapsedFromEvents(rec.actual.events, nowMs);
   clearInterval(timer.intervalId);
-  timer.running = false; timer.finished = false; timer.recordId = rec.id;
+  timer.running = false; timer.finished = false; timer.recordId = rec.id; timer.armed = false;
   timer.elapsed = el.elapsedSec;
   timer.startTs = nowMs - timer.elapsed * 1000;
   timer.lastStepIndex = currentStepIndex(); // geen piepjes-inhaalslag voor gemiste stappen
@@ -14251,6 +14302,7 @@ function currentStepIndex(){
 
 function updateDial(){
   syncBrewFinishedUi();
+  renderBrewReady();
   const total = state.recipe.totalTime;
   const fraction = clamp(timer.elapsed/total, 0, 1);
   document.getElementById('dial-fill').style.strokeDashoffset = (CIRC*(1-fraction)).toFixed(2);
@@ -14267,6 +14319,7 @@ function updateDial(){
 
   // Screenreader-aankondiging (aria-live) — alleen bij een fasewissel, niet elke seconde.
   const stepLabel = timer.finished ? 'Klaar'
+    : timer.armed ? 'Klaar om te starten — tik Start de klok zodra je begint te gieten'
     : phase.kind === 'pour' ? `Giet tot ${phase.targetG} gram`
     : phase.kind === 'wait' ? `Wacht, daarna giet tot ${phase.nextTargetG} gram`
     : 'Laten doorlopen — tik Bed droog zodra het bed droog is';
@@ -14290,7 +14343,11 @@ function updateDial(){
   const actionEl = document.getElementById('brew-action');
   if (actionMain && actionSub && actionEl){
     let main, sub, kind;
-    if (timer.finished){
+    if (timer.armed){
+      kind = 'ready';
+      main = 'Klaar?';
+      sub = `Eerste giet: tot ${phase.kind === 'pour' ? phase.targetG : (steps.find(s => s.add > 0) || { to: 0 }).to} g`;
+    } else if (timer.finished){
       kind = 'done';
       main = 'Klaar';
       const bd = finishedRec && finishedRec.actual ? finishedRec.actual.bedDrySec : null;
@@ -14298,7 +14355,7 @@ function updateDial(){
     } else if (phase.kind === 'pour'){
       kind = 'pour';
       main = `Giet tot ${phase.targetG} g`;
-      sub = `+${phase.addG} g · ${current.label}`;
+      sub = `+${phase.addG} g in ~${phase.pourSec} s · ${current.label}`;
     } else if (phase.kind === 'wait'){
       kind = 'wait';
       main = `Wacht · ${fmtTime(phase.remainingSec)}`;
@@ -14326,13 +14383,14 @@ function updateDial(){
   const badgeEl = document.getElementById('brew-pour-badge');
   if (badgeEl){
     badgeEl.textContent = timer.finished ? ''
+      : timer.armed ? `${pourSteps.length} gieten`
       : phase.kind === 'pour' ? `giet ${phase.pourIndex}/${phase.pourCount}`
       : phase.kind === 'wait' ? `${phase.pourIndex - 1}/${phase.pourCount} gegoten`
       : `${pourSteps.length}/${pourSteps.length} gegoten`;
   }
   const fillEl = document.getElementById('brew-pour-progress-fill');
   if (fillEl){
-    const started = phase.kind === 'pour' ? phase.pourIndex : phase.kind === 'wait' ? phase.pourIndex - 1 : pourSteps.length;
+    const started = timer.armed ? 0 : phase.kind === 'pour' ? phase.pourIndex : phase.kind === 'wait' ? phase.pourIndex - 1 : pourSteps.length;
     const pourFraction = pourSteps.length ? clamp(started / pourSteps.length, 0, 1) : 0;
     fillEl.style.width = (pourFraction*100).toFixed(1) + '%';
   }
@@ -14341,7 +14399,9 @@ function updateDial(){
 
   const nextInfo = document.getElementById('next-info');
   let nextText = '';
-  if (!timer.finished){
+  if (timer.armed){
+    nextText = '';
+  } else if (!timer.finished){
     const nextPour = steps.slice(idx + 1).find(s => s.add > 0 && s.t > timer.elapsed);
     if (phase.kind !== 'drawdown' && nextPour){
       nextText = `Volgende: giet tot ${nextPour.to} g om ${fmtTime(nextPour.t)}`;
@@ -14536,6 +14596,7 @@ async function stopBrewTimer(confirmMessage){
   abandonActiveBrew('stopped'); // Fase 1: gestopt vóór het einde → ABANDONED (na het einde is het record al COMPLETED)
   clearInterval(timer.intervalId);
   timer.running = false;
+  timer.armed = false;
   releaseWakeLock();
   return true;
 }
@@ -14552,6 +14613,7 @@ async function confirmResetTimer(){
 }
 document.getElementById('reset-btn').addEventListener('click', confirmResetTimer);
 document.getElementById('bed-dry-btn').addEventListener('click', tapBedDry);
+document.getElementById('brew-ready-start').addEventListener('click', startBrewClock); // R-15
 // Fase 3: proefkaart + doel op het receptscherm (event-delegatie: de inhoud wordt opnieuw opgebouwd).
 document.getElementById('tasting-card').addEventListener('click', handleTastingCardClick);
 document.getElementById('ab-trial').addEventListener('click', handleAbTrialClick); // BC-10
