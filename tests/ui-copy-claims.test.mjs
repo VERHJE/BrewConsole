@@ -27,7 +27,7 @@ describe('BC-02: UI-teksten beloven geen effecten die de engine niet heeft', () 
   test('de vervangende teksten staan in de UI', () => {
     assert.match(html, /Natural\/anaerobic\? Dat weegt mee in de methodekeuze \(V60 of Chemex\) en het voorgestelde profiel; dosis, maling en temperatuur veranderen er niet door\./);
     assert.match(html, /m\.a\.s\.l\. — ter info, verandert het recept niet/);
-    assert.match(html, /Bepaalt vooral het schenkschema\. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding \(een heel kort schema start één klik fijner\)\./);
+    assert.match(html, /Bepaalt het gietschema en wat de proefkaart straks vraagt\. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding \(een heel kort schema start één klik fijner\)\./);
   });
 
   test('profieltekst klopt met de engine: temperatuur en maling gelijk over profielen, dosis binnen 0,5 g', () => {

@@ -253,6 +253,8 @@
   .bean-picker-new-row{display:flex; gap:8px;}
   .bean-picker-new-row .form-input{flex:1; min-width:0;}
   .bean-picker-new-row .modal-btn{flex:0 0 auto; padding:0 14px;}
+  .water-ask-mix{display:flex; gap:10px; align-items:center; min-height:44px; font-family:var(--font-body); font-size:var(--fs-small); color:var(--text); margin:0 0 12px;}
+  .water-ask-mix input{width:20px; height:20px; flex-shrink:0;}
   /* Inline in de boonregel (niet de volle breedte van .link-secondary): het receptscherm blijft kort. */
   .prep-bean-line .prep-bean-link{display:inline-flex; align-items:center; width:auto; vertical-align:middle; margin:0 0 0 4px; min-height:44px; padding:0 4px;}
 
@@ -501,6 +503,7 @@
   /* FIX (teamreview v2, UX Researcher/Devil's Advocate — Kritiek bevinding #1): badge op
      profielkaarten die vandaag naar exact hetzelfde recept resolven, zie findProfileTwins(). */
   .profile-twin-note{font-size:var(--fs-label); color:var(--text-faint); font-style:italic; display:block; margin-top:4px;}
+  .profile-detail{display:block; color:var(--text-faint);}
 
   /* prep screen */
   /* Sprint 5: stille kicker boven de titel i.p.v. een pil — zelfde info, minder hoogte. */
@@ -542,8 +545,6 @@
   .tasting-hint{margin:0; font-size:var(--fs-label); color:var(--text-faint);}
   .tasting-gate{margin:0; font-size:var(--fs-small); color:var(--text-dim);}
   .tasting-gate[data-state="passed"]{color:var(--copper-light);}
-  .prep-goal{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 12px;}
-  .prep-goal-label{font-size:var(--fs-small); color:var(--text-dim); margin-right:2px;}
   /* Fase 2: herstelpaneel + Home-banner. */
   .brew-recovery{position:relative; z-index:3; background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:18px; margin:0 0 16px; display:flex; flex-direction:column; gap:10px;}
   .brew-recovery[hidden]{display:none;}
@@ -624,6 +625,7 @@
 
   .prep-bean-line{font-size:var(--fs-small); color:var(--text-dim); margin:-4px 0 8px;}
   .prep-bean-line[data-linked="false"]{color:var(--text-faint);}
+  .prep-water-tip{font-size:var(--fs-small); color:var(--text-dim); margin:0 0 10px;}
 
   .technique-line{
     font-size:var(--fs-small); color:var(--copper-light);
@@ -1644,8 +1646,6 @@
   /* Sprint 3: de uitrustingsfoto duwde de getallen onder de vouw. */
   #screen-prep > .photo-slot{display:none;}
   /* Sprint 3: doelchips op één regel i.p.v. twee. */
-  #screen-prep .prep-goal{flex-wrap:nowrap; overflow-x:auto; gap:6px; margin-bottom:10px; scrollbar-width:none;}
-  #screen-prep .prep-goal .chip{white-space:nowrap; padding-left:12px; padding-right:12px; font-size:var(--fs-small);}
   /* Audit BC-19: groter scherm = meer overzicht, niet een uitgerekte telefoon. */
   @media (min-width:700px){
     #screen-prep .photo-slot--banner{ aspect-ratio:auto; height:190px; }
@@ -2011,6 +2011,21 @@
 <!-- Review R-06: wie zonder boon begon, kon daarna nergens een boon koppelen, waardoor de
      leerlus stil bleef staan. Deze kiezer koppelt een opgeslagen boon of maakt er snel een
      aan (alleen een naam; de rest kan later via Bewerken). -->
+<!-- Review R-12: één keer, bij je eerste boon — welk water gebruik je? Verandert geen receptgetal. -->
+<div class="modal-overlay" id="water-ask" hidden>
+  <div class="modal-box bean-picker-box" role="dialog" aria-modal="true" aria-labelledby="water-ask-title">
+    <p class="bean-picker-title" id="water-ask-title">Welk water gebruik je?</p>
+    <p>Water verandert geen receptgetal, maar bepaalt veel van fruit en helderheid: veel Nederlands kraanwater bevat genoeg kalk om zuren te dempen.</p>
+    <label class="water-ask-mix"><input type="checkbox" id="water-ask-mix"> Ik meng mijn kraanwater 1:1 met gedemineraliseerd water</label>
+    <div class="bean-picker-list" id="water-ask-list">
+      <button type="button" class="bean-picker-item" data-water-ask="dunea">Dunea<small>Den Haag, Leiden e.o.</small></button>
+      <button type="button" class="bean-picker-item" data-water-ask="waternet">Waternet<small>Amsterdam e.o.</small></button>
+      <button type="button" class="bean-picker-item" data-water-ask="pwn_andijk">PWN (Andijk)<small>oostelijk Noord-Holland</small></button>
+      <button type="button" class="bean-picker-item" data-water-ask="other">Ander waterbedrijf of flessenwater<small>vul de waarden zelf in bij Instellingen</small></button>
+    </div>
+    <div class="modal-actions"><button type="button" class="modal-btn modal-btn-secondary" id="water-ask-later">Later</button></div>
+  </div>
+</div>
 <div class="modal-overlay" id="bean-picker" hidden>
   <div class="modal-box bean-picker-box" role="dialog" aria-modal="true" aria-labelledby="bean-picker-title">
     <p class="bean-picker-title" id="bean-picker-title">Welke boon is dit?</p>
@@ -2580,14 +2595,14 @@
     <!-- STEP 3: PROFILE -->
     <section class="screen" id="screen-profile" data-screen="profile">
       <button class="back-btn" data-back="roast">← Roast</button>
-      <h1 class="title">Wat wordt het smaakprofiel?</h1>
-      <p class="subtitle">Bepaalt vooral het schenkschema. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding (een heel kort schema start één klik fijner). Een paar profielen delen vandaag nog hetzelfde recept — dat zie je hieronder per profiel.</p>
+      <h1 class="title">Wat wil je proeven?</h1>
+      <p class="subtitle">Bepaalt het gietschema en wat de proefkaart straks vraagt. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding (een heel kort schema start één klik fijner). Liever een bekende gietstijl? Die staat eronder.</p>
       <div class="choice-grid choice-grid--1" id="profile-grid"></div>
     </section>
 
     <!-- STEP 4: PREP -->
     <section class="screen" id="screen-prep" data-screen="prep">
-      <button class="back-btn" data-back="profile">← Profiel</button>
+      <button class="back-btn" data-back="profile">← Smaak</button>
       <!-- Audit BC-19: twee wrappers zodat een breed scherm recept (links) en schema + Start
            (rechts, blijft in beeld) naast elkaar kan tonen. Op een telefoon verandert er niets. -->
       <div class="prep-main">
@@ -2595,9 +2610,6 @@
       <h1 class="title">Jouw recept</h1>
       <!-- Phase 0 / BC-01: laat vóór Start zien bij welke boon dit brouwsel gelogd wordt. -->
       <p class="prep-bean-line" id="prep-bean-line"></p>
-      <!-- Fase 3: optioneel doel voor deze kop. Stuurt (nog) geen receptgetal; na het proeven
-           vraagt de proefkaart of het gehaald is — dat bepaalt mee of het een geslaagde kop is. -->
-      <div class="prep-goal" id="prep-goal" role="group" aria-label="Doel voor deze kop"></div>
       <!-- BC-10: blinde helder-proef (alleen bij doel "Helder & fris"). -->
       <div class="ab-trial" id="ab-trial" hidden></div>
       <!-- Fase 4: de stap die je na je vorige kop koos ("Gebruik voor volgende kop"). -->
@@ -2606,6 +2618,7 @@
       <div class="prep-next-adjust prep-stand-note" id="prep-stand-note" hidden></div>
       <!-- Review R-08: een "check eerst" uit je vorige kop met deze boon. -->
       <div class="prep-next-adjust prep-check-note" id="prep-check-note" hidden></div>
+      <p class="prep-water-tip" id="prep-water-tip" hidden></p>
       <!-- Sprint 6: vanuit "Zet je beste kop opnieuw" — wat die kop toen was. -->
       <p class="prep-best-ref" id="prep-best-ref" hidden></p>
       <p class="technique-line" id="technique-line"></p>
@@ -3105,9 +3118,13 @@
         <p class="empty-hint" style="margin:0 0 10px;">Eenmalig invullen: het blijft onthouden, los van boon of methode. Het verandert geen receptgetal, maar helpt bij vlakke of doffe koppen (alkaliniteit dempt zuren).</p>
         <p class="freshness-readout" style="font-size:var(--fs-label); color:var(--text-faint); margin:0 0 6px;">Snel invullen:</p>
         <div class="chip-row" id="water-presets">
+          <button type="button" class="chip" data-water-preset="dunea">Dunea</button>
+          <button type="button" class="chip" data-water-preset="waternet">Waternet</button>
+          <button type="button" class="chip" data-water-preset="pwn_andijk">PWN (Andijk)</button>
           <button type="button" class="chip" data-water-preset="sca">SCA-richtwaarde (68 / 40)</button>
           <button type="button" class="chip" data-water-preset="clear">Wissen</button>
         </div>
+        <p class="freshness-readout" id="water-preset-source" style="font-size:var(--fs-label); color:var(--text-faint); margin:6px 0 0;" hidden></p>
         <p class="freshness-readout" style="font-size:var(--fs-label); color:var(--text-faint); margin:6px 0 10px;">Kraanwater: zoek op je postcode het kwaliteitsoverzicht van je waterbedrijf ("totale hardheid" en "waterstofcarbonaat/HCO3"). Mineralenzakje of flessenwater: neem de waarden van de verpakking over. De SCA-richtwaarde is bedoeld voor wie water zelf mengt.</p>
         <p class="freshness-readout" style="font-size:var(--fs-label); color:var(--text-faint); margin:0 0 8px;">Vereenvoudiging: hardheid (calcium/magnesium) is niet hetzelfde als alkaliniteit (bufferende werking tegen zuren) — vooral bij fruitige/zure profielen bepaalt alkaliniteit minstens zo sterk hoe zuur de kop aankomt. Elke parameter hieronder krijgt daarom een eigen oordeel, nooit één samengevoegd "water is goed".</p>
 
@@ -6097,35 +6114,105 @@ function renderRoastGrid(){
    zodra je op de andere methode zit, zodat je nooit een incompatibele
    combinatie kunt kiezen in de handmatige flow (methode is hier al
    gekozen — dit scherm komt ná screen-method). */
+/* Review R-13: één smaakvraag i.p.v. "profiel" + "doel". Een smaaktegel kiest het recept én het
+   doel; alle drie zijn bestaande profielen (geen nieuw receptgetal):
+   - Helder & fris → heel_fruitig (Kasuya 4:6 met een grotere eerste giet), doel "Helder & fris";
+   - Gebalanceerd → klassiek (gelijke beurten), zonder aparte doelvraag op de proefkaart;
+   - Rond & vol → zoet (Kasuya 4:6 met een kleinere eerste giet), doel "Rond & vol".
+   Een gietstijl is optioneel, heeft zijn eigen recept en geen smaakdoel. Profielen die vandaag
+   geen eigen recept geven (vol_rond, bloemig_delicaat, sirooprig_vol) staan niet meer als keuze;
+   een boon die er een heeft, werkt gewoon door. */
+const TASTE_CHOICES = [
+  { taste:'bright',   goal:'bright', profile:'heel_fruitig', label:'Helder & fris', desc:'levendig zuur, fruit, een schone afdronk' },
+  { taste:'balanced', goal:null,     profile:'klassiek',     label:'Gebalanceerd',  desc:'zoet, en niets springt eruit' },
+  { taste:'rich',     goal:'rich',   profile:'zoet',         label:'Rond & vol',    desc:'body en zachte zuren' }
+];
+const STYLE_CHOICES = [
+  { profile:'fresh_clean',      label:'Hoffmann',            desc:'ondiepe bloom, dan twee lange spiraalgieten', named:true },
+  { profile:'fruitig_clean',    label:'Rao',                 desc:'zo min mogelijk losse gietbeurten, afgesloten met een draai', named:true },
+  { profile:'robuust',          label:'April',               desc:'zes gelijke beurten, elke keer stevig rondgieten', named:true },
+  { profile:'snel_puur',        label:'Snel (Perger 80/20)', desc:'bloom en één hoofdgiet, snel klaar', named:true },
+  { profile:'evenwichtig_flex', label:'Basisrecept',         desc:'gelijkmatige verdeling, zonder naam-methode', named:false }
+];
+// Het smaakdoel dat bij een profiel hoort als je het via het methode-advies (smaaknoten van de boon) kiest.
+function goalForProfile(key){
+  if (['heel_fruitig', 'fruitig_clean', 'fresh_clean', 'bloemig_delicaat'].includes(key)) return 'bright';
+  if (['zoet', 'vol_rond', 'sirooprig_vol', 'robuust'].includes(key)) return 'rich';
+  return null;
+}
+// Vergelijken op één hoeveelheid (die van Gebalanceerd): sommige profielen starten op een andere standaard.
+function choiceRecipe(method, profileKey){
+  const range = engineValidVolumeRange(method, profileKey);
+  return computeRecipe(method, state.roast || 'medium', profileKey, clamp(defaultWaterMlFor(method, 'klassiek'), range.min, range.max), 'washed', false, null, null, false, false, null, 0);
+}
+// Een gietstijl met een naam die op deze methode geen eigen schema heeft (bv. April op de Chemex), tonen we niet.
+function styleChoicesFor(method){
+  return STYLE_CHOICES.filter(c => !c.named || choiceRecipe(method, c.profile).technique !== 'Kernrecept');
+}
+// Wat een smaaktegel anders doet dan Gebalanceerd — afgeleid uit het recept zelf, niet uit een tekst.
+function tasteDetail(choice, method){
+  const r = choiceRecipe(method, choice.profile);
+  const bits = [r.technique && r.technique !== 'Kernrecept' ? r.technique : 'basisrecept'];
+  if (choice.profile !== 'klassiek'){
+    const base = choiceRecipe(method, 'klassiek');
+    if (r.dose < base.dose - 0.05) bits.push('iets minder koffie');
+    else if (r.dose > base.dose + 0.05) bits.push('iets meer koffie');
+    const a = r.steps[0], b = base.steps[0];
+    if (a && b && r.technique === 'Kasuya 4:6' && base.technique === 'Kasuya 4:6' && a.add !== b.add) bits.push(a.add > b.add ? 'grotere eerste giet (meer helderheid)' : 'kleinere eerste giet (meer zoetheid)');
+  }
+  return bits.join(' · ');
+}
+// "Zelfde recept als …" alleen tegen keuzes die hier echt naast elkaar staan.
+function choiceTwinLabels(profileKey, method, shown){
+  const fp = recipeFingerprint(profileKey, method);
+  return shown.filter(c => c.profile !== profileKey && fp && recipeFingerprint(c.profile, method) === fp).map(c => c.label);
+}
+// De keuze zoals hij op het receptscherm en in de samenvatting heet.
+function tasteChoiceForState(){
+  return TASTE_CHOICES.find(c => c.profile === state.profile && c.goal === (state.goal || null)) || null;
+}
+function choiceLabelForState(){
+  const t = tasteChoiceForState();
+  if (t) return t.label;
+  const st = STYLE_CHOICES.find(c => c.profile === state.profile);
+  const name = st ? st.label : (PROFILE_INFO[state.profile] ? PROFILE_INFO[state.profile].name : state.profile);
+  return state.goal && BREW_GOALS[state.goal] ? `${name} · ${BREW_GOALS[state.goal].label}` : name;
+}
 function renderProfileGrid(){
   const el = document.getElementById('profile-grid');
-  const methodKey = state.method || 'v60';
-  // FIX (v2.2 kernflow — Bouwbesluit "Schijnkeuze profielen: Knoppen samenvoegen"):
-  // visibleProfileKeys() i.p.v. Object.keys(PROFILE_INFO) — klassiek/vol_rond/zoet tonen
-  // hier voortaan als één knop ("Klassiek"). PROFILE_INFO zelf blijft ongewijzigd.
-  const profileRow = (key)=>{
-    const p = PROFILE_INFO[key];
-    const twins = visibleProfileTwins(key, methodKey);
+  const method = state.method || 'v60';
+  const styles = styleChoicesFor(method);
+  const shown = TASTE_CHOICES.concat(styles);
+  const current = tasteChoiceForState();
+  const row = (c, isTaste) => {
+    const p = PROFILE_INFO[c.profile];
+    const twins = choiceTwinLabels(c.profile, method, shown);
     const twinHtml = twins.length
-      ? `<span class="profile-twin-note">Zelfde recept als ${twins.map(t=>PROFILE_INFO[t].name).join(' en ')} — het verschil zit nog niet in de cijfers</span>`
+      ? `<span class="profile-twin-note">Op de ${escapeHtml(METHOD_INFO[method].name)} zelfde recept als ${escapeHtml(twins.join(' en '))}${isTaste ? ' — het verschil zit in wat de proefkaart vraagt' : ''}</span>`
       : '';
-    return `<button class="profile-row" data-profile="${key}" data-selected="${canonicalProfileKey(state.profile)===key}" style="border-left-color:${p.color}">
+    const selected = isTaste ? current === c : (!current && state.profile === c.profile);
+    const detail = isTaste ? `<span class="profile-desc profile-detail">${escapeHtml(tasteDetail(c, method))}</span>` : '';
+    const attrs = isTaste ? `data-taste="${c.taste}"` : 'data-style="true"';
+    return `<button class="profile-row" data-profile="${c.profile}" ${attrs} data-selected="${selected}" style="border-left-color:${p.color}">
       <span style="color:${p.color}">${ICONS[p.icon]}</span>
-      <span><span class="profile-name">${p.name}</span><span class="profile-desc">${p.desc}</span>${twinHtml}</span>
+      <span><span class="profile-name">${escapeHtml(c.label)}</span><span class="profile-desc">${escapeHtml(c.desc)}</span>${detail}${twinHtml}</span>
     </button>`;
   };
-  // Audit BC-23: eerst de smaakrichting, daaronder los de gietstijlen.
-  const keysForMethod = visibleProfileKeys().filter(key=>{
-    const only = PROFILE_INFO[key].methodOnly;
-    return !only || only === state.method;
+  el.innerHTML = TASTE_CHOICES.map(c => row(c, true)).join('') +
+    (styles.length ? `<p class="profile-group-label">Of kies een gietstijl</p>${styles.map(c => row(c, false)).join('')}` : '');
+  el.querySelectorAll('[data-profile]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const taste = TASTE_CHOICES.find(c => c.taste === btn.getAttribute('data-taste'));
+      setGoalForChoice(taste ? taste.goal : null);
+      selectProfile(btn.getAttribute('data-profile'));
+    });
   });
-  const flavorKeys = keysForMethod.filter(k => !PROFILE_TECHNIQUE_ONLY_KEYS.includes(k));
-  const styleKeys = keysForMethod.filter(k => PROFILE_TECHNIQUE_ONLY_KEYS.includes(k));
-  el.innerHTML = flavorKeys.map(profileRow).join('') +
-    (styleKeys.length ? `<p class="profile-group-label">Of kies een gietstijl</p>${styleKeys.map(profileRow).join('')}` : '');
-  el.querySelectorAll('[data-profile]').forEach(btn=>{
-    btn.addEventListener('click', ()=>selectProfile(btn.getAttribute('data-profile')));
-  });
+}
+// R-13: de smaakkeuze is het doel van deze kop (en de volgende met deze boon).
+function setGoalForChoice(goal){
+  state.goal = BREW_GOALS[goal] ? goal : null;
+  const bean = state.beanId ? beanLibrary.find(b => b.id === state.beanId) : null;
+  if (bean && (bean.goal || null) !== state.goal){ bean.goal = state.goal; saveBeansToStorage(); }
 }
 
 /* ============================================================
@@ -6426,6 +6513,7 @@ function applyAdvice(){
   // het profiel van de boon, zodat "Zet opnieuw" en "Zet deze boon" dezelfde keuze gebruiken.
   const adviceBean = state.beanId ? beanLibrary.find(b => b.id === state.beanId) : null;
   if (adviceBean && state.profile && adviceBean.profileKey !== state.profile){ adviceBean.profileKey = state.profile; saveBeansToStorage(); }
+  setGoalForChoice(goalForProfile(state.profile)); // R-13: de smaak die je kiest is ook het doel
   const baseWater = defaultWaterMlFor(state.method, state.profile);
   const factor = adviceState.batch === 'multi' ? 1.5 : 1;
   state.waterMl = Math.round(baseWater * factor / 50) * 50;
@@ -12004,13 +12092,54 @@ const WATER_PRESETS = {
   sca: { hardnessMgL: 68, alkalinity: { value: 40, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } },
   clear: { hardnessMgL: null, alkalinity: { value: null, unit: 'CaCO3' }, dilution: { tapParts: 1, demiParts: 0 } }
 };
+/* Review R-12: snelkeuzes per waterbedrijf — alleen waar het bedrijf één, gepubliceerde, stabiele
+   samenstelling levert. Gemiddelden uit de eigen kwaliteitsrapporten (hardheid mmol/L × 100 = mg/L
+   CaCO3). Bedrijven met sterk wisselend water per plaats (Vitens, Evides, Brabant Water, Oasen, WML …)
+   staan er bewust niet bij: daar is "zoek je postcode op" eerlijker dan een gemiddelde.
+   De verdunning (1:1 met demiwater) blijft staan: die is los te kiezen. */
+const WATER_COMPANY_PRESETS = {
+  dunea:      { label: 'Dunea', area: 'Den Haag, Leiden e.o.', hardnessMgL: 140, alkalinity: { value: 170, unit: 'HCO3' },
+                source: 'gemiddelde uit de kwaliteitsrapporten van Dunea 2021–2024 (Scheveningen, Katwijk, Monster): ±170 mg/L waterstofcarbonaat, ±1,4 mmol/L hardheid' },
+  waternet:   { label: 'Waternet', area: 'Amsterdam e.o.', hardnessMgL: 138, alkalinity: { value: 207, unit: 'HCO3' },
+                source: 'jaaroverzicht 2025 van Waternet (Weesperkarspel): 207 mg/L waterstofcarbonaat, 1,38 mmol/L hardheid' },
+  pwn_andijk: { label: 'PWN (Andijk)', area: 'oostelijk Noord-Holland', hardnessMgL: 135, alkalinity: { value: 136, unit: 'HCO3' },
+                source: 'PWN, productielocatie Andijk, 1e kwartaal 2023: 136 mg/L waterstofcarbonaat, 1,35 mmol/L hardheid' }
+};
 function applyWaterPreset(key){
+  const company = WATER_COMPANY_PRESETS[key];
+  if (company){
+    waterHardnessMgL = company.hardnessMgL;
+    waterAlkalinity = { value: company.alkalinity.value, unit: company.alkalinity.unit };
+    onWaterProfileChanged();
+    return;
+  }
   const preset = WATER_PRESETS[key];
   if (!preset) return;
   waterHardnessMgL = preset.hardnessMgL;
   waterAlkalinity = { value: preset.alkalinity.value, unit: preset.alkalinity.unit };
   waterDilution = { tapParts: preset.dilution.tapParts, demiParts: preset.dilution.demiParts };
   onWaterProfileChanged();
+}
+// Welke snelkeuze precies overeenkomt met wat er nu staat (of null) — voor de bronvermelding.
+function waterCompanyMatch(){
+  return Object.keys(WATER_COMPANY_PRESETS).find(k => {
+    const c = WATER_COMPANY_PRESETS[k];
+    return waterHardnessMgL === c.hardnessMgL && waterAlkalinity.value === c.alkalinity.value && waterAlkalinity.unit === c.alkalinity.unit;
+  }) || null;
+}
+// Effectieve alkaliniteit (mg/L CaCO3) van een waterprofiel, na verdunning — of null.
+function effectiveAlkalinityCaCO3(alk, dilution){
+  if (!alk || typeof alk.value !== 'number' || isNaN(alk.value)) return null;
+  const raw = alk.unit === 'HCO3' ? alk.value * HCO3_TO_CACO3_FACTOR : alk.value;
+  const d = dilution || {};
+  return (d.demiParts > 0 && (d.tapParts + d.demiParts) > 0) ? dilutedWaterValue(raw, d.tapParts, d.demiParts) : raw;
+}
+// R-12: één regel op het receptscherm als je helder wilt en je water veel zuren dempt.
+function waterTipFor(goal, alkCaCO3, dilution){
+  if (goal !== 'bright' || typeof alkCaCO3 !== 'number' || alkCaCO3 <= KH_HIGH_CACO3) return null;
+  const mixed = dilution && dilution.demiParts > 0;
+  return `Je water buffert veel (±${Math.round(alkCaCO3)} mg/L, richtwaarde 40–70): dat dempt fruitige zuren.` +
+    (mixed ? ' Ook na je verdunning nog boven de richtwaarde.' : ' Voor meer helderheid: meng je kraanwater 1:1 met gedemineraliseerd water.');
 }
 function renderWaterHardnessInput(){
   const input = document.getElementById('prep-water-hardness');
@@ -12074,6 +12203,13 @@ function renderWaterHardnessInput(){
       ? `Alkaliniteit${dilutionSuffix}: ${fmt(effAlkCaCO3,0)} mg/L CaCO3-equivalent — ${waterSCAVerdict(effAlkCaCO3,40,70)}.`
       : 'Alkaliniteit: niet ingevuld — buffering onbekend (SCA-richtwaarde 40–70 mg/L CaCO3). Zonder dit gegeven is "hardheid in orde" GEEN "water binnen de richtlijn".';
   }
+  const sourceEl = document.getElementById('water-preset-source');
+  if (sourceEl){
+    const k = waterCompanyMatch();
+    sourceEl.hidden = !k;
+    sourceEl.textContent = k ? `${WATER_COMPANY_PRESETS[k].label}: ${WATER_COMPANY_PRESETS[k].source}. Je eigen adres kan iets afwijken; de exacte waarden staan op het kwaliteitsoverzicht voor je postcode.` : '';
+  }
+  document.querySelectorAll('[data-water-preset]').forEach(b => b.setAttribute('data-selected', String(b.getAttribute('data-water-preset') === waterCompanyMatch())));
   const summaryEl = document.getElementById('prep-water-summary');
   if (summaryEl){
     const parts = [];
@@ -12527,24 +12663,6 @@ async function runBeanPhotoScan(file){
 /* ============================================================
    RENDER: PREP SCREEN
    ============================================================ */
-// Fase 3: optioneel doel voor deze kop — nogmaals tikken wist het. Bij een gekoppelde boon
-// wordt het onthouden als standaard voor de volgende kop van die boon.
-function renderPrepGoal(){
-  const el = document.getElementById('prep-goal');
-  if (!el) return;
-  el.innerHTML = `<span class="prep-goal-label">Doel</span>` + // Sprint 3: één regel; de chips zijn vrijblijvend aan/uit
-    Object.entries(BREW_GOALS).map(([k, g]) =>
-      `<button type="button" class="chip" data-goal="${k}" data-selected="${state.goal === k}" aria-pressed="${state.goal === k}">${escapeHtml(g.label)}</button>`
-    ).join('');
-}
-function selectPrepGoal(k){
-  state.goal = state.goal === k ? null : (BREW_GOALS[k] ? k : null);
-  const bean = state.beanId ? beanLibrary.find(b => b.id === state.beanId) : null;
-  if (bean){ bean.goal = state.goal; saveBeansToStorage(); }
-  renderPrepGoal();
-  if (state.method && state.roast && state.profile) renderPrep(); // BC-10: proefkaart en eventuele helder-stap volgen het doel
-}
-
 /* ---- BC-10: blinde helder-proef ---- */
 let abTrials = [];
 let abOpenTrial = null;   // lopende proef (nog niet onthuld)
@@ -12681,8 +12799,8 @@ function diagnosisContextForRecord(rec){
   const plan = rec.plan || {}, a = rec.actual || {};
   const inputs = recipeInputsFromRecord(rec);
   const tier = typeof inputs.roastDays === 'number' ? freshnessTierForDays(inputs.roastDays) : null;
-  const alk = rec.waterSnapshot && rec.waterSnapshot.alkalinity;
-  const alkCaCO3 = alk && typeof alk.value === 'number' ? (alk.unit === 'HCO3' ? alk.value * HCO3_TO_CACO3_FACTOR : alk.value) : null;
+  // R-12: het water dat je echt gebruikte — na verdunning met demiwater (anders blijft "check je water" staan na 1:1 mengen).
+  const alkCaCO3 = rec.waterSnapshot ? effectiveAlkalinityCaCO3(rec.waterSnapshot.alkalinity, rec.waterSnapshot.dilution) : null;
   let recipe = null;
   try { recipe = recomputeRecipeForRecord(rec); } catch(e){ recipe = null; }
   const pr = recipe && recipe.grindPracticalRange;
@@ -12921,6 +13039,39 @@ function resetStandToBase(){
   state.strengthAdjust = (p && p.lever === 'dose' && typeof p.toValue === 'number') ? p.toValue : 0;
   renderPrep();
 }
+const WATER_ASKED_KEY = 'brewconsole_water_asked';
+// Eén keer vragen: alleen als er nog geen water is ingevuld en we het nog niet vroegen.
+function shouldAskWater(){
+  if (waterHardnessMgL != null || waterAlkalinity.value != null) return false;
+  try { return localStorage.getItem(WATER_ASKED_KEY) !== '1'; } catch(e){ return false; }
+}
+function openWaterAsk(){
+  const overlay = document.getElementById('water-ask');
+  if (!overlay) return;
+  try { localStorage.setItem(WATER_ASKED_KEY, '1'); } catch(e){ /* dan vraagt hij het volgende keer opnieuw */ }
+  document.getElementById('water-ask-mix').checked = waterDilution.demiParts > 0;
+  overlay.hidden = false;
+  try { overlay.querySelector('[data-water-ask]').focus({ preventScroll:true }); } catch(e){}
+}
+function handleWaterAskClick(e){
+  const overlay = document.getElementById('water-ask');
+  if (e.target.closest('#water-ask-later')){ overlay.hidden = true; return; }
+  const btn = e.target.closest('[data-water-ask]');
+  if (!btn) return;
+  const k = btn.getAttribute('data-water-ask');
+  const mix = document.getElementById('water-ask-mix').checked;
+  waterDilution = mix ? { tapParts: 1, demiParts: 1 } : { tapParts: 1, demiParts: 0 };
+  overlay.hidden = true;
+  if (WATER_COMPANY_PRESETS[k]) applyWaterPreset(k);
+  else { saveWaterProfileToStorage(); openWaterSettings(); }
+}
+function renderPrepWaterTip(){
+  const el = document.getElementById('prep-water-tip');
+  if (!el) return;
+  const tip = waterTipFor(state.goal, effectiveAlkalinityCaCO3(waterAlkalinity, waterDilution), waterDilution);
+  el.hidden = !tip;
+  el.textContent = tip || '';
+}
 function renderPrepCheckNote(){
   const el = document.getElementById('prep-check-note');
   if (!el) return;
@@ -12955,7 +13106,7 @@ function renderPrep(){
   renderBypassToggle();
 
   document.getElementById('summary-tag').innerHTML =
-    `<span class="summary-dot" style="background:${p.color}"></span>${m.name} · ${r.name} · ${p.name}`;
+    `<span class="summary-dot" style="background:${p.color}"></span>${m.name} · ${r.name} · ${escapeHtml(choiceLabelForState())}`;
 
   // BC-01: een beanId die naar een verwijderde boon wijst, telt als "geen boon" — anders
   // logt saveBrewLogEntry() een wees-verwijzing die in geen enkele bonengeschiedenis opduikt.
@@ -12968,8 +13119,8 @@ function renderPrep(){
       : 'Geen boon gekoppeld · zonder boon leert de app niets van deze kop <button type="button" class="link-secondary prep-bean-link" id="prep-bean-link-btn">Kies een boon</button>';
     beanLineEl.dataset.linked = activeBean ? 'true' : 'false';
   }
-  renderPrepGoal();
   renderAbTrial(); // BC-10
+  renderPrepWaterTip(); // R-12
   renderPrepNextAdjust(); // Fase 4
   renderPrepCheckNote(); // R-08
   renderPrepStandNote(); // R-02
@@ -12984,19 +13135,15 @@ function renderPrep(){
   }
 
   document.getElementById('technique-line').textContent = techniqueDisplayLine(rec);
-  document.getElementById('technique-tasting').textContent = p.desc;
+  const prepChoice = tasteChoiceForState() || STYLE_CHOICES.find(c => c.profile === state.profile); // R-13
+  document.getElementById('technique-tasting').textContent = prepChoice ? prepChoice.desc : p.desc;
 
   const twinEl = document.getElementById('prep-twin-note');
   if (twinEl){
-    // FIX (v2.2 kernflow): visibleProfileTwins() i.p.v. findProfileTwins() — sinds de
-    // schijnkeuze-samenvoeging bestaat er geen apart klikbare "Vol & rond"/"Zoet"-knop
-    // meer om naar te verwijzen zodra state.profile in deze groep valt (zie
-    // renderProfileGrid hierboven); dit voorkomt dat de disclaimer naar een knop wijst
-    // die nergens meer op het scherm staat.
-    const twins = visibleProfileTwins(state.profile, state.method);
+    // R-13: alleen tegen keuzes die op het smaakscherm echt naast elkaar staan.
+    const twins = choiceTwinLabels(state.profile, state.method, TASTE_CHOICES.concat(styleChoicesFor(state.method)));
     if (twins.length){
-      const names = twins.map(t=>PROFILE_INFO[t].name).join(' en ');
-      twinEl.textContent = `Dit profiel gebruikt vandaag hetzelfde recept als ${names} — dezelfde dosis, maling, temperatuur en gietschema. Het verschil zit nog niet in de cijfers, alleen in naam en beschrijving (zie disclaimer onderaan voor waarom).`;
+      twinEl.textContent = `Op de ${METHOD_INFO[state.method].name} geeft deze keuze vandaag hetzelfde recept als ${twins.join(' en ')} — dezelfde dosis, maling, temperatuur en gietschema. Het verschil zit in wat de proefkaart na het proeven vraagt.`;
       twinEl.hidden = false;
     } else {
       twinEl.textContent = '';
@@ -13712,6 +13859,7 @@ if (prepSuggestionWaterLink) prepSuggestionWaterLink.addEventListener('click', o
 const prepWaterSettingsLink = document.getElementById('prep-water-settings-link');
 if (prepWaterSettingsLink) prepWaterSettingsLink.addEventListener('click', openWaterSettings);
 document.querySelectorAll('[data-water-preset]').forEach(btn => btn.addEventListener('click', () => applyWaterPreset(btn.getAttribute('data-water-preset'))));
+document.getElementById('water-ask').addEventListener('click', handleWaterAskClick); // R-12
 // NIEUW (Pagina-Polish-spec §4.1): gedeelde actie voor zowel de lege-staat-CTA
 // (#bean-add-link) als de nieuwe header-plusknop (#bean-add-header-btn) — exact dezelfde
 // stappen als voorheen inline op #bean-add-link stonden, nu op één plek.
@@ -13817,10 +13965,12 @@ document.getElementById('bean-form').addEventListener('submit', (e)=>{
     };
     beanLibrary.push(bean);
   }
+  const isNewBean = !editingBeanId;
   exitEditMode();
   saveBeansToStorage();
   renderBeanLibraryScreen();
   renderBeanChipsInAdvice();
+  if (isNewBean && shouldAskWater()) openWaterAsk(); // R-12
 
   if (beanAddReturnTo === 'advice'){
     loadBeanIntoAdvice(bean); // BC-01: de zojuist opgeslagen boon is meteen de gekoppelde boon
@@ -14643,10 +14793,6 @@ document.getElementById('prep-stand-note').addEventListener('click', (e)=>{ // R
 });
 document.getElementById('prep-next-adjust').addEventListener('click', (e)=>{
   if (e.target.closest('#prep-next-adjust-cancel')) cancelPendingAdjust();
-});
-document.getElementById('prep-goal').addEventListener('click', (e)=>{
-  const btn = e.target.closest('[data-goal]');
-  if (btn) selectPrepGoal(btn.getAttribute('data-goal'));
 });
 document.getElementById('recovery-continue-btn').addEventListener('click', recoveryContinue);
 document.getElementById('recovery-bed-dry-btn').addEventListener('click', recoveryBedWasDry);

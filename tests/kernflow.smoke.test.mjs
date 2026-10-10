@@ -27,6 +27,14 @@ async function startBrewing(page){
   await page.click('#brew-ready-start');
 }
 
+// Review R-12: bij je eerste boon vraagt de app één keer welk water je gebruikt. Bestaande tests
+// kiezen "Later" — het oude gedrag (geen water ingevuld).
+async function saveBean(page){
+  await page.click('#save-bean-btn');
+  const ask = page.locator('#water-ask');
+  if (await ask.isVisible()) await page.click('#water-ask-later');
+}
+
 // Review R-16: wie opslaat zonder "Gezet zoals gepland?" te beantwoorden, krijgt die vraag nog
 // één keer. Deze helper kiest dan "Weet ik niet, toch opslaan" — precies het oude gedrag
 // (niet bevestigd), zodat bestaande tests hetzelfde blijven testen.
@@ -207,26 +215,21 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#roast-grid [data-roast] >> nth=0');
     await assertBecomesActive(page, '#screen-profile');
 
-    const gridProfileCount = await page.locator('#profile-grid [data-profile]').count();
-    // BIJGEWERKT (Reparatieplan v4.0, C-1 / Bouwbesluit BB-2): zie de toelichting bij de
-    // adviceProfileCount hierboven — 10 zichtbaar sinds 'zoet' niet meer wordt samengevoegd.
-    assert.equal(gridProfileCount, 10, 'profile-grid: verwacht 10 zichtbare profielen op V60 (methodOnly-profielen blijven zichtbaar op v60)');
+    // Review R-13: één smaakvraag (Helder & fris / Gebalanceerd / Rond & vol) en daaronder de
+    // gietstijlen met een eigen schema op deze methode (V60: Hoffmann, Rao, April, Snel, Basisrecept).
+    // Profielen zonder eigen recept (vol_rond, bloemig_delicaat, sirooprig_vol) staan er niet meer.
+    assert.deepEqual(await page.locator('#profile-grid [data-taste]').evaluateAll(els => els.map(e => e.getAttribute('data-taste'))), ['bright', 'balanced', 'rich']);
+    assert.equal(await page.locator('#profile-grid [data-style]').count(), 5);
     await assertNoZeroSizeElements(page, '#profile-grid [data-profile]', 'profile-grid buttons');
-    // BIJGEWERKT (Reparatieplan v4.0, B-4 / bevinding E-09): findProfileTwins() vergelijkt
-    // sinds B-4 het WERKELIJKE recept i.p.v. het gemapte overlay-id, en detecteert daardoor
-    // nu ook twee eerder gemiste tweelinggroepen — fruitig_clean/bloemig_delicaat (Rao's
-    // pulseCount is RESEARCH_GAP, dus beide vallen terug op hetzelfde generieke schema) en
-    // sirooprig_vol/evenwichtig_flex (Hedrick is nooit generatable). Die twee groepen zijn
-    // NIET samengevoegd tot één knop (dat is alleen klassiek/vol_rond), dus elk van hun 4
-    // leden krijgt terecht een zichtbare tweelingnotitie — precies de winst van B-4: een
-    // schijnkeuze die eerder onopgemerkt bleef, is dat nu niet meer.
-    const twinNoteCount = await page.locator('#profile-grid .profile-twin-note').count();
-    assert.equal(twinNoteCount, 4, 'profile-grid: verwacht 4 tweelingnotities (fruitig_clean/bloemig_delicaat + sirooprig_vol/evenwichtig_flex), sinds B-4 correct gedetecteerd');
+    // Op de V60 geeft elke keuze een eigen recept: geen "zelfde recept als …".
+    assert.equal(await page.locator('#profile-grid .profile-twin-note').count(), 0);
 
     await page.click('#profile-grid [data-profile="klassiek"]');
     await assertBecomesActive(page, '#screen-prep');
     const twinNoteVisible = await page.locator('#prep-twin-note').isHidden().catch(() => true);
-    assert.ok(twinNoteVisible, 'Recept-scherm: prep-twin-note hoort verborgen te zijn voor de samengevoegde klassiek-groep');
+    assert.ok(twinNoteVisible, 'Recept-scherm: geen tweelingnotitie bij Gebalanceerd op de V60');
+    assert.match(await page.locator('#summary-tag').innerText(), /Gebalanceerd/i);
+    assert.equal(await page.evaluate(() => state.goal), null, 'Gebalanceerd heeft geen aparte doelvraag');
 
     await page.close();
   });
@@ -250,7 +253,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await assertBecomesActive(page, '#screen-beans');
     await page.click('#bean-add-link');
     await assertBecomesActive(page, '#screen-bean-add');
-    await page.click('#save-bean-btn');
+    await saveBean(page);
     await assertBecomesActive(page, '#screen-beans');
 
     const hasBeanCard = await page.locator('#bean-list .bean-card').count();
@@ -1155,7 +1158,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await assertBecomesActive(page, '#screen-beans');
     await page.click('#bean-add-link');
     await assertBecomesActive(page, '#screen-bean-add');
-    await page.click('#save-bean-btn'); // standaardwaarden: roast "medium", proces "washed"
+    await saveBean(page); // standaardwaarden: roast "medium", proces "washed"
     await assertBecomesActive(page, '#screen-beans');
 
     async function goToPrepForTheBean(){
@@ -1417,7 +1420,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('#advice-scan-new');
       await assertBecomesActive(page, '#screen-bean-add');
       await page.fill('#f-name', 'Verse Boon');
-      await page.click('#save-bean-btn');
+      await saveBean(page);
       await assertBecomesActive(page, '#screen-advice');
       await adviceToPrep(page);
       assert.match(await beanLine(page), /Boon: Verse Boon/);
@@ -1924,11 +1927,15 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.close();
     });
 
-    test('doel op het receptscherm → doelvraag op de proefkaart; gate bepaalt "geslaagd"; actuals bevestigd = U', async () => {
+    test('smaak Helder & fris → doelvraag op de proefkaart; gate bepaalt "geslaagd"; actuals bevestigd = U', async () => {
       const page = await seeded();
       await toPrep(page);
-      await page.click('#prep-goal [data-goal="bright"]');
-      assert.equal(await page.getAttribute('#prep-goal [data-goal="bright"]', 'data-selected'), 'true');
+      // Review R-13: het doel is de smaakkeuze (← Smaak), geen aparte chip op het receptscherm.
+      await page.click('#screen-prep .back-btn[data-back="profile"]');
+      await page.click('#profile-grid [data-taste="bright"]');
+      await assertBecomesActive(page, '#screen-prep');
+      assert.equal(await page.locator('#prep-goal').count(), 0, 'geen tweede doelvraag op het receptscherm');
+      assert.match(await page.locator('#summary-tag').innerText(), /Helder & fris/i);
       await brewToCard(page);
       assert.match(await page.locator('#tasting-card').textContent(), /Kwam hij uit zoals je wilde — Helder & fris\?/);
       assert.match(await page.locator('#tasting-progress-label').textContent(), /Vraag 1 van 5/, 'het doel is een extra stap');
@@ -2443,10 +2450,14 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.goto(FILE_URL, { waitUntil: 'load' });
     await page.evaluate(() => { selectMethod('v60'); selectRoast('medium'); selectProfile('klassiek'); });
     assert.equal(await page.locator('#ab-trial').isVisible(), false, 'zonder helder-doel geen proefkaart');
-    const dose0 = await page.evaluate(() => state.recipe.dose);
-    await page.click('[data-goal="bright"]');
+    const doseBalanced = await page.evaluate(() => state.recipe.dose);
+    // Review R-13: Helder & fris kies je op het smaakscherm.
+    await page.evaluate(() => showScreen('profile'));
+    await page.click('[data-taste="bright"]');
     assert.equal(await page.locator('#ab-trial').isVisible(), true);
-    assert.equal(await page.evaluate(() => state.recipe.dose), dose0, 'standaard verandert het recept niet');
+    const dose0 = await page.evaluate(() => state.recipe.dose);
+    assert.equal(await page.evaluate(() => state.strengthAdjust), 0, 'standaard geen sterktestap');
+    assert.equal(dose0, await page.evaluate(() => computeRecipe(state.method, state.roast, 'heel_fruitig', state.waterMl, null, false, null, null, false, false, null, 0).dose), 'het recept van Helder & fris, zonder stap');
     await page.click('#ab-start-btn');
     const cup = await page.evaluate(() => abOpenTrial.cupForVariant);
     assert.match(await page.locator('#ab-trial').innerText(), /Kop 1: [\d,]+ g · Kop 2: [\d,]+ g/);
@@ -2479,9 +2490,10 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     assert.ok(doseLight < dose0, 'nu minder koffie');
     assert.ok(Math.abs(doseLight - dose0 * 0.96) <= 0.06, `−4% van ${dose0} g is ${doseLight} g`);
     assert.match(await page.locator('#ab-trial').innerText(), /Staat aan: bij Helder & fris zet je een halve stap zwakker \(−4% koffie\)/);
-    await page.click('[data-goal="balanced"]');
-    assert.equal(await page.evaluate(() => state.strengthAdjust), 0, 'ander doel → automatische stap terug');
-    assert.equal(await page.evaluate(() => state.recipe.dose), dose0);
+    await page.evaluate(() => showScreen('profile'));
+    await page.click('[data-taste="balanced"]');
+    assert.equal(await page.evaluate(() => state.strengthAdjust), 0, 'andere smaak → automatische stap terug');
+    assert.equal(await page.evaluate(() => state.recipe.dose), doseBalanced);
     await page.close();
   });
 
@@ -3038,7 +3050,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('.navbar [data-nav="method"]');
       await page.click(`[data-method="${method}"]`);
       await page.click('#roast-grid [data-roast] >> nth=0');
-      await page.click('#profile-grid [data-profile] >> nth=0');
+      await page.click('#profile-grid [data-taste="balanced"]'); // R-13: het standaardpad (Gebalanceerd)
       await assertBecomesActive(page, '#screen-prep');
     }
     // Zichtbare tekst op het actieve scherm (+ tabbalk): welke lettergroottes komen voor?
@@ -3427,7 +3439,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('.navbar [data-nav="beans"]');
       await page.click('#bean-add-link');
       await page.fill('#f-name', 'Tabboon');
-      await page.click('#save-bean-btn');
+      await saveBean(page);
       await assertBecomesActive(page, '#screen-beans');
       assert.equal(await page.locator('#screen-beans [data-back="method"]').isVisible(), false);
       assert.equal(await page.locator('.bean-card[role="button"]').count(), 0);
@@ -3518,7 +3530,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     test('R-04: "Wat miste je?" verschijnt bij een doel dat net niet gehaald is en geeft een halve stap lichter bij "meer fruit"', async () => {
       const page = await seeded();
       await firstPrep(page);
-      await page.click('#prep-goal [data-goal="bright"]');
+      await page.click('#screen-prep .back-btn[data-back="profile"]');
+      await page.click('#profile-grid [data-taste="bright"]'); // R-13: de smaakkeuze is het doel
       await brewToCard(page);
       await page.click('#actuals-planned-btn');
       assert.equal(await page.locator('[data-t-step="missed"]').isVisible(), false);
@@ -3689,6 +3702,47 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('#confirm-modal-ok', { timeout: 2000 });
       await page.waitForFunction(() => !document.getElementById('brew-ready').hidden);
       assert.equal(await page.evaluate(() => isActiveBrewBrewing()), false);
+      await page.close();
+    });
+    test('R-12: bij de eerste boon één keer de watervraag; Dunea → mengtip bij Helder & fris, weg na 1:1 mengen', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.click('.navbar [data-nav="beans"]');
+      await page.click('#bean-add-link');
+      await page.fill('#f-name', 'Waterboon');
+      await page.click('#save-bean-btn');
+      assert.equal(await page.locator('#water-ask').isVisible(), true, 'de watervraag verschijnt');
+      await page.click('[data-water-ask="dunea"]');
+      assert.equal(await page.locator('#water-ask').isVisible(), false);
+      const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_water_hardness')));
+      assert.deepEqual([saved.hardnessMgL, saved.alkalinity.value, saved.alkalinity.unit, saved.dilution.demiParts], [140, 170, 'HCO3', 0]);
+
+      // Tweede boon: niet nog eens vragen.
+      await page.click('.navbar [data-nav="beans"]');
+      await page.click('#bean-add-header-btn');
+      await page.fill('#f-name', 'Tweede boon');
+      await page.click('#save-bean-btn');
+      assert.equal(await page.locator('#water-ask').isVisible(), false);
+
+      // Helder & fris met Dunea-water → één regel met de mengtip; Gebalanceerd → niets.
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('[data-method="v60"]');
+      await page.click('[data-roast="light"]');
+      await page.click('[data-taste="bright"]');
+      assert.match(await page.locator('#prep-water-tip').innerText(), /buffert veel \(±139 mg\/L.*1:1 met gedemineraliseerd/);
+      await page.click('#screen-prep .back-btn[data-back="profile"]');
+      await page.click('[data-taste="balanced"]');
+      assert.equal(await page.locator('#prep-water-tip').isVisible(), false);
+
+      // Instellingen: de snelkeuze noemt zijn bron; 1:1 mengen haalt de tip weg.
+      await page.click('.navbar [data-nav="settings"]');
+      assert.match(await page.locator('#water-preset-source').innerText(), /Dunea: gemiddelde uit de kwaliteitsrapporten/);
+      await page.selectOption('#prep-water-dilution', '1:1');
+      await page.click('.navbar [data-nav="method"]');
+      await page.click('[data-method="v60"]');
+      await page.click('[data-roast="light"]');
+      await page.click('[data-taste="bright"]');
+      assert.equal(await page.locator('#prep-water-tip').isVisible(), false);
       await page.close();
     });
     test('R-14: het receptscherm noemt het tempo (4–8 g/s) en per giet de giettijd', async () => {
