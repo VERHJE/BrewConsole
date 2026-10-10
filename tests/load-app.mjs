@@ -131,7 +131,8 @@ export function loadApp(){
       abTrialVerdict, abArmForAnswer, AB_MIN_TRIALS, AB_WIN_SHARE, AB_LIGHTER_STEP, abTrialsForStep,
       legacyBrewSuspects, beanSnapshotOf, legacyStockMove, legacyStockBeanId,
       doseEdgeFor, batchScaleFor, BATCH_REFERENCE, isComparableSetup, bypassKeyOfPlan,
-      bestCupOf, adviceChainOf, cupSetupOf, BEST_CUP_MIN_LIKING
+      bestCupOf, adviceChainOf, cupSetupOf, BEST_CUP_MIN_LIKING,
+      profileLabel, profileDirectionLabel, keepUnitsTogether, prepNoteOrder
     };`,
     sandbox,
     { filename: 'test-exports-shim.js' }

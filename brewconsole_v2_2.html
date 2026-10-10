@@ -45,7 +45,7 @@
     --sage:#8F9F8F;
     /* Attentiesignaal dat geen fout is (bv. "Bijna op"), zodat een voorraadwaarschuwing niet als
        error leest. ≥4,5:1 tegen --surface in beide thema's. */
-    --berry:#A24A5E;
+    --berry:#D27089; /* VA-03: ≥ 4,5 : 1 op --surface (het favorietenhartje is tekst) */
     --safe-t:env(safe-area-inset-top, 0px);
     --safe-b:env(safe-area-inset-bottom, 0px);
     --safe-l:env(safe-area-inset-left, 0px);
@@ -72,6 +72,18 @@
     --glass-blur:blur(20px) saturate(1.4);
     --accent-glow:rgba(212,165,116,.28); /* --copper op lage alpha, voor §5 ambient/focus-gloed */
     --success-soft:rgba(143,159,143,.16);
+    /* Audit VA-01: tekst op de timerfoto krijgt eigen kleuren, los van het thema; de foto en
+       de scrim zijn altijd donker. */
+    --on-photo:#F5F0E6;
+    --on-photo-dim:rgba(245,240,230,.84);
+    --on-photo-faint:rgba(245,240,230,.72);
+    --on-photo-accent:#E6C199;
+    /* Audit VA-03: de gevulde primaire knop, per thema op contrast gekozen (≥ 4,5 : 1). */
+    --primary:#D4A574;
+    --primary-hover:#E6C199;
+    --on-primary:#1B1310;
+    /* Tekst in gevaarkleur (de knopvulling --danger blijft voor witte tekst). */
+    --danger-text:#E06A80;
 
     /* Diepte (§3.2) — Level 3 modal bestond al via .modal-overlay hieronder; deze twee
        zijn nieuw, voor kaarten (Level 1) en floating/glass-elementen (Level 2). */
@@ -103,11 +115,15 @@
     /* #695643 haalt 4,56:1 op --surface-2 (WCAG AA). */
     --text-faint:#695643;
     --copper:#AA7039;
-    --copper-light:#8E592A;
+    /* Audit VA-03: #7A4A1F haalt 5,4 : 1 op --surface en 4,9 : 1 op --surface-2. */
+    --copper-light:#7A4A1F;
     --copper-dim:#D6C5A7;
     --danger:#A82E44;
     --sage:#77905A;
     --berry:#873547;
+    --primary:#C28A52;
+    --primary-hover:#CF9C68;
+    --danger-text:#A82E44;
 
     /* Zelfde aliaslaag als het donkere thema; de lichte waarden zijn de bestaande, op contrast
        gecontroleerde tokens. */
@@ -501,23 +517,23 @@
   .home-active-brew-desc{font-size:var(--fs-small); color:var(--text-dim);}
   /* Fase 2: brouwscherm — dominante actie + Bed droog. */
   .brew-action{text-align:center; margin:4px 0 10px;}
-  .brew-action-main{font-size:var(--fs-title); line-height:1.1; font-weight:700; color:var(--text); letter-spacing:-.01em; font-variant-numeric:tabular-nums;}
-  .brew-action[data-kind="wait"] .brew-action-main{color:var(--text); opacity:.88;}
+  .brew-action-main{font-size:var(--fs-title); line-height:1.1; font-weight:700; color:var(--on-photo); letter-spacing:-.01em; font-variant-numeric:tabular-nums;}
+  .brew-action[data-kind="wait"] .brew-action-main{color:var(--on-photo); opacity:.9;}
   .brew-action-main, .brew-action-sub{text-shadow:0 1px 12px rgba(0,0,0,.55);}
   #pause-btn:disabled{opacity:.35; cursor:default;}
-  .brew-action[data-kind="drawdown"] .brew-action-main, .brew-action[data-kind="done"] .brew-action-main{color:var(--copper-light);}
-  .brew-action-sub{font-size:var(--fs-small); color:var(--text-dim); margin-top:6px;}
+  .brew-action[data-kind="drawdown"] .brew-action-main, .brew-action[data-kind="done"] .brew-action-main{color:var(--on-photo-accent);}
+  .brew-action-sub{font-size:var(--fs-small); color:var(--on-photo-dim); margin-top:6px;}
   .bed-dry-btn{display:block; width:100%; min-height:64px; margin:6px 0 8px; border:none; border-radius:var(--radius-pill);
-    background:var(--copper-light); color:#1a120c; font-size:var(--fs-heading); font-weight:700; letter-spacing:.02em; cursor:pointer;
+    background:var(--primary-hover); color:var(--on-primary); font-size:var(--fs-heading); font-weight:700; letter-spacing:.02em; cursor:pointer;
     box-shadow:0 6px 24px rgba(212,165,116,.28);}
   .bed-dry-btn[hidden]{display:none;}
   .bed-dry-btn:active{transform:translateY(1px) scale(.99);}
-  .bed-dry-hint{font-size:var(--fs-label); color:var(--text-faint); text-align:center; margin:0 0 10px;}
+  .bed-dry-hint{font-size:var(--fs-label); color:var(--on-photo-faint); text-align:center; margin:0 0 10px;}
   .brew-ready{margin:0 0 12px;}
-  .brew-ready-list{margin:0 auto 12px; max-width:34em; padding-left:1.3em; text-align:left; font-size:var(--fs-body); line-height:1.45; color:var(--text); text-shadow:0 1px 3px rgba(0,0,0,.75);}
+  .brew-ready-list{margin:0 auto 12px; max-width:34em; padding-left:1.3em; text-align:left; font-size:var(--fs-body); line-height:1.45; color:var(--on-photo); text-shadow:0 1px 3px rgba(0,0,0,.75);}
   .brew-ready-list li{margin:4px 0;}
   .brew-ready-start{margin-top:0;}
-  .brew-ready-note{font-size:var(--fs-label); color:var(--text-faint); text-align:center; margin:6px 0 0; text-shadow:0 1px 3px rgba(0,0,0,.75);}
+  .brew-ready-note{font-size:var(--fs-label); color:var(--on-photo-faint); text-align:center; margin:6px 0 0; text-shadow:0 1px 3px rgba(0,0,0,.75);}
   #screen-brew[data-armed] .brew-pour-progress{display:none;}
   .bed-dry-hint[hidden]{display:none;}
   /* Fase 1: verwijderen van een logging + "Ongedaan maken"-balk. */
@@ -541,8 +557,8 @@
   .advice-chain li{font-size:var(--fs-small); color:var(--text); line-height:1.45;}
   .advice-chain-cup{color:var(--text-dim);}
   .advice-chain-status{display:inline-block; font-size:var(--fs-label); padding:1px 8px; border-radius:999px; background:var(--surface-2); color:var(--text-dim); margin-left:2px;}
-  .advice-chain li[data-advice-outcome="better"] .advice-chain-status{color:#5fae7c;}
-  .advice-chain li[data-advice-outcome="worse"] .advice-chain-status{color:var(--danger);}
+  .advice-chain li[data-advice-outcome="better"] .advice-chain-status{color:var(--text); box-shadow:inset 0 0 0 1px var(--sage);}
+  .advice-chain li[data-advice-outcome="worse"] .advice-chain-status{color:var(--text); box-shadow:inset 0 0 0 1px var(--danger);}
   .history-best{background:linear-gradient(180deg, rgba(212,165,116,.10), rgba(212,165,116,.02)); border:1px solid var(--copper-dim); border-radius:var(--radius-sm); padding:12px; margin:0 0 12px;}
   .history-best-title{font-weight:600; font-size:var(--fs-small); color:var(--copper-light); margin:0 0 2px;}
   .history-best-sub{font-size:var(--fs-small); color:var(--text-dim); margin:0;}
@@ -570,6 +586,12 @@
   .prep-bean-line{font-size:var(--fs-small); color:var(--text-dim); margin:-4px 0 8px;}
   .prep-bean-line[data-linked="false"]{color:var(--text-faint);}
   .prep-water-tip{font-size:var(--fs-small); color:var(--text-dim); margin:0 0 10px;}
+  /* VA-04: één melding onder de getallen; de rest achter "Waarom dit recept?". */
+  .prep-notes{margin:0 0 14px;}
+  .prep-notes[hidden], .prep-notes-more[hidden]{display:none;}
+  .prep-notes-title, .prep-notes-more-title{font-family:var(--font-body); font-size:var(--fs-label); font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint); margin:0 0 8px;}
+  #prep-notes-primary > :last-child{margin-bottom:0;}
+  .prep-notes-more{margin-top:14px; padding-top:12px; border-top:1px solid var(--border);}
 
   .technique-line{
     font-size:var(--fs-small); color:var(--copper-light);
@@ -752,7 +774,7 @@
   /* text-shadow (op verzoek, lichtere scrim-ronde): dit is kale tekst zonder eigen
      ondoorzichtig vlak, rechtstreeks over de doorlopende foto — dezelfde bescherming als
      .brew-hero-title al had, nu ook hier i.p.v. op een zware scrim te leunen. */
-  .dial-flow{font-size:var(--fs-small); color:var(--copper-light); font-style:italic; margin-top:2px; max-width:220px; margin-left:auto; margin-right:auto; text-shadow:0 1px 3px rgba(0,0,0,.75);}
+  .dial-flow{font-size:var(--fs-small); color:var(--on-photo-accent); font-style:italic; margin-top:2px; max-width:220px; margin-left:auto; margin-right:auto; text-shadow:0 1px 3px rgba(0,0,0,.75);}
 
   .method-tips{
     font-size:var(--fs-label); color:var(--text-faint); line-height:1.5;
@@ -767,15 +789,15 @@
        tertiair  = .link-secondary — alleen tekst */
   .start-btn, .btn-primary{
     width:100%;
-    background:var(--copper);
-    color:#1B1310;
+    background:var(--primary);
+    color:var(--on-primary);
     border:none; border-radius:var(--radius-md);
     font-family:var(--font-display); font-weight:600; font-size:var(--fs-body);
     padding:16px; cursor:pointer;
     box-shadow:0 1px 0 rgba(255,255,255,.16) inset, 0 4px 14px rgba(212,165,116,.18);
     transition:background var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
-  .start-btn:hover, .btn-primary:hover{background:var(--copper-light);}
+  @media (hover:hover){ .start-btn:hover, .btn-primary:hover{background:var(--primary-hover);} }
   .start-btn:active{transform:translateY(1px) scale(.98); box-shadow:0 1px 0 rgba(255,255,255,.1) inset, 0 2px 6px rgba(212,165,116,.14);}
   /* Aanpassen (secundair) naast Naar de timer (primair, breder): de secundaire actie concurreert
      nooit met de primaire. */
@@ -783,7 +805,11 @@
   .prep-cta-row .prep-adjust-btn{flex:1; margin-top:0; min-height:auto;}
   .prep-cta-row .start-btn{flex:1.8;}
   .style-more-body:not([hidden]){display:block; margin-top:6px;}
-  .scan-review-summary{margin:0 0 8px;}
+  /* Audit VA-06: het resultaat erft display:flex (rij) van .process-note; in een kolom blijft
+     alles binnen het scherm. */
+  .process-note.scan-review{flex-direction:column; align-items:stretch; gap:8px;}
+  .process-note.scan-review::before{display:none;}
+  .scan-review-summary{margin:0;}
   .legacy-review{background:var(--surface); border:1px solid var(--copper-dim, var(--border)); border-radius:var(--radius-md); padding:12px 14px; margin:0 0 14px;}
   .legacy-review[hidden]{display:none;}
   .legacy-review-head{display:flex; gap:12px; align-items:flex-start; justify-content:space-between;}
@@ -824,6 +850,7 @@
     left:calc(-1 * max(20px, var(--safe-l))); right:calc(-1 * max(20px, var(--safe-r)));
     overflow:hidden;
     border-radius:0 0 var(--radius-lg) var(--radius-lg);
+    background:#0B0908;
   }
   .brew-fg{position:relative;}
   /* .brew-hero is nu een gewone, niet-uitgebleede container binnen .brew-fg (zit normaal
@@ -841,6 +868,9 @@
   .brew-hero-img{
     position:absolute; inset:0; width:100%; height:100%;
     object-fit:cover; object-position:center 38%;
+    /* Audit VA-02: de foto is sfeer, de tekst is het instrument. Gedimd blijft elke instructie
+       leesbaar, ook op de witte kegel of de lichte voet. */
+    filter:brightness(.55) saturate(.9);
   }
   /* Donker verloop, bewust hardcoded zwart (een foto-overlay is altijd donker, los van het thema).
      Boven licht (titel leesbaar, foto herkenbaar), rond de dial grotendeels donker (contrast voor
@@ -850,12 +880,12 @@
      dial-flow, finish-note) krijgt een eigen text-shadow. Onderin (vanaf ±72%) wél duidelijk donker. */
   .brew-hero-scrim{
     position:absolute; inset:0;
-    background:linear-gradient(180deg, rgba(0,0,0,.22) 0%, rgba(0,0,0,.06) 26%, rgba(0,0,0,.20) 50%, rgba(0,0,0,.62) 72%, rgba(0,0,0,.90) 100%);
+    background:linear-gradient(180deg, rgba(0,0,0,.30) 0%, rgba(0,0,0,.18) 26%, rgba(0,0,0,.40) 50%, rgba(0,0,0,.68) 72%, rgba(0,0,0,.90) 100%);
   }
   .brew-hero-header{position:relative; margin-bottom:18px;}
   .brew-hero-title{
     font-family:var(--font-display); font-size:var(--fs-heading); font-weight:600;
-    color:#F5F0E6; text-shadow:0 1px 4px rgba(0,0,0,.6);
+    color:var(--on-photo); text-shadow:0 1px 4px rgba(0,0,0,.6);
   }
   .brew-hero-subtitle{
     font-size:var(--fs-label); color:rgba(245,240,230,.78); margin-top:3px;
@@ -932,7 +962,7 @@
   /* Giet-voortgang (hoeveelste giet van hoeveel) — zie updateDial(). */
   .brew-focus-info{margin:0 0 4px;}
   .brew-pour-badge{
-    display:inline-block; background:var(--copper); color:#1B1310;
+    display:inline-block; background:var(--primary); color:var(--on-primary);
     font-family:var(--font-display); font-weight:700; font-size:var(--fs-small);
     padding:6px 14px; border-radius:var(--radius-pill); margin-bottom:10px; letter-spacing:.01em;
   }
@@ -991,7 +1021,7 @@
   }
   .brew-cumulative{
     font-family:var(--font-mono); font-variant-numeric:tabular-nums;
-    font-size:var(--fs-small); color:var(--text-dim); margin:0 0 12px; font-weight:500;
+    font-size:var(--fs-small); color:var(--on-photo-dim); margin:0 0 12px; font-weight:500;
     text-shadow:0 1px 3px rgba(0,0,0,.75);
   }
   .brew-cumulative:empty{display:none;}
@@ -1015,8 +1045,8 @@
     transition:border-color var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
   .brew-step-main{display:flex; align-items:center; justify-content:space-between;}
-  .brew-step[data-active="true"]{border-color:var(--copper); background:var(--surface-2); box-shadow:var(--shadow-card), 0 0 0 1px var(--accent-glow);}
-  .brew-step[data-done="true"]{opacity:.45;}
+  .brew-step[data-active]{border-color:var(--copper); background:var(--surface-2); box-shadow:var(--shadow-card), 0 0 0 1px var(--accent-glow);}
+  .brew-step[data-done]{opacity:.45;}
   .brew-step-time{font-family:var(--font-mono); color:var(--text); font-weight:500; font-size:var(--fs-small);}
   .brew-step-flow{font-size:var(--fs-label); color:var(--copper-light); font-style:italic;}
   .brew-step-bypass{border-color:var(--copper-light); background:var(--surface-2);}
@@ -1044,13 +1074,13 @@
   .brew-controls #home-btn:hover{color:var(--copper-light);}
   .brew-controls #pause-btn{
     width:76px; height:76px; font-size:var(--fs-small); font-weight:600; font-family:var(--font-display);
-    background:var(--copper); color:#1B1310; border:none;
+    background:var(--primary); color:var(--on-primary); border:none;
     box-shadow:0 1px 0 rgba(255,255,255,.16) inset, 0 4px 14px rgba(212,165,116,.18);
   }
-  .brew-controls #pause-btn:hover{background:var(--copper-light);}
-  .brew-controls #pause-btn:active{background:var(--copper-light); transform:translateY(1px) scale(.96); box-shadow:0 1px 0 rgba(255,255,255,.1) inset, 0 2px 6px rgba(212,165,116,.14);}
+  @media (hover:hover){ .brew-controls #pause-btn:hover{background:var(--primary-hover);} }
+  .brew-controls #pause-btn:active{background:var(--primary-hover); transform:translateY(1px) scale(.96); box-shadow:0 1px 0 rgba(255,255,255,.1) inset, 0 2px 6px rgba(212,165,116,.14);}
   .finish-note{
-    font-family:var(--font-display); font-size:var(--fs-body); color:var(--copper-light);
+    font-family:var(--font-display); font-size:var(--fs-body); color:var(--on-photo-accent);
     margin:-8px 0 20px; text-shadow:0 1px 3px rgba(0,0,0,.75);
   }
   /* Geen score-ring: er is geen goedgekeurde formule voor één cijfer. #brewlog-honest-summary
@@ -1137,17 +1167,17 @@
   /* Pil-vormige primaire actie, voor plekken waar de hoge .start-btn te zwaar is. */
   .pill-cta{
     display:block; width:100%; text-align:center; box-sizing:border-box;
-    background:var(--copper); color:#1B1310; border:none; border-radius:var(--radius-pill);
+    background:var(--primary); color:var(--on-primary); border:none; border-radius:var(--radius-pill);
     font-family:var(--font-display); font-weight:600; font-size:var(--fs-small);
     padding:13px; margin-top:14px; cursor:pointer; box-shadow:var(--shadow-card);
     transition:transform var(--motion-micro) var(--ease-out), background var(--motion-standard) var(--ease-out);
   }
-  .pill-cta:hover{ background:var(--copper-light); }
+  @media (hover:hover){ .pill-cta:hover{ background:var(--primary-hover); } }
   .pill-cta:active{ transform:scale(.98); }
   /* Destructieve variant van de secundaire knop: nooit gevuld, zodat hij niet concurreert met een
      primaire actie. */
-  .settings-danger-btn{ border-color:var(--danger); color:var(--danger); border-style:solid; }
-  .settings-danger-btn:hover{ border-color:var(--danger); color:var(--danger); background:rgba(194,68,92,.1); }
+  .settings-danger-btn{ border-color:var(--danger); color:var(--danger-text); border-style:solid; }
+  .settings-danger-btn:hover{ border-color:var(--danger); color:var(--danger-text); background:rgba(194,68,92,.1); }
   /* Secundaire knop: zelfde press-diepte als .start-btn, maar bescheidener. */
   .advisor-primary, .btn-secondary{
     display:flex; align-items:center; justify-content:center; gap:8px;
@@ -1243,12 +1273,12 @@
   .advice-result li{margin-bottom:4px;}
   /* .advice-cta is de primaire actie in het advies: zelfde press-diepte als .start-btn. */
   .advice-cta{
-    width:100%; background:var(--copper); color:#1B1310; border:none; border-radius:var(--radius-sm);
+    width:100%; background:var(--primary); color:var(--on-primary); border:none; border-radius:var(--radius-sm);
     padding:13px; font-family:var(--font-display); font-weight:600; font-size:var(--fs-body); cursor:pointer;
     box-shadow:0 1px 0 rgba(255,255,255,.16) inset, 0 4px 14px rgba(212,165,116,.18);
     transition:background var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
-  .advice-cta:hover{background:var(--copper-light);}
+  @media (hover:hover){ .advice-cta:hover{background:var(--primary-hover);} }
   .advice-cta:active{transform:translateY(1px) scale(.98); box-shadow:0 1px 0 rgba(255,255,255,.1) inset, 0 2px 6px rgba(212,165,116,.14);}
   .advice-secondary-notes{
     background:rgba(0,0,0,.12); border-radius:var(--radius-sm); padding:12px 14px; margin:0 0 16px;
@@ -1262,10 +1292,14 @@
   .form-input{
     display:block; width:100%; margin-top:6px;
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
-    padding:11px 12px; color:var(--text); font-size:var(--fs-small); font-family:var(--font-body);
+    padding:11px 12px; color:var(--text); font-size:var(--fs-body); font-family:var(--font-body);
     transition:border-color var(--motion-standard) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out);
   }
   .form-input:focus{border-color:var(--copper); box-shadow:0 0 0 3px var(--accent-glow);}
+  /* VA-07: verplicht veld niet ingevuld — melding in tekst (niet alleen kleur), gekoppeld via aria-describedby. */
+  .form-input[aria-invalid="true"]{border-color:var(--danger-text);}
+  .form-error{margin:6px 0 0; font-size:var(--fs-label); color:var(--danger-text);}
+  .form-error[hidden]{display:none;}
   textarea.form-input{resize:vertical; min-height:72px; line-height:1.4;}
 
   .scan-block{
@@ -1340,14 +1374,16 @@
     position:absolute; top:10px; right:10px; z-index:1;
     width:38px; height:38px; border-radius:50%; border:none; cursor:pointer;
     display:flex; align-items:center; justify-content:center; font-size:var(--fs-heading); line-height:1;
-    background:rgba(20,16,14,.45); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    background:rgba(20,16,14,.8); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); /* VA-03: hartje leesbaar op elke foto */
     color:#fff; transition:color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
-  .bean-detail-hero-fav[aria-pressed="true"]{ color:var(--berry); }
+  .bean-detail-hero-fav[aria-pressed="true"]{ color:#F08DA0; }
   .bean-detail-hero-fav:active{ transform:scale(.88); }
   .bean-card-meta{font-size:var(--fs-label); color:var(--text-dim); margin:0 0 10px;}
   .bean-tags{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;}
-  .bean-tag{font-size:var(--fs-label); border:1px solid var(--border); border-radius:var(--radius-pill); padding:3px 10px; color:var(--text-dim);}
+  .bean-tag{display:inline-flex; align-items:center; gap:6px; font-size:var(--fs-label); border:1px solid var(--border); border-radius:var(--radius-pill); padding:3px 10px; color:var(--text-dim);}
+  .bean-tag[style*="--tag-color"]::before, .flavor-cat-name[style*="--tag-color"]::before{content:""; width:7px; height:7px; border-radius:50%; background:var(--tag-color); flex-shrink:0;}
+  .flavor-cat-name{display:inline-flex; align-items:center; gap:8px; color:var(--text);}
   .bean-use-btn{
     width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm);
     padding:10px; color:var(--copper-light); font-size:var(--fs-small); cursor:pointer;
@@ -1475,14 +1511,35 @@
   #screen-brew[data-counter="on"] .brew-cumulative,
   #screen-brew[data-counter="on"] .dial-flow{display:none;}
   @media (min-width:900px) and (orientation:landscape){
-    #screen-brew[data-counter="on"] .brew-fg{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); column-gap:40px; align-items:center;}
+    /* VA-05: tijdens het zetten (zijbalk is dan weg) mag het brouwscherm de hele breedte
+       gebruiken; de instructiekolom krijgt zo ruimte voor één regel op afstandsgrootte. */
+    .app:has(#screen-brew.active[data-counter="on"]){max-width:none;}
+    #screen-brew[data-counter="on"] .brew-fg{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); column-gap:40px; align-items:center; padding-top:56px;}
     #screen-brew[data-counter="on"] .brew-fg > *{grid-column:2;}
     #screen-brew[data-counter="on"] .brew-fg > .brew-hero{grid-column:1; grid-row:1 / span 8;}
     #screen-brew[data-counter="on"] .brew-fg > .brew-recovery{grid-column:1 / -1;}
-    #screen-brew[data-counter="on"] .dial-wrap{width:min(42vw, 440px); height:min(42vw, 440px);}
-    #screen-brew[data-counter="on"] .brew-focus-info{text-align:left;}
-    #screen-brew[data-counter="on"] .brew-action-main{font-size:clamp(44px, 6vw, 76px);}
+    #screen-brew[data-counter="on"] .dial-wrap{width:min(38vw, 440px); height:min(38vw, 440px);}
+    /* Stop en 'Scherm blijft aan' horen bij het hele brouwscherm, niet bij de wijzerplaatkolom:
+       Stop staat rechtsboven in plaats van midden in beeld boven de foto. */
+    #screen-brew[data-counter="on"] .brew-hero{position:static; padding-top:0;}
+    /* Eén uitlijningsas in de instructiekolom: badge, balk, pil, knoppen en notities links. */
+    #screen-brew[data-counter="on"] .brew-fg > :not(.brew-hero),
+    #screen-brew[data-counter="on"] .brew-action,
+    #screen-brew[data-counter="on"] .bed-dry-hint,
+    #screen-brew[data-counter="on"] .brew-ready-note{text-align:left;}
+    #screen-brew[data-counter="on"] .brew-pour-progress{margin-left:0;}
+    #screen-brew[data-counter="on"] .brew-ready-list{margin-left:0;}
+    #screen-brew[data-counter="on"] .brew-controls{justify-content:flex-start;}
+    #screen-brew[data-counter="on"] .counter-toggle{margin-left:0;}
+    /* De instructie schaalt mee met haar kolom (container query), met een vw-terugval. */
+    #screen-brew[data-counter="on"] .brew-focus-info{container-type:inline-size;}
+    #screen-brew[data-counter="on"] .brew-action-main{font-size:clamp(44px, 5vw, 76px);}
+    @supports (font-size:1cqi){
+      #screen-brew[data-counter="on"] .brew-action-main{font-size:clamp(44px, 10.5cqi, 92px);}
+    }
   }
+  /* VA-05: getal en eenheid nooit over twee regels (zie keepUnitsTogether()). */
+  .nobr{white-space:nowrap;}
   @media (min-width:1100px){
     #screen-prep.active{ display:grid; grid-template-columns:minmax(0,1fr) 370px; column-gap:28px; align-items:start; }
     #screen-prep > .back-btn, #screen-prep > .photo-slot{ grid-column:1 / -1; }
@@ -1549,7 +1606,7 @@
     .navbar-btn--zet{color:var(--text);}
     .navbar-btn--zet svg{
       width:52px; height:52px; padding:13px; box-sizing:border-box; margin-top:-24px;
-      background:var(--copper); color:#1B1310; border-radius:50%;
+      background:var(--primary); color:var(--on-primary); border-radius:50%;
       box-shadow:0 6px 18px rgba(212,165,116,.35);
     }
     .navbar-btn--zet[aria-current="page"] svg{box-shadow:0 0 0 3px var(--bg), 0 0 0 5px var(--copper-light);}
@@ -2134,14 +2191,17 @@
         <div class="section-divider">of vul handmatig in</div>
 
         <label class="form-label">Naam
-          <input type="text" id="f-name" class="form-input" placeholder="bijv. Ethiopia Guji Hambela">
+          <input type="text" id="f-name" class="form-input" placeholder="bijv. Ethiopia Guji Hambela" aria-required="true" aria-describedby="f-name-error">
         </label>
+        <p class="form-error" id="f-name-error" role="alert" style="margin:-8px 0 14px;" hidden>Geef de boon een naam.</p>
         <label class="form-label">Brander (optioneel)
           <input type="text" id="f-roaster" class="form-input" placeholder="bijv. 7AM Coffee Roasters" autocomplete="off">
         </label>
 
-        <p class="advice-q-label">Roast</p>
-        <div class="chip-row" id="f-roast-chips" style="margin-bottom:18px;"></div>
+        <p class="advice-q-label" id="f-roast-label">Roast</p>
+        <div class="chip-row" id="f-roast-chips" role="group" aria-labelledby="f-roast-label" aria-describedby="f-roast-error"></div>
+        <p class="form-error" id="f-roast-error" role="alert" hidden>Kies de branding — die bepaalt temperatuur en maling.</p>
+        <div style="height:18px;"></div>
 
         <p class="advice-q-label">Beoogd gebruik <span style="text-transform:none; letter-spacing:0; color:var(--text-faint);">(optioneel — los van branddiepte)</span></p>
         <div class="chip-row" id="f-intended-use-chips" style="margin-bottom:6px;"></div>
@@ -2342,61 +2402,69 @@
       <h1 class="title">Jouw recept</h1>
       <!-- Phase 0 / BC-01: laat vóór Start zien bij welke boon dit brouwsel gelogd wordt. -->
       <p class="prep-bean-line" id="prep-bean-line"></p>
-      <!-- BC-10: blinde helder-proef (alleen bij doel "Helder & fris"). -->
-      <div class="ab-trial" id="ab-trial" hidden></div>
-      <!-- Fase 4: de stap die je na je vorige kop koos ("Gebruik voor volgende kop"). -->
-      <div class="prep-next-adjust" id="prep-next-adjust" hidden></div>
-      <!-- Review R-02: "jouw stand" — de maalstand en sterkte van je vorige kop met deze boon. -->
-      <div class="prep-next-adjust prep-stand-note" id="prep-stand-note" hidden></div>
-      <!-- Review R-08: een "check eerst" uit je vorige kop met deze boon. -->
-      <div class="prep-next-adjust prep-check-note" id="prep-check-note" hidden></div>
-      <p class="prep-water-tip" id="prep-water-tip" hidden></p>
-      <!-- Sprint 6: vanuit "Zet je beste kop opnieuw" — wat die kop toen was. -->
-      <p class="prep-best-ref" id="prep-best-ref" hidden></p>
+      <!-- VA-04: eerst de vier hoofdgetallen, direct onder titel en boon. De −/+ voor het water
+           zitten in de watertegel (Sprint 3, renderPrep()). -->
+      <div class="stats-grid" id="stats-grid"></div>
       <p class="technique-line" id="technique-line"></p>
       <p class="technique-tasting" id="technique-tasting"></p>
-      <p class="profile-twin-banner" id="prep-twin-note" hidden></p>
-      <!-- "Vorige keer"-vergelijking (personalHistoryInsight()); de badge is een richtingswoord
-           (Hoger/Lager), geen schijnprecisie. -->
-      <div class="prep-intel-card" id="prep-history-insight" hidden>
-        <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 18 L9 11 L13 14 L20 5"/><path d="M15 5h5v5"/></svg></div>
-        <div class="prep-intel-body">
-          <div class="prep-intel-header">
-            <span class="prep-intel-title">Jouw signaal</span>
-            <span class="badge" id="prep-signal-badge" data-tone="info"></span>
-          </div>
-          <span id="prep-history-insight-text"></span>
-          <button type="button" class="link-secondary" id="prep-history-triage-link" style="margin-top:4px; padding:4px 0;">Triage-checklist doorlopen →</button>
-        </div>
-      </div>
-      <!-- Hypothese uit oude cupping-loggings (alleen die hebben er een, BC-26); nooit automatisch
-           toegepast. Apart van #prep-history-insight, dat een kaal feit toont. -->
-      <div class="profile-twin-banner" id="prep-cupping-suggestion" hidden>
-        <span id="prep-cupping-suggestion-text"></span>
-        <button type="button" class="link-secondary" id="prep-suggestion-water-link" style="margin-top:4px; padding:4px 0;" hidden>Naar je waterprofiel →</button>
-      </div>
-      <!-- Boontype-model: correctie uit meerdere goedgekeurde loggings in hetzelfde emmertje
-           (branddiepte × verwerking × methode), ook voor een boon die je nog nooit zette
-           (learningCorrectionFor()). -->
-      <div class="profile-twin-banner" id="prep-learning-correction" hidden>
-        <span id="prep-learning-correction-text"></span>
-      </div>
-
-      <!-- Sprint 3 (UX-review F4): de losse waterstepper stond dubbel met de watertegel; de
-           −/+ zitten nu ín de watertegel (#stats-grid, zie renderPrep()). -->
-
-      <div class="stats-grid" id="stats-grid"></div>
+      <!-- VA-04: hoogstens één melding, de belangrijkste (arrangePrepNotes()); de rest staat achter
+           "Waarom dit recept?". -->
+      <section class="prep-notes" id="prep-notes" aria-labelledby="prep-notes-title" hidden>
+        <h2 class="prep-notes-title" id="prep-notes-title">Voor deze kop</h2>
+        <div id="prep-notes-primary"></div>
+      </section>
       <!-- Techniekkaart met de evidence-badges en de stijlnotitie (badge-woorden: bouwbesluit B4). -->
       <!-- Sprint 3 (UX-review F4): de techniekkaart op verzoek — zelfde badge-row/style-note,
            nu achter "Waarom dit recept?" zodat de getallen en Start het scherm dragen. -->
       <details class="flavor-category why-recipe-details" id="why-recipe-details">
         <summary style="color:var(--copper-light)">
           <span class="prep-intel-title">Waarom dit recept?</span>
+          <span class="flavor-category-count" id="why-recipe-count"></span>
           <span class="flavor-category-arrow">+</span>
         </summary>
         <div class="flavor-category-body">
           <div id="evidence-badge-row" class="badge-row" style="margin:0 0 8px;"></div>
           <p class="style-note" id="style-note" style="margin:0;"></p>
+          <div class="prep-notes-more" id="prep-notes-more" hidden>
+            <p class="prep-notes-more-title">Meer voor deze kop</p>
+            <!-- BC-10: blinde helder-proef (alleen bij doel "Helder & fris"). -->
+            <div class="ab-trial" id="ab-trial" hidden></div>
+            <!-- Fase 4: de stap die je na je vorige kop koos ("Gebruik voor volgende kop"). -->
+            <div class="prep-next-adjust" id="prep-next-adjust" hidden></div>
+            <!-- Review R-02: "jouw stand" — de maalstand en sterkte van je vorige kop met deze boon. -->
+            <div class="prep-next-adjust prep-stand-note" id="prep-stand-note" hidden></div>
+            <!-- Review R-08: een "check eerst" uit je vorige kop met deze boon. -->
+            <div class="prep-next-adjust prep-check-note" id="prep-check-note" hidden></div>
+            <p class="prep-water-tip" id="prep-water-tip" hidden></p>
+            <!-- Sprint 6: vanuit "Zet je beste kop opnieuw" — wat die kop toen was. -->
+            <p class="prep-best-ref" id="prep-best-ref" hidden></p>
+            <p class="profile-twin-banner" id="prep-twin-note" hidden></p>
+            <!-- "Vorige keer"-vergelijking (personalHistoryInsight()); de badge is een richtingswoord
+                 (Hoger/Lager), geen schijnprecisie. -->
+            <div class="prep-intel-card" id="prep-history-insight" hidden>
+              <div class="prep-intel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 18 L9 11 L13 14 L20 5"/><path d="M15 5h5v5"/></svg></div>
+              <div class="prep-intel-body">
+                <div class="prep-intel-header">
+                  <span class="prep-intel-title">Jouw signaal</span>
+                  <span class="badge" id="prep-signal-badge" data-tone="info"></span>
+                </div>
+                <span id="prep-history-insight-text"></span>
+                <button type="button" class="link-secondary" id="prep-history-triage-link" style="margin-top:4px; padding:4px 0;">Triage-checklist doorlopen →</button>
+              </div>
+            </div>
+            <!-- Hypothese uit oude cupping-loggings (alleen die hebben er een, BC-26); nooit automatisch
+                 toegepast. Apart van #prep-history-insight, dat een kaal feit toont. -->
+            <div class="profile-twin-banner" id="prep-cupping-suggestion" hidden>
+              <span id="prep-cupping-suggestion-text"></span>
+              <button type="button" class="link-secondary" id="prep-suggestion-water-link" style="margin-top:4px; padding:4px 0;" hidden>Naar je waterprofiel →</button>
+            </div>
+            <!-- Boontype-model: correctie uit meerdere goedgekeurde loggings in hetzelfde emmertje
+                 (branddiepte × verwerking × methode), ook voor een boon die je nog nooit zette
+                 (learningCorrectionFor()). -->
+            <div class="profile-twin-banner" id="prep-learning-correction" hidden>
+              <span id="prep-learning-correction-text"></span>
+            </div>
+          </div>
         </div>
       </details>
 
@@ -4082,20 +4150,24 @@ const ROAST_GRIND_ANCHOR_FRACTION = { light:0, light_medium:0.25, medium:0.5, me
 // Audit BC-11: schema's van hooguit 2:00 (vandaag alleen Perger 80/20 op V60, 1:40) starten één klik fijner.
 const SHORT_CONTACT_MAX_SEC = 120;
 
+/* VA-10: één woordenlijst. De naam van elk profiel is wat de gebruiker ziet: een smaak (Helder &
+   fris, Gebalanceerd, Rond & vol — gelijk aan BREW_GOALS/TASTE_CHOICES) of een gietstijl (Hoffmann,
+   Rao, April … — gelijk aan STYLE_CHOICES). De oude namen (Fresh & Clean, Heel fruitig …) en de
+   interne sleutels komen niet meer op het scherm; profileLabel() plakt er waar nodig de smaak voor. */
 const PROFILE_INFO = {
-  heel_fruitig:  { name:'Heel fruitig',    desc:'Bessen, wijnachtig, bijna gefermenteerd', color:'#C2445C', icon:'berries' },
-  fruitig_clean: { name:'Fruitig & Clean', desc:'Sinaasappel, perzik — helder zuur',        color:'#D3824A', icon:'drop'    },
-  fresh_clean:   { name:'Fresh & Clean',   desc:'Appel, bloesem — techniek boven maling',    color:'#8FA872', icon:'leaf'    },
-  klassiek:      { name:'Klassiek',        desc:'Vijf gelijke beurten — evenwichtig, geen uitschieter', color:'#A69684', icon:'target' },
-  vol_rond:      { name:'Vol & rond',      desc:'Chocolade, noten, body',                    color:'#8A5A2E', icon:'sphere'  },
-  zoet:          { name:'Zoet',            desc:'Karamel, bruine suiker, zachte afdronk',   color:'#C9A233', icon:'crystal' },
-  snel_puur:     { name:'Snel & puur',     desc:'Simpele basismethode, altijd heet — in 2,5 min klaar', color:'#5B8AA6', icon:'bolt' },
+  heel_fruitig:  { name:'Helder & fris',   desc:'Bessen, wijnachtig, bijna gefermenteerd', color:'#C2445C', icon:'berries' },
+  fruitig_clean: { name:'Rao',             desc:'Sinaasappel, perzik — helder zuur',        color:'#D3824A', icon:'drop'    },
+  fresh_clean:   { name:'Hoffmann',        desc:'Appel, bloesem — techniek boven maling',    color:'#8FA872', icon:'leaf'    },
+  klassiek:      { name:'Gebalanceerd',    desc:'Vijf gelijke beurten — evenwichtig, geen uitschieter', color:'#A69684', icon:'target' },
+  vol_rond:      { name:'Gebalanceerd',    desc:'Chocolade, noten, body',                    color:'#8A5A2E', icon:'sphere'  },
+  zoet:          { name:'Rond & vol',      desc:'Karamel, bruine suiker, zachte afdronk',   color:'#C9A233', icon:'crystal' },
+  snel_puur:     { name:'Snel (Perger 80/20)', desc:'Simpele basismethode, altijd heet — in 2,5 min klaar', color:'#5B8AA6', icon:'bolt' },
   bloemig_delicaat: { name:'Bloemig & delicaat', desc:'Jasmijn, thee, Geisha — helderheid en scheiding', color:'#B98FC7', icon:'flower', methodOnly:'v60' },
   sirooprig_vol: { name:'Sirooprig & rond', desc:'Kissaten-stijl, minimale agitatie — zwaarste body', color:'#6B4A2E', icon:'drip', methodOnly:'v60' },
-  robuust:       { name:'Robuust & vol',   desc:'April-stijl — stevig roeren bij elke beurt, vol uitgesponnen', color:'#A6543C', icon:'spiral' },
+  robuust:       { name:'April',           desc:'April-stijl — stevig roeren bij elke beurt, vol uitgesponnen', color:'#A6543C', icon:'spiral' },
   // Geen vast giet-aantal noemen: het aantal pulsen verschilt tussen bronnen (HEDRICK_1_2_1.pulseCount
   // is een researchGap; zie coreOnlyReason()).
-  evenwichtig_flex: { name:'Evenwichtig & flexibel', desc:'Flexibel basisrecept — betrouwbaar bij wisselende bonen', color:'#6E7F91', icon:'scale' }
+  evenwichtig_flex: { name:'Basisrecept', desc:'Flexibel basisrecept — betrouwbaar bij wisselende bonen', color:'#6E7F91', icon:'scale' }
 };
 
 /* ============================================================
@@ -5493,12 +5565,28 @@ function choiceTwinLabels(profileKey, method, shown){
 function tasteChoiceForState(){
   return TASTE_CHOICES.find(c => c.profile === state.profile && c.goal === (state.goal || null)) || null;
 }
+/* VA-10: de naam van een keuze, overal hetzelfde (recept, proefkaart, logboek, bonen, advies).
+   Een smaak heet naar de smaak; een gietstijl naar de stijl, met de smaak ervoor als die het doel
+   was ("Helder & fris · Hoffmann"). Een smaak met een ander doel (zeldzaam) noemt dat doel erbij. */
+function profileLabel(profileKey, goal){
+  const info = PROFILE_INFO[profileKey];
+  if (!info) return 'Gebalanceerd';
+  const goalLabel = goal && BREW_GOALS[goal] ? BREW_GOALS[goal].label : null;
+  const isStyle = STYLE_CHOICES.some(c => c.profile === profileKey);
+  if (isStyle) return goalLabel ? `${goalLabel} · ${info.name}` : info.name;
+  return goalLabel && goalLabel !== info.name && TASTE_CHOICES.some(c => c.profile === canonicalProfileKey(profileKey))
+    ? `${info.name} · doel ${goalLabel}` : info.name;
+}
+// Zonder gekozen doel (boon, advies): een gietstijl krijgt de smaakrichting die erbij hoort.
+function profileDirectionLabel(profileKey){
+  const isStyle = STYLE_CHOICES.some(c => c.profile === profileKey);
+  return profileLabel(profileKey, isStyle ? goalForProfile(profileKey) : null);
+}
+function beanProfileLabel(bean){
+  return profileDirectionLabel(bean && PROFILE_INFO[bean.profileKey] ? bean.profileKey : 'klassiek');
+}
 function choiceLabelForState(){
-  const t = tasteChoiceForState();
-  if (t) return t.label;
-  const st = STYLE_CHOICES.find(c => c.profile === state.profile);
-  const name = st ? st.label : (PROFILE_INFO[state.profile] ? PROFILE_INFO[state.profile].name : state.profile);
-  return state.goal && BREW_GOALS[state.goal] ? `${name} · ${BREW_GOALS[state.goal].label}` : name;
+  return profileLabel(state.profile, state.goal);
 }
 function renderProfileGrid(){
   const el = document.getElementById('profile-grid');
@@ -5617,7 +5705,7 @@ function buildReasoningLines(roastKey, profileKey, batchKey, processKey, experim
     medium_dark:  'Medium-dark roast: al behoorlijk laag in zuren en meer bittere olie — de dikke Chemex-filter vangt dat op.',
     dark:         'Dark roast: laag in zuren, meer bittere olie — de dikke Chemex-filter vangt dat op.'
   };
-  const pName = PROFILE_INFO[profileKey].name;
+  const pName = profileDirectionLabel(profileKey); // VA-10
   let profileLine;
   if (result.profileBucket === 'bright'){
     profileLine = `Smaakkarakter "${pName}" vraagt om maximale helderheid — de sterkste kant van de V60.`;
@@ -5671,7 +5759,7 @@ function renderAdviceChips(){
     const rawScore = (!isTechniqueOnly && adviceState.flavorScores) ? displayScoreFor(adviceState.flavorScores, k) : null;
     const stars = profileMatchStars(rawScore);
     const starsHtml = stars != null ? renderStarRow(stars) : '';
-    return `<button class="chip${starsHtml ? ' chip-with-stars' : ''}" data-adv-profile="${k}" data-selected="${canonicalProfileKey(adviceState.profile)===k}"><span>${PROFILE_INFO[k].name}</span>${starsHtml}</button>`;
+    return `<button class="chip${starsHtml ? ' chip-with-stars' : ''}" data-adv-profile="${k}" data-selected="${canonicalProfileKey(adviceState.profile)===k}"><span>${escapeHtml(profileDirectionLabel(k))}</span>${starsHtml}</button>`; // VA-10
   };
   const flavorKeys = visibleProfileKeys().filter(k => !PROFILE_TECHNIQUE_ONLY_KEYS.includes(k));
   const styleKeys = visibleProfileKeys().filter(k => PROFILE_TECHNIQUE_ONLY_KEYS.includes(k));
@@ -5685,7 +5773,7 @@ function renderAdviceChips(){
   if (tieNoteEl){
     if (hasPendingTie){
       const names = nearTieCandidates.map(k => {
-        return PROFILE_INFO[k] ? PROFILE_INFO[k].name : k;
+        return profileDirectionLabel(k); // VA-10
       });
       tieNoteEl.textContent = `Deze boon past ongeveer even goed bij ${names.join(' en ')} — er wordt geen keuze voor je gemaakt, kies zelf hieronder welk profiel je wilt volgen.`;
       tieNoteEl.dataset.pending = 'true';
@@ -5875,9 +5963,11 @@ function brewAgain(id, override){
    hetzelfde advies hierboven via useBeanForAdvice().
    ============================================================ */
 let beanLibrary = [];
-let formRoastChip = 'medium';
-let formIntendedUseChip = null; // optioneel, geen zinvolle default (anders dan roast/proces die altijd 'iets' zijn)
-let formProcessChip = 'washed';
+// VA-07: geen voorgekozen roast (die stuurt temperatuur en maling; een stille 'Medium' leverde
+// ongemerkt een verkeerd recept op) en proces standaard 'Weet ik niet' in plaats van Washed.
+let formRoastChip = null;
+let formIntendedUseChip = null; // optioneel, geen zinvolle default
+let formProcessChip = 'overig';
 let formExperimentalFlag = false;
 let formProfileChip = 'klassiek';
 let formProfileManual = false;
@@ -6262,7 +6352,7 @@ function flavorTagChipsHtml(tags){
   if (!tags || !tags.length) return '';
   return tags.map(t=>{
     const c = flavorTagColor(t);
-    return `<span class="bean-tag"${c ? ` style="border-color:${c}; color:${c};"` : ''}>${escapeHtml(t)}</span>`;
+    return `<span class="bean-tag"${c ? ` style="--tag-color:${c}"` : ''}>${escapeHtml(t)}</span>`;
   }).join('');
 }
 
@@ -7098,7 +7188,7 @@ function secondaryFlavorNotes(scores, winnerKey){
   const tips = {
     heel_fruitig: 'felle bessen/wijnachtige tonen — een fractie kortere bloom en iets grotere eerste pour trekt die vroege zuren sterker naar voren.',
     fruitig_clean: 'helder citrus-/steenfruitkarakter — dat zit al vroeg in de extractie; een rustige, ononderbroken pour (geen pulse) houdt dat schoon.',
-    fresh_clean: 'lichte/theeachtige/bloemige tonen — daarvoor is het profiel "Bloemig & delicaat" bedoeld (alleen V60). Let op: dat profiel gebruikt vandaag het basisrecept, de aparte gietmethode die erbij hoort is nog niet beschikbaar.',
+    fresh_clean: 'lichte/theeachtige/bloemige tonen — daarvoor is de gietstijl "Bloemig & delicaat" bedoeld (alleen V60). Let op: die gebruikt vandaag het basisrecept, de aparte gietmethode die erbij hoort is nog niet beschikbaar.',
     vol_rond: 'chocolade/notige body — die zit laat in de extractie; iets meer contacttijd (grover malen is niet nodig, langer laten doorlopen wel) brengt dat beter naar boven.',
     zoet: 'karamel/kruidige zoetheid — zit in het midden van de extractie; een iets kleinere eerste pour geeft de latere suikers meer tijd om mee te komen, zoals het "Zoet"-profiel al doet.'
   };
@@ -7117,7 +7207,7 @@ function secondaryFlavorNotes(scores, winnerKey){
       const prefix = near
         ? 'Bijna net zo sterk als de winnende keuze — overweeg dit als alternatief: '
         : '';
-      return { key:k, name:PROFILE_INFO[k].name, tip: prefix + tips[k], near };
+      return { key:k, name:profileDirectionLabel(k), tip: prefix + tips[k], near }; // VA-10
     });
 }
 
@@ -7192,7 +7282,7 @@ function floralDominanceNote(flavorTags){
   if (floralCount === 0) return '';
   const ratio = floralCount / known.length;
   if (ratio < 0.5) return '';
-  return `Deze boon leunt sterk op bloemige smaaknotities (${floralCount}/${known.length} van de gekozen tags) — daarvoor is het profiel "Bloemig & delicaat" bedoeld (alleen V60). Het smaakwiel kiest dit profiel niet automatisch (bloemige tags vallen onder de bredere "Fresh & Clean"). Let op: het gebruikt vandaag het basisrecept, de aparte gietmethode die erbij hoort is nog niet beschikbaar.`;
+  return `Deze boon leunt sterk op bloemige smaaknotities (${floralCount}/${known.length} van de gekozen tags) — daarvoor is de gietstijl "Bloemig & delicaat" bedoeld (alleen V60). Het smaakwiel kiest die niet automatisch (bloemige tags vallen onder het bredere "${profileLabel('fresh_clean', 'bright')}"). Let op: die gebruikt vandaag het basisrecept, de aparte gietmethode die erbij hoort is nog niet beschikbaar.`;
 }
 
 /* Twee voorbeeldbonen uit eigen foto's (Wonder Beans en Ús Kofje) —
@@ -7737,7 +7827,7 @@ function renderBeanDetail(bean){
   // 'overig' (PROCESS_INFO) is expliciet de "weet ik niet"-placeholder, geen echt proces —
   // die hoort hier niet in een "..., X verwerkt"-zin (zou onzin-Nederlands opleveren).
   const knownProcName = (procName && bean.process !== 'overig') ? procName : null;
-  aboutParts.push(`${escapeHtml(bean.name || 'Deze boon')} is een ${escapeHtml(r.name.toLowerCase())} roast met een ${escapeHtml(p.name.toLowerCase())}-profiel${knownProcName ? `, ${escapeHtml(knownProcName.toLowerCase())} verwerkt` : ''}.`);
+  aboutParts.push(`${escapeHtml(bean.name || 'Deze boon')} is een ${escapeHtml(r.name.toLowerCase())} roast, smaakprofiel ${escapeHtml(beanProfileLabel(bean))}${knownProcName ? `, ${escapeHtml(knownProcName.toLowerCase())} verwerkt` : ''}.`);
   if (meta) aboutParts.push(`Herkomst: ${escapeHtml(meta)}.`);
   if (bean.flavorNotes && bean.flavorNotes.length) aboutParts.push(`Smaaknotities: ${escapeHtml(bean.flavorNotes.join(', '))}.`);
   document.getElementById('bean-detail-about').innerHTML = aboutParts.join(' ');
@@ -7753,7 +7843,7 @@ function renderBeanDetail(bean){
     ['Variëteit', bean.variety || '—'],
     ['Farm / washing station', bean.farm || '—'],
     ['Roast', r.name],
-    ['Smaakprofiel', p.name],
+    ['Smaakprofiel', beanProfileLabel(bean)], // VA-10
     ['Branddatum', fmtDate(bean.roastDate)],
     ['Zak geopend op', fmtDate(bean.openedDate)]
   ];
@@ -9612,7 +9702,7 @@ function openBrewLogEntry(){
   const bean = state.beanId ? beanLibrary.find(b=>b.id===state.beanId) : null;
   const p = PROFILE_INFO[state.profile], m = METHOD_INFO[state.method], r = ROAST_INFO[state.roast];
   document.getElementById('brewlog-context').textContent =
-    `${bean ? bean.name + ' — ' : ''}${m ? m.name : ''} · ${r ? r.name : ''} · ${p ? p.name : ''}${state.bypass ? ' · bypass' : ''}`;
+    `${bean ? bean.name + ' — ' : ''}${m ? m.name : ''} · ${r ? r.name : ''} · ${p ? choiceLabelForState() : ''}${state.bypass ? ' · bypass' : ''}`; // VA-10
   // "Klaar"-samenvattingsregel (dosis · tijd · methode) onder de titel.
   const metaEl = document.getElementById('brewlog-complete-meta');
   if (metaEl && state.recipe && m){
@@ -10044,7 +10134,7 @@ function renderBrewLogEntryCard(e, beanId){
   return `<div class="brewlog-entry-card">
     <button type="button" class="brewlog-entry-fav" data-fav-toggle="${e.id}" aria-pressed="${e.favorite ? 'true' : 'false'}" aria-label="${e.favorite ? 'Verwijderen uit favorieten' : 'Toevoegen aan favorieten'}">${e.favorite ? '♥' : '♡'}</button>
     <div class="brewlog-entry-header"><strong>${entryBean ? escapeHtml(entryBean.name) + ' · ' : ''}${m ? m.name : e.method}${e.bypass ? ' · bypass' : ''}</strong><span class="brewlog-entry-date">${dateStr}</span></div>
-    <div class="brewlog-entry-meta">${r ? r.name : ''} · ${p ? p.name : ''} · ${e.waterMl || '?'} ml${e.grindMicron ? ' · ' + e.grindMicron + ' µm' : ''}${e.temp ? ' · ' + e.temp + '°C' : ''}</div>
+    <div class="brewlog-entry-meta">${r ? r.name : ''} · ${p ? escapeHtml(profileLabel(e.profile, e.goal)) : ''} · ${e.waterMl || '?'} ml${e.grindMicron ? ' · ' + e.grindMicron + ' µm' : ''}${e.temp ? ' · ' + e.temp + '°C' : ''}</div>
     ${actualHtml}
     <div class="brewlog-entry-scores">${scoresHtml}</div>
     ${e.note ? `<div class="brewlog-entry-note">"${escapeHtml(e.note)}"</div>` : ''}
@@ -10776,7 +10866,7 @@ function editBean(id){
 
   formRoastChip = ROAST_INFO[bean.roastLevel] ? bean.roastLevel : 'medium';
   formIntendedUseChip = INTENDED_USE_INFO[bean.intendedUse] ? bean.intendedUse : null;
-  formProcessChip = PROCESS_INFO[bean.process] ? bean.process : 'washed';
+  formProcessChip = PROCESS_INFO[bean.process] ? bean.process : 'overig';
   formExperimentalFlag = !!bean.experimental;
   formProfileChip = PROFILE_INFO[bean.profileKey] ? bean.profileKey : 'klassiek';
   formProfileManual = true; // profiel stond al vast voor deze boon — niet laten overschrijven tenzij je zelf tags wijzigt
@@ -10864,10 +10954,9 @@ function openBeanPicker(title){
       ? beans.map(b => `<button type="button" class="bean-picker-item" data-pick-bean="${escapeHtml(b.id)}">${escapeHtml(b.name || 'Naamloze boon')}<small>${escapeHtml([ROAST_INFO[b.roastLevel] ? ROAST_INFO[b.roastLevel].name : '', PROCESS_INFO[b.process] ? PROCESS_INFO[b.process].name : ''].filter(Boolean).join(' · '))}</small></button>`).join('')
       : '<p class="empty-hint">Nog geen bonen opgeslagen.</p>';
     nameEl.value = '';
-    overlay.hidden = false;
     const done = (id) => {
-      overlay.hidden = true;
       list.removeEventListener('click', onList); form.removeEventListener('submit', onNew); cancel.removeEventListener('click', onCancel);
+      closeDialog(overlay);
       resolve(id);
     };
     const onList = (e) => { const b = e.target.closest('[data-pick-bean]'); if (b) done(b.getAttribute('data-pick-bean')); };
@@ -10884,8 +10973,7 @@ function openBeanPicker(title){
     };
     const onCancel = () => done(null);
     list.addEventListener('click', onList); form.addEventListener('submit', onNew); cancel.addEventListener('click', onCancel);
-    const first = list.querySelector('button') || nameEl;
-    try{ first.focus({ preventScroll:true }); } catch(e){ /* oudere browsers */ }
+    openDialog(overlay, { initial: list.querySelector('button') || nameEl, onEscape: onCancel }); // VA-09
   });
 }
 // Koppelt een al gezet brouwsel zonder boon alsnog aan een boon, met dezelfde bijwerkingen
@@ -10980,7 +11068,7 @@ function renderBeanChipsInAdvice(){
     const r = ROAST_INFO[b.roastLevel] || ROAST_INFO.medium;
     const p = PROFILE_INFO[b.profileKey] || PROFILE_INFO.klassiek;
     const proc = PROCESS_INFO[b.process] ? PROCESS_INFO[b.process].name : null;
-    const meta = [r.name, proc, b.experimental ? '🧪 experimenteel' : null, p.name].filter(Boolean).join(' · ');
+    const meta = [r.name, proc, b.experimental ? '🧪 experimenteel' : null, p ? beanProfileLabel(b) : null].filter(Boolean).join(' · '); // VA-10
     return `<button type="button" class="bean-pick-card" data-bean-pick="${b.id}" data-selected="${isSelected}">
       <span><span class="bean-pick-name">${escapeHtml(b.name || 'Naamloze boon')}</span><span class="bean-pick-meta">${escapeHtml(meta)}</span></span>
       <span class="bean-pick-arrow">→</span>
@@ -11024,8 +11112,8 @@ function renderFlavorTagChips(){
     }).join('');
     const isOpen = openFlavorCategories.has(cat.key);
     return `<details class="flavor-category" data-cat-key="${cat.key}" ${isOpen ? 'open' : ''} style="border-color:${selectedCount ? cat.color : 'var(--border)'}">
-      <summary style="color:${cat.color}">
-        <span>${escapeHtml(cat.name)}</span>
+      <summary>
+        <span class="flavor-cat-name" style="--tag-color:${cat.color}">${escapeHtml(cat.name)}</span>
         <span class="flavor-category-count">${selectedCount > 0 ? selectedCount : ''}</span>
         <span class="flavor-category-arrow">+</span>
       </summary>
@@ -11094,6 +11182,7 @@ function renderFormRoastChips(){
   ).join('');
   el.querySelectorAll('[data-froast]').forEach(b=>b.addEventListener('click', ()=>{
     formRoastChip = b.getAttribute('data-froast'); renderFormRoastChips();
+    setBeanFieldError('roast', false);
   }));
 }
 
@@ -11470,7 +11559,7 @@ function renderFormProfileChips(){
   // data-selected vergelijkt de canonieke sleutel; formProfileChip zelf blijft de ruwe sleutel, zodat
   // bean.profileKey het vol_rond/zoet-onderscheid niet verliest.
   el.innerHTML = visibleProfileKeys().map(k=>
-    `<button type="button" class="chip" data-fprofile="${k}" data-selected="${canonicalProfileKey(formProfileChip)===k}">${PROFILE_INFO[k].name}</button>`
+    `<button type="button" class="chip" data-fprofile="${k}" data-selected="${canonicalProfileKey(formProfileChip)===k}">${escapeHtml(profileDirectionLabel(k))}</button>`
   ).join('');
   el.querySelectorAll('[data-fprofile]').forEach(b=>b.addEventListener('click', ()=>{
     // Zelfde redenering als rawKeyForVisibleSelection() bij de Advisor-chips: een klik op de
@@ -11545,10 +11634,12 @@ function resetBeanForm(){
   if (scanText) scanText.value = '';
   selectedFlavorTags = [];
   openFlavorCategories = new Set();
-  formRoastChip = 'medium';
+  formRoastChip = null;
   formIntendedUseChip = null;
-  formProcessChip = 'washed';
+  formProcessChip = 'overig';
   formExperimentalFlag = false;
+  setBeanFieldError('name', false);
+  setBeanFieldError('roast', false);
   formProfileChip = 'klassiek';
   formProfileManual = false;
   renderFlavorTagChips();
@@ -11682,7 +11773,7 @@ function showScanResult(found){
     ['Naam', nameVal.trim() || null, 'niet herkend — vul hieronder in'],
     ['Brander', ((document.getElementById('f-roaster') || {}).value || '').trim() || null, 'niet herkend — optioneel'],
     ['Branddatum', dateVal ? new Date(dateVal + 'T00:00:00').toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' }) : null, 'niet herkend — staat die op de zak? Vul hieronder in (preciezer bloom-advies)'],
-    ['Branding', found.roast ? ROAST_INFO[found.roast].name : null, `niet herkend — staat nu op ${ROAST_INFO[formRoastChip] ? ROAST_INFO[formRoastChip].name : formRoastChip} (standaard), controleer`],
+    ['Branding', found.roast ? ROAST_INFO[found.roast].name : null, ROAST_INFO[formRoastChip] ? `niet herkend — staat nu op ${ROAST_INFO[formRoastChip].name}, controleer` : 'niet herkend — kies hieronder de branding'],
     ['Proces', found.process ? PROCESS_INFO[found.process].name : null, `niet herkend — staat nu op ${PROCESS_INFO[formProcessChip] ? PROCESS_INFO[formProcessChip].name : formProcessChip} (standaard), controleer`],
     ['Herkomst', origin || null, 'niet herkend'],
     ['Smaak', found.tags && found.tags.length ? found.tags.slice(0, 5).join(', ') + (found.tags.length > 5 ? ` +${found.tags.length - 5}` : '') : null, 'geen smaaknotities herkend'],
@@ -11828,6 +11919,7 @@ function handleAbTrialClick(e){
     return;
   } else return;
   renderAbTrial();
+  arrangePrepNotes(); // VA-04: een gestarte proef komt bovenaan
 }
 /* ---- Fase 4: advies koppelen aan de flow ---- */
 // De stap die klaarstaat voor de volgende kop met deze boon (+ methode).
@@ -12120,18 +12212,17 @@ function openWaterAsk(){
   if (!overlay) return;
   try { localStorage.setItem(WATER_ASKED_KEY, '1'); } catch(e){ /* dan vraagt hij het volgende keer opnieuw */ }
   document.getElementById('water-ask-mix').checked = waterDilution.demiParts > 0;
-  overlay.hidden = false;
-  try { overlay.querySelector('[data-water-ask]').focus({ preventScroll:true }); } catch(e){}
+  openDialog(overlay, { initial: overlay.querySelector('[data-water-ask]'), onEscape: () => closeDialog(overlay) }); // VA-09: Escape = Later
 }
 function handleWaterAskClick(e){
   const overlay = document.getElementById('water-ask');
-  if (e.target.closest('#water-ask-later')){ overlay.hidden = true; return; }
+  if (e.target.closest('#water-ask-later')){ closeDialog(overlay); return; }
   const btn = e.target.closest('[data-water-ask]');
   if (!btn) return;
   const k = btn.getAttribute('data-water-ask');
   const mix = document.getElementById('water-ask-mix').checked;
   waterDilution = mix ? { tapParts: 1, demiParts: 1 } : { tapParts: 1, demiParts: 0 };
-  overlay.hidden = true;
+  closeDialog(overlay);
   if (WATER_COMPANY_PRESETS[k]) applyWaterPreset(k);
   else { saveWaterProfileToStorage(); openWaterSettings(); }
 }
@@ -12162,6 +12253,46 @@ function cancelPendingAdjust(){
   if (src && src.recommendation && src.recommendation.status === 'applied'){ src.recommendation.status = 'ignored'; upsertBrewRecord(src); persistBrewStore(); rebuildBrewLogView(); }
   if (bean){ delete bean.pendingAdjust; saveBeansToStorage(); }
   renderPrep();
+}
+/* VA-04: het receptscherm laat eerst de getallen zien. Daaronder staat hoogstens één melding
+   ("Voor deze kop"): de eerste zichtbare uit prepNoteOrder(). Alle andere zichtbare meldingen
+   staan achter "Waarom dit recept?". Statusmeldingen zonder actie (nog geen leercorrectie, een
+   feit uit je eigen data, de tweelingnotitie) komen nooit bovenaan. De meldingen zelf worden
+   elders gevuld; dit verplaatst alleen. */
+function prepNoteOrder(){
+  // Een lopende blinde proef of de stand "voortaan zwakker" verandert dit recept: dan hoog.
+  const abActive = !!abOpenTrial || abLighterEnabled();
+  const order = ['prep-next-adjust', 'prep-check-note', 'prep-stand-note', 'prep-best-ref', 'prep-learning-correction', 'prep-cupping-suggestion', 'prep-water-tip', 'prep-history-insight', 'prep-twin-note'];
+  order.splice(abActive ? 1 : 7, 0, 'ab-trial');
+  return order;
+}
+function prepNoteIsStatusOnly(el){
+  if (el.id === 'prep-history-insight' || el.id === 'prep-twin-note') return true;
+  if (el.id === 'prep-learning-correction'){
+    const t = document.getElementById('prep-learning-correction-text');
+    return !!(t && /^Nog geen leercorrectie/.test(t.textContent));
+  }
+  return false;
+}
+function arrangePrepNotes(){
+  const section = document.getElementById('prep-notes');
+  const primary = document.getElementById('prep-notes-primary');
+  const moreWrap = document.getElementById('prep-notes-more');
+  if (!section || !primary || !moreWrap) return;
+  const notes = prepNoteOrder().map(id => document.getElementById(id)).filter(Boolean);
+  const shown = notes.filter(el => !el.hidden && el.textContent.trim());
+  const top = shown.find(el => !prepNoteIsStatusOnly(el)) || null;
+  const focused = document.activeElement;
+  notes.forEach(el => { if (el !== top) moreWrap.appendChild(el); });
+  if (top && top.parentElement !== primary) primary.appendChild(top);
+  if (focused && focused !== document.activeElement && focused.isConnected && focused.getClientRects().length){
+    try { focused.focus({ preventScroll:true }); } catch(e){ /* oudere browsers */ }
+  }
+  section.hidden = !top;
+  const rest = shown.filter(el => el !== top).length;
+  moreWrap.hidden = rest === 0;
+  const countEl = document.getElementById('why-recipe-count');
+  if (countEl) countEl.textContent = rest ? `+${rest} ${rest === 1 ? 'melding' : 'meldingen'}` : '';
 }
 function renderPrep(){
   const m = METHOD_INFO[state.method], r = ROAST_INFO[state.roast], p = PROFILE_INFO[state.profile];
@@ -12619,6 +12750,7 @@ function renderPrep(){
       grindMoreToggle.textContent = body.hidden ? 'Meer over deze maalstand ↓' : 'Minder tonen ↑';
     });
   }
+  arrangePrepNotes(); // VA-04
 }
 
 function updateServingBounds(){
@@ -12629,7 +12761,8 @@ function updateServingBounds(){
 
 // Grotere stepper + slider voor dezelfde state.waterMl, met dezelfde klem en herberekening.
 function openWaterModal(){
-  document.getElementById('water-modal').hidden = false;
+  const modal = document.getElementById('water-modal');
+  openDialog(modal, { initial: document.getElementById('water-modal-slider') }); // VA-09
   syncWaterModal();
 }
 function syncWaterModal(){
@@ -12643,7 +12776,7 @@ function syncWaterModal(){
     `Bereik binnen dit recept: ${range.min}–${range.max} ml (het engine-geldige venster voor deze methode/profiel).`;
 }
 document.getElementById('water-modal-close').addEventListener('click', ()=>{
-  document.getElementById('water-modal').hidden = true;
+  closeDialog(document.getElementById('water-modal'));
 });
 // Grotere weergave van één zetstap uit state.recipe.steps; geen nieuwe berekening.
 function openPourStepModal(stepIndex){
@@ -12664,10 +12797,10 @@ function openPourStepModal(stepIndex){
   const tipEl = document.getElementById('pourstep-modal-tip');
   tipEl.textContent = tipParts.join(' ');
   tipEl.hidden = !tipParts.length;
-  document.getElementById('pourstep-modal').hidden = false;
+  openDialog(document.getElementById('pourstep-modal')); // VA-09
 }
 document.getElementById('pourstep-modal-close').addEventListener('click', ()=>{
-  document.getElementById('pourstep-modal').hidden = true;
+  closeDialog(document.getElementById('pourstep-modal'));
 });
 document.getElementById('water-modal-minus').addEventListener('click', ()=>{
   const range = engineValidVolumeRange(state.method, state.profile);
@@ -12899,9 +13032,39 @@ document.getElementById('scan-text-btn').addEventListener('click', ()=>{
   showScanResult(found);
 });
 
+/* VA-07: naam en roast zijn verplicht. De melding staat in tekst onder het veld (role=alert,
+   gekoppeld via aria-describedby), het veld krijgt aria-invalid en de focus gaat naar het
+   eerste ontbrekende veld. Leeg opslaan maakte eerder stil een 'Naamloze boon' op Medium. */
+function setBeanFieldError(field, on){
+  const err = document.getElementById(field === 'name' ? 'f-name-error' : 'f-roast-error');
+  if (err) err.hidden = !on;
+  if (field === 'name'){
+    const input = document.getElementById('f-name');
+    if (input){ if (on) input.setAttribute('aria-invalid', 'true'); else input.removeAttribute('aria-invalid'); }
+  }
+}
+function validateBeanForm(){
+  const nameEl = document.getElementById('f-name');
+  const missingName = !(nameEl && nameEl.value.trim());
+  const missingRoast = !ROAST_INFO[formRoastChip];
+  setBeanFieldError('name', missingName);
+  setBeanFieldError('roast', missingRoast);
+  if (missingName && nameEl){ nameEl.focus(); return false; }
+  if (missingRoast){
+    const first = document.querySelector('#f-roast-chips [data-froast]');
+    if (first){ first.focus(); if (typeof first.scrollIntoView === 'function') first.scrollIntoView({ block:'center' }); }
+    return false;
+  }
+  return true;
+}
+document.getElementById('f-name').addEventListener('input', (e)=>{
+  if (e.target.value.trim()) setBeanFieldError('name', false);
+});
+
 document.getElementById('bean-form').addEventListener('submit', (e)=>{
   e.preventDefault();
-  const name = document.getElementById('f-name').value.trim() || 'Naamloze boon';
+  if (!validateBeanForm()) return;
+  const name = document.getElementById('f-name').value.trim();
   const roaster = ((document.getElementById('f-roaster') || {}).value || '').trim() || null;
   const country = resolveSelectOrOther('f-country','f-country-other');
   const region = document.getElementById('f-region').value.trim();
@@ -13116,6 +13279,12 @@ function startBrew(){
 /* Fase 1 (Brew Intelligence v2): het brouwsel bestaat vanaf de start van de klok als v6-record,
    meteen bewaard. De bijwerkingen (bean.lastBrew, voorraadverbruik) gebeuren pas bij
    COMPLETED — zie applyCompletionSideEffects(). Een afgebroken brouwsel verbruikt dus niets. */
+/* VA-05: "Giet tot 240 g" mag afbreken tussen woorden, nooit tussen getal en eenheid. De tekst
+   (textContent) blijft gelijk; alleen "240 g" komt in een niet-afbrekend stuk. */
+function keepUnitsTogether(text){
+  const safe = String(text).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
+  return safe.replace(/([+~]?\d+(?:[.,:]\d+)?) (g|ml|s|°C)(?![\p{L}\d])/gu, '<span class="nobr">$1 $2</span>');
+}
 function startBrewClock(){
   if (!timer.armed || !state.recipe) return;
   timer.armed = false;
@@ -13123,6 +13292,11 @@ function startBrewClock(){
   const rec = beginBrewRecord();
   timer.recordId = rec.id;
   startTimerLoop();
+  // VA-19: de klaar-kaart (met deze knop) verdwijnt; terug naar boven zodat de klok en de
+  // eerste instructie in beeld staan, en de focus naar de pauzeknop in plaats van nergens.
+  window.scrollTo({ top:0, behavior:'auto' });
+  const pause = document.getElementById('pause-btn');
+  if (pause){ try { pause.focus({ preventScroll:true }); } catch(e){ /* oudere browsers */ } }
 }
 // R-15: de klaar-check op de timer, uit het recept zoals het op het receptscherm stond.
 function brewReadyItems(rec, method){
@@ -13504,8 +13678,8 @@ function updateDial(){
         : 'Tik Bed droog zodra er geen water meer op het bed staat';
     }
     actionEl.dataset.kind = kind;
-    actionMain.textContent = main;
-    actionSub.textContent = sub;
+    actionMain.innerHTML = keepUnitsTogether(main);
+    actionSub.innerHTML = keepUnitsTogether(sub);
   }
 
   const bedDryBtn = document.getElementById('bed-dry-btn');
@@ -13688,6 +13862,53 @@ if (testSoundBtn) testSoundBtn.addEventListener('click', ()=>{
   }
 });
 
+/* VA-09: één focusbeheer voor alle dialogen (.modal-overlay). Openen onthoudt wie de focus had
+   en zet de focus in de dialoog; Tab blijft binnen de dialoog; Escape doet hetzelfde als de
+   annuleer- of sluitknop; sluiten zet de focus terug op de opener (als die nog zichtbaar is). */
+const openDialogs = [];
+function dialogFocusables(overlay){
+  return [...overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter(el => !el.disabled && el.getClientRects().length > 0);
+}
+function openDialog(overlay, opts){
+  if (!overlay) return;
+  const o = opts || {};
+  const prev = openDialogs.findIndex(d => d.overlay === overlay);
+  if (prev >= 0) openDialogs.splice(prev, 1);
+  const opener = document.activeElement && document.activeElement !== document.body ? document.activeElement : null;
+  openDialogs.push({ overlay, opener, onEscape: o.onEscape || null });
+  overlay.hidden = false;
+  const target = o.initial || dialogFocusables(overlay)[0];
+  if (target){ try { target.focus({ preventScroll:true }); } catch(e){ /* oudere browsers */ } }
+}
+function closeDialog(overlay){
+  if (!overlay) return;
+  overlay.hidden = true;
+  const i = openDialogs.findIndex(d => d.overlay === overlay);
+  if (i < 0) return;
+  const entry = openDialogs.splice(i, 1)[0];
+  const opener = entry.opener;
+  if (openDialogs.length || !opener || !opener.isConnected || !opener.getClientRects().length) return;
+  try { opener.focus({ preventScroll:true }); } catch(e){ /* oudere browsers */ }
+}
+document.addEventListener('keydown', (e)=>{
+  const top = openDialogs[openDialogs.length - 1];
+  if (!top || top.overlay.hidden) return;
+  if (e.key === 'Escape'){
+    e.preventDefault();
+    if (top.onEscape) top.onEscape(); else closeDialog(top.overlay);
+    return;
+  }
+  if (e.key !== 'Tab') return;
+  const items = dialogFocusables(top.overlay);
+  if (!items.length){ e.preventDefault(); return; }
+  const first = items[0], last = items[items.length - 1];
+  const active = document.activeElement;
+  if (!top.overlay.contains(active)){ e.preventDefault(); first.focus(); }
+  else if (e.shiftKey && active === first){ e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && active === last){ e.preventDefault(); first.focus(); }
+});
+
 /* In-thema vervanging voor window.confirm() (een kale systeemdialoog breekt de flow, juist met je
    handen vol koffie). Promise-gebaseerd (await); valt terug op window.confirm als de modal niet in
    de DOM staat. */
@@ -13701,17 +13922,17 @@ function showConfirmModal(message, opts){
     textEl.textContent = message;
     okBtn.textContent = (opts && opts.confirmLabel) || 'Ja, doorgaan';
     cancelBtn.textContent = (opts && opts.cancelLabel) || 'Nee, terug';
-    overlay.hidden = false;
     const cleanup = (result)=>{
-      overlay.hidden = true;
       okBtn.removeEventListener('click', onOk);
       cancelBtn.removeEventListener('click', onCancel);
+      closeDialog(overlay);
       resolve(result);
     };
     const onOk = ()=>cleanup(true);
     const onCancel = ()=>cleanup(false);
     okBtn.addEventListener('click', onOk);
     cancelBtn.addEventListener('click', onCancel);
+    openDialog(overlay, { initial: cancelBtn, onEscape: onCancel }); // VA-09: de veilige keuze krijgt de focus
   });
 }
 
