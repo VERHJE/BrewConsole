@@ -29,10 +29,24 @@ async function startBrewing(page){
 
 // Review R-12: bij je eerste boon vraagt de app één keer welk water je gebruikt. Bestaande tests
 // kiezen "Later" — het oude gedrag (geen water ingevuld).
+// VA-07: naam en roast zijn verplicht (geen stille "Naamloze boon" op Medium meer). Wat een test
+// niet zelf invult, vult deze helper met de oude standaard (een naam en Medium), zodat bestaande
+// tests hetzelfde blijven testen. Proces staat nu standaard op "Weet ik niet".
+async function fillRequiredBeanFields(page){
+  if (!(await page.locator('#f-name').inputValue()).trim()) await page.fill('#f-name', 'Testboon');
+  if (!(await page.locator('#f-roast-chips [data-selected="true"]').count())) await page.click('#f-roast-chips [data-froast="medium"]');
+}
 async function saveBean(page){
+  await fillRequiredBeanFields(page);
   await page.click('#save-bean-btn');
   const ask = page.locator('#water-ask');
   if (await ask.isVisible()) await page.click('#water-ask-later');
+}
+
+// VA-04: op het receptscherm staat hoogstens één melding bovenaan ("Voor deze kop"); de rest
+// staat achter "Waarom dit recept?". Deze helper klapt dat open, zodat een test elke melding ziet.
+async function openPrepNotes(page){
+  await page.evaluate(() => { const d = document.getElementById('why-recipe-details'); if (d) d.open = true; });
 }
 
 // Review R-16: wie opslaat zonder "Gezet zoals gepland?" te beantwoorden, krijgt die vraag nog
@@ -247,8 +261,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
 
     // Bean Detail: vanuit een boonkaart op het Bonen-scherm (aanname Bouwbesluiten v2).
     // Een verse app heeft geen bonen — eerst zonder foutcondities één boon aanmaken
-    // (alle velden hebben een default, f-name valt terug op "Naamloze boon") zodat dit
-    // pad écht wordt uitgeoefend i.p.v. stilzwijgend overgeslagen.
+    // (saveBean() vult de verplichte naam en roast) zodat dit pad écht wordt uitgeoefend
+    // i.p.v. stilzwijgend overgeslagen.
     await page.click('.navbar [data-nav="beans"]');
     await assertBecomesActive(page, '#screen-beans');
     await page.click('#bean-add-link');
@@ -992,6 +1006,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#advice-cta');
     await assertBecomesActive(page, '#screen-prep');
 
+    await openPrepNotes(page);
     assert.equal(await page.locator('#prep-learning-correction').isVisible(), true,
       'drie goedgekeurde schemaVersion-3-loggings (zonder beanSnapshot) horen nog steeds een leercorrectie te tonen, via de live boon-terugval');
     assert.match(await page.locator('#prep-learning-correction-text').innerText(), /fijner/, 'gemiddeld 2 klikken fijner dan het recept');
@@ -1158,7 +1173,13 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await assertBecomesActive(page, '#screen-beans');
     await page.click('#bean-add-link');
     await assertBecomesActive(page, '#screen-bean-add');
-    await saveBean(page); // standaardwaarden: roast "medium", proces "washed"
+    // VA-07: proces staat standaard op "Weet ik niet". Washed kiezen laat de automatische inschatting
+    // (zonder smaaknotities) naar Hoffmann springen; het profiel daarna terug op Gebalanceerd, zoals
+    // de boon in deze test altijd was.
+    await page.click('[data-fprocess="washed"]');
+    await page.evaluate(() => { document.getElementById('f-profile-chips').closest('details').open = true; });
+    await page.click('[data-fprofile="klassiek"]');
+    await saveBean(page); // roast "medium" via saveBean(), proces "washed", profiel Gebalanceerd
     await assertBecomesActive(page, '#screen-beans');
 
     async function goToPrepForTheBean(){
@@ -1210,6 +1231,9 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     // niets tonen, zie learningCorrectionText()), maar dan met het "onvoldoende"-bericht,
     // niet met een (nog niet bestaande) betrouwbare correctie.
     await goToPrepForTheBean();
+    // VA-04: een statusmelding zonder actie staat nooit bovenaan, wel achter "Waarom dit recept?".
+    assert.equal(await page.locator('#prep-notes-primary #prep-learning-correction').count(), 0, 'VA-04: "nog geen leercorrectie" komt niet bovenaan');
+    await openPrepNotes(page);
     assert.ok(await page.locator('#prep-learning-correction').isVisible(), 'Bij n=2 hoort het blok zelf al zichtbaar te zijn, met een eerlijke "nog niet genoeg"-melding');
     const textAtN2 = (await page.locator('#prep-learning-correction-text').textContent()).trim();
     assert.match(textAtN2, /nog geen leercorrectie/i);
@@ -1229,6 +1253,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
 
     // Na het derde goedgekeurde brouwsel (n=3): de correctie moet nu verschijnen.
     await goToPrepForTheBean();
+    await openPrepNotes(page);
     assert.ok(await page.locator('#prep-learning-correction').isVisible(), 'Bij n=3 hoort de leercorrectie zichtbaar te zijn');
     const text = (await page.locator('#prep-learning-correction-text').textContent()).trim();
     assert.match(text, /n=3/);
@@ -1315,8 +1340,9 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.fill('#f-scan-text', 'Huisblend nummer 3');
     await page.click('#scan-text-btn');
     const text = await page.locator('#scan-result').innerText();
-    assert.match(text, /Branding\s+niet herkend — staat nu op Medium \(standaard\)/i);
-    assert.match(text, /Proces\s+niet herkend — staat nu op Washed \(standaard\)/i);
+    // VA-07: geen voorgekozen roast meer (die moet je zelf kiezen); proces staat op "Weet ik niet".
+    assert.match(text, /Branding\s+niet herkend — kies hieronder de branding/i);
+    assert.match(text, /Proces\s+niet herkend — staat nu op Weet ik niet \(standaard\)/i);
     assert.match(text, /Branddatum\s+niet herkend/i);
     await page.close();
   });
@@ -3710,6 +3736,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('.navbar [data-nav="beans"]');
       await page.click('#bean-add-link');
       await page.fill('#f-name', 'Waterboon');
+      await page.click('[data-froast="medium"]');
       await page.click('#save-bean-btn');
       assert.equal(await page.locator('#water-ask').isVisible(), true, 'de watervraag verschijnt');
       await page.click('[data-water-ask="dunea"]');
@@ -3721,6 +3748,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('.navbar [data-nav="beans"]');
       await page.click('#bean-add-header-btn');
       await page.fill('#f-name', 'Tweede boon');
+      await page.click('[data-froast="medium"]');
       await page.click('#save-bean-btn');
       assert.equal(await page.locator('#water-ask').isVisible(), false);
 
@@ -3786,6 +3814,178 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.equal(await page.locator('#home-backup').isVisible(), false, 'na een back-up is de herinnering weg');
       await page.click('.navbar [data-nav="settings"]');
       assert.match(await page.locator('#storage-status').innerText(), /In gebruik: \d+ kB .*Laatste back-up: vandaag\./);
+      await page.close();
+    });
+  });
+
+  // Visuele en UX-audit "Calm Precision", fase 1 (vóór release). Elke test hoort bij één bevinding
+  // (VA-nummer) en volgt het acceptatiecriterium uit de audit.
+  describe('Visuele audit fase 1', () => {
+    async function toPrep(page, taste){
+      await page.click('#home-start-brew-btn');
+      await page.click('[data-method="v60"]');
+      await page.click('[data-roast="light"]');
+      await page.click(`#profile-grid [data-taste="${taste}"]`);
+      await assertBecomesActive(page, '#screen-prep');
+    }
+    test('VA-04: de vier getallen staan boven de knoppenrij; hoogstens één melding, en die staat eronder', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.evaluate(() => applyWaterPreset('dunea')); // watertip + blinde proef bij Helder & fris
+      for (const taste of ['bright', 'balanced', 'rich']){
+        await page.click('.navbar [data-nav="home"]');
+        await toPrep(page, taste);
+        const r = await page.evaluate(() => {
+          const grid = document.getElementById('stats-grid').getBoundingClientRect();
+          const title = document.querySelector('#screen-prep h1.title').getBoundingClientRect();
+          const cta = document.querySelector('#screen-prep .prep-cta-row').getBoundingClientRect();
+          const between = [...document.querySelectorAll('#screen-prep .prep-main > *')]
+            .filter(el => el.id !== 'prep-bean-line' && el.getBoundingClientRect().height > 0)
+            .filter(el => el.getBoundingClientRect().top >= title.bottom - 1 && el.getBoundingClientRect().bottom <= grid.top + 1);
+          return { gridBottom: grid.bottom, ctaTop: cta.top, between: between.length, primary: document.querySelectorAll('#prep-notes-primary > *').length };
+        });
+        assert.ok(r.gridBottom <= r.ctaTop, `${taste}: getallen (${r.gridBottom}) boven de knoppenrij (${r.ctaTop})`);
+        assert.equal(r.between, 0, `${taste}: niets tussen titel en getallen`);
+        assert.ok(r.primary <= 1, `${taste}: hoogstens één melding bovenaan`);
+        if (taste === 'bright'){
+          assert.equal(await page.locator('#prep-notes-primary #prep-water-tip').count(), 1, 'de watertip gaat vóór de uitnodiging voor de blinde proef');
+          assert.equal(await page.locator('#ab-trial').isVisible(), false, 'de blinde proef staat achter "Waarom dit recept?"');
+          assert.match(await page.locator('#why-recipe-count').innerText(), /\+\d+ melding/);
+          await page.click('#why-recipe-details summary');
+          assert.equal(await page.locator('#ab-trial').isVisible(), true);
+        }
+      }
+      await page.close();
+    });
+
+    test('VA-05: aanrechtmodus op een liggende tablet: instructie op één regel, eenheid nooit los, Stop rechtsboven, één linkeras', async () => {
+      const page = await newTrackedPage({ viewport: { width: 1024, height: 768 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await toPrep(page, 'balanced');
+      await startBrewing(page);
+      await assertBecomesActive(page, '#screen-brew');
+      await page.clock.fastForward(5000);
+      const r = await page.evaluate(() => {
+        const main = document.getElementById('brew-action-main');
+        const textLeft = (el) => { const rg = document.createRange(); rg.selectNodeContents(el); return rg.getBoundingClientRect().left; };
+        const stop = document.getElementById('stop-btn').getBoundingClientRect();
+        const dial = document.getElementById('dial-wrap').getBoundingClientRect();
+        return {
+          text: main.textContent, html: main.innerHTML,
+          lines: Math.round(main.getBoundingClientRect().height / parseFloat(getComputedStyle(main).lineHeight)),
+          mainLeft: textLeft(main), badgeLeft: document.getElementById('brew-pour-badge').getBoundingClientRect().left,
+          stopRightGap: innerWidth - stop.right, stopAboveDial: stop.bottom <= dial.top, stopRightOfDial: stop.left >= dial.right
+        };
+      });
+      assert.match(r.text, /^Giet tot \d+ g$/, 'de tekst zelf is ongewijzigd');
+      assert.match(r.html, /<span class="nobr">\d+ g<\/span>/, 'getal en eenheid staan in één niet-afbrekend stuk');
+      assert.equal(r.lines, 1, 'op één regel');
+      assert.ok(Math.abs(r.mainLeft - r.badgeLeft) <= 2, `instructie (${r.mainLeft}) en badge (${r.badgeLeft}) op één linkeras`);
+      assert.ok(r.stopRightGap <= 24, `Stop tegen de rechterrand (${r.stopRightGap}px)`);
+      assert.ok(r.stopAboveDial && r.stopRightOfDial, 'Stop rechtsboven, niet boven de wijzerplaat');
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      await page.close();
+    });
+
+    test('VA-07: naam en roast verplicht, met melding, focus en zonder stille standaard; proces staat op "Weet ik niet"', async () => {
+      const page = await newTrackedPage();
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.click('.navbar [data-nav="beans"]');
+      await page.click('#bean-add-link');
+      assert.equal(await page.locator('#f-roast-chips [data-selected="true"]').count(), 0, 'geen roast voorgekozen');
+      assert.equal((await page.locator('#f-process-chips [data-selected="true"]').innerText()).trim(), 'Weet ik niet');
+      await page.click('#save-bean-btn');
+      assert.equal(await page.evaluate(() => beanLibrary.length), 0, 'niets opgeslagen');
+      assert.equal(await page.locator('#f-name-error').isVisible(), true);
+      assert.equal(await page.locator('#f-roast-error').isVisible(), true);
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'f-name', 'focus naar het eerste ontbrekende veld');
+      assert.equal(await page.locator('#f-name').getAttribute('aria-invalid'), 'true');
+      assert.equal(await page.locator('#f-name').getAttribute('aria-describedby'), 'f-name-error');
+      await page.fill('#f-name', 'Verplichte boon');
+      assert.equal(await page.locator('#f-name-error').isVisible(), false, 'melding weg zodra je typt');
+      await page.click('#save-bean-btn');
+      assert.equal(await page.evaluate(() => beanLibrary.length), 0);
+      assert.ok(await page.evaluate(() => document.activeElement.hasAttribute('data-froast')), 'focus naar de roastkeuze');
+      await page.click('[data-froast="light"]');
+      assert.equal(await page.locator('#f-roast-error').isVisible(), false);
+      await saveBean(page);
+      assert.deepEqual(await page.evaluate(() => beanLibrary.map(b => [b.name, b.roastLevel, b.process])), [['Verplichte boon', 'light', 'overig']]);
+      await page.close();
+    });
+
+    test('VA-09: dialoog — focus op de veilige keuze, Tab blijft binnen, Escape annuleert, focus terug naar Stop', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await toPrep(page, 'balanced');
+      await startBrewing(page);
+      await page.clock.fastForward(20000);
+      await page.focus('#stop-btn');
+      await page.keyboard.press('Enter');
+      assert.equal(await page.locator('#confirm-modal').isVisible(), true);
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'confirm-modal-cancel');
+      for (let i = 0; i < 3; i++){
+        await page.keyboard.press('Tab');
+        assert.ok(await page.evaluate(() => document.getElementById('confirm-modal').contains(document.activeElement)), 'Tab blijft in de dialoog');
+      }
+      await page.keyboard.press('Shift+Tab');
+      assert.ok(await page.evaluate(() => document.getElementById('confirm-modal').contains(document.activeElement)), 'Shift+Tab ook');
+      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#confirm-modal').isVisible(), false);
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'stop-btn', 'focus terug naar de opener');
+      assert.equal(await page.evaluate(() => isActiveBrewBrewing()), true, 'Escape = niet stoppen');
+      await page.close();
+    });
+
+    test('VA-19: na "Start de klok" staat de klok in beeld en heeft de pauzeknop de focus', async () => {
+      const page = await newTrackedPage({ viewport: { width: 375, height: 667 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await toPrep(page, 'balanced');
+      await page.click('#start-btn');
+      await assertBecomesActive(page, '#screen-brew');
+      await page.locator('#brew-ready-start').scrollIntoViewIfNeeded();
+      assert.ok(await page.evaluate(() => scrollY > 0), 'de startknop staat onder de vouw');
+      await page.click('#brew-ready-start');
+      assert.equal(await page.evaluate(() => scrollY), 0);
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'pause-btn');
+      assert.ok(await page.evaluate(() => document.getElementById('dial-wrap').getBoundingClientRect().top >= 0), 'de klok staat in beeld');
+      await page.close();
+    });
+
+    test('VA-18: de actieve stap in het volledige schema is zichtbaar gemarkeerd', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await toPrep(page, 'balanced');
+      await startBrewing(page);
+      await page.clock.fastForward(50000);
+      const rows = await page.evaluate(() => [...document.querySelectorAll('#brew-steps .brew-step')].map(e => ({ active: e.hasAttribute('data-active'), border: getComputedStyle(e).borderTopColor, opacity: getComputedStyle(e).opacity })));
+      const active = rows.find(r => r.active);
+      const idle = rows.find(r => !r.active && r.opacity === '1');
+      assert.ok(active && idle, 'een actieve en een nog komende stap');
+      assert.notEqual(active.border, idle.border, 'de actieve stap heeft een eigen rand');
+      assert.ok(rows.some(r => r.opacity !== '1'), 'een afgeronde stap is gedimd');
+      await page.close();
+    });
+
+    test('VA-10: één woordenlijst — de smaak heet overal hetzelfde, oude profielnamen nergens', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.click('#home-start-brew-btn');
+      await page.click('[data-method="v60"]');
+      await page.click('[data-roast="light"]');
+      await page.click('#profile-grid [data-profile="fresh_clean"]');
+      await assertBecomesActive(page, '#screen-prep');
+      assert.match(await page.locator('#summary-tag').innerText(), /HOFFMANN|Hoffmann/);
+      await startBrewing(page);
+      await page.clock.fastForward(FAST_FORWARD);
+      await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
+      await page.click('#brewlog-open-btn');
+      await assertBecomesActive(page, '#screen-brewlog');
+      assert.match(await page.locator('#brewlog-context').innerText(), /· Hoffmann$/);
+      const FORBIDDEN = /Fresh & Clean|Heel fruitig|Fruitig & Clean|Klassiek|fresh_clean|heel_fruitig/;
+      for (const dest of ['home', 'beans', 'method', 'brewlog-history']){
+        await page.click(`.navbar [data-nav="${dest}"]`);
+        assert.doesNotMatch(await page.locator('.screen.active').innerText(), FORBIDDEN, dest);
+      }
       await page.close();
     });
   });
