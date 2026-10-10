@@ -73,6 +73,18 @@ describe('R-04/R-09: "Wat miste je?"', () => {
     const r = reco(Object.assign({}, okCup, { missed: 'fruit' }), 'bright');
     assert.ok(r.notes.includes('water_unknown_fruit'));
   });
+  test('meer fruit bij een oudere zak → de stap, met een eerlijke versheidstip', () => {
+    for (const freshnessKey of ['old', 'very_old']){
+      const r = reco(Object.assign({}, okCup, { missed: 'fruit' }), 'bright', { alkalinityCaCO3: 40, freshnessKey });
+      assert.deepEqual(pick(r), ['ADJUST', 'dose', -0.5, 'goal_fruit']);
+      assert.ok(r.notes.includes('old_fruit'));
+      assert.ok(api.recommendationTexts(r, null, {}).notes.some(n => /meer dan 3 weken geleden gebrand/.test(n)));
+    }
+    const fresh = reco(Object.assign({}, okCup, { missed: 'fruit' }), 'bright', { alkalinityCaCO3: 40, freshnessKey: 'optimal' });
+    assert.ok(!fresh.notes.includes('old_fruit'));
+    const body = reco(Object.assign({}, okCup, { missed: 'body' }), 'bright', { alkalinityCaCO3: 40, freshnessKey: 'old' });
+    assert.ok(!body.notes.includes('old_fruit'));
+  });
   test('meer body → halve stap sterker; meer zoetheid → 1 klik fijner; minder bitter → 1 klik grover', () => {
     assert.deepEqual(pick(reco(Object.assign({}, okCup, { missed: 'body' }), 'bright')), ['ADJUST', 'dose', 0.5, 'goal_body']);
     assert.deepEqual(pick(reco(Object.assign({}, okCup, { missed: 'sweet' }), 'bright')), ['ADJUST', 'grind', -1, 'goal_sweet']);

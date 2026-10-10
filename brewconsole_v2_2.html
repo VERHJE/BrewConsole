@@ -253,7 +253,8 @@
   .bean-picker-new-row{display:flex; gap:8px;}
   .bean-picker-new-row .form-input{flex:1; min-width:0;}
   .bean-picker-new-row .modal-btn{flex:0 0 auto; padding:0 14px;}
-  .prep-bean-link{margin-left:8px; min-height:44px; padding:0 4px;}
+  /* Inline in de boonregel (niet de volle breedte van .link-secondary): het receptscherm blijft kort. */
+  .prep-bean-line .prep-bean-link{display:inline-flex; align-items:center; width:auto; vertical-align:middle; margin:0 0 0 4px; min-height:44px; padding:0 4px;}
 
   /* NIEUW (Visual Design 2.0, §19 Subtle texture): microscopische monochrome grain,
      ~1-2% opacity, op geselecteerde grote donkere oppervlakken — CSS-only (geen
@@ -9752,6 +9753,8 @@ function recommendNext(input){
       return out({ type: 'CHECK', reasonKey: 'water_fruit', confidence: null, alkalinityCaCO3: ctx.alkalinityCaCO3 });
     }
     if (step.reasonKey === 'goal_fruit' && typeof ctx.alkalinityCaCO3 !== 'number') notes.push('water_unknown_fruit');
+    // Review red team: "meer fruit" kan ook de versheid zijn. Geen receptfix voor een oudere zak, dus alleen eerlijk zeggen.
+    if (step.reasonKey === 'goal_fruit' && (ctx.freshnessKey === 'old' || ctx.freshnessKey === 'very_old')) notes.push('old_fruit');
     if (lastApplied && lastApplied.lever === step.lever && Math.sign(lastApplied.delta) === -Math.sign(step.delta)){
       return out({ type: 'REPEAT', reasonKey: 'hysteresis', confidence: 'possible' });
     }
@@ -9908,7 +9911,8 @@ function recommendationTexts(reco, diag, extra){
   const notes = (r.notes || []).map(k => ({
     actuals_unconfirmed: 'Dosis en maling waren niet bevestigd — dit advies gaat uit van het plan.',
     uneven_tip: 'Je proefde ook droog/wrang: giet rustig en houd het bed vlak, dat kan ongelijkmatige extractie zijn.',
-    water_unknown_fruit: 'Tip: je water heeft veel invloed op fruit en helderheid. Vul je water in bij Instellingen.'
+    water_unknown_fruit: 'Tip: je water heeft veel invloed op fruit en helderheid. Vul je water in bij Instellingen.',
+    old_fruit: 'Je bonen zijn meer dan 3 weken geleden gebrand: frisse fruitnoten nemen dan af. Deze stap helpt, maar verwacht minder fruit dan bij een verse zak.'
   })[k]).filter(Boolean);
   return { title, body, expect, confidence: r.confidence ? CONFIDENCE_LABELS[r.confidence] : null, notes };
 }
