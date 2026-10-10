@@ -193,3 +193,9 @@ Uit het verbeterplan van de review; geen receptgetal en geen adviesregel verande
 **Correctie die hierbij hoort (R-12):** de adviesmotor keek naar de alkaliniteit van je kraanwater zonder de verdunning. Wie 1:1 mengde, kreeg dus bij een vlakke kop toch "Check eerst je water". Het advies gebruikt nu het water dat je echt gebruikte (`effectiveAlkalinityCaCO3()`, uit de watersnapshot van de kop). De regel zelf en de grens (70) zijn ongewijzigd.
 
 **Gevolg om te weten (R-13):** wie Helder & fris kiest, krijgt op de V60 het Kasuya-schema met de grotere eerste giet en begint op 350 ml (de standaard van dat profiel); de blinde proef staat dan op het receptscherm, waardoor dat scherm langer is dan bij Gebalanceerd. Een boon met een eerdere combinatie (bijv. Klassiek + doel Helder & fris) houdt die bij "Zet opnieuw".
+
+# Expertreview oktober 2026 — Sprint D (data en code)
+
+| # | Besluit | Gebouwd |
+| --- | --- | --- |
+| **R-20** | Alles staat alleen in de browseropslag van één toestel. (1) Na je eerste gelogde kop vraagt de app de browser om blijvende opslag (`navigator.storage.persist()`; niet eerder, want Firefox vraagt daarvoor toestemming). (2) Op Home een rustige herinnering als je laatste back-up 30+ dagen oud is (of er nooit een was en je eerste gegevens 30+ dagen oud zijn), pas vanaf 3 gelogde koppen; "Later" houdt het een week stil; "Back-up maken" exporteert meteen. (3) Instellingen → Data toont of de opslag blijvend is, hoeveel er in gebruik is (van de ±5 MB die een browser meestal toestaat, met "bijna vol" vanaf 80%) en wanneer je laatste back-up was. | `backupReminderDue()` (puur, getest), `renderHomeBackupReminder()`, `requestPersistentStorage()`, `storageStatusText()`, `markBackupDone()` (`brewconsole_last_backup_at`). Geen gegevens verlaten het toestel. |

@@ -2149,6 +2149,7 @@
       <!-- Sprint 2 (UX-review F3): "Je volgende kop" — het klaargezette advies (of anders je
            laatste boon) als hoofdonderwerp, met één startknop. Zie renderNextCupCard(). -->
       <div class="next-cup" id="home-next-cup" hidden></div>
+      <div class="next-cup next-cup--compact home-backup" id="home-backup" hidden></div>
       <div class="photo-slot photo-slot--hero" id="home-hero" data-has-photo="true" aria-hidden="true">
         <img class="photo-slot-img" src="photos/home-hero.webp" alt="" loading="lazy">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 8h13v5a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6V8Z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/></svg>
@@ -3163,6 +3164,7 @@
           <input type="file" id="backup-import-file" accept="application/json" hidden>
         </div>
         <p class="scan-status" id="backup-status" hidden></p>
+        <p class="freshness-readout" id="storage-status" style="font-size:var(--fs-label); color:var(--text-faint); margin:8px 0 0;"></p>
         <button type="button" class="advisor-link settings-danger-btn" id="settings-reset-btn" style="margin-top:10px;">🗑️ Alles wissen en opnieuw beginnen</button>
       </div>
 
@@ -8210,6 +8212,7 @@ function renderBeanLibraryScreen(){
    ============================================================ */
 function renderHomeScreen(){
   renderHomeActiveBrewBanner(); // Fase 2
+  renderHomeBackupReminder(); // R-20
   // Audit BC-25/§4: "Welkom terug" klopt pas als er al gezet is — bij de eerste start gewoon "Welkom".
   const homeTitle = document.getElementById('home-title');
   // Sprint 1 (UX-review F3): alleen bonen invoeren is nog geen "terug" — pas na een eerste brouwsel.
@@ -8976,6 +8979,7 @@ async function exportBackup(){
       const downloads = await window.claude.use('downloads');
       if (downloads){
         await downloads.save({ filename, data: json });
+        markBackupDone();
         setBackupStatus(`Backup gedownload: ${beanLibrary.length} bonen, ${brewLog.length} loggings.`, false);
         return;
       }
@@ -8995,7 +8999,92 @@ async function exportBackup(){
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  markBackupDone();
   setBackupStatus(`Backup gedownload: ${beanLibrary.length} bonen, ${brewLog.length} loggings.`, false);
+}
+function markBackupDone(){
+  try { localStorage.setItem(BACKUP_LAST_KEY, String(Date.now())); localStorage.removeItem(BACKUP_SNOOZE_KEY); } catch(e){}
+  renderStorageStatus();
+}
+/* Review R-20: alles staat alleen in de browseropslag van dit toestel. Twee vangnetten:
+   (1) de browser vragen je opslag niet zomaar op te ruimen (navigator.storage.persist — pas na
+   je eerste gelogde kop, want Firefox vraagt dan toestemming), en (2) een rustige herinnering
+   op Home als je al 30 dagen geen back-up maakte (vanaf 3 gelogde koppen; "Later" = een week stil). */
+const BACKUP_LAST_KEY = 'brewconsole_last_backup_at';
+const BACKUP_SNOOZE_KEY = 'brewconsole_backup_snooze_until';
+const BACKUP_REMIND_DAYS = 30;
+const BACKUP_REMIND_MIN_CUPS = 3;
+const BACKUP_SNOOZE_DAYS = 7;
+const STORAGE_TYPICAL_QUOTA_BYTES = 5 * 1024 * 1024; // wat een browser meestal per site toestaat voor localStorage
+function backupReminderDue(o){
+  const a = o || {};
+  if (!(a.cupCount >= BACKUP_REMIND_MIN_CUPS)) return null;
+  if (typeof a.snoozeUntil === 'number' && a.nowMs < a.snoozeUntil) return null;
+  const since = typeof a.lastBackupAt === 'number' ? a.lastBackupAt : a.firstDataAt;
+  if (typeof since !== 'number') return null;
+  const days = Math.floor((a.nowMs - since) / 86400000);
+  return days >= BACKUP_REMIND_DAYS ? { days, never: typeof a.lastBackupAt !== 'number' } : null;
+}
+function readStoredNumber(key){
+  try { const v = Number(localStorage.getItem(key)); return Number.isFinite(v) && v > 0 ? v : null; } catch(e){ return null; }
+}
+function loggedCupCount(){ return brewStore.filter(r => r && !r.deletedAt && r.lifecycle === 'logged').length; }
+function backupReminderState(nowMs){
+  const times = brewStore.filter(r => r && !r.deletedAt).map(r => r.createdAt).concat(beanLibrary.map(b => b.addedAt)).filter(t => typeof t === 'number' && t > 0);
+  return backupReminderDue({ nowMs, lastBackupAt: readStoredNumber(BACKUP_LAST_KEY), firstDataAt: times.length ? Math.min(...times) : null,
+    cupCount: loggedCupCount(), snoozeUntil: readStoredNumber(BACKUP_SNOOZE_KEY) });
+}
+function renderHomeBackupReminder(){
+  const el = document.getElementById('home-backup');
+  if (!el) return;
+  const due = backupReminderState(Date.now());
+  if (!due){ el.hidden = true; el.innerHTML = ''; return; }
+  const n = loggedCupCount(), b = beanLibrary.length;
+  el.innerHTML = `<p class="next-cup-kicker">Back-up</p>
+    <p class="next-cup-line">${due.never
+      ? `Je ${n} koppen en ${b} ${b === 1 ? 'boon staan' : 'bonen staan'} alleen op dit toestel. Met een back-up raak je ze niet kwijt als de browser zijn opslag opruimt of je van toestel wisselt.`
+      : `Je laatste back-up is ${due.days} dagen oud. Sindsdien staan je nieuwe koppen alleen op dit toestel.`}</p>
+    <button type="button" class="start-btn next-cup-go" id="home-backup-btn">Back-up maken</button>
+    <button type="button" class="link-secondary" id="home-backup-later">Later</button>`;
+  el.hidden = false;
+}
+function handleHomeBackupClick(e){
+  if (e.target.closest('#home-backup-btn')){ exportBackup().then(renderHomeBackupReminder); return; }
+  if (e.target.closest('#home-backup-later')){
+    try { localStorage.setItem(BACKUP_SNOOZE_KEY, String(Date.now() + BACKUP_SNOOZE_DAYS * 86400000)); } catch(err){}
+    renderHomeBackupReminder();
+  }
+}
+let storagePersisted = null; // null = onbekend (geen Storage-API, of nog niet gevraagd)
+async function requestPersistentStorage(){
+  try {
+    if (!navigator.storage || typeof navigator.storage.persist !== 'function') return null;
+    storagePersisted = await navigator.storage.persisted() || await navigator.storage.persist();
+  } catch(e){ storagePersisted = null; }
+  renderStorageStatus();
+  return storagePersisted;
+}
+// Hoeveel de app in localStorage gebruikt (tekens ≈ bytes voor deze JSON), van wat een browser meestal toestaat.
+function appStorageBytes(){
+  let n = 0;
+  try { for (let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if (k && k.indexOf('brewconsole') === 0) n += k.length + (localStorage.getItem(k) || '').length; } } catch(e){ return null; }
+  return n;
+}
+function storageStatusText(persisted, bytes, lastBackupAt, nowMs){
+  const parts = [];
+  if (persisted === true) parts.push('Opslag: blijvend — de browser ruimt je gegevens niet zomaar op.');
+  else if (persisted === false) parts.push('Opslag: de browser mag je gegevens opruimen als het toestel ruimte nodig heeft. Een back-up is je vangnet.');
+  if (typeof bytes === 'number'){
+    const pct = Math.round(bytes / STORAGE_TYPICAL_QUOTA_BYTES * 100);
+    parts.push(`In gebruik: ${bytes < 1024 * 1024 ? Math.max(1, Math.round(bytes / 1024)) + ' kB' : fmt(bytes / 1024 / 1024, 1) + ' MB'} (±${pct}% van de ±5 MB die een browser meestal toestaat)${pct >= 80 ? ' — bijna vol: maak een back-up.' : '.'}`);
+  }
+  parts.push(typeof lastBackupAt === 'number' ? `Laatste back-up: ${Math.floor((nowMs - lastBackupAt) / 86400000) === 0 ? 'vandaag' : Math.floor((nowMs - lastBackupAt) / 86400000) + ' dagen geleden'}.` : 'Nog geen back-up gemaakt.');
+  return parts.join(' ');
+}
+function renderStorageStatus(){
+  const el = document.getElementById('storage-status');
+  if (!el) return;
+  el.textContent = storageStatusText(storagePersisted, appStorageBytes(), readStoredNumber(BACKUP_LAST_KEY), Date.now());
 }
 function setBackupStatus(text, isError){
   const el = document.getElementById('backup-status');
@@ -10789,6 +10878,7 @@ function saveBrewLogEntry(){
   upsertBrewRecord(next);
   persistBrewStore();
   rebuildBrewLogView();
+  if (storagePersisted !== true) requestPersistentStorage(); // R-20: na een gelogde kop is er iets te bewaren
   const savedMsg = document.getElementById('brewlog-saved-msg');
   if (savedMsg) savedMsg.hidden = false;
   const saved = getBrewRecord(next.id);
@@ -15077,6 +15167,9 @@ if (beanSortSelectEl) beanSortSelectEl.addEventListener('change', (e)=>{
 initInstallHint();
 registerOfflineServiceWorker();
 initCounterMode(); // idee 20
+document.getElementById('home-backup').addEventListener('click', handleHomeBackupClick); // R-20
+if (loggedCupCount() > 0) requestPersistentStorage(); // R-20: pas na je eerste gelogde kop
+renderHomeBackupReminder();
 
 // NIEUW (vervolgplan v2.3, Fase 3 — Navigatieshell): koppelt de vijf tabbalk-/zijbalk-
 // knoppen aan hun bestemming. Elke bestemming rendert zichzelf vers bij binnenkomst
@@ -15088,7 +15181,7 @@ document.querySelectorAll('.navbar [data-nav]').forEach(btn=>{
     if (dest === 'home'){ renderHomeScreen(); showScreen('home'); }
     else if (dest === 'beans'){ renderBeanLibraryScreen(); showScreen('beans', { tabRoot:true }); }
     else if (dest === 'method'){ if (isActiveBrewBrewing() && openActiveBrew()) return; setActiveBean(null); renderMethodGrid(); renderNextCupCard('method-next-cup'); showScreen('method'); } // BC-01: verse start; Fase 2: lopend brouwsel gaat voor; Sprint 2: je volgende kop bovenaan
-    else if (dest === 'settings'){ showScreen('settings'); }
+    else if (dest === 'settings'){ renderStorageStatus(); showScreen('settings'); }
     else if (dest === 'brewlog-history'){ renderBrewLogHistory(undefined, { tabRoot:true }); }
   });
 });

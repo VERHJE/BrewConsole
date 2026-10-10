@@ -3756,6 +3756,40 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     });
   });
 
+  describe('Review Sprint D', () => {
+    test('R-20: na 30 dagen zonder back-up een herinnering op Home; "Later" = een week stil; Instellingen toont de opslag', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.addInitScript(() => {
+        if (sessionStorage.getItem('bk')) return;
+        sessionStorage.setItem('bk', '1');
+        const at = Date.now() - 40 * 86400000;
+        const rec = (id) => ({ id, schemaVersion: 6, createdAt: at, updatedAt: at, lifecycle: 'logged', beanId: 'bk1', beanSnapshot: null, equipment: {}, waterSnapshot: null, goal: null,
+          plan: { methodId: 'v60', profileId: 'klassiek', roastId: 'light', waterMl: 300, doseG: 17.3, ratioText: '1:17', tempC: 95, grindStartingPoint: 15, grindTarget: 15, strengthStep: 0, bypass: null, steps: [], expectedTotalSec: 210, inputs: null, appliedAdjust: null },
+          actual: { doseG: 17.3, doseSource: 'P', grindClick: 15, grindSource: 'P', confirmed: true, events: [], bedDrySec: 210, completedAt: at },
+          derived: {}, tasting: { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: 4, complete: true, approved: true }, diagnosis: null,
+          recommendation: { type: 'KEEP' }, flags: {}, favorite: false, sideEffectsAppliedAt: at, deletedAt: null });
+        localStorage.setItem('brewconsole_beans', JSON.stringify([{ id: 'bk1', name: 'Back-upboon', roastLevel: 'light', profileKey: 'klassiek', process: 'washed', flavorNotes: [], addedAt: at, doseUsedG: 0 }]));
+        localStorage.setItem('brewconsole_brews', JSON.stringify([rec('k1'), rec('k2'), rec('k3')]));
+      });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      assert.equal(await page.locator('#home-backup').isVisible(), true);
+      assert.match(await page.locator('#home-backup').innerText(), /Je 3 koppen en 1 boon staan alleen op dit toestel/);
+      await page.click('#home-backup-later');
+      assert.equal(await page.locator('#home-backup').isVisible(), false);
+      assert.ok(await page.evaluate(() => Number(localStorage.getItem('brewconsole_backup_snooze_until')) > Date.now() + 6 * 86400000));
+
+      await page.evaluate(() => localStorage.removeItem('brewconsole_backup_snooze_until'));
+      await page.reload({ waitUntil: 'load' });
+      const download = page.waitForEvent('download');
+      await page.click('#home-backup-btn');
+      await download;
+      assert.equal(await page.locator('#home-backup').isVisible(), false, 'na een back-up is de herinnering weg');
+      await page.click('.navbar [data-nav="settings"]');
+      assert.match(await page.locator('#storage-status').innerText(), /In gebruik: \d+ kB .*Laatste back-up: vandaag\./);
+      await page.close();
+    });
+  });
+
   test('Geen console- of pageerrors opgetreden tijdens de hele kernflow', () => {
     assert.deepEqual(consoleErrors, [], 'Onverwachte console.error()-aanroepen tijdens de kernflow');
     assert.deepEqual(pageErrors, [], 'Onverwachte onafgevangen JS-fouten tijdens de kernflow');

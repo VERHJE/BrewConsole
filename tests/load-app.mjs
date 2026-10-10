@@ -119,7 +119,7 @@ export function loadApp(){
       createBrewRecord, applyBrewEvent, migrateLegacyLogEntry, brewRecordToLogView, isBrewInLogView,
       purgeDeletedBrews, staleBrewingOutcome,
       elapsedFromEvents, brewPhaseAt, endBrewDecision, completeWithBedDry, recipeInputsFromRecord, recomputeRecipeForRecord,
-      POUR_RATE_GPS, pourSecFor, pourTimeLabel, WATER_COMPANY_PRESETS, effectiveAlkalinityCaCO3, waterTipFor, TASTE_CHOICES, STYLE_CHOICES, goalForProfile, styleChoicesFor, tasteDetail, recipeFingerprint,
+      POUR_RATE_GPS, pourSecFor, pourTimeLabel, backupReminderDue, storageStatusText, BACKUP_REMIND_DAYS, WATER_COMPANY_PRESETS, effectiveAlkalinityCaCO3, waterTipFor, TASTE_CHOICES, STYLE_CHOICES, goalForProfile, styleChoicesFor, tasteDetail, recipeFingerprint,
       TASTING_STRENGTH, TASTING_ACIDITY, TASTING_FINISH, BREW_GOALS, LATE_TASTING_MIN,
       toggleFinish, tastingGate, buildTasting, applyActuals, findPreviousComparableBrew,
       DIAGNOSIS_RULESET_VERSION, KH_HIGH_CACO3, diagnoseTasting, leverFromMatrix, adjustFeasibility, landStrength,
