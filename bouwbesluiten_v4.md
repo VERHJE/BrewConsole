@@ -271,3 +271,48 @@ Uit dezelfde roadmap, fase 2: VA-11 t/m VA-17, VA-20, VA-21, VA-26, VA-29, VA-30
 ## Testresultaten
 
 918 tests groen (`npm run qa`), waarvan 22 nieuw: 8 in `tests/design-system.test.mjs` (de lint voor VA-20 en VA-21: geen losse kleur buiten de themablokken, geen statische inline stijl, één `[hidden]`-regel, geen ongedefinieerde custom property, hoeken via tokens, één `body::before`, elke gevulde knop `.btn-primary`, knoppen in de sansletter) en 14 browsertests in `tests/kernflow.smoke.test.mjs` ("Visuele audit fase 2": K1/VA-15 op twee formaten, VA-16, 17, 14, 13, 12, 11, 26 met toetsenbord, 29/30 op de iPhone SE, 34 met een bijna-gelijke boon, 32, 33, 20, en de rode rand om de dosis). Aangepaste bestaande tests: een helper `navTo()` tikt de tabbalk als die zichtbaar is (tijdens een taak is hij weg); een helper `expandLogEntries()` klapt de logregels open voordat een test de inhoud leest; de timertests verwachten de nieuwe wachtregel, "Start de klok" na ↻ en de schakelaar (`aria-checked`); de thematest gaat via Instellingen; verwijderen van een boon gaat via het boondetail; boondetail → recept is direct; de VA-19-test van fase 1 meet liggend (844 × 390), omdat de klaarstand op de iPhone SE nu niet meer scrolt; en de teksttests volgen de nieuwe woorden ("gemalen op klik", "volgens schema", "gelogde koppen", "maalcorrectie").
+
+# Visuele en UX-audit "Calm Precision" — fase 3 (afwerking)
+
+Uit dezelfde roadmap, fase 3: VA-22 t/m VA-25, VA-27, VA-28, VA-31 en VA-35 t/m VA-47. Geen receptgetal, geen adviesregel en niets in de engine-bundel veranderd (byte-gelijk aan fase 2). Keuzes van Jelle na een vergelijking van schermopnamen: getallen in de **tekstletter** (VA-43), **kleurstalen** voor bonen én roastkaarten (VA-47/28/40), en op het smaakscherm **alleen koper** (VA-23).
+
+| # | Besluit | Gebouwd |
+| --- | --- | --- |
+| **VA-22** | Eén iconenset. Geen emoji of losse tekens meer in knoppen en labels (☕ 🔍 📷 🧪 🔔 🗑️ ⬇️ ⬆️ 🌸 ⚠ ✎ ↻ weg; het hartje en de camera zijn lijniconen). Alle lijniconen tekenen met 1,7 px, ook als ze groter of kleiner getoond worden (`vector-effect: non-scaling-stroke`); er waren vijf lijndiktes. `★ Beste kop` en `✓` blijven: dat zijn tekstletters in inhoud. | `HEART_ICON`, `HEART_ICON_FILLED`, `CHECK_ICON`, `.icon`. |
+| **VA-23** | Smaakscherm: geen eigen kleur per smaak of stijl meer; iconen neutraal, koper alleen voor de gekozen regel (ook het bolletje op het receptscherm). De intro is één zin; wat je keuze wel en niet verandert staat achter "Wat verandert je keuze?" (de tekst zelf is gelijk gebleven, de test op eerlijke UI-teksten blijft gelden). | `.profile-icon`, `.more-info`. |
+| **VA-24** | Boonformulier: labels van 14 px, uitleg als hulptekst onder het veld, "optioneel" klein en in de gewone letter, een kortere en gedempte scan-disclaimer. Smaaknotities: een zoekveld en twaalf suggesties (eerst je gekozen notities, dan wat je het vaakst koos, aangevuld met veelvoorkomende notities). Het volledige SCA-wiel (139 notities, met het smaakdiagram) staat achter een knop; een keuze daar en in de suggesties is dezelfde. Enter in het zoekveld verstuurt het formulier niet. | `flavorQuickTags()`, `renderFlavorQuick()`, `toggleFlavorTag()`, `setFlavorWheelOpen()`. |
+| **VA-25** | Water in Instellingen: velden en uitkomsten zichtbaar, de uitleg achter "Hoe vind ik dit?", de keuzelijst voor verdunning over de volle breedte (niet meer afgekapt). De regel "pH: niet in te vullen" toonde iets wat niet kan; die zin staat nu in de uitleg. De herkomstregel is korter. | `#water-howto`. |
+| **VA-27** | (Al in fase 2: koperen schuif en de tekst "Past bij dit recept".) Nu ook overal: selectievakjes, keuzerondjes en schuiven in koper. | `accent-color`. |
+| **VA-28** | Boondetail: een kleine kop (kleurstaal, naam, herkomst, hartje) en direct daaronder "Zet deze boon" als primaire knop, boven de vouw op 390 × 844. De gegenereerde beschrijving (die naam, herkomst en labels herhaalde) is weg; feiten zonder waarde (de "—"-rijen) worden niet getoond. "Bewerken" en "Boon verwijderen" staan onderaan. | `#bean-detail-swatch`, `.bean-detail-head`. |
+| **VA-31** | Statistieken: onder de 20 geteste stappen geen percentage ("100%" na één test las als een oordeel), wel "1 van 1" en een balk naar 20. Alleen weergave; de adviespoort zelf is gelijk. | `.gate-progress` in `renderAdviceOutcomeSection()`. |
+| **VA-35** | Desktop en iPad liggend: de zijbalk loopt over de volle hoogte; alleen de actieve bestemming is gemarkeerd ("Zet" was altijd koper en vet); knoppen en lopende tekst hoogstens 720 px breed; Home vanaf 1100 px in twee kolommen (je kop links, je bonen rechts als raster). | `.home-main`, `.home-side`. |
+| **VA-36** | iPad staand: recepttegels in één rij even hoog; op Home vanaf 700 px de bonen als raster dat de breedte vult. | `#stats-grid{align-items:stretch}`. |
+| **VA-37** | Splash: de laadbalk die animeerde terwijl er niets laadde is weg (de tagline was al Nederlands, VA-33). | — |
+| **VA-38** | De ring staat bij het openen van de timer meteen leeg (hij draaide 0,9 s terug van vol); een sprong terug (nieuw brouwsel, reset) gaat zonder overgang. De gloed ademt niet meer doorlopend, alleen drie keer tijdens de voorwaarschuwing vóór een giet. | `setDialFill()`, `.dial-wrap.pre-alert`. |
+| **VA-39** | Recept: "Kies een boon" op een eigen regel (de knop van 44 px maakte de regelafstand ongelijk); tabelkop "Erbij" in plaats van "Water erbij"; daardoor staat "Klaar — laten doorlopen" in de iPad-zijkolom op één regel. | — |
+| **VA-40** | Roastkaarten: de kleurstaal is het beeld; de keuze herken je ook zonder kleur, aan een dubbele koperen rand en een vinkje. Op de telefoon een lijst; vanaf 700 px vijf kaarten naast elkaar. | `renderRoastGrid()`. |
+| **VA-41** | Adviesblok: de titel is "Maal 1 klik fijner"; de klikken staan één keer, in de tegels Nu → Volgende. Elders (Home, logboek) houdt de titel de klikken, want daar zijn geen tegels. | `titleShort` uit `recommendationTexts()`. |
+| **VA-42** | Klaarstand en proefkaart: 14 px tussen "Proeven & loggen" en "Volledig schema"; tegellabels op één regel ("Temp." met eronder "gepland"). | — |
+| **VA-43** | Getallen buiten de timer in de tekstletter met even brede cijfers; de eenheid kleiner en gedempt (17,3 g, 300 ml, 94–96 °C). De timer en het woordmerk blijven monospace. | `.unit`. |
+| **VA-44** | Selectievakje "Ik meng mijn kraanwater": 24 px en koper. | — |
+| **VA-45** | Een lange badge breekt tussen woorden af in plaats van buiten beeld te lopen (de bypass-badge eindigde op 424 px bij een scherm van 390). | `.badge`. |
+| **VA-46** | Hover alleen met een echte muis: alle 25 hover-regels staan onder `@media (hover:hover)`, zodat op iOS na een tik geen hoverkleur blijft hangen. Een lint bewaakt dat. | — |
+| **VA-47** | Bonen zonder eigen foto krijgen een kleurstaal van hun roastgraad met hun initialen (lijst, Home, boondetail), geen stockfoto die op een foto van de zak leek; lichte stalen met donkere letters, donkere met lichte. De vijf roastfoto's (874 kB) zijn uit de repository en uit de offline-cache; `CACHE_VERSION` gaat van 2 naar 3, zodat ze ook uit de cache van bestaande gebruikers verdwijnen. Een eigen foto per boon is kans K10 (fase 4). | `roastSwatchHtml()`, `beanInitials()`; `sw.js`. |
+
+**Gemeten na de bouw** (dezelfde meetscripts als de audit, Chromium):
+
+- Contrast: 0 teksten onder 4,5 : 1 (zonder foto als achtergrond) over 54 schermopnamen, licht en donker. Tekst op de timerfoto: 208 metingen, alle boven de norm (ongewijzigd t.o.v. fase 2).
+- Tikdoelen onder 44 px op de hoofdschermen: 1, het selectievakje van 24 px dat binnen een label van 44 px staat.
+- VA-24: het boonformulier volledig uitgeklapt was 9,5 schermhoogtes op 390 × 844; nu 3,97 (norm ≤ 4). Het volledige smaakwiel komt daar bovenop als je het opent.
+- VA-28: "Zet deze boon" staat op 390 × 844 boven de vouw; geen "—"-rijen.
+- VA-35: op 1440 × 900 is geen knop breder dan 720 px (was 802 px); precies één bestemming gemarkeerd.
+- VA-38: de ring bij het openen van de timer: was een dashoffset van 10 → 565 in 0,9 s (vol naar leeg); nu vanaf het eerste beeld 565 (leeg).
+- VA-45: met bypass aan en alle blokken open geen horizontale overloop (de lange badge eindigt op 340 px bij een scherm van 390).
+- Knopteksten op 375 px: geen label breekt af of wordt afgekapt; "Niet zeker? Advies bij je boon →" is daarvoor korter geworden. "Meer over deze maalstand ↓" is een tekstlink in een smalle tegel en staat op twee regels (open punt uit fase 2).
+- De offline-cache is ±874 kB kleiner (vijf roastfoto's).
+
+**Open punten:** de controle met VoiceOver op een echte iPhone (uit fase 2), de scrim op brede schermen (uit fase 2), en de hover-staat op een echte iPhone (VA-46 [H]). Een eigen foto per boon is kans K10 (fase 4).
+
+## Testresultaten
+
+932 tests groen (`npm run qa`), waarvan 14 nieuw: 3 in `tests/design-system.test.mjs` (geen emoji in knoppen, labels of uitklapkoppen; één lijndikte voor lijniconen; elke `:hover` binnen `@media (hover:hover)`) en 11 browsertests in `tests/kernflow.smoke.test.mjs` ("Visuele audit fase 3": VA-22, 23, 24, 25, 28, 35, 36, 37/38, 39/42/43, 44/27, 45). Aangepaste bestaande tests: de fototest controleert nu de kleurstalen (lijst, Home, boondetail, roastkaarten; geen `<img>`); de servicewerkertest gebruikt cache `brew-console-v3` en een andere foto; de pH-regel staat in de uitleg (VA-25); de statistiektest verwacht "1 van 1" zonder percentage en een voortgangsbalk (VA-31); de adviestitel is "Maal 1 klik fijner" met de klikken in de tegels (VA-41); en receptgetallen staan in de tekstletter, de timer in monospace (VA-43). De lint kent `--swatch` (zet het element zelf, net als `--tag-color`) en `border-radius: inherit`.

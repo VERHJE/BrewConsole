@@ -27,14 +27,16 @@
    online toch al vers van het netwerk.
 
    CACHE_VERSION
-   Staat op 2 sinds de foto's bij installatie worden voorgeladen (PHOTOS).
+   Staat op 3 sinds de vijf roastfoto's weg zijn (VA-47): zo verdwijnt hun
+   ±0,9 MB ook uit de cache van wie de app al had. Op 2 kwamen de foto's
+   bij installatie in de cache (PHOTOS).
    Hoeft alleen omhoog als de strategie in DIT bestand verandert, of als
    je een oude cache geforceerd wilt weggooien. Voor gewone inhouds-
    wijzigingen aan index.html is ophogen niet nodig — die worden door de
    netwerk-eerst-regel hierboven al opgehaald.
    ============================================================ */
 
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3;
 const CACHE = 'brew-console-v' + CACHE_VERSION;
 
 /* De app-shell is de scope-root zelf. Bij een manifest met
@@ -47,10 +49,10 @@ const APP_SHELL = './';
    maar niets doorlaat, lang genoeg voor een normale mobiele verbinding. */
 const NET_TIMEOUT_MS = 3000;
 
-/* Alle foto's uit photos/, vooraf opgehaald bij installatie (±1,7 MB), zodat
-   de app ook offline compleet is: de brandingsfoto van een boon die je nog
-   niet had geopend zit er dan al in. Een test bewaakt dat deze lijst gelijk
-   blijft aan de map photos/. */
+/* Alle foto's uit photos/, vooraf opgehaald bij installatie (±0,9 MB), zodat
+   de app ook offline compleet is. Bonen en roastkaarten tonen sinds VA-47 een
+   kleurstaal, geen foto. Een test bewaakt dat deze lijst gelijk blijft aan de
+   map photos/. */
 const PHOTOS = [
   'photos/brew-chemex-square.webp',
   'photos/brew-chemex-tall.webp',
@@ -60,11 +62,6 @@ const PHOTOS = [
   'photos/logbook-empty.webp',
   'photos/method-chemex.webp',
   'photos/method-v60.webp',
-  'photos/roast-dark.webp',
-  'photos/roast-light.webp',
-  'photos/roast-light_medium.webp',
-  'photos/roast-medium.webp',
-  'photos/roast-medium_dark.webp',
   'photos/splash-tall.webp',
   'photos/splash-wide.webp'
 ];
