@@ -751,7 +751,7 @@ describe('Boontype-model — buckets, terugvalladder, vervuilingsregels (Impleme
     assert.ok(result);
     assert.equal(result.level, 'onvoldoende', 'met maar 2 bruikbare (niet-bypass) loggings is dat nog onder LEARNING_MIN_N');
     assert.equal(result.n, 2);
-    assert.match(api2.learningCorrectionText(result), /Concentraat\/bypass-brouwsels tellen hier nooit in mee/);
+    assert.match(api2.learningCorrectionText(result), /Koppen met bypass tellen hier nooit mee/);
   });
 
   test('Terugvalladder: te weinig in het exacte emmertje verbreedt eerst naar "verwerking laten vallen" (roast_only)', () => {
@@ -766,7 +766,7 @@ describe('Boontype-model — buckets, terugvalladder, vervuilingsregels (Impleme
     assert.equal(result.level, 'roast_only', 'exact emmertje heeft maar n=1, moet verbreden naar branddiepte-bucket zonder verwerkingseis');
     assert.equal(result.n, 3);
     assert.equal(result.processBucket, null, 'op het roast_only-niveau is er geen enkel verwerkings-emmertje meer, dus geen enkele mag als "het" emmertje worden gepresenteerd');
-    assert.match(api2.learningCorrectionText(result), /verwerking losgelaten/);
+    assert.match(api2.learningCorrectionText(result), /verwerking niet meegeteld/);
   });
 
   test('Terugvalladder: nog steeds te weinig na verwerking laten vallen verbreedt ook naar branddiepte (method_only)', () => {
@@ -780,7 +780,7 @@ describe('Boontype-model — buckets, terugvalladder, vervuilingsregels (Impleme
     assert.ok(result);
     assert.equal(result.level, 'method_only');
     assert.equal(result.n, 3);
-    assert.match(api2.learningCorrectionText(result), /breedst mogelijke niveau/);
+    assert.match(api2.learningCorrectionText(result), /alle bonen samen/);
   });
 
   test('Onder de drempel op elk niveau: eerlijk "onvoldoende" met het werkelijke n, nooit stilzwijgend niets', () => {
@@ -792,7 +792,7 @@ describe('Boontype-model — buckets, terugvalladder, vervuilingsregels (Impleme
     assert.equal(result.level, 'onvoldoende');
     assert.equal(result.n, 1);
     assert.equal(result.avgClicks, null, 'geen betrouwbaar gemiddelde tonen bij te weinig data');
-    assert.match(api2.learningCorrectionText(result), /1 goedgekeurde/);
+    assert.match(api2.learningCorrectionText(result), /1 geslaagde/); // VA-33
   });
 
   test('Echt niets beschikbaar (geen enkele match) geeft null, geen "onvoldoende" met n=0', () => {
