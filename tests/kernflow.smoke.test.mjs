@@ -4527,6 +4527,88 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     });
   });
 
+  describe('Gedraaid koper (knoppen)', () => {
+    const PHONEK = { viewport: { width: 390, height: 844 } };
+    async function toPrepK(page){
+      await page.click('#home-start-brew-btn');
+      await page.click('[data-method="v60"]');
+      await page.click('[data-roast="light"]');
+      await page.click('#profile-grid [data-taste="balanced"]');
+      await assertBecomesActive(page, '#screen-prep');
+    }
+
+    test('primaire knop is een koperen staaf met draaisporen; bij indrukken rolt de lichtband mee', async () => {
+      const page = await newTrackedPage(PHONEK);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await toPrepK(page);
+      const r = await page.evaluate(() => {
+        const b = document.getElementById('start-btn'), cs = getComputedStyle(b);
+        const probe = document.createElement('div'); probe.style.color = 'var(--primary)'; document.body.appendChild(probe);
+        const primary = getComputedStyle(probe).color; probe.remove();
+        return { img: cs.backgroundImage, bg: cs.backgroundColor, primary, shadow: cs.boxShadow, roll: cs.getPropertyValue('--roll').trim() };
+      });
+      assert.match(r.img, /repeating-linear-gradient/, 'draaisporen');
+      assert.equal((r.img.match(/linear-gradient/g) || []).length, 3, 'sporen, reflectie en cilinder');
+      assert.equal(r.bg, r.primary, 'zonder verloop blijft het --primary');
+      assert.match(r.shadow, /inset/, 'facetrand');
+      assert.equal(r.roll, '0%');
+      const box = await page.locator('#start-btn').boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      await page.waitForFunction(() => getComputedStyle(document.getElementById('start-btn')).getPropertyValue('--roll').trim() === '100%');
+      await page.mouse.up();
+      await page.close();
+    });
+
+    test('timer: pauze is een koperen draaiknop, Home en Reset brons; gepauzeerd een staaf', async () => {
+      const page = await newTrackedPage(PHONEK);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await toPrepK(page);
+      await startBrewing(page);
+      const knob = (id) => page.evaluate((id) => {
+        const el = document.getElementById(id), cs = getComputedStyle(el), be = getComputedStyle(el, '::before');
+        return { img: cs.backgroundImage, radius: cs.borderTopLeftRadius, before: be.display, beforeImg: be.backgroundImage };
+      }, id);
+      const pause = await knob('pause-btn'), home = await knob('home-btn'), reset = await knob('reset-btn');
+      assert.match(pause.img, /conic-gradient/, 'koperen ring');
+      assert.equal(pause.radius, '50%');
+      assert.notEqual(pause.before, 'none');
+      assert.match(pause.beforeImg, /repeating-radial-gradient/, 'concentrische draaisporen op het vlak');
+      assert.match(pause.beforeImg, /conic-gradient/, 'vierlobbige reflectie');
+      assert.notEqual(home.img, pause.img, 'brons is niet koper');
+      assert.equal(home.img, reset.img);
+      assert.match(await page.locator('#pause-btn svg').evaluate(el => getComputedStyle(el).filter), /drop-shadow/, 'gegraveerd icoon');
+      await page.click('#pause-btn');
+      await page.waitForSelector('#pause-btn[data-paused]');
+      const paused = await knob('pause-btn');
+      assert.equal(paused.before, 'none');
+      assert.match(paused.img, /repeating-linear-gradient/, 'Hervat is dezelfde staaf als de primaire knop');
+      await page.close();
+    });
+
+    test('secundaire knop: alleen de rand is gedraaid metaal; vlak blijft het oppervlak', async () => {
+      const page = await newTrackedPage(PHONEK);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await navTo(page, 'settings');
+      const r = await page.locator('#backup-export-btn').evaluate(el => {
+        const cs = getComputedStyle(el);
+        return { clip: cs.backgroundClip, img: cs.backgroundImage, border: cs.borderTopColor };
+      });
+      assert.equal(r.clip, 'padding-box, border-box');
+      assert.equal((r.img.match(/linear-gradient/g) || []).length, 2);
+      assert.equal(r.border, 'rgba(0, 0, 0, 0)', 'de rand is het verloop, niet een kleur');
+      await page.close();
+    });
+
+    test('met minder beweging geen overgang op de koperen knoppen', async () => {
+      const page = await newTrackedPage({ ...PHONEK, reducedMotion: 'reduce' });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await toPrepK(page);
+      assert.equal(await page.locator('#start-btn').evaluate(el => getComputedStyle(el).transitionDuration), '0s');
+      await page.close();
+    });
+  });
+
   test('Geen console- of pageerrors opgetreden tijdens de hele kernflow', () => {
     assert.deepEqual(consoleErrors, [], 'Onverwachte console.error()-aanroepen tijdens de kernflow');
     assert.deepEqual(pageErrors, [], 'Onverwachte onafgevangen JS-fouten tijdens de kernflow');

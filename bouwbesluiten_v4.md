@@ -316,3 +316,20 @@ Uit dezelfde roadmap, fase 3: VA-22 t/m VA-25, VA-27, VA-28, VA-31 en VA-35 t/m 
 ## Testresultaten
 
 932 tests groen (`npm run qa`), waarvan 14 nieuw: 3 in `tests/design-system.test.mjs` (geen emoji in knoppen, labels of uitklapkoppen; één lijndikte voor lijniconen; elke `:hover` binnen `@media (hover:hover)`) en 11 browsertests in `tests/kernflow.smoke.test.mjs` ("Visuele audit fase 3": VA-22, 23, 24, 25, 28, 35, 36, 37/38, 39/42/43, 44/27, 45). Aangepaste bestaande tests: de fototest controleert nu de kleurstalen (lijst, Home, boondetail, roastkaarten; geen `<img>`); de servicewerkertest gebruikt cache `brew-console-v3` en een andere foto; de pH-regel staat in de uitleg (VA-25); de statistiektest verwacht "1 van 1" zonder percentage en een voortgangsbalk (VA-31); de adviestitel is "Maal 1 klik fijner" met de klikken in de tegels (VA-41); en receptgetallen staan in de tekstletter, de timer in monospace (VA-43). De lint kent `--swatch` (zet het element zelf, net als `--tag-color`) en `border-radius: inherit`.
+
+# Knoppen in gedraaid koper (Knoppenlab, sterkte "subtiel")
+
+De knoppen waren plat en één kleur. Uit het Knoppenlab (drie richtingen, daarna drie sterktes van gedraaid koper) is gekozen voor **gedraaid koper, subtiel**: het materiaal van een koperen waterkoker of draaiknop, met draaisporen en een zachte glans, maar rustig genoeg dat de tekst en het recept het belangrijkste blijven. Alles is CSS: gelaagde verlopen, geen afbeeldingen, geen nieuwe afhankelijkheden.
+
+| Knop | Wat het is | Waar |
+|---|---|---|
+| **Primair** (Start, Opslaan, Hervat, adviesknoppen; `.btn-primary`) | Een koperen staaf: fijne draaisporen in de lengte, een cilinderverloop van licht boven naar donker onder, een lange reflectie die naar de randen zwakker wordt, een facetrand (licht boven, donker onder) en een korte slagschaduw. Tekst licht gegraveerd. Bij indrukken rolt de lichtband mee naar beneden en zakt de knop 1 px. Zonder verloop (oude browser) blijft het `--primary`. | `.btn-primary, .start-btn, .pill-cta, .advice-cta` |
+| **Timer: pauze** | Een koperen draaiknop: een geslepen ring (licht van linksboven), een vlak met concentrische draaisporen, een vierlobbige reflectie die bij hover en indrukken een paar graden meedraait, en een gegraveerd icoon. Gepauzeerd wordt het de pil "Hervat" in dezelfde staaf als de primaire knop. | `.brew-controls #pause-btn` |
+| **Timer: Home en Reset** | Dezelfde knop in donker brons, zodat de pauzeknop de enige koperen blijft (één primaire actie per scherm). | `#home-btn, #reset-btn` |
+| **Secundair** | Alleen de rand is gedraaid metaal (licht boven, donker onder); het vlak blijft het oppervlak. De destructieve knop in Instellingen blijft rood. | `.btn-secondary, .advisor-primary, .advisor-link, .bean-use-btn` |
+
+Hetzelfde metaal in beide thema's (koper verandert niet van kleur als het licht anders is); alleen de slagschaduw is in het lichte thema warmer en lichter. Hover alleen met een muis (VA-46); met "minder beweging" geen overgang. De reflectie draait en rolt via de geregistreerde eigenschappen `--rot` en `--roll` (`@property`). Alle kleuren staan als tokens in `:root` (`--metal-*`, `--knob-*`, `--bronze-*`).
+
+**Gemeten** (Chromium, 390 × 844, licht en donker, per pixel in de tekstzone): knoptekst `--on-primary` op het gerenderde koper minstens 6,1 : 1 in rust en 4,6 : 1 ingedrukt (de donkerste plek); op de Hervat-pil 5,0 : 1. Het icoon op brons 5,8 : 1. De rekenkern is ongewijzigd.
+
+**Testresultaten:** 936 tests groen (`npm run qa`), waarvan 4 nieuw in `tests/kernflow.smoke.test.mjs` ("Gedraaid koper (knoppen)": de staaf en het meerollen bij indrukken; de draaiknop, brons en de gepauzeerde staaf; de metalen rand van de secundaire knop; geen overgang met minder beweging).
