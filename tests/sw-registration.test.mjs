@@ -128,12 +128,12 @@ describe('Service worker registratie (bijlage A — bevinding F, opgelost)', () 
     await page.evaluate(() => navigator.serviceWorker.ready);
     const onDisk = fs.readdirSync(path.join(ROOT, 'photos'));
     const cached = await page.evaluate(async () => {
-      const cache = await caches.open('brew-console-v2');
+      const cache = await caches.open('brew-console-v3');
       return (await cache.keys()).map(r => new URL(r.url).pathname);
     });
     for (const f of onDisk) assert.ok(cached.includes('/photos/' + f), `${f} staat niet in de cache`);
     await ctx.setOffline(true);
-    const status = await page.evaluate(async () => (await fetch('photos/roast-dark.webp')).status);
+    const status = await page.evaluate(async () => (await fetch('photos/method-v60.webp')).status);
     assert.equal(status, 200);
     const cold = await ctx.newPage();
     await cold.goto(base, { waitUntil: 'load' });
