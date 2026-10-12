@@ -333,3 +333,49 @@ Hetzelfde metaal in beide thema's (koper verandert niet van kleur als het licht 
 **Gemeten** (Chromium, 390 × 844, licht en donker, per pixel in de tekstzone): knoptekst `--on-primary` op het gerenderde koper minstens 6,1 : 1 in rust en 4,6 : 1 ingedrukt (de donkerste plek); op de Hervat-pil 5,0 : 1. Het icoon op brons 5,8 : 1. De rekenkern is ongewijzigd.
 
 **Testresultaten:** 936 tests groen (`npm run qa`), waarvan 4 nieuw in `tests/kernflow.smoke.test.mjs` ("Gedraaid koper (knoppen)": de staaf en het meerollen bij indrukken; de draaiknop, brons en de gepauzeerde staaf; de metalen rand van de secundaire knop; geen overgang met minder beweging).
+
+# Knoppen in champagnekoper en zachtere blokranden
+
+Na het gedraaide koper (hierboven) vond Jelle de horizontale draaisporen te druk. Op basis van een voorbeeld (een plaat geborsteld champagnekoper) is het herzien:
+
+| Wat | Was | Nu | Waar |
+|---|---|---|---|
+| **Primaire knop** (en "Hervat") | Koperen staaf met horizontale draaisporen en een reflectie in de breedte. | **Egaal champagnekoper**: één verloop dat in het midden licht is (#C9A676) en naar boven en onder donkerder wordt (#84613F), met de **borstelstructuur** van het voorbeeld: lange, fijne verticale haarlijnen. De facetrand en schaduw blijven. Bij indrukken rolt de lichtband nog iets mee (half zo ver als eerst). | `--metal-bar`, `--metal-grain`; `.btn-primary` |
+| **Timer: pauze** | Oranjekoperen draaiknop. | Dezelfde gedraaide knop (concentrische sporen) in champagnekoper, zodat hij bij de primaire knop hoort. Home en Reset blijven brons. | `--knob-*` |
+| **Secundaire knop** | Rand in oranjekoper. | Rand in champagnekoper. | `.btn-secondary` e.a. |
+| **Informatieblokken** (Je volgende kop, Back-up, het adviesblok, "Volgende keer" bij het recept) | Rand in vol koper. | Zachtere rand: koper op 40 % dekking. Keuzes (geselecteerde roast, chip, stap) houden vol koper, want daar betekent de rand "dit is gekozen". | `--block-accent-border` |
+
+De borstelstructuur is uitgerekte ruis (SVG `feTurbulence`, hoge frequentie in de breedte, heel lage in de hoogte), als ingebouwd beeld in `:root`, met `background-blend-mode: overlay` over het verloop: 50 % grijs verandert niets, lichter en donkerder geven de haarlijnen. Geen afbeeldingsbestand, geen afhankelijkheid.
+
+**Gemeten** (Chromium, 390 × 844, licht en donker gelijk):
+
+- Kleurverloop over de knophoogte: #96724B → #C9A676 (midden) → #AB865C; het voorbeeld loopt van #7D5B3F aan de rand naar #CAA676 in het midden.
+- Structuur: spreiding per rij 6,7–7,7 (op een schaal van 255); het voorbeeld 3,7–7,7.
+- Knoptekst `--on-primary` tegen elk afzonderlijk pixel van de structuur in de tekstzone: minstens 5,1 : 1 in rust en 4,7 : 1 ingedrukt; gemiddeld 7,4 : 1. Om dat te halen zijn de flanken van het verloop iets lichter dan in het voorbeeld en rolt de lichtband bij indrukken maar half zo ver.
+
+**Testresultaten:** het blok "Champagnekoper (knoppen)" in `tests/kernflow.smoke.test.mjs` (5 browsertests): geen horizontale strepen, één verloop met de structuur erover, meerollen bij indrukken, de pauzeknop en "Hervat", de metalen rand van de secundaire knop, de zachtere blokrand en geen overgang bij minder beweging. De rekenkern is ongewijzigd.
+
+# Knoppen in geborsteld champagnekoper en zachtere blokranden
+
+Na het gedraaide koper (hierboven) vond Jelle de horizontale draaisporen te druk. Op basis van een voorbeeld (een plaat geborsteld champagnekoper) is het herzien, in twee rondes: eerst egaal, daarna met de structuur van het voorbeeld, "echt fijn geborsteld, geen strepen".
+
+| Wat | Was | Nu | Waar |
+|---|---|---|---|
+| **Primaire knop** (en "Hervat") | Koperen staaf met horizontale draaisporen en een reflectie in de breedte. | **Geborsteld champagnekoper**: één verloop dat in het midden licht is en naar boven en onder donkerder wordt, met de borstelstructuur van het voorbeeld (korte, fijne verticale vezels met wat spikkel). De facetrand en schaduw blijven. Bij indrukken rolt de lichtband nog iets mee (half zo ver als eerst). | `--metal-bar`, `--metal-grain`; `.btn-primary` |
+| **Timer: pauze** | Oranjekoperen draaiknop. | Dezelfde gedraaide knop (concentrische sporen) in champagnekoper, zodat hij bij de primaire knop hoort. Home en Reset blijven brons. | `--knob-*` |
+| **Secundaire knop** | Rand in oranjekoper. | Rand in champagnekoper. | `.btn-secondary` e.a. |
+| **Informatieblokken** (Je volgende kop, Back-up, het adviesblok, "Volgende keer" bij het recept) | Rand in vol koper. | Zachtere rand: koper op 40 % dekking. Keuzes (geselecteerde roast, chip, stap) houden vol koper, want daar betekent de rand "dit is gekozen". | `--block-accent-border` |
+
+**Hoe de structuur is gemaakt.** Uitgerekte ruis (SVG `feTurbulence`: fijn in de breedte, langer in de hoogte) plus een beetje fijne spikkel, als ingebouwd beeld in `:root`; geen afbeeldingsbestand. Drie keuzes maken het "fijn geborsteld" in plaats van "strepen":
+
+- **Kort, niet doorlopend.** Vezels van ongeveer 17 px in plaats van lijnen over de hele knophoogte; doorlopende lijnen lezen als strepen.
+- **Op schermpixelniveau.** Getekend op 3× en getoond op 1×, zodat een vezel één à twee schermpixels breed is op een iPhone.
+- **Multiply, niet overlay.** Met overlay was de structuur het sterkst in de donkere randen ("vacht"); met multiply schaalt ze mee met het licht, zoals bij het voorbeeld: zwak aan de randen, het duidelijkst in het lichte midden. Omdat multiply alleen donkerder maakt, is het verloop 6 % lichter gezet.
+
+**Gemeten** (Chromium, 390 × 844, licht en donker gelijk):
+
+- Kleur over de knophoogte: #96714B → #C9A676 (midden) → #AA855C; het voorbeeld loopt van #7D5B3F aan de rand naar #CAA676 in het midden.
+- Structuur (spreiding per rij, schaal 0–255): 4,3 aan de rand tot 6,6 in het midden; het voorbeeld 3,7 tot 7,7. Op 3× en op telefoonschaal haalt het voorbeeld 6,9, deze knop 5,5.
+- Knoptekst `--on-primary` tegen elk afzonderlijk pixel van de structuur in de tekstzone: minstens 4,9 : 1, in rust en ingedrukt, op 2× en 3× (de startknop 5,1, de Hervat-pil 4,9); gemiddeld 7,3 : 1. Om dat te halen zijn de flanken van het verloop iets lichter dan in het voorbeeld en rolt de lichtband bij indrukken maar half zo ver.
+
+**Testresultaten:** het blok "Champagnekoper (knoppen)" in `tests/kernflow.smoke.test.mjs` (5 browsertests): geen horizontale strepen, één verloop met de structuur erover (multiply), meerollen bij indrukken, de pauzeknop en "Hervat", de metalen rand van de secundaire knop, de zachtere blokrand en geen overgang bij minder beweging. De rekenkern is ongewijzigd.

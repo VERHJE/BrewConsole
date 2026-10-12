@@ -101,17 +101,24 @@
     --primary:#D4A574;
     --primary-hover:#E6C199;
     --on-primary:#1B1310;
-    /* Gedraaid koper (Knoppenlab, sterkte "subtiel"). Hetzelfde metaal in beide thema's; alleen de
-       schaduw eronder volgt het thema. --rot en --roll zijn de reflectie die bij indrukken meedraait. */
+    /* Champagnekoper (knoppen). Hetzelfde metaal in beide thema's; alleen de schaduw eronder volgt
+       het thema. --rot en --roll zijn de reflectie die bij indrukken meedraait. */
     --rot:0deg; --roll:0%;
-    --metal-1:#DCA370; --metal-hi:#F2CA9E; --metal-2:#D0955F; --metal-3:#B67843; --metal-4:#985B2E;
-    --metal-line-hi:rgba(255,242,226,.03); --metal-line-lo:rgba(38,14,3,.03);
-    --metal-lobe-hi:rgba(255,242,226,.077); --metal-lobe-lo:rgba(38,14,3,.088);
-    --metal-edge-hi:rgba(255,242,226,.61); --metal-edge-lo:rgba(38,14,3,.42); --metal-seat:rgba(60,25,8,.38);
-    --metal-press:rgba(38,14,3,.4); --metal-press-hi:rgba(255,242,226,.25); --metal-emboss:rgba(255,236,214,.45);
+    --metal-edge:#8C6743; --metal-1:#A47C52; --metal-2:#BB9366; --metal-3:#CBA474; --metal-hi:#D7B17E; --metal-deep:#765539;
+    --metal-edge-hi:rgba(255,244,228,.42); --metal-edge-lo:rgba(38,22,8,.4); --metal-seat:rgba(52,34,18,.4);
+    --metal-press:rgba(38,22,8,.38); --metal-press-hi:rgba(255,244,228,.2); --metal-emboss:rgba(255,240,220,.32);
+    /* Champagnekoper: egaal, licht in het midden en naar boven en onder donkerder, zoals een
+       geborstelde plaat. Iets hoger dan de knop (112 %), zodat de lichtband bij indrukken kan meerollen.
+       --metal-grain is de borstelstructuur: korte, fijne verticale vezels (uitgerekte ruis) met wat
+       fijne spikkel, getekend op 3x en getoond op 1x, zodat de vezels één à twee schermpixels breed
+       zijn. Ligt als 'multiply' over het verloop (gemiddeld 94 % grijs; het verloop is daarom 6 %
+       lichter), zodat de vezels net als bij echt metaal in het licht het duidelijkst zijn. */
+    --metal-grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='720' height='480'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.4 .02' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1' result='a'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8 .4' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1' result='b'/%3E%3CfeComposite in='a' in2='b' operator='arithmetic' k2='.6' k3='.4'/%3E%3CfeColorMatrix values='.45 0 0 0 .715 .45 0 0 0 .715 .45 0 0 0 .715 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+    --metal-bar:linear-gradient(180deg, var(--metal-edge) 0%, var(--metal-1) 8.9%, var(--metal-2) 17.9%, var(--metal-3) 31.2%, var(--metal-hi) 44.6%, var(--metal-3) 58%, var(--metal-2) 71.4%, var(--metal-1) 80.4%, var(--metal-edge) 89.3%, var(--metal-deep) 100%);
     --metal-drop1:rgba(0,0,0,.5); --metal-drop2:rgba(0,0,0,.62);
-    --knob-ring-hi:#F7D6B3; --knob-ring-mid:#C98B56; --knob-ring-lo:#7A4423;
-    --knob-face-c:#D8A06B; --knob-face-e:#C4874F;
+    --block-accent-border:rgba(212,165,116,.4); /* rand van een informatieblok (Je volgende kop, advies) */
+    --knob-ring-hi:#EAD3AE; --knob-ring-mid:#B38D60; --knob-ring-lo:#5C432C;
+    --knob-face-c:#C8A474; --knob-face-e:#AE8A5D;
     --knob-line-hi:rgba(255,242,226,.04); --knob-line-lo:rgba(38,14,3,.04); --knob-band:rgba(255,242,226,.028);
     --knob-lobe-hi:rgba(255,242,226,.11); --knob-lobe-lo:rgba(38,14,3,.094);
     --knob-light:rgba(255,242,226,.46); --knob-shade:rgba(38,14,3,.26); --knob-spot:rgba(38,14,3,.12);
@@ -162,6 +169,7 @@
     --primary:#C28A52;
     --primary-hover:#CF9C68;
     --metal-drop1:rgba(80,40,14,.28); --metal-drop2:rgba(110,58,22,.32);
+    --block-accent-border:rgba(170,112,57,.42);
     --danger-text:#A82E44;
 
     /* Zelfde aliaslaag als het donkere thema; de lichte waarden zijn de bestaande, op contrast
@@ -496,7 +504,7 @@
   }
   .summary-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0; background:var(--copper);} /* VA-23: koper, geen kleur per smaak */
   /* Fase 4: advies-paneel + klaargezette stap. */
-  .reco-card{background:var(--surface); border:1px solid var(--copper); border-radius:var(--radius-lg); padding:16px; margin:14px 0 8px; display:flex; flex-direction:column; gap:8px;}
+  .reco-card{background:var(--surface); border:1px solid var(--block-accent-border); border-radius:var(--radius-lg); padding:16px; margin:14px 0 8px; display:flex; flex-direction:column; gap:8px;}
   .reco-card[data-type="KEEP"]{border-color:var(--border);}
   .reco-kicker{margin:0; font-size:var(--fs-label); letter-spacing:.04em; text-transform:uppercase; color:var(--text-faint); display:flex; align-items:center; gap:8px;}
   .reco-kicker .badge{flex-shrink:0;} /* één woord: niet laten krimpen */
@@ -505,7 +513,7 @@
   .reco-body{margin:0; font-size:var(--fs-small); color:var(--text-dim);}
   .reco-note{margin:0; font-size:var(--fs-label); color:var(--text-faint);}
   .reco-status{margin:4px 0 0; font-size:var(--fs-small); color:var(--copper-light);}
-  .prep-next-adjust{background:var(--surface); border:1px solid var(--copper); border-radius:var(--radius-md); padding:12px 14px; margin:0 0 14px;}
+  .prep-next-adjust{background:var(--surface); border:1px solid var(--block-accent-border); border-radius:var(--radius-md); padding:12px 14px; margin:0 0 14px;}
   .prep-next-adjust-title{margin:0 0 4px; font-size:var(--fs-label); letter-spacing:.04em; text-transform:uppercase; color:var(--text-faint);}
   .prep-next-adjust-text{margin:0; font-size:var(--fs-body); font-weight:600; color:var(--copper-light);}
   .prep-next-adjust-note{margin:6px 0 0; font-size:var(--fs-label); color:var(--text-faint);}
@@ -808,13 +816,10 @@
   .btn-primary, .start-btn, .pill-cta, .advice-cta{
     display:flex; align-items:center; justify-content:center; gap:8px;
     width:100%; min-height:52px; padding:0 20px;
-    /* Gedraaid koper: een koperen staaf met draaisporen in de lengte, een lichtband bovenin die bij
-       indrukken naar beneden rolt (--roll), een afgeschuinde rand en een korte schaduw. */
-    background:
-      repeating-linear-gradient(180deg, var(--metal-line-hi) 0 .75px, var(--metal-line-lo) .75px 1.5px, transparent 1.5px 2.2px),
-      linear-gradient(90deg, var(--metal-lobe-lo) 0%, transparent 18%, var(--metal-lobe-hi) 42%, transparent 66%, var(--metal-lobe-lo) 100%),
-      linear-gradient(180deg, var(--metal-1) 0%, var(--metal-hi) 22%, var(--metal-2) 46%, var(--metal-3) 78%, var(--metal-4) 100%) 0 var(--roll) / 100% 135% no-repeat;
-    background-color:var(--primary);
+    /* Champagnekoper: egaal, met een lichtband in het midden die bij indrukken iets meerolt
+       (--roll), een afgeschuinde rand en een korte schaduw. */
+    background:var(--metal-grain) 0 0 / 240px 160px, var(--metal-bar) 0 var(--roll) / 100% 112% no-repeat;
+    background-color:var(--primary); background-blend-mode:multiply, normal;
     color:var(--on-primary); text-shadow:0 1px 0 var(--metal-emboss);
     border:none; border-radius:var(--radius-md);
     font-family:var(--font-body); font-weight:700; font-size:var(--fs-body); line-height:1.2; text-align:center;
@@ -824,7 +829,7 @@
   }
   .btn-primary--sm, .pill-cta{min-height:44px; font-size:var(--fs-small);}
   @media (hover:hover){ .btn-primary:hover, .start-btn:hover, .pill-cta:hover, .advice-cta:hover{filter:brightness(1.035);} }
-  .btn-primary:active, .start-btn:active, .pill-cta:active, .advice-cta:active{--roll:100%; transform:translateY(1px); box-shadow:inset 0 1px 2px var(--metal-press), inset 0 -1px 0 var(--metal-press-hi), 0 0 0 1px var(--metal-seat), 0 1px 0 var(--metal-drop1);}
+  .btn-primary:active, .start-btn:active, .pill-cta:active, .advice-cta:active{--roll:50%; transform:translateY(1px); box-shadow:inset 0 1px 2px var(--metal-press), inset 0 -1px 0 var(--metal-press-hi), 0 0 0 1px var(--metal-seat), 0 1px 0 var(--metal-drop1);}
   /* Aanpassen (secundair) naast Naar de timer (primair, breder): de secundaire actie concurreert
      nooit met de primaire. */
   .prep-cta-row{display:flex; gap:10px; align-items:stretch;}
@@ -1106,7 +1111,7 @@
   .brew-controls button svg{width:24px; height:24px; display:block; flex-shrink:0;}
   .brew-controls #home-btn{width:44px; height:44px;}
   .brew-controls #home-btn svg{width:19px; height:19px;}
-  /* Gedraaid koper (Knoppenlab, "subtiel"): de pauzeknop is een koperen draaiknop, Home en Reset
+  /* Champagnekoper: de pauzeknop is een gedraaide koperen knop, Home en Reset
      brons, zodat het oog naar de hoofdactie gaat. Rand = de knop zelf (licht linksboven); het iets
      verzonken vlak met draaisporen, glans in vier lobben en middenpunt = ::before. Bij indrukken
      draait de reflectie mee (--rot). */
@@ -1151,14 +1156,11 @@
   .brew-controls #home-btn svg, .brew-controls #reset-btn svg{filter:drop-shadow(0 -1px 0 var(--bronze-icon-lo));}
   @media (hover:hover){ .brew-controls #pause-btn:hover, .brew-controls #home-btn:hover, .brew-controls #reset-btn:hover{--rot:7deg;} }
   .brew-controls #pause-btn:active, .brew-controls #home-btn:active, .brew-controls #reset-btn:active{--rot:16deg; transform:translateY(.5px) scale(.985); filter:brightness(.97);}
-  /* VA-17: gepauzeerd is het een pil met "Hervat": dan de koperen staaf van .btn-primary. */
+  /* VA-17: gepauzeerd is het een pil met "Hervat": dan het champagnekoper van .btn-primary. */
   .brew-controls #pause-btn[data-paused]{
     color:var(--on-primary); text-shadow:0 1px 0 var(--metal-emboss);
-    background:
-      repeating-linear-gradient(180deg, var(--metal-line-hi) 0 .75px, var(--metal-line-lo) .75px 1.5px, transparent 1.5px 2.2px),
-      linear-gradient(90deg, var(--metal-lobe-lo) 0%, transparent 18%, var(--metal-lobe-hi) 42%, transparent 66%, var(--metal-lobe-lo) 100%),
-      linear-gradient(180deg, var(--metal-1) 0%, var(--metal-hi) 22%, var(--metal-2) 46%, var(--metal-3) 78%, var(--metal-4) 100%);
-    background-color:var(--primary);
+    background:var(--metal-grain) 0 0 / 240px 160px, var(--metal-bar) 0 var(--roll) / 100% 112% no-repeat;
+    background-color:var(--primary); background-blend-mode:multiply, normal;
     box-shadow:inset 0 1px 0 var(--metal-edge-hi), inset 0 -1px 0 var(--metal-edge-lo), 0 0 0 1px var(--metal-seat), 0 1px 1px var(--metal-drop1), 0 7px 14px -8px var(--metal-drop2);
   }
   .brew-controls #pause-btn[data-paused]::before{display:none;}
@@ -1770,8 +1772,8 @@
   .home-cta-title{font-family:var(--font-body); font-weight:700; font-size:var(--fs-body); display:block; margin-bottom:3px;} /* VA-20: knoppen in de sansletter */
   .home-cta-desc{font-size:var(--fs-small); color:var(--text-dim);}
   /* VA-14: zonder "Je volgende kop" is nieuw zetten de enige hoofdactie. */
-  .home-cta--primary{border-color:transparent; color:var(--on-primary);} /* achtergrond: gedraaid koper via .btn-primary */
-  .home-cta.btn-primary{display:block; text-align:left; padding:16px; min-height:auto; border:1px solid var(--primary);} /* kaartvorm, wel de primaire knopfamilie */
+  .home-cta--primary{border-color:transparent; color:var(--on-primary);} /* achtergrond: champagnekoper via .btn-primary */
+  .home-cta.btn-primary{display:block; text-align:left; padding:16px; min-height:auto; border:1px solid transparent;} /* kaartvorm, wel de primaire knopfamilie */
   .home-cta--primary .home-cta-desc{color:var(--on-primary); opacity:.82;}
   @media (hover:hover){ .home-cta--primary:hover{filter:brightness(1.035);} }
   .home-empty .advisor-link{margin-top:10px;}
@@ -1789,7 +1791,7 @@
   /* Sprint 2 (UX-review F3): "Je volgende kop" — het hoofdonderwerp van Home. */
   .next-cup{
     background:linear-gradient(180deg, var(--copper-a12), var(--copper-a03)), var(--surface);
-    border:1px solid var(--copper); border-radius:var(--radius-md); padding:16px; margin:0 0 16px;
+    border:1px solid var(--block-accent-border); border-radius:var(--radius-md); padding:16px; margin:0 0 16px;
     box-shadow:var(--shadow-card);
   }
   .next-cup-kicker{font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.08em; text-transform:uppercase; color:var(--copper-light); margin:0 0 6px;}
@@ -1917,13 +1919,13 @@
      de primaire. De oude klassen geven alleen nog de maat en plaats. */
   .btn-secondary, .advisor-primary, .advisor-link, .bean-use-btn{
     font-family:var(--font-body); font-weight:600; border-radius:var(--radius-md); min-height:44px;
-    /* Gedraaid koper: alleen de rand is metaal (licht boven, donker onder), het vlak is het oppervlak. */
+    /* Champagnekoper: alleen de rand is metaal (licht boven, donker onder), het vlak is het oppervlak. */
     border:1.5px solid transparent; color:var(--copper-light);
-    background:linear-gradient(var(--surface), var(--surface)) padding-box, linear-gradient(180deg, var(--metal-hi) 0%, var(--metal-2) 45%, var(--metal-4) 100%) border-box;
+    background:linear-gradient(var(--surface), var(--surface)) padding-box, linear-gradient(180deg, var(--metal-hi) 0%, var(--metal-2) 45%, var(--metal-edge) 100%) border-box;
   }
   @media (hover:hover){ .btn-secondary:hover, .advisor-primary:hover, .advisor-link:hover, .bean-use-btn:hover{
     border-color:transparent; color:var(--copper-light);
-    background:linear-gradient(var(--surface-2), var(--surface-2)) padding-box, linear-gradient(180deg, var(--metal-hi) 0%, var(--metal-2) 45%, var(--metal-4) 100%) border-box;
+    background:linear-gradient(var(--surface-2), var(--surface-2)) padding-box, linear-gradient(180deg, var(--metal-hi) 0%, var(--metal-2) 45%, var(--metal-edge) 100%) border-box;
   } }
   .advisor-link.settings-danger-btn{border-color:var(--danger); color:var(--danger-text);}
   /* VA-21: stijlen die eerder inline in de opmaak stonden. Per id een regel; zonder id een kleine
@@ -2056,7 +2058,7 @@
   .tt-none{text-transform:none !important;}
   .w-20{width:20px !important;}
 
-  /* ==== Gedraaid koper (Knoppenlab, sterkte "subtiel") ====
+  /* ==== Champagnekoper (knoppen) ====
      Geregistreerd, zodat de reflectie bij indrukken vloeiend meedraait (knop) of meerolt (staaf). */
   @property --rot{ syntax:'<angle>'; inherits:true; initial-value:0deg; }
   @property --roll{ syntax:'<percentage>'; inherits:true; initial-value:0%; }
