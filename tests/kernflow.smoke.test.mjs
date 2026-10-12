@@ -4527,7 +4527,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     });
   });
 
-  describe('Gedraaid koper (knoppen)', () => {
+  describe('Champagnekoper (knoppen)', () => {
     const PHONEK = { viewport: { width: 390, height: 844 } };
     async function toPrepK(page){
       await page.click('#home-start-brew-btn');
@@ -4537,7 +4537,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await assertBecomesActive(page, '#screen-prep');
     }
 
-    test('primaire knop is een koperen staaf met draaisporen; bij indrukken rolt de lichtband mee', async () => {
+    test('primaire knop is egaal champagnekoper met een borstelstructuur; bij indrukken rolt de lichtband iets mee', async () => {
       const page = await newTrackedPage(PHONEK);
       await page.goto(FILE_URL, { waitUntil: 'load' });
       await toPrepK(page);
@@ -4545,22 +4545,24 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
         const b = document.getElementById('start-btn'), cs = getComputedStyle(b);
         const probe = document.createElement('div'); probe.style.color = 'var(--primary)'; document.body.appendChild(probe);
         const primary = getComputedStyle(probe).color; probe.remove();
-        return { img: cs.backgroundImage, bg: cs.backgroundColor, primary, shadow: cs.boxShadow, roll: cs.getPropertyValue('--roll').trim() };
+        return { img: cs.backgroundImage, blend: cs.backgroundBlendMode, bg: cs.backgroundColor, primary, shadow: cs.boxShadow, roll: cs.getPropertyValue('--roll').trim() };
       });
-      assert.match(r.img, /repeating-linear-gradient/, 'draaisporen');
-      assert.equal((r.img.match(/linear-gradient/g) || []).length, 3, 'sporen, reflectie en cilinder');
+      assert.doesNotMatch(r.img, /repeating-linear-gradient/, 'geen horizontale strepen meer');
+      assert.match(r.img, /^url\("data:image\/svg\+xml.*feTurbulence/, 'borstelstructuur bovenop');
+      assert.equal((r.img.match(/linear-gradient/g) || []).length, 1, 'één egaal verloop');
+      assert.equal(r.blend, 'multiply, normal');
       assert.equal(r.bg, r.primary, 'zonder verloop blijft het --primary');
       assert.match(r.shadow, /inset/, 'facetrand');
       assert.equal(r.roll, '0%');
       const box = await page.locator('#start-btn').boundingBox();
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       await page.mouse.down();
-      await page.waitForFunction(() => getComputedStyle(document.getElementById('start-btn')).getPropertyValue('--roll').trim() === '100%');
+      await page.waitForFunction(() => getComputedStyle(document.getElementById('start-btn')).getPropertyValue('--roll').trim() === '50%');
       await page.mouse.up();
       await page.close();
     });
 
-    test('timer: pauze is een koperen draaiknop, Home en Reset brons; gepauzeerd een staaf', async () => {
+    test('timer: pauze is een gedraaide koperen knop, Home en Reset brons; gepauzeerd champagnekoper', async () => {
       const page = await newTrackedPage(PHONEK);
       await page.goto(FILE_URL, { waitUntil: 'load' });
       await toPrepK(page);
@@ -4582,7 +4584,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.waitForSelector('#pause-btn[data-paused]');
       const paused = await knob('pause-btn');
       assert.equal(paused.before, 'none');
-      assert.match(paused.img, /repeating-linear-gradient/, 'Hervat is dezelfde staaf als de primaire knop');
+      assert.match(paused.img, /feTurbulence/, 'Hervat heeft hetzelfde champagnekoper als de primaire knop');
       await page.close();
     });
 
@@ -4597,6 +4599,22 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.equal(r.clip, 'padding-box, border-box');
       assert.equal((r.img.match(/linear-gradient/g) || []).length, 2);
       assert.equal(r.border, 'rgba(0, 0, 0, 0)', 'de rand is het verloop, niet een kleur');
+      await page.close();
+    });
+
+    test('de rand van een informatieblok (Je volgende kop) is zachter dan vol koper', async () => {
+      const page = await newTrackedPage(PHONEK);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      const r = await page.evaluate(() => {
+        const el = document.getElementById('home-next-cup');
+        const probe = document.createElement('div'); probe.style.color = 'var(--copper)'; document.body.appendChild(probe);
+        const copper = getComputedStyle(probe).color; probe.remove();
+        el.hidden = false;
+        return { border: getComputedStyle(el).borderTopColor, copper };
+      });
+      assert.notEqual(r.border, r.copper);
+      const alpha = Number((r.border.match(/rgba\([^)]*,\s*([\d.]+)\)/) || [])[1]);
+      assert.ok(alpha > 0 && alpha < .5, r.border);
       await page.close();
     });
 
