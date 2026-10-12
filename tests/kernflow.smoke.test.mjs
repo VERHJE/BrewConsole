@@ -4592,6 +4592,19 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.close();
     });
 
+    test('de Zet-knop in de tabbalk (telefoon) draagt hetzelfde geborstelde koper, rond, met de rand van de primaire knop', async () => {
+      const page = await newTrackedPage(PHONEK);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      const r = await page.locator('.navbar-btn--zet svg').evaluate(el => { const cs = getComputedStyle(el); return { img: cs.backgroundImage, bg: cs.backgroundColor, color: cs.color, radius: cs.borderTopLeftRadius, top: cs.borderTopColor, w: el.getBoundingClientRect().width }; });
+      assert.match(r.img, /^url\("[^"]*photos\/koper-geborsteld\.webp"\), linear-gradient\(/);
+      assert.equal(r.bg, 'rgb(212, 165, 116)');
+      assert.equal(r.color, 'rgb(33, 23, 15)');
+      assert.equal(r.radius, '50%');
+      assert.equal(r.top, 'rgba(255, 242, 222, 0.35)');
+      assert.equal(r.w, 52);
+      await page.close();
+    });
+
     test('focus met het toetsenbord: koperen omlijning van 2 px op 3 px afstand', async () => {
       const page = await newTrackedPage(PHONEK);
       await page.goto(FILE_URL, { waitUntil: 'load' });

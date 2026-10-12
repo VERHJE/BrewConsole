@@ -114,6 +114,7 @@
     --cta-photo:url("photos/koper-geborsteld.webp");
     --cta-gradient:linear-gradient(180deg, var(--cta-hi) 0%, var(--cta-mid) 45%, var(--cta-lo) 100%);
     --cta-shadow:0 2px 6px rgba(0,0,0,.12); --cta-shadow-press:0 1px 4px rgba(0,0,0,.1);
+    --cta-fab-lift:0 6px 14px rgba(0,0,0,.2); /* de verhoogde Zet-knop in de tabbalk */
     --radius-cta:17px;
     /* Champagnekoper voor de rand van de secundaire knop; --rot is de reflectie van de gedraaide
        pauzeknop die bij indrukken meedraait. */
@@ -1700,16 +1701,21 @@
   @media (hover:hover){ .navbar-btn:hover{color:var(--copper-light);} }
   .navbar-btn:active{transform:scale(.94); transition:transform var(--motion-micro) var(--ease-out);}
   /* Sprint 2 (UX-review F5): de zetknop als verhoogde, gevulde middenknop — met label, niet
-     alleen een icoon. Actief = een ring i.p.v. het streepje (de knop is al gevuld). */
+     alleen een icoon. Actief = een ring i.p.v. het streepje (de knop is al gevuld).
+     Hetzelfde geborstelde champagnekoper als de primaire knop: de foto op dezelfde schaal als
+     een knop van normale breedte (316 px), zodat de haarlijnen even fijn zijn; rand en tekstkleur
+     van .btn-primary; een neutrale schaduw voor de hoogte in plaats van de koperen gloed. */
   @media (max-width:899px){
     .navbar{align-items:flex-end;}
     .navbar-btn--zet{color:var(--text);}
     .navbar-btn--zet svg{
       width:52px; height:52px; padding:13px; box-sizing:border-box; margin-top:-24px;
-      background:var(--primary); color:var(--on-primary); border-radius:50%;
-      box-shadow:0 6px 18px var(--copper-a35);
+      background:var(--cta-photo) center / 316px 100% no-repeat, var(--cta-gradient);
+      background-color:var(--cta-base); color:var(--cta-text); border-radius:50%;
+      border:1px solid var(--cta-border); border-top-color:var(--cta-border-top);
+      box-shadow:var(--cta-shadow), var(--cta-fab-lift);
     }
-    .navbar-btn--zet[aria-current="page"] svg{box-shadow:0 0 0 3px var(--bg), 0 0 0 5px var(--copper-light);}
+    .navbar-btn--zet[aria-current="page"] svg{box-shadow:0 0 0 3px var(--bg), 0 0 0 5px var(--copper-light), var(--cta-fab-lift);}
     .navbar-btn--zet[aria-current="page"] span:last-child::after{display:none;}
   }
 

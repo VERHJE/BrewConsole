@@ -486,3 +486,11 @@ Op 375 px staat elke primaire knop op één regel. Geen knop loopt buiten zijn k
 - "Hervat", de secundaire rand, de zachte blokrand en "minder beweging".
 
 De offline-test controleert dat de foto na installatie in de cache staat. De rekenkern is ongewijzigd.
+
+**Aanvulling: de Zet-knop in de tabbalk.** De verhoogde, ronde middenknop van de tabbalk (telefoon) had nog de vlakke `--primary`-vulling met een koperen gloed. Hij draagt nu hetzelfde geborstelde champagnekoper:
+- **Foto:** op dezelfde schaal als een knop van normale breedte (316 px), zodat de haarlijnen even fijn zijn.
+- **Rand en icoon:** de rand van `.btn-primary`, en het kopje in `#21170F`. Het kopje haalt minstens 4,8 : 1; de norm voor een icoon is 3 : 1.
+- **Schaduw:** een neutrale schaduw voor de hoogte (`--cta-fab-lift`) in plaats van de koperen gloed.
+- **Ongewijzigd:** de ring van de actieve staat. Op desktop blijft het een gewoon menu-item in de zijbalk.
+
+Getest in het blok "Primaire knop: geborsteld champagnekoper".
