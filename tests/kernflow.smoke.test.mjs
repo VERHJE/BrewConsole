@@ -4528,9 +4528,10 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     });
   });
 
-  // UI Refinement V1.0: de primaire knop is mat champagnekoper — geen textuur, een heel zacht
-  // verloop, een fijne lichtrand bovenaan, een compacte schaduw, 64 px hoog, hoek 17 px.
-  describe('Primaire knop: mat champagnekoper', () => {
+  // De primaire knop is geborsteld champagnekoper: Jelles foto (uitsnede F2) als achtergrond, met
+  // een zacht verloop als terugval, een fijne lichtrand bovenaan, een compacte schaduw, 64 px hoog,
+  // hoek 17 px (vorm en letter uit UI Refinement V1.0).
+  describe('Primaire knop: geborsteld champagnekoper', () => {
     const PHONEK = { viewport: { width: 390, height: 844 } };
     async function toPrepK(page){
       await page.click('#home-start-brew-btn');
@@ -4540,26 +4541,27 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await assertBecomesActive(page, '#screen-prep');
     }
 
-    test('geen textuur of strepen: één zacht verloop, #D4A574, 64 px, hoek 17 px, letter 17 px/600', async () => {
+    test('de foto als achtergrond (geen CSS-strepen), #D4A574, 64 px, hoek 17 px, letter 17 px/600', async () => {
       const page = await newTrackedPage(PHONEK);
       await page.goto(FILE_URL, { waitUntil: 'load' });
       await toPrepK(page);
       const r = await page.evaluate(() => {
         const b = document.getElementById('start-btn'), cs = getComputedStyle(b), be = getComputedStyle(b, '::before'), af = getComputedStyle(b, '::after');
-        return { img: cs.backgroundImage, blend: cs.backgroundBlendMode, bg: cs.backgroundColor, color: cs.color, h: b.getBoundingClientRect().height, radius: cs.borderTopLeftRadius,
+        return { img: cs.backgroundImage, size: cs.backgroundSize, blend: cs.backgroundBlendMode, bg: cs.backgroundColor, color: cs.color, h: b.getBoundingClientRect().height, radius: cs.borderTopLeftRadius,
           font: [cs.fontSize, cs.fontWeight, cs.lineHeight, cs.letterSpacing], top: cs.borderTopColor, bottom: cs.borderBottomColor, shadow: cs.boxShadow, pseudo: [be.content, af.content] };
       });
-      assert.doesNotMatch(r.img, /url\(|repeating-|radial-|conic-/, 'geen textuur, patroon of glans');
-      assert.equal(r.img, 'linear-gradient(rgb(226, 188, 145) 0%, rgb(218, 176, 130) 24%, rgb(212, 165, 116) 55%, rgb(201, 145, 96) 100%)');
-      assert.equal(r.blend, 'normal');
+      assert.doesNotMatch(r.img, /repeating-|radial-|conic-/, 'geen CSS-strepen of -glans');
+      assert.match(r.img, /^url\("[^"]*photos\/koper-geborsteld\.webp"\), linear-gradient\(rgb\(221, 181, 141\) 0%, rgb\(214, 170, 126\) 45%, rgb\(208, 160, 113\) 100%\)$/, 'de foto, met een zacht verloop als terugval');
+      assert.equal(r.size, '100% 100%, auto', 'de foto op knopmaat');
+      assert.equal(r.blend, 'normal, normal');
       assert.equal(r.bg, 'rgb(212, 165, 116)', 'hoofdkleur #D4A574');
       assert.equal(r.color, 'rgb(33, 23, 15)', 'tekst #21170F');
       assert.ok(r.h >= 64, `hoogte ${r.h}`);
       assert.equal(r.radius, '17px');
       assert.deepEqual(r.font, ['17px', '600', '24px', '-0.2px']);
-      assert.equal(r.top, 'rgba(255, 242, 222, 0.42)', 'fijne lichtrand bovenaan');
-      assert.equal(r.bottom, 'rgba(105, 63, 34, 0.22)');
-      assert.match(r.shadow, /rgba\(105, 63, 34, 0\.28\) 0px 2px 0px/);
+      assert.equal(r.top, 'rgba(255, 242, 222, 0.35)', 'fijne lichtrand bovenaan');
+      assert.equal(r.bottom, 'rgba(105, 63, 34, 0.18)');
+      assert.equal(r.shadow, 'rgba(0, 0, 0, 0.12) 0px 2px 6px 0px', 'één compacte schaduw, geen donkere onderrand');
       assert.deepEqual(r.pseudo, ['none', 'none'], 'geen ::before- of ::after-laag');
       // ingedrukt: 1 px omlaag, iets donkerder, kleinere schaduw
       const box = await page.locator('#start-btn').boundingBox();
@@ -4569,11 +4571,11 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       const p = await page.locator('#start-btn').evaluate(el => { const cs = getComputedStyle(el); return { t: cs.transform, f: cs.filter, s: cs.boxShadow }; });
       await page.mouse.up();
       assert.deepEqual([p.t, p.f], ['matrix(1, 0, 0, 1, 0, 1)', 'brightness(0.97)']);
-      assert.doesNotMatch(p.s, /inset/);
+      assert.equal(p.s, 'rgba(0, 0, 0, 0.1) 0px 1px 4px 0px');
       await page.close();
     });
 
-    test('voorvertoning: "Zet opnieuw" heeft de foto van geborsteld koper als achtergrond, en die laadt', async () => {
+    test('de foto laadt en staat in de offline-lijst; ook "Zet opnieuw" draagt hem', async () => {
       const page = await newTrackedPage(PHONEK);
       await page.goto(FILE_URL, { waitUntil: 'load' });
       const r = await page.evaluate(async () => {
@@ -4581,14 +4583,12 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
         document.getElementById('home-next-cup').parentElement.appendChild(b);
         const cs = getComputedStyle(b), src = (cs.backgroundImage.match(/url\("([^"]+)"\)/) || [])[1];
         const img = new Image(); img.src = src; await img.decode().catch(() => {});
-        const out = { img: cs.backgroundImage, size: cs.backgroundSize, w: img.naturalWidth, h: img.naturalHeight, top: cs.borderTopColor, shadow: cs.boxShadow };
+        const out = { src, w: img.naturalWidth, h: img.naturalHeight };
         b.remove(); return out;
       });
-      assert.match(r.img, /^url\("[^"]*photos\/koper-geborsteld\.webp"\), linear-gradient\(/, 'foto, met een verloop als terugval');
-      assert.equal(r.size, '100% 100%, auto');
+      assert.match(r.src, /photos\/koper-geborsteld\.webp$/);
       assert.ok(r.w >= 900 && r.h >= 300, `foto ${r.w}×${r.h}`);
-      assert.equal(r.top, 'rgba(255, 242, 222, 0.35)');
-      assert.equal(r.shadow, 'rgba(0, 0, 0, 0.12) 0px 2px 6px 0px');
+      assert.match(fs.readFileSync(new URL('../sw.js', import.meta.url), 'utf8'), /'photos\/koper-geborsteld\.webp'/, 'offline beschikbaar');
       await page.close();
     });
 
@@ -4605,20 +4605,22 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.close();
     });
 
-    test('Home zonder bonen: de kaartknop draagt hetzelfde koper, met gewone tekst onder de titel', async () => {
+    test('Home zonder bonen: de kaartknop draagt dezelfde foto (het lichte middendeel), met de uitleg op volle sterkte', async () => {
       const page = await newTrackedPage(PHONEK);
       await page.goto(FILE_URL, { waitUntil: 'load' });
       await page.locator('#home-start-brew-btn').evaluate(el => Promise.all(el.getAnimations().map(a => a.finished))); // de klasse komt bij het tekenen van Home: overgang afwachten
-      const r = await page.locator('#home-start-brew-btn').evaluate(el => { const cs = getComputedStyle(el); return { cls: el.classList.contains('btn-primary'), bg: cs.backgroundColor, img: cs.backgroundImage, top: cs.borderTopColor, desc: getComputedStyle(el.querySelector('.home-cta-desc')).fontWeight }; });
+      const r = await page.locator('#home-start-brew-btn').evaluate(el => { const cs = getComputedStyle(el), d = getComputedStyle(el.querySelector('.home-cta-desc')); return { cls: el.classList.contains('btn-primary'), bg: cs.backgroundColor, img: cs.backgroundImage, size: cs.backgroundSize, top: cs.borderTopColor, desc: d.fontWeight, op: d.opacity }; });
       assert.equal(r.cls, true);
       assert.equal(r.bg, 'rgb(212, 165, 116)');
-      assert.match(r.img, /^linear-gradient\(rgb\(226, 188, 145\)/);
-      assert.equal(r.top, 'rgba(255, 242, 222, 0.42)');
+      assert.match(r.img, /^url\("[^"]*photos\/koper-geborsteld\.webp"\), linear-gradient\(rgb\(221, 181, 141\) 0%, rgb\(214, 170, 126\) 45%, rgb\(208, 160, 113\) 100%\)$/);
+      assert.equal(r.size, '100% 150%, auto', 'een hogere kaart: het lichte middendeel van de foto');
+      assert.equal(r.top, 'rgba(255, 242, 222, 0.35)');
       assert.equal(r.desc, '400');
+      assert.equal(r.op, '1', 'de uitleg niet gedempt: op de foto haalt hij zo ≥ 4,5 : 1');
       await page.close();
     });
 
-    test('timer: pauze blijft de gedraaide knop, Home en Reset brons; gepauzeerd "Hervat" in mat champagnekoper', async () => {
+    test('timer: pauze blijft de gedraaide knop, Home en Reset brons; gepauzeerd "Hervat" in geborsteld champagnekoper', async () => {
       const page = await newTrackedPage(PHONEK);
       await page.goto(FILE_URL, { waitUntil: 'load' });
       await toPrepK(page);
@@ -4638,8 +4640,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       const paused = await knob('pause-btn');
       assert.equal(paused.before, 'none');
       assert.equal(paused.bg, 'rgb(212, 165, 116)');
-      assert.doesNotMatch(paused.img, /url\(|repeating-/, 'geen textuur');
-      assert.match(paused.img, /^linear-gradient\(rgb\(226, 188, 145\)/, 'Hervat heeft het koper van de primaire knop');
+      assert.match(paused.img, /^url\("[^"]*photos\/koper-geborsteld\.webp"\), linear-gradient\(rgb\(221, 181, 141\) 0%, rgb\(214, 170, 126\) 45%, rgb\(208, 160, 113\) 100%\)$/, 'Hervat heeft de foto van de primaire knop');
       await page.close();
     });
 

@@ -432,3 +432,57 @@ Aangepast:
 - "Proeven & loggen" heeft een pijlicoon in plaats van het teken.
 
 De rekenkern is ongewijzigd.
+
+# Primaire knop in geborsteld champagnekoper (foto, uitsnede F2)
+
+Het matte champagnekoper (V1.0, hierboven) was Jelle te vlak. Twee pogingen om het geborstelde karakter in CSS na te maken vielen af:
+- V2.0, een herhalend verloop van 3 px op 2 % dekking, was niet wat hij bedoelde.
+- Zijn eigen snippet (lichtbanen over de breedte, `filter`) leverde de volgende varianten op. Letterlijk zat de donkerste baan achter de tekst (3,6 : 1). De bewerkte versies (B–D) waren ook niet wat hij zocht.
+
+Hij wees zijn foto van een plaat geborsteld champagnekoper aan als "de finesse die ik zoek". Die foto is nu de achtergrond van de hele primaire knopfamilie (`.btn-primary`).
+
+**Keuze F2 uit drie uitsneden** (gemeten op "Zet opnieuw", tekstcontrast tegen de donkerste haarlijn / gemiddeld):
+
+| Uitsnede | Contrast | |
+|---|---|---|
+| F1, de hele plaat | 3,5 / 6,1 | te donker boven en onder |
+| **F2, het middelste deel (≈ 60 %)** | **4,5 / 6,7** | **gekozen** |
+| F3, alleen de lichte band (≈ 40 %) | 5,0 / 7,0 | |
+
+**Wat er staat:**
+
+- **Bestand:** `photos/koper-geborsteld.webp`, 924 × 320 px, 31 kB. Het is de plaat zonder de zwarte randen, het middelste deel (1/1,65), in de hoogte verkleind. De knop drukt het beeld in de hoogte toch samen, en de haarlijnen lopen verticaal, dus ze blijven scherp. 320 px is genoeg voor de hoogste knop (de kaartknop, 105 px) op 3×.
+- **Offline:** het bestand staat in `PHOTOS` in `sw.js`, net als de andere foto's, dus het is ook offline beschikbaar.
+- **Achtergrond:** `background: var(--cta-photo) center / 100% 100% no-repeat, var(--cta-gradient)` op `.btn-primary`, "Hervat" en de kaartknop.
+  - Het zachte verloop (#DDB58D → #D6AA7E → #D0A071) is de terugval zolang de foto laadt.
+  - `background-color` blijft #D4A574.
+- **Rand en schaduw:** uit V2.0. Rand 1 px `rgba(105,63,34,.18)`, bovenrand `rgba(255,242,222,.35)`. Eén compacte schaduw `0 2px 6px rgba(0,0,0,.12)`, ingedrukt `0 1px 4px rgba(0,0,0,.1)`. Geen inset-licht en geen donkere onderrand meer.
+- **Ongewijzigd uit V1.0:** vorm, maat, letter en pijl. De staten (hover, ingedrukt, focus, uitgeschakeld, minder beweging) ook.
+- **Kaartknop op Home** ("Nieuw brouwsel starten" zonder bonen):
+  - Hij is 105 px hoog, daarom toont hij het lichte middendeel van de foto (`100% 150%`).
+  - De uitleg staat op volle sterkte: gedempt tot 82 % haalde hij op de foto maar 4,1 : 1, nu 4,8 : 1.
+  - Zijn hoek is nu ook 17 px: `.home-cta` zette 14 px, waardoor de familie twee hoeken had.
+- **Tokens:** `--cta-photo`, `--cta-gradient`, `--cta-border(-top)`, `--cta-shadow(-press)`. Opgeruimd: de V1-tokens voor inset-licht, diepte en omgevingsschaduw, en de tijdelijke voorvertoningstokens (`--cta2-*`) en -regel.
+
+**Gemeten** (Chromium, iPhone 390 × 844 op 3×, licht en donker gelijk; tekstcontrast tegen de donkerste haarlijn / gemiddeld):
+
+| Knop | Contrast |
+|---|---|
+| Zet opnieuw, Start de klok, Proeven & loggen, Zet deze boon, + Nieuwe boon | 4,5 / 6,7 |
+| Naar de timer, Hervat | 4,7 / 6,7 |
+| Kaartknop: titel | 5,0 / 7,0 |
+| Kaartknop: uitleg | 4,8 / 7,0 |
+
+Op 375 px staat elke primaire knop op één regel. Geen knop loopt buiten zijn kaart of het scherm.
+
+**Herkomst van de foto:** aangeleverd door Jelle. Komt hij van internet, dan moet het gebruiksrecht nog worden nagegaan.
+
+**Testresultaten:** het blok "Primaire knop: geborsteld champagnekoper" in `tests/kernflow.smoke.test.mjs` controleert:
+- de foto met het verloop als terugval, de maat, de letter, de rand en de schaduw;
+- de ingedrukte staat;
+- dat de foto laadt en in de offline-lijst staat;
+- de focusomlijning;
+- de kaartknop (middendeel en uitleg op volle sterkte);
+- "Hervat", de secundaire rand, de zachte blokrand en "minder beweging".
+
+De offline-test controleert dat de foto na installatie in de cache staat. De rekenkern is ongewijzigd.

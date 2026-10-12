@@ -102,24 +102,19 @@
     --primary:#D4A574;
     --primary-hover:#E6C199;
     --on-primary:#1B1310;
-    /* Primaire knop: mat champagnekoper (UI Refinement V1.0). Hetzelfde in beide thema's; de
-       hoofdkleur is #D4A574, de andere tinten dragen alleen het zachte verloop. --primary is in het
-       donkere thema dezelfde kleur, maar verschilt in het lichte; daarom eigen tokens. */
-    --cta-hi:#E2BC91; --cta-mid:#DAB082; --cta-base:#D4A574; --cta-lo:#C99160; --cta-text:#21170F;
-    --cta-border:rgba(105,63,34,.22); --cta-border-top:rgba(255,242,222,.42); --cta-inset:rgba(255,242,222,.12);
-    --cta-depth:rgba(105,63,34,.28); --cta-ambient:rgba(0,0,0,.18);
-    --cta-press-depth:rgba(105,63,34,.2); --cta-press-ambient:rgba(0,0,0,.14);
+    /* Primaire knop: geborsteld champagnekoper. De achtergrond is Jelles foto van een plaat
+       geborsteld champagnekoper (uitsnede F2: het middelste deel, fijne verticale haarlijnen, licht
+       in het midden); het zachte verloop eronder is de terugval zolang de foto laadt. Hetzelfde in
+       beide thema's; hoofdkleur #D4A574. --primary is in het donkere thema dezelfde kleur, maar
+       verschilt in het lichte; daarom eigen tokens. */
+    --cta-base:#D4A574; --cta-text:#21170F;
+    --cta-hi:#DDB58D; --cta-mid:#D6AA7E; --cta-lo:#D0A071;
+    --cta-border:rgba(105,63,34,.18); --cta-border-top:rgba(255,242,222,.35);
     --cta-focus:rgba(212,165,116,.85);
-    --cta-gradient:linear-gradient(180deg, var(--cta-hi) 0%, var(--cta-mid) 24%, var(--cta-base) 55%, var(--cta-lo) 100%);
-    --cta-shadow:inset 0 1px 0 var(--cta-inset), 0 2px 0 var(--cta-depth), 0 5px 12px var(--cta-ambient);
-    --cta-shadow-press:0 1px 0 var(--cta-press-depth), 0 2px 5px var(--cta-press-ambient);
+    --cta-photo:url("photos/koper-geborsteld.webp");
+    --cta-gradient:linear-gradient(180deg, var(--cta-hi) 0%, var(--cta-mid) 45%, var(--cta-lo) 100%);
+    --cta-shadow:0 2px 6px rgba(0,0,0,.12); --cta-shadow-press:0 1px 4px rgba(0,0,0,.1);
     --radius-cta:17px;
-    /* VOORVERTONING geborsteld koper (alleen "Zet opnieuw"; na review voor de hele primaire
-       knopfamilie): Jelles foto van een plaat geborsteld champagnekoper als achtergrond, lichte
-       rand, compacte schaduw. Het verloop eronder is de terugval zolang de foto niet geladen is. */
-    --cta2-hi:#DDB58D; --cta2-mid:#D6AA7E; --cta2-lo:#D0A071;
-    --cta2-border:rgba(105,63,34,.18); --cta2-border-top:rgba(255,242,222,.35);
-    --cta2-shadow:0 2px 6px rgba(0,0,0,.12); --cta2-shadow-press:0 1px 4px rgba(0,0,0,.1);
     /* Champagnekoper voor de rand van de secundaire knop; --rot is de reflectie van de gedraaide
        pauzeknop die bij indrukken meedraait. */
     --rot:0deg;
@@ -819,15 +814,16 @@
      .btn-primary--sm (44 px) waar de grote te zwaar is. Knoppen staan in de sansletter; serif is
      voor titels. De oude klassen (.start-btn, .pill-cta, .advice-cta) dragen alleen nog hun plaats
      in de opmaak.
-     Mat champagnekoper (UI Refinement V1.0): een bijna egaal vlak met een heel zacht verloop (boven
-     iets lichter, onder iets donkerder), één fijne lichtrand bovenaan, een smalle donkere rand en
-     een compacte schaduw. Geen textuur, geen glans. Afgeronde rechthoek, geen pil. */
+     Geborsteld champagnekoper: de foto (--cta-photo) uitgerekt tot de knopmaat — de haarlijnen
+     lopen verticaal en blijven daardoor scherp — met het zachte verloop als terugval, één fijne
+     lichtrand bovenaan, een smalle rand en een compacte schaduw. Afgeronde rechthoek, geen pil. */
   .btn-primary, .start-btn, .pill-cta, .advice-cta{
     appearance:none;
     display:flex; align-items:center; justify-content:center; gap:10px;
     width:100%; min-height:64px; padding:18px 24px;
     border:1px solid var(--cta-border); border-top-color:var(--cta-border-top); border-radius:var(--radius-cta);
-    background-color:var(--cta-base); background-image:var(--cta-gradient);
+    background:var(--cta-photo) center / 100% 100% no-repeat, var(--cta-gradient);
+    background-color:var(--cta-base);
     color:var(--cta-text); text-shadow:none;
     font-family:var(--font-body); font-weight:600; font-size:var(--fs-cta); line-height:24px; letter-spacing:-.2px; text-align:center; text-decoration:none;
     cursor:pointer;
@@ -840,20 +836,6 @@
   .btn-primary:active, .start-btn:active, .pill-cta:active, .advice-cta:active{filter:brightness(.97); transform:translateY(1px); box-shadow:var(--cta-shadow-press);}
   .btn-primary:focus-visible, .start-btn:focus-visible, .pill-cta:focus-visible, .advice-cta:focus-visible{outline:2px solid var(--cta-focus); outline-offset:3px;}
   .btn-primary:disabled, .start-btn:disabled, .pill-cta:disabled, .advice-cta:disabled{cursor:not-allowed; filter:saturate(.45); opacity:.6; transform:none;}
-  /* VOORVERTONING geborsteld koper — alleen "Zet opnieuw" in Je volgende kop. De achtergrond is
-     het middelste deel (≈ 60 %) van Jelles foto van een plaat geborsteld champagnekoper (uitsnede
-     F2): fijne verticale haarlijnen, licht in het midden, iets donkerder boven en onder. De foto
-     wordt uitgerekt tot de knopmaat; de haarlijnen lopen verticaal en blijven daardoor scherp.
-     Eronder een zacht verloop als terugval zolang de foto laadt. */
-  .btn-primary.next-cup-go{
-    border-color:var(--cta2-border); border-top-color:var(--cta2-border-top);
-    background-color:var(--cta-base);
-    background-image:url("photos/koper-geborsteld.webp"), linear-gradient(180deg, var(--cta2-hi) 0%, var(--cta2-mid) 45%, var(--cta2-lo) 100%);
-    background-size:100% 100%, auto; background-position:center, 0 0; background-repeat:no-repeat;
-    box-shadow:var(--cta2-shadow);
-    transition:background-color 150ms ease, box-shadow 150ms ease, filter 150ms ease, transform 150ms ease;
-  }
-  .btn-primary.next-cup-go:active{box-shadow:var(--cta2-shadow-press);}
   /* Aanpassen (secundair) naast Naar de timer (primair, breder): de secundaire actie concurreert
      nooit met de primaire. */
   .prep-cta-row{display:flex; gap:10px; align-items:stretch;}
@@ -1181,11 +1163,12 @@
   .brew-controls #home-btn svg, .brew-controls #reset-btn svg{filter:drop-shadow(0 -1px 0 var(--bronze-icon-lo));}
   @media (hover:hover){ .brew-controls #pause-btn:hover, .brew-controls #home-btn:hover, .brew-controls #reset-btn:hover{--rot:7deg;} }
   .brew-controls #pause-btn:active, .brew-controls #home-btn:active, .brew-controls #reset-btn:active{--rot:16deg; transform:translateY(.5px) scale(.985); filter:brightness(.97);}
-  /* VA-17: gepauzeerd is het een pil met "Hervat": dan het matte champagnekoper van .btn-primary. */
+  /* VA-17: gepauzeerd is het een pil met "Hervat": dan het geborstelde champagnekoper van .btn-primary. */
   .brew-controls #pause-btn[data-paused]{
     color:var(--cta-text); text-shadow:none;
     border:1px solid var(--cta-border); border-top-color:var(--cta-border-top);
-    background-color:var(--cta-base); background-image:var(--cta-gradient);
+    background:var(--cta-photo) center / 100% 100% no-repeat, var(--cta-gradient);
+    background-color:var(--cta-base);
     box-shadow:var(--cta-shadow);
   }
   .brew-controls #pause-btn[data-paused]:active{transform:translateY(1px); filter:brightness(.97); box-shadow:var(--cta-shadow-press);}
@@ -1801,13 +1784,14 @@
   /* Kaartvorm, wel de primaire knopfamilie. .home-cta komt later en zet achtergrond, rand, schaduw
      en overgang van een gewone kaart; hier staan die van .btn-primary er opnieuw. */
   .home-cta.btn-primary{
-    display:block; text-align:left; padding:16px; min-height:auto; color:var(--cta-text);
+    display:block; text-align:left; padding:16px; min-height:auto; color:var(--cta-text); border-radius:var(--radius-cta); /* .home-cta zet 14 px: één hoek voor de familie */
     font-size:var(--fs-body); font-weight:400; line-height:1.4; letter-spacing:0; /* een kaart: de titel is vet, de uitleg gewone tekst */
     border:1px solid var(--cta-border); border-top-color:var(--cta-border-top);
-    background-color:var(--cta-base); background-image:var(--cta-gradient); box-shadow:var(--cta-shadow);
+    background:var(--cta-photo) center / 100% 150% no-repeat, var(--cta-gradient); /* hoger dan een knop: het lichte middendeel, zodat ook de uitleg ≥ 4,5 : 1 haalt */
+    background-color:var(--cta-base); box-shadow:var(--cta-shadow);
     transition:background 150ms ease, box-shadow 150ms ease, filter 150ms ease, transform 150ms ease;
   }
-  .home-cta.btn-primary .home-cta-desc{color:var(--cta-text); opacity:.82;}
+  .home-cta.btn-primary .home-cta-desc{color:var(--cta-text);} /* volle sterkte: gedempt (82 %) haalde op de foto het contrast niet */
   @media (hover:hover){ .home-cta.btn-primary:hover{border-color:var(--cta-border); border-top-color:var(--cta-border-top); box-shadow:var(--cta-shadow);} }
   @media (hover:hover) and (pointer:fine){ .home-cta.btn-primary:hover{filter:brightness(1.025); transform:translateY(-1px);} }
   .home-cta.btn-primary:active{filter:brightness(.97); transform:translateY(1px); box-shadow:var(--cta-shadow-press);}
