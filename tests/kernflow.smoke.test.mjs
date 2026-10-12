@@ -4573,6 +4573,25 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.close();
     });
 
+    test('voorvertoning: "Zet opnieuw" heeft de foto van geborsteld koper als achtergrond, en die laadt', async () => {
+      const page = await newTrackedPage(PHONEK);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      const r = await page.evaluate(async () => {
+        const b = document.createElement('button'); b.className = 'start-btn next-cup-go btn-primary'; b.textContent = 'Zet opnieuw';
+        document.getElementById('home-next-cup').parentElement.appendChild(b);
+        const cs = getComputedStyle(b), src = (cs.backgroundImage.match(/url\("([^"]+)"\)/) || [])[1];
+        const img = new Image(); img.src = src; await img.decode().catch(() => {});
+        const out = { img: cs.backgroundImage, size: cs.backgroundSize, w: img.naturalWidth, h: img.naturalHeight, top: cs.borderTopColor, shadow: cs.boxShadow };
+        b.remove(); return out;
+      });
+      assert.match(r.img, /^url\("[^"]*photos\/koper-geborsteld\.webp"\), linear-gradient\(/, 'foto, met een verloop als terugval');
+      assert.equal(r.size, '100% 100%, auto');
+      assert.ok(r.w >= 900 && r.h >= 300, `foto ${r.w}×${r.h}`);
+      assert.equal(r.top, 'rgba(255, 242, 222, 0.35)');
+      assert.equal(r.shadow, 'rgba(0, 0, 0, 0.12) 0px 2px 6px 0px');
+      await page.close();
+    });
+
     test('focus met het toetsenbord: koperen omlijning van 2 px op 3 px afstand', async () => {
       const page = await newTrackedPage(PHONEK);
       await page.goto(FILE_URL, { waitUntil: 'load' });

@@ -114,10 +114,10 @@
     --cta-shadow:inset 0 1px 0 var(--cta-inset), 0 2px 0 var(--cta-depth), 0 5px 12px var(--cta-ambient);
     --cta-shadow-press:0 1px 0 var(--cta-press-depth), 0 2px 5px var(--cta-press-ambient);
     --radius-cta:17px;
-    /* VOORVERTONING V2.0 (alleen "Zet opnieuw"; na review voor de hele primaire knopfamilie):
-       zachter verloop, fijne horizontale borstelstructuur, lichtere rand, compacte schaduw. */
+    /* VOORVERTONING geborsteld koper (alleen "Zet opnieuw"; na review voor de hele primaire
+       knopfamilie): Jelles foto van een plaat geborsteld champagnekoper als achtergrond, lichte
+       rand, compacte schaduw. Het verloop eronder is de terugval zolang de foto niet geladen is. */
     --cta2-hi:#DDB58D; --cta2-mid:#D6AA7E; --cta2-lo:#D0A071;
-    --cta2-brush-hi:rgba(255,248,235,.025); --cta2-brush-lo:rgba(110,67,38,.018);
     --cta2-border:rgba(105,63,34,.18); --cta2-border-top:rgba(255,242,222,.35);
     --cta2-shadow:0 2px 6px rgba(0,0,0,.12); --cta2-shadow-press:0 1px 4px rgba(0,0,0,.1);
     /* Champagnekoper voor de rand van de secundaire knop; --rot is de reflectie van de gedraaide
@@ -840,16 +840,16 @@
   .btn-primary:active, .start-btn:active, .pill-cta:active, .advice-cta:active{filter:brightness(.97); transform:translateY(1px); box-shadow:var(--cta-shadow-press);}
   .btn-primary:focus-visible, .start-btn:focus-visible, .pill-cta:focus-visible, .advice-cta:focus-visible{outline:2px solid var(--cta-focus); outline-offset:3px;}
   .btn-primary:disabled, .start-btn:disabled, .pill-cta:disabled, .advice-cta:disabled{cursor:not-allowed; filter:saturate(.45); opacity:.6; transform:none;}
-  /* VOORVERTONING V2.0 — alleen "Zet opnieuw" in Je volgende kop. De borstelstructuur is een
-     herhalend verloop van 3 px (1 px licht, 1 px overgang, 1 px donker) op 2,5 % en 1,8 %
-     dekking: bovenop het verloop, zonder eigen laag of afbeelding. Geen inset-licht en geen
-     donkere onderrand meer; één compacte schaduw. */
+  /* VOORVERTONING geborsteld koper — alleen "Zet opnieuw" in Je volgende kop. De achtergrond is
+     het middelste deel (≈ 60 %) van Jelles foto van een plaat geborsteld champagnekoper (uitsnede
+     F2): fijne verticale haarlijnen, licht in het midden, iets donkerder boven en onder. De foto
+     wordt uitgerekt tot de knopmaat; de haarlijnen lopen verticaal en blijven daardoor scherp.
+     Eronder een zacht verloop als terugval zolang de foto laadt. */
   .btn-primary.next-cup-go{
     border-color:var(--cta2-border); border-top-color:var(--cta2-border-top);
     background-color:var(--cta-base);
-    background-image:
-      repeating-linear-gradient(180deg, var(--cta2-brush-hi) 0, var(--cta2-brush-hi) 1px, var(--cta2-brush-lo) 2px, var(--cta2-brush-lo) 3px),
-      linear-gradient(180deg, var(--cta2-hi) 0%, var(--cta2-mid) 45%, var(--cta2-lo) 100%);
+    background-image:url("photos/koper-geborsteld.webp"), linear-gradient(180deg, var(--cta2-hi) 0%, var(--cta2-mid) 45%, var(--cta2-lo) 100%);
+    background-size:100% 100%, auto; background-position:center, 0 0; background-repeat:no-repeat;
     box-shadow:var(--cta2-shadow);
     transition:background-color 150ms ease, box-shadow 150ms ease, filter 150ms ease, transform 150ms ease;
   }
