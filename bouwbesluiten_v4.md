@@ -379,3 +379,56 @@ Na het gedraaide koper (hierboven) vond Jelle de horizontale draaisporen te druk
 - Knoptekst `--on-primary` tegen elk afzonderlijk pixel van de structuur in de tekstzone: minstens 4,9 : 1, in rust en ingedrukt, op 2× en 3× (de startknop 5,1, de Hervat-pil 4,9); gemiddeld 7,3 : 1. Om dat te halen zijn de flanken van het verloop iets lichter dan in het voorbeeld en rolt de lichtband bij indrukken maar half zo ver.
 
 **Testresultaten:** het blok "Champagnekoper (knoppen)" in `tests/kernflow.smoke.test.mjs` (5 browsertests): geen horizontale strepen, één verloop met de structuur erover (multiply), meerollen bij indrukken, de pauzeknop en "Hervat", de metalen rand van de secundaire knop, de zachtere blokrand en geen overgang bij minder beweging. De rekenkern is ongewijzigd.
+
+# Primaire knop in mat champagnekoper (UI Refinement V1.0)
+
+Jelle leverde een precieze specificatie aan: een rustig, bijna egaal vlak in champagnekoper, zonder strepen, textuur of glans. Op zijn keuze geldt die voor de **hele primaire knopfamilie** (`.btn-primary`: Zet opnieuw, Start, Naar de timer, Opslaan, Zet deze boon, Proeven & loggen, Hervat, enz.), niet alleen voor "Zet opnieuw", zodat de app één hoofdknop houdt (VA-20).
+
+**Weg:** de geborstelde textuur (`--metal-grain`, een SVG-ruis via `multiply`), het staafverloop met rollende lichtband (`--metal-bar`, `--roll` en `@property --roll`) en de bijbehorende rand-, druk- en reliëftokens (`--metal-1`, `-3`, `-deep`, `-edge-hi`, `-edge-lo`, `-seat`, `-press`, `-press-hi`, `-emboss`). De dode kleuren in `.bed-dry-btn` zijn opgeruimd: die werden al door `.btn-primary` overschreven.
+
+**Nieuw:**
+
+| Eigenschap | Waarde |
+|---|---|
+| Vlak | `#D4A574`, met een heel zacht verloop van boven naar onder: `#E2BC91` 0 % → `#DAB082` 24 % → `#D4A574` 55 % → `#C99160` 100 %. Geen `::before`/`::after`, geen textuur. |
+| Rand | 1 px `rgba(105,63,34,.22)`; bovenrand `rgba(255,242,222,.42)` als fijne lichtrand. |
+| Schaduw | `inset 0 1px 0 rgba(255,242,222,.12), 0 2px 0 rgba(105,63,34,.28), 0 5px 12px rgba(0,0,0,.18)`. De interne highlight blijft: op 3× vormt hij met de bovenrand één aflopende lichtrand, geen dubbele lijn. |
+| Vorm | 64 px hoog, hoek 17 px (afgeronde rechthoek, geen pil), volle breedte, zijmarge 24 px. |
+| Letter | sansletter 17 px, gewicht 600, regelhoogte 24 px, spatiëring −0,2 px, `#21170F`. |
+| Pijl | Het teken "→" is een lijnicoon van 20 × 20 px (zelfde iconenset, lijndikte 1,7), 10 px van de tekst; tekst en pijl staan als één groep gecentreerd. |
+| Hover (alleen muis) | `brightness(1.025)`, 1 px omhoog. |
+| Ingedrukt | `brightness(.97)`, 1 px omlaag, kleinere schaduw. Overgangen 150 ms. |
+| Focus (toetsenbord) | omlijning 2 px `rgba(212,165,116,.85)` op 3 px afstand. |
+| Uitgeschakeld | minder verzadiging, 60 % dekking, geen beweging. |
+| Minder beweging | geen overgang en geen verschuiving. |
+
+Alle waarden staan als tokens in `:root` (`--cta-*`, `--radius-cta`, `--fs-cta`), in beide thema's gelijk. De typeschaal krijgt daarvoor een achtste stap: 17 px voor de primaire knop (de iOS-maat voor knoppen); de typografietest kent die stap. `--primary` is in het donkere thema dezelfde kleur, maar verschilt in het lichte; daarom eigen tokens. Bestaande globale tokens zijn niet veranderd.
+
+**Varianten en uitzonderingen.**
+
+- **Kaartknop op Home.** De kaartvormige primaire knop op Home zonder volgende kop ("Nieuw brouwsel starten") draagt hetzelfde koper, maar houdt de kaartletter (titel vet, uitleg gewoon). Achtergrond, rand, schaduw en overgang van `.home-cta` overschreven die van `.btn-primary`; die staan er nu expliciet.
+- **"Hervat".** De pil op de timer krijgt hetzelfde koper. De lopende pauzeknop blijft de gedraaide knop; Home en Reset blijven brons.
+- **Kleine knop.** De kleine variant ("+ Nieuwe boon", 44 px) houdt dezelfde hoek, zodat de familie één hoekradius heeft.
+- **Smallere zijmarges.** "Naar de timer · 3:30" naast "Aanpassen" heeft 16 px zijmarge en de adviesknop ("Gebruik V60 met deze keuzes") 10 px. Zo passen beide op 375 px weer op één regel, zoals voorheen. "Gebruik Chemex met deze keuzes" breekt op 375 px over twee regels, net als vóór deze wijziging.
+- **"Proeven & loggen".** Die knop werd met `display:block` getoond; nu `flex`, zodat tekst en pijl als één groep gecentreerd staan.
+
+**Gemeten** (Chromium; iPhone 390 × 844 op 2× en 3×, iPhone SE 375 × 667; licht en donker):
+
+- Knoptekst `#21170F` tegen elk afzonderlijk pixel van het gerenderde koper in de tekstzone: minstens 6,9 : 1 in rust en 6,4 : 1 ingedrukt; gemiddeld 8,0 : 1. Gemeten op Zet opnieuw, Naar de timer, Hervat en de kaartknop.
+- "Zet opnieuw": 316 × 64 px, hoek 17 px, afstand tekst–pijl 10 px, groep op 0,0 px van het midden.
+- Op 375 px staat elke zichtbare primaire knop op één regel. Geen knop loopt buiten zijn kaart of het scherm.
+
+**Testresultaten:** het blok "Primaire knop: mat champagnekoper" in `tests/kernflow.smoke.test.mjs` controleert:
+- geen textuur en geen pseudo-lagen;
+- het exacte verloop, de kleuren, de maat, de letter, de rand en de schaduw;
+- de ingedrukte staat;
+- de focusomlijning met het toetsenbord;
+- de kaartknop op Home;
+- de pauzeknop en "Hervat";
+- de secundaire rand, de zachte blokrand en "minder beweging".
+
+Aangepast:
+- de VA-20-test herkent gevulde knoppen aan `--cta-base`;
+- "Proeven & loggen" heeft een pijlicoon in plaats van het teken.
+
+De rekenkern is ongewijzigd.

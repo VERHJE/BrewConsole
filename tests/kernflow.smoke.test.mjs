@@ -2729,7 +2729,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       const open = page.locator('#brewlog-open-btn');
       assert.equal(await open.isVisible(), true);
       assert.ok(await open.evaluate(el => el.classList.contains('start-btn')), 'loggen is de primaire knop');
-      assert.equal((await open.textContent()).trim(), 'Proeven & loggen →');
+      assert.equal((await open.textContent()).trim(), 'Proeven & loggen');
+      assert.deepEqual(await open.evaluate(el => { const r = el.querySelector('svg.icon-arrow').getBoundingClientRect(); return [getComputedStyle(el).display, r.width, r.height]; }), ['flex', 20, 20], 'pijl als icoon van 20 px; tekst en pijl als één groep');
       assert.equal(await page.locator('#home-btn').isVisible(), true);
       await page.click('#reset-btn');
       assert.equal(await page.locator('#brew-ready-start').isVisible(), true, 'na ↻ kun je weer starten (klaar-check)');
@@ -3109,7 +3110,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
 
   describe('Sprint 5: typografie, tokens en een korter receptscherm', () => {
     const PHONE = { viewport: { width: 390, height: 844 } };
-    const SCALE = ['12px', '14px', '16px', '20px', '24px', '32px', '48px'];
+    const SCALE = ['12px', '14px', '16px', '17px', '20px', '24px', '32px', '48px']; // 17px: de primaire knop (UI Refinement V1.0)
     async function toPrep(page, method){
       await navTo(page, 'method');
       await page.click(`[data-method="${method}"]`);
@@ -4305,7 +4306,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       for (const dest of ['home', 'beans', 'method', 'settings']){
         await navTo(page, dest);
         seen.push(...await page.evaluate(() => {
-          const primary = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+          const primary = getComputedStyle(document.documentElement).getPropertyValue('--cta-base').trim();
           const toRgb = (hex) => { const n = parseInt(hex.slice(1), 16); return `rgb(${n >> 16}, ${(n >> 8) & 255}, ${n & 255})`; };
           return [...document.querySelectorAll('.screen.active button')].filter(b => b.getClientRects().length && getComputedStyle(b).backgroundColor === toRgb(primary))
             .map(b => ({ id: b.id || b.className, cls: b.classList.contains('btn-primary'), radius: getComputedStyle(b).borderTopLeftRadius, wraps: b.getClientRects().length > 1 }));
@@ -4527,7 +4528,9 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     });
   });
 
-  describe('Champagnekoper (knoppen)', () => {
+  // UI Refinement V1.0: de primaire knop is mat champagnekoper — geen textuur, een heel zacht
+  // verloop, een fijne lichtrand bovenaan, een compacte schaduw, 64 px hoog, hoek 17 px.
+  describe('Primaire knop: mat champagnekoper', () => {
     const PHONEK = { viewport: { width: 390, height: 844 } };
     async function toPrepK(page){
       await page.click('#home-start-brew-btn');
@@ -4537,54 +4540,87 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await assertBecomesActive(page, '#screen-prep');
     }
 
-    test('primaire knop is egaal champagnekoper met een borstelstructuur; bij indrukken rolt de lichtband iets mee', async () => {
+    test('geen textuur of strepen: één zacht verloop, #D4A574, 64 px, hoek 17 px, letter 17 px/600', async () => {
       const page = await newTrackedPage(PHONEK);
       await page.goto(FILE_URL, { waitUntil: 'load' });
       await toPrepK(page);
       const r = await page.evaluate(() => {
-        const b = document.getElementById('start-btn'), cs = getComputedStyle(b);
-        const probe = document.createElement('div'); probe.style.color = 'var(--primary)'; document.body.appendChild(probe);
-        const primary = getComputedStyle(probe).color; probe.remove();
-        return { img: cs.backgroundImage, blend: cs.backgroundBlendMode, bg: cs.backgroundColor, primary, shadow: cs.boxShadow, roll: cs.getPropertyValue('--roll').trim() };
+        const b = document.getElementById('start-btn'), cs = getComputedStyle(b), be = getComputedStyle(b, '::before'), af = getComputedStyle(b, '::after');
+        return { img: cs.backgroundImage, blend: cs.backgroundBlendMode, bg: cs.backgroundColor, color: cs.color, h: b.getBoundingClientRect().height, radius: cs.borderTopLeftRadius,
+          font: [cs.fontSize, cs.fontWeight, cs.lineHeight, cs.letterSpacing], top: cs.borderTopColor, bottom: cs.borderBottomColor, shadow: cs.boxShadow, pseudo: [be.content, af.content] };
       });
-      assert.doesNotMatch(r.img, /repeating-linear-gradient/, 'geen horizontale strepen meer');
-      assert.match(r.img, /^url\("data:image\/svg\+xml.*feTurbulence/, 'borstelstructuur bovenop');
-      assert.equal((r.img.match(/linear-gradient/g) || []).length, 1, 'één egaal verloop');
-      assert.equal(r.blend, 'multiply, normal');
-      assert.equal(r.bg, r.primary, 'zonder verloop blijft het --primary');
-      assert.match(r.shadow, /inset/, 'facetrand');
-      assert.equal(r.roll, '0%');
+      assert.doesNotMatch(r.img, /url\(|repeating-|radial-|conic-/, 'geen textuur, patroon of glans');
+      assert.equal(r.img, 'linear-gradient(rgb(226, 188, 145) 0%, rgb(218, 176, 130) 24%, rgb(212, 165, 116) 55%, rgb(201, 145, 96) 100%)');
+      assert.equal(r.blend, 'normal');
+      assert.equal(r.bg, 'rgb(212, 165, 116)', 'hoofdkleur #D4A574');
+      assert.equal(r.color, 'rgb(33, 23, 15)', 'tekst #21170F');
+      assert.ok(r.h >= 64, `hoogte ${r.h}`);
+      assert.equal(r.radius, '17px');
+      assert.deepEqual(r.font, ['17px', '600', '24px', '-0.2px']);
+      assert.equal(r.top, 'rgba(255, 242, 222, 0.42)', 'fijne lichtrand bovenaan');
+      assert.equal(r.bottom, 'rgba(105, 63, 34, 0.22)');
+      assert.match(r.shadow, /rgba\(105, 63, 34, 0\.28\) 0px 2px 0px/);
+      assert.deepEqual(r.pseudo, ['none', 'none'], 'geen ::before- of ::after-laag');
+      // ingedrukt: 1 px omlaag, iets donkerder, kleinere schaduw
       const box = await page.locator('#start-btn').boundingBox();
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       await page.mouse.down();
-      await page.waitForFunction(() => getComputedStyle(document.getElementById('start-btn')).getPropertyValue('--roll').trim() === '50%');
+      await page.waitForTimeout(250);
+      const p = await page.locator('#start-btn').evaluate(el => { const cs = getComputedStyle(el); return { t: cs.transform, f: cs.filter, s: cs.boxShadow }; });
       await page.mouse.up();
+      assert.deepEqual([p.t, p.f], ['matrix(1, 0, 0, 1, 0, 1)', 'brightness(0.97)']);
+      assert.doesNotMatch(p.s, /inset/);
       await page.close();
     });
 
-    test('timer: pauze is een gedraaide koperen knop, Home en Reset brons; gepauzeerd champagnekoper', async () => {
+    test('focus met het toetsenbord: koperen omlijning van 2 px op 3 px afstand', async () => {
+      const page = await newTrackedPage(PHONEK);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await toPrepK(page);
+      await page.locator('#start-btn').focus();
+      await page.keyboard.press('Shift+Tab');
+      await page.keyboard.press('Tab'); // met het toetsenbord terug op de knop
+      const r = await page.locator('#start-btn').evaluate(el => { const cs = getComputedStyle(el); return { fv: el.matches(':focus-visible') && document.activeElement === el, o: [cs.outlineStyle, cs.outlineWidth, cs.outlineColor, cs.outlineOffset] }; });
+      assert.equal(r.fv, true);
+      assert.deepEqual(r.o, ['solid', '2px', 'rgba(212, 165, 116, 0.85)', '3px']);
+      await page.close();
+    });
+
+    test('Home zonder bonen: de kaartknop draagt hetzelfde koper, met gewone tekst onder de titel', async () => {
+      const page = await newTrackedPage(PHONEK);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.locator('#home-start-brew-btn').evaluate(el => Promise.all(el.getAnimations().map(a => a.finished))); // de klasse komt bij het tekenen van Home: overgang afwachten
+      const r = await page.locator('#home-start-brew-btn').evaluate(el => { const cs = getComputedStyle(el); return { cls: el.classList.contains('btn-primary'), bg: cs.backgroundColor, img: cs.backgroundImage, top: cs.borderTopColor, desc: getComputedStyle(el.querySelector('.home-cta-desc')).fontWeight }; });
+      assert.equal(r.cls, true);
+      assert.equal(r.bg, 'rgb(212, 165, 116)');
+      assert.match(r.img, /^linear-gradient\(rgb\(226, 188, 145\)/);
+      assert.equal(r.top, 'rgba(255, 242, 222, 0.42)');
+      assert.equal(r.desc, '400');
+      await page.close();
+    });
+
+    test('timer: pauze blijft de gedraaide knop, Home en Reset brons; gepauzeerd "Hervat" in mat champagnekoper', async () => {
       const page = await newTrackedPage(PHONEK);
       await page.goto(FILE_URL, { waitUntil: 'load' });
       await toPrepK(page);
       await startBrewing(page);
       const knob = (id) => page.evaluate((id) => {
         const el = document.getElementById(id), cs = getComputedStyle(el), be = getComputedStyle(el, '::before');
-        return { img: cs.backgroundImage, radius: cs.borderTopLeftRadius, before: be.display, beforeImg: be.backgroundImage };
+        return { img: cs.backgroundImage, bg: cs.backgroundColor, radius: cs.borderTopLeftRadius, before: be.display, beforeImg: be.backgroundImage };
       }, id);
       const pause = await knob('pause-btn'), home = await knob('home-btn'), reset = await knob('reset-btn');
       assert.match(pause.img, /conic-gradient/, 'koperen ring');
       assert.equal(pause.radius, '50%');
-      assert.notEqual(pause.before, 'none');
       assert.match(pause.beforeImg, /repeating-radial-gradient/, 'concentrische draaisporen op het vlak');
-      assert.match(pause.beforeImg, /conic-gradient/, 'vierlobbige reflectie');
       assert.notEqual(home.img, pause.img, 'brons is niet koper');
       assert.equal(home.img, reset.img);
-      assert.match(await page.locator('#pause-btn svg').evaluate(el => getComputedStyle(el).filter), /drop-shadow/, 'gegraveerd icoon');
       await page.click('#pause-btn');
       await page.waitForSelector('#pause-btn[data-paused]');
       const paused = await knob('pause-btn');
       assert.equal(paused.before, 'none');
-      assert.match(paused.img, /feTurbulence/, 'Hervat heeft hetzelfde champagnekoper als de primaire knop');
+      assert.equal(paused.bg, 'rgb(212, 165, 116)');
+      assert.doesNotMatch(paused.img, /url\(|repeating-/, 'geen textuur');
+      assert.match(paused.img, /^linear-gradient\(rgb\(226, 188, 145\)/, 'Hervat heeft het koper van de primaire knop');
       await page.close();
     });
 
