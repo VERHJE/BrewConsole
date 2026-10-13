@@ -4696,6 +4696,131 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     });
   });
 
+  describe('Responsiveness ronde 1: liggend, lage schermen, lange namen', () => {
+    const LONG = 'Kirinyaga-Gatomboya-AA-Peaberry-Natural-Anaerobic Guji Hambela Heirloom Lot 74110';
+    const BEAN = { id:'bean-r1', name:LONG, roastLevel:'light', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:0, bagSizeG:250 };
+    async function pageAt(viewport, seed){
+      const page = await newTrackedPage({ viewport, isMobile:true, hasTouch:true });
+      if (seed) await page.addInitScript((seed) => {
+        if (sessionStorage.getItem('r1-seeded')) return;
+        sessionStorage.setItem('r1-seeded', '1');
+        for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, JSON.stringify(v));
+      }, seed);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      return page;
+    }
+    async function toReady(page){
+      await page.click('#home-start-brew-btn');
+      await page.click('[data-method="v60"]');
+      await page.click('[data-roast="light"]');
+      await page.click('[data-profile="klassiek"]');
+      await page.click('#start-btn');
+      await assertBecomesActive(page, '#screen-brew');
+    }
+    const box = (page, sel) => page.locator(sel).evaluate(el => { const r = el.getBoundingClientRect(); return { top:r.top, bottom:r.bottom, left:r.left, right:r.right, vh:innerHeight }; });
+    const noOverflowX = (page) => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
+
+    test('R1/R2: telefoon liggend: wijzerplaat links, instructie en bediening rechts, zonder scrollen; aanrechtmodus blijft uit', async () => {
+      const page = await pageAt({ width: 844, height: 390 });
+      await toReady(page);
+      assert.equal(await page.locator('#screen-brew').getAttribute('data-counter'), 'off', 'een liggende telefoon is geen tablet');
+      assert.equal(await page.locator('#screen-brew .brew-fg').evaluate(el => getComputedStyle(el).display), 'grid');
+      const start = await box(page, '#brew-ready-start'), dial = await box(page, '.dial-wrap');
+      assert.ok(start.bottom <= start.vh, `"Start de klok" in beeld (${start.bottom} van ${start.vh})`);
+      assert.ok(dial.right <= start.left, 'wijzerplaat links van de knoppen');
+      assert.ok(dial.bottom <= dial.vh, 'wijzerplaat helemaal in beeld');
+      await page.click('#brew-ready-start');
+      await page.clock.fastForward(5000);
+      for (const sel of ['#brew-action-main', '#pause-btn']){
+        const b = await box(page, sel);
+        assert.ok(b.top >= 0 && b.bottom <= b.vh, `${sel} in beeld (${b.top}–${b.bottom} van ${b.vh})`);
+      }
+      assert.equal(await noOverflowX(page), true);
+      await page.close();
+    });
+
+    test('R2: draaien zet de aanrechtmodus niet vanzelf aan; een tablet krijgt hem wel', async () => {
+      const page = await pageAt({ width: 390, height: 844 });
+      await toReady(page);
+      const counter = () => page.locator('#screen-brew').getAttribute('data-counter');
+      const becomes = (v) => page.waitForFunction((v) => document.getElementById('screen-brew').dataset.counter === v, v, { timeout: 3000 });
+      assert.equal(await counter(), 'off');
+      await page.setViewportSize({ width: 844, height: 390 });
+      await page.waitForFunction(() => innerWidth === 844);
+      assert.equal(await counter(), 'off', 'liggend blijft hij uit');
+      await page.setViewportSize({ width: 1180, height: 820 });
+      await becomes('on'); // tablet-formaat: aan
+      await page.setViewportSize({ width: 390, height: 844 });
+      await becomes('off');
+      await page.close();
+    });
+
+    test('R3: iPhone SE (ook in Safari met werkbalken): "Start de klok" en Pauze zonder scrollen in beeld', async () => {
+      for (const viewport of [{ width: 375, height: 667 }, { width: 375, height: 553 }, { width: 320, height: 568 }]){
+        const page = await pageAt(viewport);
+        await toReady(page);
+        const start = await box(page, '#brew-ready-start');
+        assert.ok(start.bottom <= start.vh, `${viewport.width}×${viewport.height}: Start de klok tot ${start.bottom}`);
+        await page.click('#brew-ready-start');
+        await page.clock.fastForward(30000); // wachtfase: de langste stand vóór het doorlopen
+        const pause = await box(page, '#pause-btn');
+        assert.ok(pause.bottom <= pause.vh, `${viewport.width}×${viewport.height}: Pauze tot ${pause.bottom}`);
+        await page.close();
+      }
+    });
+
+    test('R6/R7: op 320 px blijft het recept met boon binnen het scherm; een lange boonnaam breekt af en krijgt een eigen regel', async () => {
+      const page = await pageAt({ width: 320, height: 568 }, { brewconsole_beans: [BEAN] });
+      await navTo(page, 'beans');
+      assert.equal(await noOverflowX(page), true, 'bonenlijst');
+      await page.click('#screen-beans .bean-card-open[data-open-detail="bean-r1"]');
+      await assertBecomesActive(page, '#screen-bean-detail');
+      assert.equal(await noOverflowX(page), true, 'boondetail');
+      assert.equal(await page.locator('#screen-bean-detail .bean-detail-head').evaluate(el => el.hasAttribute('data-long-name')), true);
+      const use = await box(page, '#bean-detail-use-btn');
+      assert.ok(use.bottom <= use.vh, `"Zet deze boon" boven de vouw (${use.bottom})`);
+      await page.click('#bean-detail-use-btn');
+      for (let i = 0; i < 6; i++){
+        const id = await page.evaluate(() => document.querySelector('.screen.active').id);
+        if (id === 'screen-prep') break;
+        if (id === 'screen-advice'){
+          await page.waitForFunction(() => getComputedStyle(document.getElementById('advice-result')).display !== 'none');
+          await page.click('#advice-cta');
+        } else if (id === 'screen-method') await page.click('[data-method="v60"]');
+        else if (id === 'screen-roast') await page.click('[data-roast="light"]');
+        else if (id === 'screen-profile') await page.click('[data-profile="klassiek"]');
+        await page.waitForTimeout(150);
+      }
+      await assertBecomesActive(page, '#screen-prep');
+      const t = await page.locator('#recipe-table').evaluate(el => ({ right: el.getBoundingClientRect().right, edge: innerWidth - 20 + 0.5 }));
+      assert.ok(t.right <= t.edge, `recepttabel binnen de marge (${t.right})`);
+      assert.equal(await noOverflowX(page), true, 'receptscherm');
+      await page.close();
+    });
+
+    test('R10/R13/R21: afstand tot de tabbalk bij focus, een 44 px undo-knop, en een timerscherm dat tot rust komt', async () => {
+      const page = await pageAt({ width: 390, height: 844 });
+      const r = await page.evaluate(() => {
+        const bar = document.getElementById('undo-bar'); bar.hidden = false;
+        const btn = getComputedStyle(document.getElementById('undo-bar-btn'));
+        const dot = document.querySelector('#wake-indicator .dot');
+        const idle = getComputedStyle(dot).animationName;
+        document.getElementById('wake-indicator').dataset.active = 'true';
+        const on = getComputedStyle(dot);
+        const res = { pad: parseFloat(getComputedStyle(document.documentElement).scrollPaddingBottom), undoH: document.getElementById('undo-bar-btn').getBoundingClientRect().height, undoMin: btn.minHeight,
+          idle, active: [on.animationName, on.animationIterationCount], dial: getComputedStyle(document.getElementById('dial-fill')).transitionDuration };
+        bar.hidden = true; delete document.getElementById('wake-indicator').dataset.active;
+        return res;
+      });
+      assert.ok(r.pad >= 104, `scroll-padding-bottom ${r.pad}`);
+      assert.ok(r.undoH >= 44, `undo-knop ${r.undoH} px hoog`);
+      assert.equal(r.idle, 'none', 'geen puls zolang het scherm niet aan gehouden wordt');
+      assert.deepEqual(r.active, ['wakePulse', '3'], 'drie keer pulseren, daarna stil');
+      assert.equal(r.dial, '0.25s', 'de ring verspringt kort per seconde');
+      await page.close();
+    });
+  });
+
   test('Geen console- of pageerrors opgetreden tijdens de hele kernflow', () => {
     assert.deepEqual(consoleErrors, [], 'Onverwachte console.error()-aanroepen tijdens de kernflow');
     assert.deepEqual(pageErrors, [], 'Onverwachte onafgevangen JS-fouten tijdens de kernflow');
