@@ -486,3 +486,66 @@ Op 375 px staat elke primaire knop op één regel. Geen knop loopt buiten zijn k
 - "Hervat", de secundaire rand, de zachte blokrand en "minder beweging".
 
 De offline-test controleert dat de foto na installatie in de cache staat. De rekenkern is ongewijzigd.
+
+**Aanvulling: de Zet-knop in de tabbalk.** De verhoogde, ronde middenknop van de tabbalk (telefoon) had nog de vlakke `--primary`-vulling met een koperen gloed. Hij draagt nu hetzelfde geborstelde champagnekoper:
+- **Foto:** op dezelfde schaal als een knop van normale breedte (316 px), zodat de haarlijnen even fijn zijn.
+- **Rand en icoon:** de rand van `.btn-primary`, en het kopje in `#21170F`. Het kopje haalt minstens 4,8 : 1; de norm voor een icoon is 3 : 1.
+- **Schaduw:** een neutrale schaduw voor de hoogte (`--cta-fab-lift`) in plaats van de koperen gloed.
+- **Ongewijzigd:** de ring van de actieve staat. Op desktop blijft het een gewoon menu-item in de zijbalk.
+
+Getest in het blok "Primaire knop: geborsteld champagnekoper".
+
+## Responsiveness ronde 1: liggend zetten, lage schermen en lange namen
+
+**Aanleiding.** Een responsiveness-audit met vijf specialisten (layout, mobiel en iOS, toegankelijkheid, tablet en desktop, rendering) liet zien dat de app op gewone telefoons staand en vanaf 1100 px goed werkt. Op lage en liggende schermen viel juist weg wat je tijdens het zetten nodig hebt. Ronde 1 pakt de punten aan met het meeste effect. Alles is CSS, plus twee kleine JS-aanpassingen; recepten, advies en de rekenkern zijn ongewijzigd.
+
+**Timerscherm**
+- **R1 · Telefoon liggend** (`@media (orientation:landscape) and (max-height:500px)`): de wijzerplaat staat links en de instructie en bediening rechts, in beide standen van de aanrechtmodus.
+  - De wijzerplaat schaalt met de hoogte (`min(240px, 100svh − 136px)`).
+  - De bediening (Home, Pauze, Reset) staat hier vóór "Volledig schema", zodat Pauze zonder scrollen in beeld is. De tabvolgorde loopt nog via het schema; dat is het enige verschil met de DOM-volgorde.
+  - Het raster vervangt hier ook het ≥900-raster van de aanrechtmodus, dat op een liggende iPhone Pro Max (932 × 430) te groot was.
+- **R2 · Aanrechtmodus alleen op een echte tablet:** de standaard is nu `(min-width:700px) and (min-height:600px)` (`COUNTER_MODE_QUERY`). Een liggende telefoon is ook ≥ 700 px breed; draaien zette de modus daarom vanzelf aan en maakte de instructie 76 px groot. Een eigen keuze (aan/uit) blijft gelden.
+- **R3 · Laag scherm staand** (`max-height:700px`, smaller dan 700 px):
+  - De wijzerplaat schaalt mee: `clamp(160px, 31svh, 240px)`, en de tijd `clamp(36px, 6,8svh, 48px)`.
+  - Onder 600 px hoog is de wijzerplaat `clamp(150px, 27svh, 240px)`, zijn de marges strakker en vervalt de ondertitel "Filterkoffie".
+  - `svh` is de hoogte mét de Safari-werkbalken, met `vh` als terugval.
+- **De koptekst van de timer** is hoogstens twee regels (`line-clamp`), zodat een lange boonnaam de wijzerplaat niet omlaag duwt.
+
+**Smalle schermen en lange namen**
+- **R6 · Recepttabel:** de toelichting onder een tijd ("in 30 s (~6 g/s)") mag afbreken. Onder 375 px zijn de celmarges smaller. Op 320 px is de tabel nu precies even breed als de kolom; eerst werd de pagina 351 px breed.
+- **R7 · Lange woorden:**
+  - Titels en namen die je zelf invoert, breken binnen een woord af als het woord niet past (`overflow-wrap:anywhere`).
+  - Het bonenraster vanaf 900 px gebruikt `minmax(0,1fr)`.
+  - Een boonnaam van meer dan 40 tekens krijgt op het boondetail (smaller dan 500 px) een eigen regel in de volle breedte, op 20 px (`data-long-name`, gezet in `renderBeanDetail`).
+  - In het logboek wordt de boonnaam zelf afgekapt (hoogstens 40 % van de regel), zodat score en advies erachter zichtbaar blijven.
+- **R8 · Kleine overlopers:**
+  - De zeven proefstippen krimpen tot 32 px breed (44 px hoog), zodat ze op 320 px passen.
+  - Onder 375 px neemt "Aanpassen" alleen de breedte van zijn label. "Naar de timer · 3:30" staat zo vanaf 360 px op één regel; daaronder blijven het twee regels.
+  - De badge "Tier 3-5" mag naar een eigen regel.
+  - De drie statistiektegels gebruiken onder 375 px de leesletter.
+
+**Focus, ongedaan maken en rust**
+- **R10 · Focus en scrollen:** `scroll-padding-bottom` op `html` houdt focus via het toetsenbord en `scrollIntoView` vrij van de vaste tabbalk (104 px plus de safe area) en, op het receptscherm, van de sticky knoppenrij (112 px).
+- **R13 · Ongedaan maken:** de knop in de undo-balk is 44 px hoog. Een negatieve marge houdt balk en tekst op dezelfde plek. De balk gebruikt nu het token `--safe-b`.
+- **R21 · Timerscherm tot rust:**
+  - De ring verspringt elke seconde in 0,25 s (zoals een secondewijzer) in plaats van doorlopend 0,9 s te animeren.
+  - De stip van "Scherm blijft aan" pulseert drie keer zodra het scherm aan gehouden wordt en staat daarna stil; eerst pulseerde hij eindeloos, ook onzichtbaar.
+
+**Gemeten na ronde 1** (Chromium, met de meetscripts van de audit):
+
+| Meting | Voor | Na |
+|---|---|---|
+| Timerscherm liggend (844 × 390, 667 × 375, 740 × 360, 932 × 430): instructie en Pauze/Start zonder scrollen | nee | ja |
+| iPhone SE staand (375 × 667, Safari 375 × 553) en 320 × 568: Start de klok en Pauze in beeld | nee | ja |
+| Pagina breder dan het scherm, breedtesweep 320–1920 (1.034 schermen) | 5 | 0 |
+| Pagina breder dan het scherm, stresstest met lange namen (235 schermen) | 65 | 0 |
+| Volledig verborgen toetsenbordfocus (390 × 844 / 375 × 667 / 844 × 390) | 19 / 34 / 60 | 0 / 0 / 0 |
+| "Ongedaan maken", tikvlak | 130 × 19 px | 142 × 44 px |
+| Timerscherm op een 4× vertraagde telefoon, na de puls: frames per seconde | 50 | 14 |
+
+**Bewust niet in deze ronde:**
+- Pauze tijdens het doorlopen staat op lage schermen nog onder de vouw; dan is "Bed droog" de hoofdknop en die staat wel in beeld.
+- Op de iPhone SE van de eerste generatie liggend (568 × 320) valt "Start de klok" nog net weg.
+- Onder 360 px blijft "Naar de timer · 3:30" twee regels.
+
+**Testresultaten:** het blok "Responsiveness ronde 1" in `tests/kernflow.smoke.test.mjs` controleert liggend zetten, draaien, de iPhone SE (drie hoogtes), recept en lange namen op 320 px, en scroll-padding, de undo-knop en de rust op het timerscherm. Alle 946 tests slagen. De rekenkern is ongewijzigd.

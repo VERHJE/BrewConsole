@@ -114,6 +114,7 @@
     --cta-photo:url("photos/koper-geborsteld.webp");
     --cta-gradient:linear-gradient(180deg, var(--cta-hi) 0%, var(--cta-mid) 45%, var(--cta-lo) 100%);
     --cta-shadow:0 2px 6px rgba(0,0,0,.12); --cta-shadow-press:0 1px 4px rgba(0,0,0,.1);
+    --cta-fab-lift:0 6px 14px rgba(0,0,0,.2); /* de verhoogde Zet-knop in de tabbalk */
     --radius-cta:17px;
     /* Champagnekoper voor de rand van de secundaire knop; --rot is de reflectie van de gedraaide
        pauzeknop die bij indrukken meedraait. */
@@ -595,7 +596,7 @@
   .history-more > summary{cursor:pointer; min-height:44px; display:flex; align-items:center; color:var(--copper-light); font-size:var(--fs-small);}
   .prep-best-ref{font-size:var(--fs-small); color:var(--copper-light); background:var(--surface); border:1px solid var(--copper-dim); border-radius:var(--radius-sm); padding:10px 12px; margin:0 0 12px;}
   .brewlog-entry-delete{display:inline-flex; align-items:center; min-height:44px; background:none; border:none; color:var(--text-faint); font-size:var(--fs-label); padding:0 2px; cursor:pointer; text-decoration:underline;} /* VA-32 */
-  .undo-bar{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(96px + env(safe-area-inset-bottom)); z-index:60;
+  .undo-bar{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(96px + var(--safe-b)); z-index:60;
     display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--border);
     border-radius:var(--radius-lg); padding:10px 16px; font-size:var(--fs-small); color:var(--text); box-shadow:0 6px 24px var(--ink-a35);
     /* Langere meldingen (bijv. met voorraadcorrectie) lopen over twee regels i.p.v. van het scherm af. */
@@ -606,7 +607,10 @@
   .bypass-howto ol{margin:6px 0 6px 18px; padding:0;}
   .bypass-howto li{margin:3px 0;}
   .bypass-howto p{margin:6px 0 0;}
-  .undo-bar button{background:none; border:none; color:var(--copper-light); font-weight:600; cursor:pointer; font-size:var(--fs-small); white-space:nowrap; flex-shrink:0;}
+  /* R13 (responsiveness-audit): het tikvlak van "Ongedaan maken" is 44 px hoog en loopt door tot de rand
+     van de balk; de negatieve marge houdt de balk en de tekst op dezelfde plek. */
+  .undo-bar button{background:none; border:none; color:var(--copper-light); font-weight:600; cursor:pointer; font-size:var(--fs-small); white-space:nowrap; flex-shrink:0;
+    min-height:44px; padding:0 12px; margin:-10px -12px -10px 0;}
 
   .prep-bean-line{font-size:var(--fs-small); color:var(--text-dim); margin:-4px 0 8px;}
   .prep-bean-line[data-linked="false"]{color:var(--text-faint);}
@@ -644,7 +648,7 @@
   }
   .prep-intel-icon svg{ width:17px; height:17px; }
   .prep-intel-body{ flex:1; min-width:0; font-size:var(--fs-small); color:var(--text); line-height:1.4; }
-  .prep-intel-header{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:5px; }
+  .prep-intel-header{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:4px 8px; margin-bottom:5px; } /* R8: badge mag naar een eigen regel */
   .prep-intel-title{ font-family:var(--font-display); font-weight:600; font-size:var(--fs-small); color:var(--text); }
 
   .serving-row{
@@ -791,9 +795,16 @@
   .recipe-table tbody tr:focus-visible{ background:var(--surface-2); }
   @media (hover:hover){ .recipe-table tbody tr:hover{ background:var(--surface-2); } }
   .recipe-table tbody tr:active{ background:var(--copper-dim); }
-  .recipe-table .step-note{display:block; font-size:var(--fs-label); color:var(--text-faint); margin-top:1px;}
+  .recipe-table .step-note{display:block; font-size:var(--fs-label); color:var(--text-faint); margin-top:1px; white-space:normal;}
   .recipe-table .step-flow{display:block; font-size:var(--fs-label); color:var(--copper-light); margin-top:1px; font-style:italic;}
-  .recipe-table .step-rate{display:block; font-size:var(--fs-label); color:var(--text-faint); margin-top:1px;}
+  /* R6 (responsiveness-audit): de toelichting onder een tijd mag afbreken; anders werd de tabel op
+     320 px breder dan het scherm (td.mono houdt alleen de getallen zelf op één regel). */
+  .recipe-table .step-rate{display:block; font-size:var(--fs-label); color:var(--text-faint); margin-top:1px; white-space:normal;}
+  @media (max-width:374px){
+    .recipe-table th, .recipe-table td{padding-right:4px;}
+    .recipe-table thead th:first-child, .recipe-table tbody td:first-child{padding-left:10px;}
+    .recipe-table thead th:last-child, .recipe-table tbody td:last-child{padding-right:10px;}
+  }
   /* text-shadow (op verzoek, lichtere scrim-ronde): dit is kale tekst zonder eigen
      ondoorzichtig vlak, rechtstreeks over de doorlopende foto — dezelfde bescherming als
      .brew-hero-title al had, nu ook hier i.p.v. op een zware scrim te leunen. */
@@ -842,6 +853,29 @@
   .prep-cta-row .prep-adjust-btn{flex:1; margin-top:0; min-height:auto;}
   .prep-cta-row .start-btn{flex:1.8; padding-left:16px; padding-right:16px;} /* naast Aanpassen: zo past "Naar de timer · 3:30" op 375 px op één regel */
   .advice-cta{padding-left:10px; padding-right:10px;} /* lange label ("Gebruik V60 met deze keuzes"), gecentreerd: zo op 375 px op één regel */
+  /* R8 (responsiveness-audit): onder 375 px neemt Aanpassen alleen de breedte van zijn label, zodat
+     "Naar de timer · 3:30" ook op 360 px (veel Android-toestellen) op één regel blijft. */
+  @media (max-width:374px){
+    .prep-cta-row .prep-adjust-btn{flex:0 0 auto; width:auto; padding-left:14px; padding-right:14px;}
+    .prep-cta-row .start-btn{flex:1 1 0; min-width:0; padding-left:12px; padding-right:12px; gap:6px;}
+    .stats-grid--three .stat-value{font-size:var(--fs-body);}
+    .stats-grid--three .stat-label{letter-spacing:.04em;}
+  }
+  /* R7 (responsiveness-audit): namen en titels die de gebruiker zelf invoert, breken binnen een woord
+     af als dat woord niet op de regel past, in plaats van het scherm te verbreden. */
+  .title, .bean-card-name, .bean-pick-name, .history-group-title, .next-cup-title, .brew-hero-title{overflow-wrap:anywhere;}
+  /* De koptekst van de timer houdt de wijzerplaat op zijn plek: hoogstens twee regels. */
+  .brew-hero-title{display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;}
+  /* Een lange boonnaam (meer dan 40 tekens, zie renderBeanDetail) krijgt op een smal scherm de volle
+     breedte onder kleurstaal, herkomst en hartje, zodat "Zet deze boon" boven de vouw blijft. */
+  @media (max-width:499px){
+    .bean-detail-head[data-long-name]{display:grid; grid-template-columns:auto minmax(0,1fr) auto; column-gap:14px; row-gap:8px;}
+    .bean-detail-head[data-long-name] .bean-detail-head-text{display:contents;}
+    .bean-detail-head[data-long-name] .bean-detail-swatch{grid-column:1; grid-row:1; width:48px; height:48px;}
+    .bean-detail-head[data-long-name] .bean-detail-meta{grid-column:2; grid-row:1; margin:0;}
+    .bean-detail-head[data-long-name] .bean-detail-fav{grid-column:3; grid-row:1;}
+    .bean-detail-head[data-long-name] .title{grid-column:1 / -1; grid-row:2; font-size:var(--fs-heading); line-height:1.3;}
+  }
   .style-more-body:not([hidden]){display:block; margin-top:6px;}
   /* Audit VA-06: het resultaat erft display:flex (rij) van .process-note; in een kolom blijft
      alles binnen het scherm. */
@@ -960,7 +994,10 @@
     text-shadow:0 1px 3px var(--ink-a60);
   }
   .wake-indicator[data-active="true"]{opacity:1;}
-  .wake-indicator .dot{width:6px; height:6px; border-radius:50%; background:var(--copper-light); box-shadow:0 0 0 0 var(--glow-a60); animation:wakePulse 2s infinite;}
+  /* R21 (responsiveness-audit): de stip pulseert drie keer zodra het scherm aan blijft en staat daarna
+     stil; een eindeloze puls hield het timerscherm (ook onzichtbaar) 60 keer per seconde bezig. */
+  .wake-indicator .dot{width:6px; height:6px; border-radius:50%; background:var(--copper-light); box-shadow:0 0 0 0 var(--glow-a60);}
+  .wake-indicator[data-active="true"] .dot{animation:wakePulse 2s ease-out 3;}
   @keyframes wakePulse{
     0%{box-shadow:0 0 0 0 var(--glow-a50);}
     70%{box-shadow:0 0 0 6px var(--glow-a00);}
@@ -991,7 +1028,9 @@
   .dial{width:100%; height:100%;}
   .dial-backdrop{fill:var(--surface); stroke:none;}
   .dial-track{fill:none; stroke:var(--surface-2); stroke-width:8;}
-  .dial-fill{fill:none; stroke:var(--copper); stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset .9s linear;}
+  /* R21: de ring verspringt elke seconde in een korte beweging (zoals een secondewijzer) in plaats van
+     doorlopend te animeren; dat scheelt het grootste deel van het rekenwerk op het timerscherm. */
+  .dial-fill{fill:none; stroke:var(--copper); stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset .25s ease-out;}
   .dial-tick{stroke:var(--text-faint); stroke-width:2;}
   .dial-center{
     position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -1035,7 +1074,7 @@
   .tasting-progress{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:6px 0 4px; flex-wrap:wrap;}
   .tasting-progress-label{font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.06em; text-transform:uppercase; color:var(--copper-light); margin:0;}
   .tasting-dots{display:flex; gap:0;}
-  .tasting-dot{width:44px; min-height:44px; background:none; border:none; padding:0; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;}
+  .tasting-dot{flex:0 1 44px; min-width:32px; min-height:44px; background:none; border:none; padding:0; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;} /* R8: zeven stippen passen ook op 320 px */
   .tasting-dot span{display:block; width:18px; height:5px; border-radius:var(--radius-xs); background:var(--border);}
   .tasting-dot[data-state="done"] span{background:var(--copper-dim);}
   .tasting-dot[data-state="current"] span{background:var(--copper); width:24px;}
@@ -1239,6 +1278,8 @@
   .brewlog-entry-summary::before{content:"+"; font-family:var(--font-mono); color:var(--text-faint); flex-shrink:0; width:12px;}
   .brewlog-entry-details[open] > .brewlog-entry-summary::before{content:"−";}
   .brewlog-entry-line{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-dim);}
+  /* R7: een lange boonnaam wordt zelf afgekapt, zodat score en advies erachter zichtbaar blijven. */
+  .brewlog-entry-bean{display:inline-block; max-width:40%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:top;}
   .brewlog-entry-line strong{color:var(--text); font-weight:600;}
   .brewlog-entry-liking{font-variant-numeric:tabular-nums; color:var(--text);}
   .brewlog-entry-body{padding:0 14px 12px 32px;}
@@ -1640,6 +1681,67 @@
       #screen-brew[data-counter="on"] .brew-action-main{font-size:clamp(44px, 10.5cqi, 92px);}
     }
   }
+  /* R3 (responsiveness-audit): staand op een laag scherm (iPhone SE, kleine Android, Safari met
+     werkbalken) schaalt de wijzerplaat mee met de hoogte, zodat "Start de klok" en Pauze zonder
+     scrollen in beeld blijven. svh = de hoogte mét werkbalken; vh is de terugval. */
+  @media (max-height:700px) and (max-width:699px){
+    .brew-hero-header{margin-bottom:8px;}
+    .dial-wrap{width:clamp(160px, 31vh, 240px); height:clamp(160px, 31vh, 240px);}
+    .dial-time{font-size:clamp(36px, 6.8vh, 48px);}
+    @supports (height:1svh){
+      .dial-wrap{width:clamp(160px, 31svh, 240px); height:clamp(160px, 31svh, 240px);}
+      .dial-time{font-size:clamp(36px, 6.8svh, 48px);}
+    }
+  }
+  /* Nog lager (iPhone SE in Safari, 320×568): kleinere wijzerplaat, strakkere marges en zonder de
+     ondertitel "Filterkoffie" (die staat ook in de kop van het recept). */
+  @media (max-height:600px) and (max-width:699px){
+    .brew-hero-subtitle{display:none;}
+    .brew-action{margin:0 0 6px;}
+    .next-info{margin-bottom:14px;}
+    .brew-ready-list{margin-bottom:8px;}
+    .dial-wrap{width:clamp(150px, 27vh, 240px); height:clamp(150px, 27vh, 240px);}
+    @supports (height:1svh){
+      .dial-wrap{width:clamp(150px, 27svh, 240px); height:clamp(150px, 27svh, 240px);}
+    }
+  }
+  /* R1 (responsiveness-audit): een telefoon liggend op het aanrecht. Wijzerplaat links, instructie
+     en bediening rechts, in beide standen van de aanrechtmodus; de wijzerplaat schaalt met de hoogte.
+     De bediening staat hier vóór het schema, zodat Pauze zonder scrollen bereikbaar is.
+     [data-counter] maakt de selectors even specifiek als het ≥900-raster hierboven, dat zo vervalt. */
+  @media (orientation:landscape) and (max-height:500px){
+    .app[data-state="brew"] #screen-brew[data-counter] .brew-fg{max-width:none;}
+    #screen-brew[data-counter] .brew-fg{display:grid; grid-template-columns:min-content minmax(0,1fr); grid-template-rows:repeat(7, auto) 1fr; column-gap:clamp(20px, 4vw, 40px); align-items:start; padding-top:46px;}
+    #screen-brew[data-counter] .brew-fg > *{grid-column:2; order:3;}
+    #screen-brew[data-counter] .brew-fg > .brew-hero{grid-column:1; grid-row:1 / -1; position:static; padding-top:0;}
+    #screen-brew[data-counter] .brew-fg > .brew-recovery{grid-column:1 / -1;}
+    #screen-brew[data-counter] .brew-fg > .brew-focus-info,
+    #screen-brew[data-counter] .brew-fg > .dial-flow,
+    #screen-brew[data-counter] .brew-fg > .finish-note,
+    #screen-brew[data-counter] .brew-fg > .brewlog-open-btn{order:1;}
+    #screen-brew[data-counter] .brew-fg > .brew-controls{order:2;}
+    #screen-brew[data-counter] .dial-wrap{width:min(240px, calc(100vh - 136px)); height:min(240px, calc(100vh - 136px));}
+    @supports (height:1svh){
+      #screen-brew[data-counter] .dial-wrap{width:min(240px, calc(100svh - 136px)); height:min(240px, calc(100svh - 136px));}
+    }
+    #screen-brew[data-counter] .brew-hero-header{margin-bottom:8px;}
+    #screen-brew[data-counter] .brew-fg > :not(.brew-hero),
+    #screen-brew[data-counter] .brew-action,
+    #screen-brew[data-counter] .bed-dry-hint,
+    #screen-brew[data-counter] .brew-ready-note{text-align:left;}
+    #screen-brew[data-counter] .dial-flow{margin-left:0;}
+    #screen-brew[data-counter] .brew-ready-list{margin-left:0;}
+    #screen-brew[data-counter] .brew-controls{justify-content:flex-start; margin:0 0 14px;}
+    #screen-brew[data-counter] .counter-toggle{margin-left:0;}
+    #screen-brew[data-counter] .next-info{margin-bottom:14px;}
+    #screen-brew[data-counter] .brew-action{margin:0 0 6px;}
+    #screen-brew[data-counter] .bed-dry-btn{min-height:64px; font-size:var(--fs-cta);}
+    #screen-brew[data-counter] .brew-focus-info{container-type:inline-size;}
+    #screen-brew[data-counter="on"] .brew-action-main{font-size:clamp(36px, 7vw, 56px);}
+    @supports (font-size:1cqi){
+      #screen-brew[data-counter="on"] .brew-action-main{font-size:clamp(36px, 9cqi, 56px);}
+    }
+  }
   /* VA-05: getal en eenheid nooit over twee regels (zie keepUnitsTogether()). */
   .nobr{white-space:nowrap;}
   @media (min-width:1100px){
@@ -1670,6 +1772,14 @@
   .app-content{min-width:0;}
   .app{ padding-bottom:calc(max(40px, var(--safe-b)) + 102px); } /* Sprint 2: +24px voor de verhoogde Zet-knop */
   .app[data-task]{ padding-bottom:calc(max(24px, var(--safe-b)) + 12px); } /* VA-30: geen tabbalk tijdens een taak */
+  /* R10 (responsiveness-audit): focus via het toetsenbord en scrollIntoView houden afstand tot de vaste
+     tabbalk (met de verhoogde Zet-knop) en tot de sticky knoppenrij van het recept. */
+  @media (max-width:899px){
+    html{scroll-padding-bottom:calc(max(6px, var(--safe-b)) + 104px);}
+  }
+  @media (max-width:1099px){
+    html:has(#screen-prep.active){scroll-padding-bottom:calc(max(8px, var(--safe-b)) + 112px);}
+  }
   /* Tabbalk: vaste balk onderin met een donkere, licht doorschijnende achtergrond (blur, dun
      randje) en een ingetogen actieve staat. */
   .navbar{
@@ -1700,16 +1810,21 @@
   @media (hover:hover){ .navbar-btn:hover{color:var(--copper-light);} }
   .navbar-btn:active{transform:scale(.94); transition:transform var(--motion-micro) var(--ease-out);}
   /* Sprint 2 (UX-review F5): de zetknop als verhoogde, gevulde middenknop — met label, niet
-     alleen een icoon. Actief = een ring i.p.v. het streepje (de knop is al gevuld). */
+     alleen een icoon. Actief = een ring i.p.v. het streepje (de knop is al gevuld).
+     Hetzelfde geborstelde champagnekoper als de primaire knop: de foto op dezelfde schaal als
+     een knop van normale breedte (316 px), zodat de haarlijnen even fijn zijn; rand en tekstkleur
+     van .btn-primary; een neutrale schaduw voor de hoogte in plaats van de koperen gloed. */
   @media (max-width:899px){
     .navbar{align-items:flex-end;}
     .navbar-btn--zet{color:var(--text);}
     .navbar-btn--zet svg{
       width:52px; height:52px; padding:13px; box-sizing:border-box; margin-top:-24px;
-      background:var(--primary); color:var(--on-primary); border-radius:50%;
-      box-shadow:0 6px 18px var(--copper-a35);
+      background:var(--cta-photo) center / 316px 100% no-repeat, var(--cta-gradient);
+      background-color:var(--cta-base); color:var(--cta-text); border-radius:50%;
+      border:1px solid var(--cta-border); border-top-color:var(--cta-border-top);
+      box-shadow:var(--cta-shadow), var(--cta-fab-lift);
     }
-    .navbar-btn--zet[aria-current="page"] svg{box-shadow:0 0 0 3px var(--bg), 0 0 0 5px var(--copper-light);}
+    .navbar-btn--zet[aria-current="page"] svg{box-shadow:0 0 0 3px var(--bg), 0 0 0 5px var(--copper-light), var(--cta-fab-lift);}
     .navbar-btn--zet[aria-current="page"] span:last-child::after{display:none;}
   }
 
@@ -1922,7 +2037,7 @@
     .navbar-btn[aria-current="page"]{background:var(--surface-2); border-radius:var(--radius-sm);}
     /* "Split view" (Bouwbesluit): de twee lijstschermen (Bonen, Historie) tonen hun
        kaarten in twee kolommen i.p.v. één, zodat de zijbalk-breedte goed benut wordt. */
-    .bean-list{display:grid; grid-template-columns:repeat(2,1fr); gap:12px;}
+    .bean-list{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px;}
   }
   /* Sprint 1 (UX-review F9): tikdoelen minimaal 44 × 44 (WCAG 2.5.5 / Apple HIG). Alleen
      de hoogte/breedte gaat omhoog; kleur, tekst en volgorde blijven gelijk. */
@@ -8188,6 +8303,9 @@ function renderBeanDetail(bean){
   const r = ROAST_INFO[bean.roastLevel] || ROAST_INFO.medium;
   const procName = PROCESS_INFO[bean.process] ? PROCESS_INFO[bean.process].name : null;
   document.getElementById('bean-detail-name').textContent = bean.name || 'Naamloze boon';
+  // R7: een lange naam krijgt op een smal scherm een eigen regel in de volle breedte (CSS).
+  const detailHead = document.querySelector('#screen-bean-detail .bean-detail-head');
+  if (detailHead) detailHead.toggleAttribute('data-long-name', String(bean.name || '').length > 40);
   document.getElementById('bean-detail-swatch').innerHTML = roastSwatchHtml(bean.roastLevel, beanInitials(bean.name)); // VA-28/47
   const meta = [bean.country, bean.region, bean.altitude ? bean.altitude + ' m' : null].filter(Boolean).join(' · ');
   document.getElementById('bean-detail-meta').textContent = meta;
@@ -10563,7 +10681,7 @@ function renderBrewLogEntryCard(e, beanId){
   const liking = e.tasting && e.tasting.liking ? `${e.tasting.liking}/5` : '';
   const lineBits = [
     escapeHtml(d.toLocaleDateString('nl-NL', { day:'numeric', month:'short' })),
-    `<strong>${entryBean ? escapeHtml(entryBean.name) + ' · ' : ''}${escapeHtml(m ? m.name : e.method)}${e.bypass ? ' · bypass' : ''}</strong>`,
+    `<strong>${entryBean ? `<span class="brewlog-entry-bean">${escapeHtml(entryBean.name)}</span> · ` : ''}${escapeHtml(m ? m.name : e.method)}${e.bypass ? ' · bypass' : ''}</strong>`,
     liking ? `<span class="brewlog-entry-liking">${liking}</span>` : '',
     changed ? escapeHtml(changed) : '',
     adviceShort ? escapeHtml(adviceShort) : ''
@@ -14709,15 +14827,18 @@ function registerOfflineServiceWorker(){
 }
 
 /* Expertreview idee 20: aanrechtmodus. Een per-toestel voorkeur (localStorage); zonder
-   voorkeur aan op een tablet (≥ 700 px breed) en uit op een telefoon. */
+   voorkeur aan op een tablet (≥ 700 px breed én ≥ 600 px hoog) en uit op een telefoon. */
 const COUNTER_MODE_KEY = 'brewconsole_counter_mode';
+// R2 (responsiveness-audit): standaard aan op een tablet of groter scherm, niet op een liggende
+// telefoon (die is ook ≥700 px breed, maar laag). Draaien zet de modus dan niet meer vanzelf aan.
+const COUNTER_MODE_QUERY = '(min-width:700px) and (min-height:600px)';
 let counterModeMemory = null; // als opslag niet beschikbaar is, geldt de keuze alleen deze sessie
 function counterModeOn(){
   let pref = counterModeMemory;
   try { pref = localStorage.getItem(COUNTER_MODE_KEY) || counterModeMemory; } catch(e){ pref = counterModeMemory; }
   if (pref === 'on') return true;
   if (pref === 'off') return false;
-  return typeof window.matchMedia === 'function' && window.matchMedia('(min-width:700px)').matches === true;
+  return typeof window.matchMedia === 'function' && window.matchMedia(COUNTER_MODE_QUERY).matches === true;
 }
 function applyCounterMode(){
   const on = counterModeOn();
@@ -14736,7 +14857,7 @@ function initCounterMode(){
     applyCounterMode();
   });
   if (typeof window.matchMedia === 'function'){
-    const mq = window.matchMedia('(min-width:700px)');
+    const mq = window.matchMedia(COUNTER_MODE_QUERY);
     if (mq && typeof mq.addEventListener === 'function') mq.addEventListener('change', applyCounterMode);
   }
   applyCounterMode();
