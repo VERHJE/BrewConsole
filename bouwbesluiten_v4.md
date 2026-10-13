@@ -530,3 +530,22 @@ Getest in het blok "Primaire knop: geborsteld champagnekoper".
 - **R21 · Timerscherm tot rust:**
   - De ring verspringt elke seconde in 0,25 s (zoals een secondewijzer) in plaats van doorlopend 0,9 s te animeren.
   - De stip van "Scherm blijft aan" pulseert drie keer zodra het scherm aan gehouden wordt en staat daarna stil; eerst pulseerde hij eindeloos, ook onzichtbaar.
+
+**Gemeten na ronde 1** (Chromium, met de meetscripts van de audit):
+
+| Meting | Voor | Na |
+|---|---|---|
+| Timerscherm liggend (844 × 390, 667 × 375, 740 × 360, 932 × 430): instructie en Pauze/Start zonder scrollen | nee | ja |
+| iPhone SE staand (375 × 667, Safari 375 × 553) en 320 × 568: Start de klok en Pauze in beeld | nee | ja |
+| Pagina breder dan het scherm, breedtesweep 320–1920 (1.034 schermen) | 5 | 0 |
+| Pagina breder dan het scherm, stresstest met lange namen (235 schermen) | 65 | 0 |
+| Volledig verborgen toetsenbordfocus (390 × 844 / 375 × 667 / 844 × 390) | 19 / 34 / 60 | 0 / 0 / 0 |
+| "Ongedaan maken", tikvlak | 130 × 19 px | 142 × 44 px |
+| Timerscherm op een 4× vertraagde telefoon, na de puls: frames per seconde | 50 | 14 |
+
+**Bewust niet in deze ronde:**
+- Pauze tijdens het doorlopen staat op lage schermen nog onder de vouw; dan is "Bed droog" de hoofdknop en die staat wel in beeld.
+- Op de iPhone SE van de eerste generatie liggend (568 × 320) valt "Start de klok" nog net weg.
+- Onder 360 px blijft "Naar de timer · 3:30" twee regels.
+
+**Testresultaten:** het blok "Responsiveness ronde 1" in `tests/kernflow.smoke.test.mjs` controleert liggend zetten, draaien, de iPhone SE (drie hoogtes), recept en lange namen op 320 px, en scroll-padding, de undo-knop en de rust op het timerscherm. Alle 946 tests slagen. De rekenkern is ongewijzigd.
