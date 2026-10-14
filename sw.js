@@ -77,8 +77,11 @@ self.addEventListener('install', (event) => {
     await cache.add(new Request(APP_SHELL, { cache: 'reload' }));
     /* De foto's halen we er best-effort bij: een foto die even niet
        laadt mag de installatie niet breken, die komt dan alsnog via
-       cacheFirst() zodra hij een keer is opgevraagd. */
-    await Promise.allSettled(PHOTOS.map((url) => cache.add(url)));
+       cacheFirst() zodra hij een keer is opgevraagd. Ook hier
+       cache:'reload' (R24): een opnieuw bewerkte foto met dezelfde naam
+       komt zo bij de volgende installatie mee, niet een oude uit de
+       HTTP-cache. */
+    await Promise.allSettled(PHOTOS.map((url) => cache.add(new Request(url, { cache: 'reload' }))));
   })());
 });
 

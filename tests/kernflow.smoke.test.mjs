@@ -54,8 +54,13 @@ async function navTo(page, dest){
 
 // VA-12: een logboekkop is één regel; de details (labels, meetwaarden, Verwijderen) staan achter
 // een tik. Tests die die details lezen, klappen ze eerst open.
+// R22: de koppen onder "Eerdere koppen" worden pas bij openklappen opgebouwd; de helper klapt dat
+// blok eerst open (en vult het meteen, de toggle-gebeurtenis komt pas een taak later).
 async function expandLogEntries(page){
-  await page.evaluate(() => document.querySelectorAll('.brewlog-entry-details').forEach(d => { d.open = true; }));
+  await page.evaluate(() => {
+    document.querySelectorAll('details.history-more').forEach(d => { d.open = true; if (typeof fillHistoryMore === 'function') fillHistoryMore(d); });
+    document.querySelectorAll('.brewlog-entry-details').forEach(d => { d.open = true; });
+  });
 }
 
 // VA-04: op het receptscherm staat hoogstens één melding bovenaan ("Voor deze kop"); de rest
@@ -3106,6 +3111,24 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.match(await group.locator('.history-more > summary').textContent(), /Eerdere koppen \(1\)/);
       await page.close();
     });
+
+    test('R22: "Eerdere koppen" wordt pas bij openen opgebouwd; een hartje werkt alleen de hartjes en Favorieten bij', async () => {
+      const page = await phonePage();
+      for (let i = 0; i < 4; i++) await cup(page, { strength: 'just_right', acidity: 'lively', finish: 'hollow', liking: '3' });
+      await navTo(page, 'brewlog-history');
+      const group = page.locator('[data-history-group="bean-s6"]');
+      assert.equal(await group.locator('.history-more .brewlog-entry-card').count(), 0, 'ingeklapt: nog niet opgebouwd');
+      await group.locator('.history-more > summary').click();
+      await page.waitForFunction(() => document.querySelectorAll('.history-more .brewlog-entry-card').length === 1);
+      const first = group.locator('.history-group-cups .brewlog-entry-card').first();
+      await first.locator('summary').click();
+      await first.locator('.brewlog-entry-fav').click();
+      assert.equal(await first.locator('.brewlog-entry-fav').getAttribute('aria-pressed'), 'true');
+      assert.equal(await first.locator('details.brewlog-entry-details').evaluate(d => d.open), true, 'de opengeklapte kop blijft open');
+      assert.equal(await group.locator('.history-more').evaluate(d => d.open), true, '"Eerdere koppen" blijft open');
+      assert.equal(await page.locator('#brewlog-history-list-fav .brewlog-entry-card').count(), 1, 'de kop staat in Favorieten');
+      await page.close();
+    });
   });
 
   describe('Sprint 5: typografie, tokens en een korter receptscherm', () => {
@@ -4905,6 +4928,60 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await navTo(ipad, 'beans');
       assert.equal(await ipad.locator('#bean-list').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length), 2, 'iPad staand: twee kolommen');
       await ipad.close();
+    });
+  });
+
+  describe('Responsiveness ronde 3: afwerking', () => {
+    test('R9: de Zet-knop staat precies in het midden van de tabbalk; elke knop is minstens 44 px breed', async () => {
+      for (const width of [320, 375, 390]){
+        const page = await newTrackedPage({ viewport: { width, height: 700 } });
+        await page.goto(FILE_URL, { waitUntil: 'load' });
+        const r = await page.evaluate(() => {
+          const z = document.querySelector('.navbar-btn--zet svg').getBoundingClientRect();
+          return { off: z.left + z.width / 2 - innerWidth / 2, widths: [...document.querySelectorAll('.navbar .navbar-btn')].map(b => b.getBoundingClientRect().width) };
+        });
+        assert.ok(Math.abs(r.off) <= 1, `${width}: Zet ${r.off} px uit het midden`);
+        for (const w of r.widths) assert.ok(w >= 44, `${width}: knop ${w} px breed`);
+        await page.close();
+      }
+    });
+
+    test('R14: telefoon liggend: Annuleren in de bonenkiezer blijft in beeld en de pagina erachter staat stil', async () => {
+      const beans = [1, 2, 3, 4, 5].map(i => ({ id:`bean-r3-${i}`, name:`Boon ${i}`, roastLevel:'light', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:i, doseUsedG:0, bagSizeG:250 }));
+      const page = await newTrackedPage({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
+      await page.addInitScript((beans) => { if (sessionStorage.getItem('r3')) return; sessionStorage.setItem('r3', '1'); localStorage.setItem('brewconsole_beans', JSON.stringify(beans)); }, beans);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.click('#home-start-brew-btn');
+      await page.click('[data-method="v60"]');
+      await page.click('[data-roast="light"]');
+      await page.click('[data-profile="klassiek"]');
+      await assertBecomesActive(page, '#screen-prep');
+      await page.click('#prep-bean-link-btn');
+      await page.waitForFunction(() => !document.getElementById('bean-picker').hidden);
+      const r = await page.evaluate(() => {
+        const box = document.querySelector('#bean-picker .modal-box').getBoundingClientRect(), cancel = document.getElementById('bean-picker-cancel').getBoundingClientRect();
+        return { boxBottom: box.bottom, cancelBottom: cancel.bottom, vh: innerHeight, overflow: getComputedStyle(document.documentElement).overflow };
+      });
+      assert.ok(r.cancelBottom <= r.boxBottom + 0.5 && r.cancelBottom <= r.vh, `Annuleren tot ${r.cancelBottom}, vak tot ${r.boxBottom}`);
+      assert.equal(r.overflow, 'hidden', 'de pagina erachter scrolt niet');
+      await page.close();
+    });
+
+    test('R16/R17: kruisje van de installatiehint 44 × 44; knoptekst schaalt mee zonder overlap', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      const x = await page.evaluate(() => { const cs = getComputedStyle(document.getElementById('install-hint-dismiss')); return [cs.minWidth, cs.minHeight]; });
+      assert.deepEqual(x, ['44px', '44px']);
+      const lh = await page.evaluate(() => {
+        const b = document.createElement('button'); b.className = 'btn-primary'; b.textContent = 'Naar de timer · 3:30'; document.body.append(b);
+        const normal = getComputedStyle(b).lineHeight;
+        document.documentElement.style.setProperty('--fs-cta', '34px');
+        const big = getComputedStyle(b).lineHeight;
+        document.documentElement.style.removeProperty('--fs-cta'); b.remove();
+        return [normal, big];
+      });
+      assert.deepEqual(lh.map(v => Math.round(parseFloat(v))), [24, 48], 'regelhoogte groeit mee met de letter');
+      await page.close();
     });
   });
 

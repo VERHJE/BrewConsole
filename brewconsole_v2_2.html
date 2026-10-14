@@ -231,9 +231,11 @@
      Zonder backdrop-filter blijft de contrastrijke rgba-overlay staan. */
   .modal-overlay{
     position:fixed; inset:0; background:var(--backdrop);
-    display:flex; align-items:center; justify-content:center; padding:20px;
-    z-index:100;
+    display:flex; align-items:safe center; justify-content:center; padding:20px;
+    z-index:100; overscroll-behavior:contain;
   }
+  /* R14 (responsiveness-audit): zolang er een dialoog open is, scrolt de pagina erachter niet mee. */
+  html:has(.modal-overlay:not([hidden])){overflow:hidden;}
   @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)){
     .modal-overlay{ -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
   }
@@ -255,7 +257,10 @@
   .modal-btn:active{transform:scale(.97);}
   .modal-btn-secondary{background:var(--surface-2); color:var(--text);}
   .modal-btn-danger{background:var(--danger); color:var(--white); border-color:var(--danger);}
-  .bean-picker-box{max-width:380px; max-height:calc(100% - 40px); overflow:auto;}
+  .bean-picker-box{max-width:380px; max-height:100%; overflow:auto; overscroll-behavior:contain;}
+  /* R14: op een laag scherm (telefoon liggend) blijven Annuleren en Later onderaan in beeld terwijl de
+     lijst erboven scrolt; eerst stonden ze onder de rand van het vak, zonder hint dat er meer was. */
+  .bean-picker-box > .modal-actions{position:sticky; bottom:-20px; margin:0 -20px -20px; padding:12px 20px 20px; background:var(--surface);}
   .modal-box p.bean-picker-title{font-size:var(--fs-body); font-weight:600; margin:0 0 12px;}
   .bean-picker-list{display:flex; flex-direction:column; gap:8px; margin:0 0 14px;}
   .bean-picker-item{min-height:44px; text-align:left; padding:10px 12px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-family:var(--font-body); font-size:var(--fs-small); cursor:pointer;}
@@ -309,6 +314,9 @@
   button, summary{ -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
   .mono{font-family:var(--font-mono);}
   :focus-visible{outline:2px solid var(--copper-light); outline-offset:3px;}
+  /* R11/R12 (responsiveness-audit): binnen een uitklapblok, een tabelrij of een scrollende lijst
+     knipte overflow de ring (deels) weg; daar staat hij binnen het element. */
+  details > summary:focus-visible, .recipe-table tbody tr:focus-visible, .home-strip-item:focus-visible, .bean-picker-item:focus-visible{outline-offset:-3px;}
 
   .app{
     --app-max:540px;
@@ -337,7 +345,9 @@
   .install-hint strong{color:var(--copper-light); display:block; font-family:var(--font-display); font-size:var(--fs-small); margin-bottom:2px;}
   .install-hint button{
     background:none; border:none; color:var(--text-faint); font-size:var(--fs-body); line-height:1;
-    cursor:pointer; padding:2px 4px; flex-shrink:0; margin-left:auto;
+    cursor:pointer; padding:0; flex-shrink:0;
+    /* R16: tikvlak 44 × 44 (was 19 × 20); de negatieve marge houdt het kruisje op zijn plek. */
+    display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; margin:-12px -14px -12px auto;
   }
 
 
@@ -355,6 +365,11 @@
   }
   @media (hover:hover){ .back-btn:hover{color:var(--copper-light);} }
   .back-btn:active{color:var(--copper-light);}
+  /* R15 (responsiveness-audit): elke tekstlink, kaart en schakelaar geeft feedback bij aantikken; de
+     eigen tikmarkering van iOS staat uit (-webkit-tap-highlight-color). */
+  .link-secondary:active, .btn-tertiary:active, .bean-pick-new:active, .stat-more-toggle:active{color:var(--copper-light);}
+  .stop-btn:active, .bean-picker-item:active, .bean-card-open:active, .brewlog-entry-delete:active, .stat-value--btn:active,
+  .tasting-dot:active, .counter-toggle:active, details > summary:active, label.water-ask-mix:active{opacity:.72;}
 
   .title{
     font-family:var(--font-display);
@@ -664,7 +679,7 @@
   .serving-label{font-size:var(--fs-small); color:var(--text-dim);}
   .stepper{display:flex; align-items:center; gap:8px;}
   .stepper button{
-    width:44px; height:44px; border-radius:var(--radius-sm);
+    width:44px; height:44px; flex-shrink:0; border-radius:var(--radius-sm); /* R16: krimpt niet naast de schuif */
     border:1px solid var(--border);
     background:var(--surface-2);
     color:var(--copper-light);
@@ -702,6 +717,7 @@
     font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.08em; text-transform:uppercase;
     color:var(--text-faint); margin-bottom:6px;
     display:flex; align-items:center; gap:5px;
+    min-width:0; overflow-wrap:anywhere; /* R17: bij grotere tekst breekt "TEMPERATUUR" af in plaats van in de buurtegel te lopen */
   }
   .stat-icon{ width:13px; height:13px; flex-shrink:0; opacity:.85; }
   @media (max-width:359px){ #stats-grid .stat-icon{display:none;} }
@@ -837,13 +853,13 @@
     background:var(--cta-photo) center / 100% 100% no-repeat, var(--cta-gradient);
     background-color:var(--cta-base);
     color:var(--cta-text); text-shadow:none;
-    font-family:var(--font-body); font-weight:600; font-size:var(--fs-cta); line-height:24px; letter-spacing:-.2px; text-align:center; text-decoration:none;
+    font-family:var(--font-body); font-weight:600; font-size:var(--fs-cta); line-height:calc(24 / 17); letter-spacing:-.2px; text-align:center; text-decoration:none;
     cursor:pointer;
     box-shadow:var(--cta-shadow);
     transition:background 150ms ease, box-shadow 150ms ease, filter 150ms ease, transform 150ms ease;
   }
   .btn-primary .icon-arrow{width:20px; height:20px; vertical-align:middle;}
-  .btn-primary--sm, .pill-cta{min-height:44px; padding:10px 18px; font-size:var(--fs-small); line-height:20px;} /* zelfde hoek als de grote: één knopfamilie */
+  .btn-primary--sm, .pill-cta{min-height:44px; padding:10px 18px; font-size:var(--fs-small); line-height:calc(20 / 14);} /* R17: zonder eenheid, zodat grotere tekst niet overlapt */ /* zelfde hoek als de grote: één knopfamilie */
   @media (hover:hover) and (pointer:fine){ .btn-primary:hover, .start-btn:hover, .pill-cta:hover, .advice-cta:hover{filter:brightness(1.025); transform:translateY(-1px);} }
   .btn-primary:active, .start-btn:active, .pill-cta:active, .advice-cta:active{filter:brightness(.97); transform:translateY(1px); box-shadow:var(--cta-shadow-press);}
   .btn-primary:focus-visible, .start-btn:focus-visible, .pill-cta:focus-visible, .advice-cta:focus-visible{outline:2px solid var(--cta-focus); outline-offset:3px;}
@@ -901,7 +917,7 @@
   .ab-q-hint{color:var(--text-faint); font-size:var(--fs-label);}
   .ab-actions{display:flex; gap:12px; align-items:center; margin-top:10px;}
   .scan-review-rows{margin:0; display:grid; gap:4px;}
-  .scan-review-row{display:grid; grid-template-columns:96px 1fr; gap:8px; font-size:var(--fs-small);}
+  .scan-review-row{display:grid; grid-template-columns:minmax(96px, max-content) minmax(0, 1fr); gap:8px; font-size:var(--fs-small);} /* R17: de labelkolom groeit mee met grotere tekst */
   .scan-review-row dt{color:var(--text-faint); font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.06em; text-transform:uppercase; padding-top:2px;}
   .scan-review-row dd{margin:0; color:var(--text);}
   .scan-review-row[data-missing="true"] dd{color:var(--copper-light);}
@@ -937,7 +953,7 @@
      titel/stop/wake/dial-inhoud; de foto/scrim/bleed zitten voortaan in .brew-bg
      hierboven. padding-top geeft ruimte voor stop-btn/wake-indicator, die er als vanouds
      los overheen zweven (position:absolute t.o.v. deze .brew-hero). */
-  .brew-hero{position:relative; padding-top:40px;}
+  .brew-hero{position:relative; padding-top:max(40px, calc(var(--fs-label) * 1.2 + 25px));} /* R17: de ruimte voor Stop en 'Scherm blijft aan' groeit mee met grotere tekst */
   /* CROP (op verzoek): de bronfoto's (photos/method-*.webp) zijn vierkant (1200×1200) met het
      gietmoment zelf — waar "wat er gebeurt" te zien is — in de ONDERSTE helft (koffie die
      in de karaf/kan druipt). object-fit:cover op een brede/korte band sneed dat er vroeger
@@ -993,11 +1009,13 @@
     font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.05em; text-transform:uppercase;
     color:var(--on-photo-dim); padding:10px 4px; opacity:0; transition:opacity .3s ease;
     text-shadow:0 1px 3px var(--ink-a60);
+    max-width:calc(100% - 7.5em); /* R17: bij grotere tekst of een smal scherm kort de tekst in (…) in plaats van onder "× Stop" te schuiven */
   }
+  .wake-indicator .wake-text{min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .wake-indicator[data-active="true"]{opacity:1;}
   /* R21 (responsiveness-audit): de stip pulseert drie keer zodra het scherm aan blijft en staat daarna
      stil; een eindeloze puls hield het timerscherm (ook onzichtbaar) 60 keer per seconde bezig. */
-  .wake-indicator .dot{width:6px; height:6px; border-radius:50%; background:var(--copper-light); box-shadow:0 0 0 0 var(--glow-a60);}
+  .wake-indicator .dot{width:6px; height:6px; flex-shrink:0; border-radius:50%; background:var(--copper-light); box-shadow:0 0 0 0 var(--glow-a60);}
   .wake-indicator[data-active="true"] .dot{animation:wakePulse 2s ease-out 3;}
   @keyframes wakePulse{
     0%{box-shadow:0 0 0 0 var(--glow-a50);}
@@ -1810,9 +1828,9 @@
     background:var(--surface-bar); border-top:1px solid var(--surface-floating-border);
     padding:6px max(8px, var(--safe-r)) max(6px, var(--safe-b)) max(8px, var(--safe-l));
   }
-  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)){
-    .navbar{ backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); }
-  }
+  /* R24 (responsiveness-audit): geen backdrop-filter meer op de tabbalk. Die is 94 % dekkend (VA-30), dus
+     de blur was onzichtbaar (gemiddeld 0,8/255 verschil) maar kostte bij elk scrollen GPU-werk; op de
+     transparante zijbalk vanaf 900 px gaf hij een vaag kader. */
   .navbar-btn{
     display:flex; flex-direction:column; align-items:center; gap:3px;
     background:none; border:none; cursor:pointer;
@@ -1822,6 +1840,7 @@
     transition:color var(--motion-standard) var(--ease-out);
   }
   .navbar-btn svg{width:20px; height:20px;}
+  @media (max-width:359px){ .navbar-btn{letter-spacing:0;} }
   /* "Nooit alleen kleur" (badge-principe, ook hier toegepast): de actieve tab is niet
      alleen kleur — ook een dikkere tekst en een liggend streepje onder het label. */
   .navbar-btn[aria-current="page"]{color:var(--copper-light); font-weight:700;}
@@ -1837,7 +1856,11 @@
      een knop van normale breedte (316 px), zodat de haarlijnen even fijn zijn; rand en tekstkleur
      van .btn-primary; een neutrale schaduw voor de hoogte in plaats van de koperen gloed. */
   @media (max-width:899px){
-    .navbar{align-items:flex-end;}
+    /* R9 (responsiveness-audit): vier gelijke kolommen rond de Zet-knop, zodat Zet precies in het
+       midden staat (met space-around stond hij 11–18 px links). Een label dat breder is dan zijn
+       kolom ("Instellingen" op 320 px) loopt naar rechts uit (safe center), niet tegen "Logboek". */
+    .navbar{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto minmax(0,1fr) minmax(0,1fr); align-items:end;}
+    .navbar-btn{min-width:0; padding:4px 2px; align-items:safe center;}
     .navbar-btn--zet{color:var(--text);}
     .navbar-btn--zet svg{
       width:52px; height:52px; padding:13px; box-sizing:border-box; margin-top:-24px;
@@ -1992,7 +2015,7 @@
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
     box-shadow:var(--shadow-card); overflow:hidden;
   }
-  .bean-detail-fact-row{ display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid var(--border); }
+  .bean-detail-fact-row{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid var(--border); } /* R17: een lange waarde gaat naar een eigen regel in plaats van weggeknipt te worden */
   .bean-detail-fact-row:last-child{ border-bottom:none; }
   .bean-detail-fact-row-icon{
     width:26px; height:26px; border-radius:50%; flex-shrink:0;
@@ -2001,7 +2024,7 @@
   }
   .bean-detail-fact-row-icon svg{ width:13px; height:13px; }
   .bean-detail-fact-row-label{ flex:1; font-size:var(--fs-small); color:var(--text-faint); }
-  .bean-detail-fact-row-value{ font-size:var(--fs-small); color:var(--text); font-weight:500; text-align:right; }
+  .bean-detail-fact-row-value{ font-size:var(--fs-small); color:var(--text); font-weight:500; text-align:right; margin-left:auto; min-width:0; overflow-wrap:anywhere; }
 
   /* Tabbalk voor boondetail: gelijke segmenten met dezelfde "ingedrukte" selectie als .chip. */
   .detail-tabs{
@@ -3166,7 +3189,7 @@
             <h1 class="brew-hero-title" id="brew-hero-title" data-screen-heading tabindex="-1"></h1>
             <div class="brew-hero-subtitle">Filterkoffie</div>
           </div>
-          <div class="wake-indicator" id="wake-indicator"><span class="dot"></span>Scherm blijft aan</div>
+          <div class="wake-indicator" id="wake-indicator"><span class="dot"></span><span class="wake-text">Scherm blijft aan</span></div>
           <button class="stop-btn" id="stop-btn">× Stop</button>
           <div class="dial-wrap" id="dial-wrap">
             <svg class="dial" viewBox="0 0 200 200">
@@ -10701,9 +10724,14 @@ function revealSavedBrewLog(){
   if (typeof savedMsg.scrollIntoView === 'function') savedMsg.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block:'start' });
 }
 // Eén kaart voor elke lijst (Alle, Favorieten, boondetail), met het hartje (data-fav-toggle).
+// R22 (responsiveness-audit): één gedeelde datumopmaak; toLocale*String maakt bij elke aanroep een
+// nieuwe formatter aan, en het logboek deed dat drie keer per kop.
+const NL_DAY_MONTH_YEAR = new Intl.DateTimeFormat('nl-NL', { day:'numeric', month:'short', year:'numeric' });
+const NL_HOUR_MINUTE = new Intl.DateTimeFormat('nl-NL', { hour:'2-digit', minute:'2-digit' });
+const NL_DAY_MONTH = new Intl.DateTimeFormat('nl-NL', { day:'numeric', month:'short' });
 function renderBrewLogEntryCard(e, beanId){
   const d = new Date(e.timestamp);
-  const dateStr = d.toLocaleDateString('nl-NL', { day:'numeric', month:'short', year:'numeric' }) + ' ' + d.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+  const dateStr = NL_DAY_MONTH_YEAR.format(d) + ' ' + NL_HOUR_MINUTE.format(d);
   const m = METHOD_INFO[e.method], p = PROFILE_INFO[e.profile], r = ROAST_INFO[e.roast];
   const entryBean = !beanId && e.beanId ? beanLibrary.find(b=>b.id===e.beanId) : null;
   // Fase 3: nieuwe loggingen tonen hun proefkaart-antwoorden; oudere hun 0–5-scores (alleen-lezen).
@@ -10744,7 +10772,7 @@ function renderBrewLogEntryCard(e, beanId){
   const adviceShort = e.recommendation && e.recommendation.type !== 'NONE' ? recommendationTexts(e.recommendation, null, {}).title : '';
   const liking = e.tasting && e.tasting.liking ? `${e.tasting.liking}/5` : '';
   const lineBits = [
-    escapeHtml(d.toLocaleDateString('nl-NL', { day:'numeric', month:'short' })),
+    escapeHtml(NL_DAY_MONTH.format(d)),
     `<strong>${entryBean ? `<span class="brewlog-entry-bean">${escapeHtml(entryBean.name)}</span> · ` : ''}${escapeHtml(m ? m.name : e.method)}${e.bypass ? ' · bypass' : ''}</strong>`,
     liking ? `<span class="brewlog-entry-liking">${liking}</span>` : '',
     changed ? escapeHtml(changed) : '',
@@ -10827,7 +10855,17 @@ function toggleBrewLogFavorite(id){
   rec.updatedAt = Date.now();
   persistBrewStore();
   rebuildBrewLogView();
-  refreshBrewLogViews();
+  // R22 (responsiveness-audit): alleen de hartjes van deze kop en de lijst Favorieten bijwerken. Eerst
+  // werd het hele logboek opnieuw opgebouwd (bij 150 koppen 0,5 s op een trage telefoon) en klapte
+  // elke opengeklapte kop dicht.
+  const on = !!rec.favorite;
+  document.querySelectorAll('[data-fav-toggle]').forEach(btn => {
+    if (btn.getAttribute('data-fav-toggle') !== id) return;
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.setAttribute('aria-label', on ? 'Verwijderen uit favorieten' : 'Toevoegen aan favorieten');
+    btn.innerHTML = on ? HEART_ICON_FILLED : HEART_ICON;
+  });
+  renderBrewLogFavList(historyBeanIdShown);
 }
 function refreshBrewLogViews(){
   renderBrewLogHistoryLists(historyBeanIdShown);
@@ -10965,6 +11003,16 @@ function brewBestCup(recId){
 }
 const ADVICE_CHAIN_STATUS = { proposed: 'nog niet gekozen', applied: 'klaargezet', ignored: 'niet gebruikt' };
 const ADVICE_OUTCOME_LABEL = { better: 'beter', same: 'hetzelfde', worse: 'slechter' };
+// R22 (responsiveness-audit): de koppen onder "Eerdere koppen" worden pas opgebouwd als je dat blok
+// opent; eerst bouwde elk bezoek aan het logboek alle koppen op, ook de ingeklapte.
+const historyMoreRest = new Map();
+function fillHistoryMore(det){
+  const r = historyMoreRest.get(det.dataset.more);
+  if (!r || det.dataset.filled === '1') return;
+  det.dataset.filled = '1';
+  det.insertAdjacentHTML('beforeend', r.entries.map(e => renderBrewLogEntryCard(e, r.beanId)).join(''));
+  wireFavToggleButtons(det);
+}
 function renderHistoryGroup(g, showAll){
   const n = g.entries.length;
   const latest = g.entries[0];
@@ -10987,11 +11035,13 @@ function renderHistoryGroup(g, showAll){
     </div>` : '';
   const shown = showAll ? g.entries : g.entries.slice(0, 3);
   const rest = showAll ? [] : g.entries.slice(3);
+  const moreKey = g.beanId || 'none';
+  if (rest.length) historyMoreRest.set(moreKey, { entries: rest, beanId: g.beanId || null });
   return `<section class="history-group" data-history-group="${escapeHtml(g.beanId || 'none')}">
     <div class="history-group-head"><h2 class="history-group-title">${escapeHtml(title)}</h2><p class="history-group-sub">${m ? escapeHtml(m.name) + ' · ' : ''}${n} ${n === 1 ? 'kop' : 'koppen'}</p></div>
     ${dots}${chainHtml}${bestHtml}
     <div class="history-group-cups">${shown.map(e => renderBrewLogEntryCard(e, g.beanId || null)).join('')}</div>
-    ${rest.length ? `<details class="history-more"><summary>Eerdere koppen (${rest.length})</summary>${rest.map(e => renderBrewLogEntryCard(e, g.beanId || null)).join('')}</details>` : ''}
+    ${rest.length ? `<details class="history-more" data-more="${escapeHtml(moreKey)}"><summary>Eerdere koppen (${rest.length})</summary></details>` : ''}
   </section>`;
 }
 function historyGroupsOf(entries){
@@ -11007,6 +11057,16 @@ function historyGroupsOf(entries){
     return { beanId, bean: beanId ? beanLibrary.find(b => b.id === beanId) : null, entries: entriesNewest, recs };
   }).sort((a, b) => (b.beanId ? 1 : 0) - (a.beanId ? 1 : 0) || b.entries[0].timestamp - a.entries[0].timestamp);
 }
+function renderBrewLogFavList(beanId){
+  const elFav = document.getElementById('brewlog-history-list-fav');
+  if (!elFav) return;
+  const favEntries = (beanId ? brewLog.filter(e => e.beanId === beanId) : brewLog.slice())
+    .filter(e => e.favorite).sort((a, b) => b.timestamp - a.timestamp);
+  elFav.innerHTML = favEntries.length
+    ? favEntries.map(e => renderBrewLogEntryCard(e, beanId)).join('')
+    : `<p class="empty-hint">Nog geen favorieten — tik op het hartje bij een kop om 'm hier terug te vinden.</p>`;
+  wireFavToggleButtons(elFav);
+}
 function renderBrewLogHistoryLists(beanId){
   renderLegacyReview();
   // Zonder beanId: alle loggings (de Historie-tab); met beanId: alleen die boon.
@@ -11014,26 +11074,21 @@ function renderBrewLogHistoryLists(beanId){
   const bean = beanId ? beanLibrary.find(b=>b.id===beanId) : null;
   const allEntries = (beanId ? brewLog.filter(e=>e.beanId===beanId) : brewLog.slice())
     .slice().sort((a,b)=>b.timestamp-a.timestamp);
-  const favEntries = allEntries.filter(e=>e.favorite);
   document.getElementById('brewlog-history-subtitle').textContent = bean ? bean.name : 'Alle brouwsels';
 
   // Sprint 6 (UX-review F5): gegroepeerd per boon — stippen per kop, wat je probeerde, je
   // beste kop — met de laatste koppen eronder (per boon gefilterd: alle koppen).
   const el = document.getElementById('brewlog-history-list');
+  historyMoreRest.clear();
   el.innerHTML = allEntries.length
     ? historyGroupsOf(allEntries).map(g => renderHistoryGroup(g, !!beanId)).join('')
     : `<div class="photo-slot photo-slot--banner" data-has-photo="true" aria-hidden="true"><img class="photo-slot-img" src="photos/logbook-empty.webp" alt="" loading="lazy"></div>
        <p class="empty-hint">${beanId ? 'Nog geen gelogde koppen voor deze boon.' : 'Nog geen brouwsels gelogd — dat verschijnt hier zodra je een brouwsel afrondt en opslaat.'}</p>`;
   wireFavToggleButtons(el);
+  el.querySelectorAll('details.history-more[data-more]').forEach(det => det.addEventListener('toggle', () => { if (det.open) fillHistoryMore(det); }));
   el.querySelectorAll('[data-best-cup]').forEach(btn => btn.addEventListener('click', () => brewBestCup(btn.getAttribute('data-best-cup'))));
 
-  const elFav = document.getElementById('brewlog-history-list-fav');
-  if (elFav){
-    elFav.innerHTML = favEntries.length
-      ? favEntries.map(e=>renderBrewLogEntryCard(e, beanId)).join('')
-      : `<p class="empty-hint">Nog geen favorieten — tik op het hartje bij een kop om 'm hier terug te vinden.</p>`;
-    wireFavToggleButtons(elFav);
-  }
+  renderBrewLogFavList(beanId);
 
   const statsBody = document.getElementById('history-stats-body');
   if (statsBody) renderInsightsScreen('history-stats-body');
@@ -13970,7 +14025,10 @@ function startBrew(){
   abandonActiveBrew('superseded'); // zoals vroeger bij Start: een vergeten brouwsel loopt niet door naast dit nieuwe
   timer.recordId = null;
   setPauseBtnEnabled(true);
-  unlockAudioForIOS(); // binnen deze user-gesture, zodat latere beeps op iOS altijd geluid geven
+  // R24 (responsiveness-audit): de audio wordt niet meer hier ontgrendeld maar bij "Start de klok"
+  // (startBrewClock) en bij "Doorgaan" na herstel — ook echte tikken, dus op iOS net zo betrouwbaar.
+  // Het aanmaken van de AudioContext kostte hier 33–362 ms vóórdat het timerscherm verscheen;
+  // in de klaarstand klinkt er nog niets.
   // R-15: eerst klaarzetten (filter spoelen, koffie erin, weegschaal op 0); de klok start pas
   // met "Start de klok". Het record ontstaat ook pas dan — zie startBrewClock().
   timer.armed = true;
