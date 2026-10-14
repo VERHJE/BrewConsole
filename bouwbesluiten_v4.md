@@ -638,3 +638,23 @@ Getest in het blok "Primaire knop: geborsteld champagnekoper".
 - **Bewust niet:**
   - Kleinere varianten (`srcset`) voor de methode- en zetfoto's: die zouden op elk toestel extra bestanden in de offline-cache zetten, voor alleen een snellere decode.
   - `svh`/`lvh` in plaats van `dvh` voor de schermhoogte: het effect (relayout bij het bewegen van de Safari-werkbalk) is alleen op een echte iPhone te beoordelen.
+
+**Gemeten na ronde 3** (Chromium, 360 × 740 op 3×, vertraagde CPU, mediaan van 3 runs; de tijd tot de volgende verf, INP):
+
+| Interactie | 4× voor | 4× na | 6× voor | 6× na |
+|---|---|---|---|---|
+| Logboek openen, 150 koppen | 560 ms | 112 ms | 416 ms | 304 ms |
+| Logboek openen, 300 koppen | 712 ms | 208 ms | 928 ms | 224 ms |
+| "Naar de timer" (timerscherm openen) | 464 ms | 88 ms | 280 ms | 192 ms |
+
+**Breedtesweep:**
+- 1.034 schermen van 320 tot 1920 px en 329 liggende schermen: geen pagina breder dan het scherm.
+- Overloop van een vak daalt van 254 naar 228. De tabbalklabels op 320 px passen beter; alleen op 340 px loopt "Instellingen" nu bewust buiten zijn kolom, binnen het scherm.
+
+**Testresultaten:** in `tests/kernflow.smoke.test.mjs` controleren het blok "Responsiveness ronde 3" en een extra test in "Sprint 6: logboek per boon" het volgende:
+- de tabbalk;
+- de bonenkiezer liggend;
+- het kruisje en de regelhoogte;
+- "Eerdere koppen" en het hartje.
+
+Alle 955 tests slagen. De rekenkern is ongewijzigd.
