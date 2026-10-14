@@ -549,3 +549,43 @@ Getest in het blok "Primaire knop: geborsteld champagnekoper".
 - Onder 360 px blijft "Naar de timer · 3:30" twee regels.
 
 **Testresultaten:** het blok "Responsiveness ronde 1" in `tests/kernflow.smoke.test.mjs` controleert liggend zetten, draaien, de iPhone SE (drie hoogtes), recept en lange namen op 320 px, en scroll-padding, de undo-knop en de rust op het timerscherm. Alle 946 tests slagen. De rekenkern is ongewijzigd.
+
+## Responsiveness ronde 2: tablet en desktop
+
+**Aanleiding.** Ronde 2 uit de responsiveness-audit: het timerscherm op iPad en laptop, de Zet-knop in de zijbalk, de koperfoto op brede schermen, en het gebruik van de ruimte op tablet en desktop. Jelle koos voor de koperfoto "scherper, zelfde look" en voor de Zet-knop "koperen icoonchip". Recepten, advies en de rekenkern zijn ongewijzigd.
+
+**Timerscherm op iPad en laptop**
+- **R4 · Aanrechtmodus vanaf 900 px liggend:**
+  - Het geheel staat verticaal in het midden van het scherm (`min-height` + `align-content:center`). Eerst stond alles bovenaan en bleef 52–71 % van het scherm leeg.
+  - De wijzerplaat is begrensd op de schermhoogte: `min(38vw, 440px, 100svh − 190px)`.
+  - De tijd schaalt mee met de wijzerplaat via een container query: `clamp(48px, 17cqi, 96px)`. Dat geeft 75 px op een liggende iPad of laptop (eerst 48 px) en 64 px staand, zoals voorheen.
+  - Op een groot scherm is het raster hoogstens 1440 px breed.
+- **R4 · iPad Split View:** de aanrechtmodus staat nu ook standaard aan bij ≥ 500 px breed en ≥ 900 px hoog (507–694 × 1024). De aanrechtmaten (wijzerplaat 380 px) gelden daar ook.
+- **R4 · Staand:** in de aanrechtmodus is de kolom 720 px, zodat "Giet tot 210 g" op één regel past.
+- **R5 · Lage laptop:**
+  - De wijzerplaat staat bovenaan zijn kolom, en een open schema scrolt in een eigen vak (hoogstens 34 % van de schermhoogte). De wijzerplaat zakt daardoor niet meer uit beeld (eerst 692 px op een scherm van 600 px).
+  - Onder 600 px hoog gebruikt de laptop het liggende telefoonraster van ronde 1.
+  - Met de aanrechtmodus uit is de wijzerplaat op een laptop tot 700 px hoog 220 px.
+
+**Koper**
+- **R18 · Zet in de zijbalk:** het kopje staat op een rond koperen vlak van 30 px. Het heeft dezelfde foto (316 px-schaal), rand en icoonkleur (`#21170F`, 4,8 : 1) als de Zet-knop op de telefoon. De regel zelf blijft een menu-item, met de bestaande actieve staat.
+- **R23 · Koperfoto op brede schermen:**
+  - **Probleem:** vanaf 700 px werd de foto tot 720 px uitgerekt. De haarlijnen werden twee keer zo grof als op de telefoon en op retina 1,55× opgeschaald.
+  - **Waarom geen echte 2×-uitsnede:** de aangeleverde foto is zelf maar 924 px breed, dus een uitsnede met meer detail bestaat niet.
+  - **Oplossing:** de F2-uitsnede plus haar spiegelbeeld vormen een tegel van 1848 × 320 px (`photos/koper-geborsteld-breed.webp`, 55 kB). Die herhaalt naadloos, want elke naad is een spiegelnaad.
+  - **Gebruik:** vanaf 700 px ligt de tegel op telefoonschaal, 672 px per tegel (`--cta-photo-wide`, `672px 100% repeat-x`; de kaartknop `672px 150%`). De haarlijnen zijn daardoor even fijn als op de telefoon en ook op 2× scherp. De spiegelas valt achter de knoptekst en is niet te zien.
+  - **Telefoons:** die houden de uitgerekte foto; de look daar is ongewijzigd.
+  - **Offline:** de tegel staat in `PHOTOS` in `sw.js`.
+  - **Contrast** (per pixel in de tekstzone, 2×): het donkerste haarlijnpixel geeft 3,8–4,5 : 1, gemiddeld 6,4–6,8 : 1. Dat is gelijk aan de oude, uitgerekte foto op dezelfde schermen (3,8–4,7 : 1, gemiddeld 6,4–6,8 : 1), dus deze ronde maakt het niet slechter. Op de iPhone (3×) blijft het minimum 4,5 : 1.
+
+**Ruimte op tablet en desktop**
+- **R19 · Recept:** al vanaf 900 px in twee kolommen (recept links, Start en schema rechts). Eerst gebeurde dat vanaf 1100 px; tussen 900 en 1099 px was het één kolom van 984 px met regels tot 177 tekens. De sticky knoppenrij en de scroll-padding van ronde 1 gelden nu tot 899 px.
+- **R20 · Eén rechterrand per scherm:** vanaf 900 px is een scherm met één kolom als geheel 720 px breed. Dat geldt voor boondetail, nieuwe boon, instellingen, advies, triage, proefkaart en logboek; de proefkaart staat in taakmodus gecentreerd. De 720 px-grens voor knoppen geldt alleen nog direct op het scherm, niet in een kaart: "Zet deze kop opnieuw" vult nu zijn kaart.
+- **R20 · Rasters:**
+  - De bonenlijst staat vanaf 700 px in zoveel kolommen als er passen (`auto-fill, minmax(320px, 1fr)`): twee op een staande iPad (eerst één kaart van 720 px), drie op een groot scherm.
+  - Het logboek blijft bewust één lijst, met compacte regels.
+  - De statistiek gebruikt `auto-fit`, dus geen lege vierde kolom meer.
+  - Is het raster van de roastkaarten smaller dan 800 px, dan is er iets minder binnenruimte en een naam van 17 px, zodat "Light-medium" en "Medium-dark" op één regel passen.
+- **R20 · Regellengte:** hints, statistiekuitleg, disclaimers en versheidsregels zijn vanaf 700 px hoogstens 68 tekens breed.
+- **R20 · Groot scherm:** vanaf 1600 px is de app 1280 px breed in plaats van 1080 px.
+- **R20 · Geen scroll van 6 px:** de zijbalk is de schermhoogte min de padding van `.app`. Eerst scrolde elke pagina vanaf 900 px 6 px.

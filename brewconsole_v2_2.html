@@ -112,6 +112,7 @@
     --cta-border:rgba(105,63,34,.18); --cta-border-top:rgba(255,242,222,.35);
     --cta-focus:rgba(212,165,116,.85);
     --cta-photo:url("photos/koper-geborsteld.webp");
+    --cta-photo-wide:url("photos/koper-geborsteld-breed.webp"); /* R23: dezelfde uitsnede plus haar spiegelbeeld, naadloos herhaalbaar */
     --cta-gradient:linear-gradient(180deg, var(--cta-hi) 0%, var(--cta-mid) 45%, var(--cta-lo) 100%);
     --cta-shadow:0 2px 6px rgba(0,0,0,.12); --cta-shadow-press:0 1px 4px rgba(0,0,0,.1);
     --cta-fab-lift:0 6px 14px rgba(0,0,0,.2); /* de verhoogde Zet-knop in de tabbalk */
@@ -1597,7 +1598,7 @@
   @media (min-width:700px){
     .app{ --app-max:760px; }
     .choice-grid--4{ grid-template-columns:repeat(5,1fr); }
-    .stats-grid{ grid-template-columns:repeat(4,1fr); }
+    .stats-grid{ grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); } /* R20: drie tegels vullen de rij, geen lege vierde kolom */
     .dial-wrap{ width:300px; height:300px; }
     .dial-time{ font-size:var(--fs-display); }
     .radar-svg{ max-width:320px; }
@@ -1608,8 +1609,8 @@
   }
   /* Sprint 3 (UX-review F4): Start (+ Aanpassen) blijft onderaan in beeld, boven de tabbalk
      (en de verhoogde Zet-knop). display:contents op .prep-side maakt het hele scherm het
-     bereik van sticky; vanaf 1100px staat de rechterkolom zelf al vast in beeld. */
-  @media (max-width:1099px){
+     bereik van sticky; vanaf 900px staat de rechterkolom zelf al vast in beeld (R19). */
+  @media (max-width:899px){
     #screen-prep .prep-side{display:contents;}
     #screen-prep .prep-cta-row{
       position:sticky; bottom:calc(max(6px, var(--safe-b)) + 76px); z-index:6;
@@ -1617,11 +1618,8 @@
       background:linear-gradient(180deg, transparent, var(--bg) 8px); /* VA-30: korte overgang, geen tekst achter de knoppen */
     }
   }
-  @media (min-width:900px) and (max-width:1099px){
-    #screen-prep .prep-cta-row{bottom:max(12px, var(--safe-b));}
-  }
   /* VA-30: zonder tabbalk zit de knoppenrij tegen de onderrand (met de safe area). */
-  @media (max-width:1099px){
+  @media (max-width:899px){
     .app[data-task] #screen-prep .prep-cta-row{bottom:max(8px, var(--safe-b));}
   }
   /* Sprint 3: de uitrustingsfoto duwde de getallen onder de vouw. */
@@ -1632,13 +1630,16 @@
     #screen-prep .photo-slot--banner{ aspect-ratio:auto; height:190px; }
     #screen-prep .stats-grid{ grid-template-columns:repeat(3,1fr); }
   }
-  /* iPad op het aanrecht ("counter mode"): grotere dial en giet-instructie, leesbaar op afstand. */
-  @media (min-width:700px) and (min-height:900px){
+  /* iPad op het aanrecht ("counter mode"): grotere dial en giet-instructie, leesbaar op afstand.
+     R4: vanaf 500 px breed, zodat ook iPad Split View (507–694 px) de aanrechtmaten krijgt; staand is
+     de kolom in de aanrechtmodus 720 px, zodat "Giet tot 210 g" op één regel past. */
+  @media (min-width:500px) and (min-height:900px){
     .dial-wrap{ width:380px; height:380px; }
     .dial-time{ font-size:64px; }
     .brew-action-main{ font-size:52px; }
     .brew-action-sub{ font-size:var(--fs-body); }
     .brew-hero{ padding-top:72px; }
+    .app[data-state="brew"] #screen-brew[data-counter="on"] .brew-fg{ max-width:720px; }
   }
   /* Expertreview idee 20: aanrechtmodus (#screen-brew[data-counter="on"]). Alleen grootte en
      indeling; welke instructie er staat, blijft precies hetzelfde. */
@@ -1654,15 +1655,29 @@
   #screen-brew[data-counter="on"] .bed-dry-btn{min-height:88px; font-size:var(--fs-title);}
   #screen-brew[data-counter="on"] .brew-cumulative,
   #screen-brew[data-counter="on"] .dial-flow{display:none;}
+  /* R4: in de aanrechtmodus schaalt de tijd mee met de wijzerplaat (container query): 64 px bij 380 px,
+     75 px bij 440 px. Op een telefoon (240 px) blijft het 48 px. */
+  #screen-brew[data-counter="on"] .dial-wrap{container-type:inline-size;}
+  @supports (font-size:1cqi){
+    #screen-brew[data-counter="on"] .dial-time{font-size:clamp(48px, 17cqi, 96px);}
+  }
   @media (min-width:900px) and (orientation:landscape){
     /* VA-05: het brouwscherm gebruikt tijdens het zetten de hele breedte (zie VA-15); de
        instructiekolom krijgt zo ruimte voor één regel op afstandsgrootte. */
-    .app[data-state="brew"] #screen-brew[data-counter="on"] .brew-fg{max-width:none;}
-    #screen-brew[data-counter="on"] .brew-fg{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); column-gap:40px; align-items:center; padding-top:56px;}
+    .app[data-state="brew"] #screen-brew[data-counter="on"] .brew-fg{max-width:1440px;}
+    /* R4/R5 (responsiveness-audit): het geheel staat verticaal in het midden van het scherm (min-height +
+       align-content), de wijzerplaat bovenaan zijn kolom en begrensd op de schermhoogte; het open
+       schema scrolt in een eigen vak. Zo zakt de wijzerplaat op een lage laptop niet uit beeld. */
+    #screen-brew[data-counter="on"] .brew-fg{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); column-gap:40px; align-items:center; align-content:center; padding-top:56px; min-height:calc(100vh - max(18px, var(--safe-t)));}
     #screen-brew[data-counter="on"] .brew-fg > *{grid-column:2;}
-    #screen-brew[data-counter="on"] .brew-fg > .brew-hero{grid-column:1; grid-row:1 / span 8;}
+    #screen-brew[data-counter="on"] .brew-fg > .brew-hero{grid-column:1; grid-row:1 / span 8; align-self:start;}
     #screen-brew[data-counter="on"] .brew-fg > .brew-recovery{grid-column:1 / -1;}
-    #screen-brew[data-counter="on"] .dial-wrap{width:min(38vw, 440px); height:min(38vw, 440px);}
+    #screen-brew[data-counter="on"] .dial-wrap{width:min(38vw, 440px, calc(100vh - 190px)); height:min(38vw, 440px, calc(100vh - 190px));}
+    @supports (height:1svh){
+      #screen-brew[data-counter="on"] .brew-fg{min-height:calc(100svh - max(18px, var(--safe-t)));}
+      #screen-brew[data-counter="on"] .dial-wrap{width:min(38vw, 440px, calc(100svh - 190px)); height:min(38vw, 440px, calc(100svh - 190px));}
+    }
+    #screen-brew[data-counter="on"] #brew-steps-details[open] .brew-steps{max-height:min(34vh, 360px); overflow:auto; overscroll-behavior:contain;}
     /* Stop en 'Scherm blijft aan' horen bij het hele brouwscherm, niet bij de wijzerplaatkolom:
        Stop staat rechtsboven in plaats van midden in beeld boven de foto. */
     #screen-brew[data-counter="on"] .brew-hero{position:static; padding-top:0;}
@@ -1680,6 +1695,11 @@
     @supports (font-size:1cqi){
       #screen-brew[data-counter="on"] .brew-action-main{font-size:clamp(44px, 10.5cqi, 92px);}
     }
+  }
+  /* R5: een lage laptop (≤ 700 px hoog) met de aanrechtmodus uit: kleinere wijzerplaat, zodat de
+     bediening in beeld blijft. */
+  @media (min-width:900px) and (max-height:700px) and (orientation:landscape){
+    #screen-brew[data-counter="off"] .dial-wrap{width:220px; height:220px;}
   }
   /* R3 (responsiveness-audit): staand op een laag scherm (iPhone SE, kleine Android, Safari met
      werkbalken) schaalt de wijzerplaat mee met de hoogte, zodat "Start de klok" en Pauze zonder
@@ -1709,7 +1729,7 @@
      en bediening rechts, in beide standen van de aanrechtmodus; de wijzerplaat schaalt met de hoogte.
      De bediening staat hier vóór het schema, zodat Pauze zonder scrollen bereikbaar is.
      [data-counter] maakt de selectors even specifiek als het ≥900-raster hierboven, dat zo vervalt. */
-  @media (orientation:landscape) and (max-height:500px){
+  @media (orientation:landscape) and (max-height:500px), (orientation:landscape) and (min-width:900px) and (max-height:599px){
     .app[data-state="brew"] #screen-brew[data-counter] .brew-fg{max-width:none;}
     #screen-brew[data-counter] .brew-fg{display:grid; grid-template-columns:min-content minmax(0,1fr); grid-template-rows:repeat(7, auto) 1fr; column-gap:clamp(20px, 4vw, 40px); align-items:start; padding-top:46px;}
     #screen-brew[data-counter] .brew-fg > *{grid-column:2; order:3;}
@@ -1744,7 +1764,9 @@
   }
   /* VA-05: getal en eenheid nooit over twee regels (zie keepUnitsTogether()). */
   .nobr{white-space:nowrap;}
-  @media (min-width:1100px){
+  /* R19 (responsiveness-audit): het recept staat al vanaf 900 px in twee kolommen. Tussen 900 en
+     1099 px (iPad liggend, kleine laptop) was het één kolom van 984 px met regels tot 177 tekens. */
+  @media (min-width:900px){
     #screen-prep.active{ display:grid; grid-template-columns:minmax(0,1fr) 370px; column-gap:28px; align-items:start; }
     #screen-prep > .back-btn, #screen-prep > .photo-slot{ grid-column:1 / -1; }
     #screen-prep .prep-main{ grid-column:1; min-width:0; }
@@ -1777,7 +1799,7 @@
   @media (max-width:899px){
     html{scroll-padding-bottom:calc(max(6px, var(--safe-b)) + 104px);}
   }
-  @media (max-width:1099px){
+  @media (max-width:899px){
     html:has(#screen-prep.active){scroll-padding-bottom:calc(max(8px, var(--safe-b)) + 112px);}
   }
   /* Tabbalk: vaste balk onderin met een donkere, licht doorschijnende achtergrond (blur, dun
@@ -1910,6 +1932,18 @@
   @media (hover:hover){ .home-cta.btn-primary:hover{border-color:var(--cta-border); border-top-color:var(--cta-border-top); box-shadow:var(--cta-shadow);} }
   @media (hover:hover) and (pointer:fine){ .home-cta.btn-primary:hover{filter:brightness(1.025); transform:translateY(-1px);} }
   .home-cta.btn-primary:active{filter:brightness(.97); transform:translateY(1px); box-shadow:var(--cta-shadow-press);}
+  /* R20 (responsiveness-audit): lopende uitleg hoogstens ±68 tekens per regel op brede schermen. */
+  @media (min-width:700px){
+    .form-hint, .insights-note, .disclaimer, .freshness-readout{max-width:68ch;}
+  }
+  /* R23 (responsiveness-audit): op brede schermen werd de foto tot 720 px uitgerekt; de haarlijnen
+     werden twee keer zo grof als op de telefoon en op retina onscherp. Vanaf 700 px ligt de foto op
+     telefoonschaal (924 px bron per 336 px knop): de uitsnede plus haar spiegelbeeld vormen een tegel
+     van 672 px die naadloos herhaalt. Telefoons houden de uitgerekte foto. */
+  @media (min-width:700px){
+    .btn-primary, .start-btn, .pill-cta, .advice-cta{background:var(--cta-photo-wide) center / 672px 100% repeat-x, var(--cta-gradient); background-color:var(--cta-base);}
+    .home-cta.btn-primary{background:var(--cta-photo-wide) center / 672px 150% repeat-x, var(--cta-gradient); background-color:var(--cta-base);}
+  }
   .home-empty .advisor-link{margin-top:10px;}
   .home-section-label{
     font-family:var(--font-body); font-size:var(--fs-label); letter-spacing:.08em; text-transform:uppercase;
@@ -2026,18 +2060,41 @@
       flex-direction:column; justify-content:flex-start; align-items:stretch; gap:2px;
       width:172px; flex-shrink:0; border-top:none; border-right:1px solid var(--border);
       background:none; padding:0 14px 0 0;
-      min-height:calc(100dvh - 2 * max(18px, var(--safe-t))); /* VA-35: de lijn loopt over de volle hoogte */
+      min-height:calc(100dvh - max(18px, var(--safe-t)) - max(24px, var(--safe-b))); /* VA-35: de lijn loopt over de volle hoogte; R20: min de padding van .app, anders scrolde elke pagina 6 px */
     }
     /* VA-35: precies één bestemming gemarkeerd (ook Zet alleen als hij actief is); tekst en knoppen
        hoogstens 720 px breed. */
     .navbar-btn[aria-current="page"]{color:var(--copper-light); font-weight:600;}
-    .btn-primary, .home-cta, .btn-secondary, .advisor-primary, .advisor-link, .bean-use-btn, .next-cup,
+    /* R20 (responsiveness-audit): de 720 px-grens geldt voor knoppen en tekst direct op het scherm, niet
+       voor een knop in een kaart (die liep dan 92 px korter dan zijn kaart). Schermen met één kolom
+       zijn als geheel 720 px, zodat kaarten, tabbladen, velden en knoppen één rechterrand delen. */
+    .screen > :is(.btn-primary, .home-cta, .btn-secondary, .advisor-primary, .advisor-link, .bean-use-btn, .next-cup),
     .screen > p, .screen > .subtitle, .more-info, .bean-detail-section > p{max-width:720px;}
+    #screen-bean-detail, #screen-bean-add, #screen-settings, #screen-advice, #screen-triage, #screen-brewlog, #screen-brewlog-history{max-width:720px;}
+    .app[data-task] #screen-brewlog{margin-inline:auto;}
     .navbar-btn{flex-direction:row; justify-content:flex-start; gap:10px; min-width:0; min-height:44px; font-size:var(--fs-small); padding:10px 10px;}
     .navbar-btn[aria-current="page"]{background:var(--surface-2); border-radius:var(--radius-sm);}
-    /* "Split view" (Bouwbesluit): de twee lijstschermen (Bonen, Historie) tonen hun
-       kaarten in twee kolommen i.p.v. één, zodat de zijbalk-breedte goed benut wordt. */
-    .bean-list{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px;}
+    /* R18 (responsiveness-audit): ook in de zijbalk blijft Zet herkenbaar als hoofdactie. Het kopje
+       staat op een rond koperen vlak (dezelfde foto, rand en icoonkleur als de Zet-knop op de telefoon);
+       de regel zelf blijft een menu-item. De negatieve marges houden het icoon op één as met de rest. */
+    .navbar-btn--zet{color:var(--text);}
+    .navbar-btn--zet svg{
+      width:30px; height:30px; padding:6px; margin:-5px 0 -5px -5px; box-sizing:border-box; border-radius:50%;
+      background:var(--cta-photo) center / 316px 100% no-repeat, var(--cta-gradient);
+      background-color:var(--cta-base); color:var(--cta-text);
+      border:1px solid var(--cta-border); border-top-color:var(--cta-border-top); box-shadow:var(--cta-shadow);
+    }
+  }
+  /* "Split view" (Bouwbesluit): de bonenlijst toont haar kaarten naast elkaar. R20: al vanaf 700 px
+     (iPad staand kreeg eerst één kolom met kaarten van 720 px) en zoveel kolommen als er passen.
+     Het logboek blijft één lijst: zijn regels zijn compact (VA-12) en lezen beter onder elkaar. */
+  @media (min-width:700px){
+    .bean-list{display:grid; grid-template-columns:repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap:12px;}
+  }
+  /* R20 (na het ≥900-blok, dat 1080 px zet): op een groot scherm (≥ 1600 px) is de app 1280 px breed in plaats van 1080 px, zodat lijsten
+     een kolom extra krijgen en het geheel minder verloren in het midden staat. */
+  @media (min-width:1600px){
+    .app{ max-width:1280px; }
   }
   /* Sprint 1 (UX-review F9): tikdoelen minimaal 44 × 44 (WCAG 2.5.5 / Apple HIG). Alleen
      de hoogte/breedte gaat omhoog; kleur, tekst en volgorde blijven gelijk. */
@@ -2256,6 +2313,13 @@
     .roast-card{flex-direction:column; align-items:stretch; gap:10px; padding:14px;}
     .roast-swatch-slot{width:100%; height:auto; aspect-ratio:16/10;}
     .roast-check{position:absolute; top:20px; right:20px;}
+    /* R20: is het raster smaller dan 800 px (net na 700 px, en naast de zijbalk tussen 900 en ±1000 px),
+       dan iets minder binnenruimte en een kleinere naam, zodat "Light-medium" op één regel past. */
+    #roast-grid{container-type:inline-size;}
+    @container (max-width:799px){
+      .roast-card{padding:10px;}
+      .roast-card .choice-name{font-size:var(--fs-cta);}
+    }
   }
   #scan-photo-btn .icon{margin-right:6px;}
   /* Uitleg achter een kleine uitklapper (VA-23 smaakscherm, VA-25 water, VA-24 formulier): eerst
@@ -14831,7 +14895,7 @@ function registerOfflineServiceWorker(){
 const COUNTER_MODE_KEY = 'brewconsole_counter_mode';
 // R2 (responsiveness-audit): standaard aan op een tablet of groter scherm, niet op een liggende
 // telefoon (die is ook ≥700 px breed, maar laag). Draaien zet de modus dan niet meer vanzelf aan.
-const COUNTER_MODE_QUERY = '(min-width:700px) and (min-height:600px)';
+const COUNTER_MODE_QUERY = '(min-width:700px) and (min-height:600px), (min-width:500px) and (min-height:900px)'; // R4: ook iPad Split View
 let counterModeMemory = null; // als opslag niet beschikbaar is, geldt de keuze alleen deze sessie
 function counterModeOn(){
   let pref = counterModeMemory;
