@@ -589,3 +589,52 @@ Getest in het blok "Primaire knop: geborsteld champagnekoper".
 - **R20 · Regellengte:** hints, statistiekuitleg, disclaimers en versheidsregels zijn vanaf 700 px hoogstens 68 tekens breed.
 - **R20 · Groot scherm:** vanaf 1600 px is de app 1280 px breed in plaats van 1080 px.
 - **R20 · Geen scroll van 6 px:** de zijbalk is de schermhoogte min de padding van `.app`. Eerst scrolde elke pagina vanaf 900 px 6 px.
+
+## Responsiveness ronde 3: afwerking
+
+**Aanleiding.** Ronde 3 uit de responsiveness-audit: de afwerkpunten. Ook deze ronde verandert niets aan recepten, advies of de rekenkern.
+
+**Tabbalk en focus**
+- **R9 · Tabbalk:** vier gelijke kolommen rond de Zet-knop (grid), zodat Zet precies in het midden staat. Met `space-around` stond hij 11–18 px links. Een label dat breder is dan zijn kolom ("Instellingen" op 320 px) loopt naar rechts uit (`align-items: safe center`), niet tegen "Logboek". Onder 360 px is er geen letterafstand.
+- **R11/R12 · Focusringen:** binnen een uitklapblok (`<summary>`), een receptrij, de bonenstrip en de bonenkiezer staat de ring nu binnen het element (`outline-offset:-3px`). Daar knipte overflow hem eerst (deels) weg.
+  - **Bewust niet:** vanaf 900 px staat "Start" visueel bovenaan de rechterkolom maar komt hij in de tabvolgorde na het schema. De knoppenrij in de DOM verplaatsen zou de sticky knoppenrij op de telefoon breken, die op die volgorde leunt.
+- **R16 · Tikvlakken:** het kruisje van de installatiehint is 44 × 44 px (was 19 × 20). De −/+ in het watervenster krimpen niet meer naast de schuif.
+
+**Dialoogvensters en indrukken**
+- **R14 · Pagina erachter:** zolang een dialoog open is, scrolt de pagina erachter niet mee (`html:has(.modal-overlay:not([hidden])){overflow:hidden}` plus `overscroll-behavior:contain`).
+- **R14 · Bonenkiezer en watervraag:** hun knoppenrij (Annuleren, Later) blijft onderaan het vak in beeld terwijl de lijst scrolt. Op een liggende telefoon stonden ze eerst onder de rand van het vak. Een te hoog vak start bovenaan (`align-items: safe center`).
+- **R15 · Indrukfeedback:** tekstlinks kleuren koper bij aantikken. Stop, bonenkaarten, de bonenkiezer, Verwijderen, de proefstippen, de aanrechtschakelaar, uitklapkoppen en de watertegel worden even lichter (`opacity:.72`). De eigen tikmarkering van iOS staat uit, dus zonder dit gaven 24 soorten bedieningselementen geen enkele reactie.
+
+**Tekstvergroting**
+- **R17 · Knoppen en tegels:**
+  - De primaire knoppen hebben een regelhoogte zonder eenheid: `calc(24 / 17)` en `calc(20 / 14)`. Dat is bij normale grootte precies 24 en 20 px, maar groeit mee met grotere tekst, zodat afgebroken regels niet meer overlappen.
+  - Statistieklabels breken af in plaats van in de buurtegel te lopen.
+  - De labelkolom van de scancontrole groeit mee.
+  - Een lange waarde op het boondetail gaat naar een eigen regel in plaats van weggeknipt te worden.
+- **R17 · Timerscherm:** "Scherm blijft aan" kort in (…) voordat het onder "× Stop" kan schuiven, en de ruimte erboven groeit mee met de letter.
+- **Gemeten** met het tekstvergrotingsscript van de audit (×2 en ×1,5 tekst, tekstafstand op 320 px, 9 schermen):
+
+  | Meting | Voor | Na |
+  |---|---|---|
+  | Overlap | 13 | 8 |
+  | Weggeknipt | 1 | 0 |
+  | Overloop van een vak | 25 | 16 |
+
+- **Wat overblijft:**
+  - De tabbalklabels bij 2× tekst: vijf labels passen dan niet naast elkaar.
+  - De recepttabel bij 2× tekst: de getallen breken bewust niet af.
+  - De −/+ van de portie bij 2× tekst: 3 px overloop.
+
+**Logboek en rendering**
+- **R22 · Logboek:**
+  - De koppen onder "Eerdere koppen" worden pas opgebouwd als je dat blok opent. Eerst bouwde elk bezoek alle koppen op, ook de ingeklapte.
+  - Een tik op een hartje werkt alleen de hartjes van die kop en de lijst Favorieten bij. Eerst werd het hele logboek opnieuw opgebouwd en klapte elke open kop dicht.
+  - De datums gebruiken drie gedeelde `Intl.DateTimeFormat`-objecten in plaats van een nieuwe formatter per aanroep (drie per kop).
+  - De testhelper `expandLogEntries` klapt "Eerdere koppen" eerst open.
+- **R24 · Rendering:**
+  - **Audio:** de AudioContext wordt niet meer bij "Naar de timer" aangemaakt (dat kostte 33–362 ms vóór het timerscherm verscheen), maar bij "Start de klok" en "Doorgaan". Beide zijn echte tikken, dus het ontgrendelen op iOS werkt net zo; in de klaarstand klinkt nog niets.
+  - **Tabbalk:** geen `backdrop-filter` meer. Die was op de 94 % dekkende balk onzichtbaar, en gaf op de transparante zijbalk een vaag kader.
+  - **Offline-cache:** `sw.js` haalt de foto's bij installatie met `cache:'reload'`, zodat een opnieuw bewerkte foto met dezelfde naam meekomt.
+- **Bewust niet:**
+  - Kleinere varianten (`srcset`) voor de methode- en zetfoto's: die zouden op elk toestel extra bestanden in de offline-cache zetten, voor alleen een snellere decode.
+  - `svh`/`lvh` in plaats van `dvh` voor de schermhoogte: het effect (relayout bij het bewegen van de Safari-werkbalk) is alleen op een echte iPhone te beoordelen.
