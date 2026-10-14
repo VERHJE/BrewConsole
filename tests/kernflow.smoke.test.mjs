@@ -4437,7 +4437,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
         assert.deepEqual(r.wide, [], `${dest}: knoppen breder dan 720 px`);
         assert.equal(r.current, 1, dest);
         if (dest !== 'method') assert.notEqual(r.zetWeight, '700', 'Zet niet vet als hij niet actief is');
-        assert.ok(r.nav >= r.vh - 40, `zijbalk ${r.nav} van ${r.vh}`);
+        // R20: de zijbalk vult het scherm min de padding van .app (18 + 24 px); eerst scrolde elke pagina 6 px.
+        assert.ok(r.nav >= r.vh - 42, `zijbalk ${r.nav} van ${r.vh}`);
       }
       await navTo(page, 'home');
       const cols = await page.evaluate(() => { const a = document.querySelector('.home-main').getBoundingClientRect(), b = document.querySelector('.home-side').getBoundingClientRect(); return { sideBySide: b.left > a.right - 1 && Math.abs(a.top - b.top) < 4 }; });
@@ -4818,6 +4819,92 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.deepEqual(r.active, ['wakePulse', '3'], 'drie keer pulseren, daarna stil');
       assert.equal(r.dial, '0.25s', 'de ring verspringt kort per seconde');
       await page.close();
+    });
+  });
+
+  describe('Responsiveness ronde 2: tablet en desktop', () => {
+    async function pageAt(viewport){
+      const page = await newTrackedPage({ viewport });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      return page;
+    }
+    async function toPrepR2(page){
+      await page.click('#home-start-brew-btn');
+      await page.click('[data-method="v60"]');
+      await page.click('[data-roast="light"]');
+      await page.click('[data-profile="klassiek"]');
+      await assertBecomesActive(page, '#screen-prep');
+    }
+    const dial = (page) => page.evaluate(() => {
+      const r = document.getElementById('dial-wrap').getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, vh: innerHeight, fs: parseFloat(getComputedStyle(document.getElementById('dial-time')).fontSize), counter: document.getElementById('screen-brew').dataset.counter };
+    });
+
+    test('R4: iPad liggend: de tijd schaalt mee met de wijzerplaat en het geheel staat verticaal in het midden', async () => {
+      const page = await pageAt({ width: 1180, height: 820 });
+      await toPrepR2(page);
+      await startBrewing(page);
+      await assertBecomesActive(page, '#screen-brew');
+      await page.clock.fastForward(5000);
+      const d = await dial(page);
+      assert.equal(d.counter, 'on');
+      assert.ok(d.fs >= 70, `tijd ${d.fs} px (was 48)`);
+      assert.ok(d.top > 150 && d.bottom <= d.vh, `wijzerplaat ${d.top}–${d.bottom} van ${d.vh}: in beeld en niet tegen de bovenrand`);
+      await page.close();
+    });
+
+    test('R4: iPad Split View (507 × 1024) krijgt de aanrechtmodus', async () => {
+      const page = await pageAt({ width: 507, height: 1024 });
+      await toPrepR2(page);
+      await startBrewing(page);
+      await assertBecomesActive(page, '#screen-brew');
+      const d = await dial(page);
+      assert.equal(d.counter, 'on');
+      assert.ok(d.fs >= 60, `tijd ${d.fs} px`);
+      await page.close();
+    });
+
+    test('R5: lage laptop (1366 × 600) met het schema open: de wijzerplaat blijft helemaal in beeld', async () => {
+      const page = await pageAt({ width: 1366, height: 600 });
+      await toPrepR2(page);
+      await startBrewing(page);
+      await assertBecomesActive(page, '#screen-brew');
+      await page.clock.fastForward(5000);
+      await page.evaluate(() => { document.getElementById('brew-steps-details').open = true; });
+      const d = await dial(page);
+      assert.ok(d.top >= 0 && d.bottom <= d.vh, `wijzerplaat ${d.top}–${d.bottom} van ${d.vh}`);
+      await page.close();
+    });
+
+    test('R18/R23: Zet in de zijbalk op een koperen chip; brede knoppen met de koperen tegel op telefoonschaal', async () => {
+      const page = await pageAt({ width: 1024, height: 768 });
+      const chip = await page.locator('.navbar-btn--zet svg').evaluate(el => { const cs = getComputedStyle(el); return { img: cs.backgroundImage, radius: cs.borderTopLeftRadius, w: el.getBoundingClientRect().width, color: cs.color }; });
+      assert.match(chip.img, /koper-geborsteld\.webp/);
+      assert.equal(chip.radius, '50%');
+      assert.equal(chip.w, 30);
+      assert.equal(chip.color, 'rgb(33, 23, 15)');
+      await toPrepR2(page);
+      const btn = await page.locator('#start-btn').evaluate(el => { const cs = getComputedStyle(el); return { img: cs.backgroundImage, size: cs.backgroundSize, repeat: cs.backgroundRepeat }; });
+      assert.match(btn.img, /koper-geborsteld-breed\.webp/);
+      assert.equal(btn.size, '672px 100%, auto');
+      assert.match(btn.repeat, /^repeat-x/);
+      const ok = await page.evaluate(async () => { const img = new Image(); img.src = 'photos/koper-geborsteld-breed.webp'; try { await img.decode(); return img.naturalWidth; } catch(e){ return 0; } });
+      assert.equal(ok, 1848, 'de tegel laadt (2 × 924 px)');
+      await page.close();
+    });
+
+    test('R19/R20: recept in twee kolommen vanaf 900 px; bonen in twee kolommen vanaf 700 px; één rechterrand op het boondetail; geen scroll van 6 px', async () => {
+      const page = await pageAt({ width: 1024, height: 768 });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight), true, 'lege Home past zonder te scrollen');
+      await toPrepR2(page);
+      const cols = await page.evaluate(() => { const a = document.querySelector('#screen-prep .prep-main').getBoundingClientRect(), b = document.querySelector('#screen-prep .prep-side').getBoundingClientRect(); return { grid: getComputedStyle(document.getElementById('screen-prep')).display, side: b.left >= a.right }; });
+      assert.deepEqual(cols, { grid: 'grid', side: true });
+      await page.close();
+
+      const ipad = await pageAt({ width: 820, height: 1180 });
+      await navTo(ipad, 'beans');
+      assert.equal(await ipad.locator('#bean-list').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length), 2, 'iPad staand: twee kolommen');
+      await ipad.close();
     });
   });
 

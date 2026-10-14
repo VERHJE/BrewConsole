@@ -59,6 +59,7 @@ const PHOTOS = [
   'photos/brew-v60-square.webp',
   'photos/brew-v60-tall.webp',
   'photos/home-hero.webp',
+  'photos/koper-geborsteld-breed.webp',
   'photos/koper-geborsteld.webp',
   'photos/logbook-empty.webp',
   'photos/method-chemex.webp',
