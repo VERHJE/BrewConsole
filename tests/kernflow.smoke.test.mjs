@@ -1366,7 +1366,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.click('#scan-text-btn');
     const text = await page.locator('#scan-result').innerText();
     // VA-07: geen voorgekozen roast meer (die moet je zelf kiezen); proces staat op "Weet ik niet".
-    assert.match(text, /Branding\s+niet herkend — kies hieronder de branding/i);
+    assert.match(text, /Roast\s+niet herkend — kies hieronder de roast/i);
     assert.match(text, /Proces\s+niet herkend — staat nu op Weet ik niet \(standaard\)/i);
     assert.match(text, /Branddatum\s+niet herkend/i);
     await page.close();
@@ -2744,7 +2744,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.close();
     });
 
-    test('na "Loggen opslaan" staan de bevestiging en het advies in beeld, boven de tabbalk', async () => {
+    test('na "Kop opslaan" staan de bevestiging en het advies in beeld, boven de tabbalk', async () => {
       const page = await phonePage([BEAN]);
       await brewToDone(page);
       await page.click('#brewlog-open-btn');
@@ -3444,6 +3444,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await answerTasting(page, { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: '4' });
       await page.click('#brewlog-save-btn');
       assert.equal(await page.locator('#actuals-confirm').isVisible(), true, 'de vraag verschijnt');
+      assert.equal(await page.locator('#tasting-card .tasting-actuals').isVisible(), false, 'K7: de vraag staat niet ook nog bovenaan');
       assert.equal((await store(page))[0].lifecycle, 'completed', 'nog niet opgeslagen');
       assert.match(await page.locator('#actuals-confirm-plan').innerText(), /Plan: \d+,\d g · klik \d+/);
       await page.click('#actuals-confirm-yes');
@@ -3631,7 +3632,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.equal(await page.locator('[data-t-step="missed"]').isVisible(), false);
       await answerTasting(page, { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking: '4', goalHit: 'almost' });
       assert.equal(await page.locator('[data-t-step="missed"]').isVisible(), true, 'de vraag komt erbij');
-      assert.match(await page.locator('#tasting-progress-label').textContent(), /van 6/);
+      assert.match(await page.locator('#tasting-progress-label').textContent(), /^Extra vraag · Wat miste je\?$/, 'K7: telt als extra vraag, de voortgang springt niet van 5 naar 6');
       await page.click('[data-t-step="missed"]');
       assert.match(await page.locator('#tasting-card').innerText(), /Wat miste je\?/);
       await page.click('[data-t-q="missed"][data-t-v="fruit"]');
@@ -4982,6 +4983,112 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       });
       assert.deepEqual(lh.map(v => Math.round(parseFloat(v))), [24, 48], 'regelhoogte groeit mee met de letter');
       await page.close();
+    });
+  });
+
+  describe('Analyse 10/10: K1–K7', () => {
+    const seedRecords = () => {
+      const beans = [{ id:'bk1', name:'Boon K', roastLevel:'light', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:20, bagSizeG:250 }];
+      const rec = (id, liking, at) => ({ id, schemaVersion: 6, createdAt: at, updatedAt: at, lifecycle: 'logged', beanId: 'bk1', beanSnapshot: null, equipment: {}, waterSnapshot: null, goal: null,
+        plan: { methodId: 'v60', profileId: 'klassiek', roastId: 'light', waterMl: 300, doseG: 20, ratioText: '1:15', tempC: 95, grindStartingPoint: 15, grindTarget: 16, strengthStep: 0, bypass: null, steps: [], expectedTotalSec: 210, inputs: null, appliedAdjust: null },
+        actual: { doseG: 20, doseSource: 'U', grindClick: 16, grindSource: 'U', confirmed: true, events: [], bedDrySec: 220, completedAt: at },
+        derived: {}, tasting: { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking, complete: true, approved: liking >= 4 }, diagnosis: null,
+        recommendation: { type: 'KEEP' }, flags: {}, favorite: false, sideEffectsAppliedAt: at, deletedAt: null });
+      return { beans: JSON.stringify(beans), brews: JSON.stringify([rec('k1', 3, 1000), rec('k2', 4, 2000)]) };
+    };
+
+    test('K1: Recepten op het boondetail: kaart met binnenruimte en een knop die dat recept klaarzet', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.addInitScript((d) => { if (sessionStorage.getItem('k1')) return; sessionStorage.setItem('k1', '1'); localStorage.setItem('brewconsole_beans', d.beans); localStorage.setItem('brewconsole_brews', d.brews); }, seedRecords());
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await navTo(page, 'beans');
+      await page.click('.bean-card[data-open-detail="bk1"] .bean-card-open');
+      await assertBecomesActive(page, '#screen-bean-detail');
+      await page.click('#bean-detail-tabs [data-tab="recepten"]');
+      const pad = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('#bean-detail-recipes-list .bean-recipe-card')).paddingLeft));
+      assert.ok(pad >= 12, `binnenruimte ${pad} px`);
+      await page.click('[data-recipe-again="k2"]');
+      await assertBecomesActive(page, '#screen-prep');
+      assert.equal(await page.evaluate(() => state.grindStand), 16, 'de maalstand van die kop staat klaar');
+      assert.match(await page.locator('#prep-best-ref').innerText(), /^Je laatste kop met de V60 \(4\/5, /);
+      await page.close();
+    });
+
+    test('K2: "Brouwsel bezig" op Home loopt mee, zonder emoji, en zonder tweede startknop', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.click('#home-start-brew-btn');
+      await page.click('[data-method="v60"]');
+      await page.click('[data-roast="light"]');
+      await page.click('[data-profile="klassiek"]');
+      await startBrewing(page);
+      await page.click('#home-btn');
+      await assertBecomesActive(page, '#screen-home');
+      const t1 = await page.locator('#home-active-brew-title').innerText();
+      await page.clock.fastForward(5000);
+      const t2 = await page.locator('#home-active-brew-title').innerText();
+      assert.match(t1, /^Brouwsel bezig · \d+:\d\d$/, 'geen emoji');
+      assert.notEqual(t1, t2, 'de tijd loopt mee');
+      assert.equal(await page.locator('#home-next-cup').isVisible(), false);
+      assert.equal(await page.evaluate(() => document.getElementById('home-start-brew-btn').classList.contains('btn-primary')), false);
+      await page.close();
+    });
+
+    test('K3: onleesbare of verkeerd gevormde bonenlijst: melding, kopie van het origineel, geen crash', async () => {
+      for (const raw of ['{"kapot', '{"a":1}']){
+        const page = await browser.newPage({ viewport: { width: 390, height: 844 } }); // console.error is hier verwacht
+        const errs = []; page.on('pageerror', e => errs.push(e.message));
+        await page.addInitScript((raw) => { if (sessionStorage.getItem('k3')) return; sessionStorage.setItem('k3', '1'); localStorage.clear(); localStorage.setItem('brewconsole_beans', raw); }, raw);
+        await page.goto(FILE_URL, { waitUntil: 'load' });
+        assert.deepEqual(errs, [], raw);
+        assert.equal(await page.locator('#storage-alert').isVisible(), true, raw);
+        assert.match(await page.locator('#storage-alert-text').innerText(), /bonenlijst kon niet worden gelezen/);
+        const copy = await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('brewconsole_beans_corrupt_')).map(k => localStorage.getItem(k)));
+        assert.deepEqual(copy, [raw], 'het origineel staat apart');
+        await page.click('#storage-alert-close');
+        assert.equal(await page.locator('#storage-alert').isVisible(), false);
+        await page.close();
+      }
+    });
+
+    test('K4: manifest als bestand met iconen van 192 en 512 px (ook maskable)', () => {
+      const root = APP_HTML_PATH.replace(/[^/]+$/, '');
+      const html = fs.readFileSync(APP_HTML_PATH, 'utf8');
+      assert.match(html, /<link rel="manifest" href="manifest\.webmanifest">/);
+      assert.match(html, /<link rel="apple-touch-icon" href="icons\/apple-touch-icon\.png">/);
+      const m = JSON.parse(fs.readFileSync(root + 'manifest.webmanifest', 'utf8'));
+      assert.equal(m.start_url, './');
+      const sizes = m.icons.map(i => `${i.sizes}:${i.purpose}`);
+      for (const want of ['192x192:any', '512x512:any', '512x512:maskable']) assert.ok(sizes.includes(want), want);
+      const sw = fs.readFileSync(root + 'sw.js', 'utf8');
+      for (const i of m.icons){
+        const png = fs.readFileSync(root + i.src);
+        assert.equal(`${png.readUInt32BE(16)}x${png.readUInt32BE(20)}`, i.sizes, i.src);
+        assert.ok(sw.includes(`'${i.src}'`), `${i.src} staat in de offline-cache`);
+      }
+      assert.ok(sw.includes("'manifest.webmanifest'"));
+    });
+
+    test('K5/K6: sorteerkeuze en waterschuif hebben een naam; op desktop staan de knoppen naast elkaar, zo breed als de bonenlijst', async () => {
+      const html = fs.readFileSync(APP_HTML_PATH, 'utf8');
+      assert.match(html, /id="bean-sort-select"[^>]*aria-label="Bonen sorteren"/);
+      assert.match(html, /id="water-modal-slider"[^>]*aria-label="Waterhoeveelheid in ml"/);
+      const beans = [1, 2, 3, 4].map(i => ({ id:`bk6-${i}`, name:`Boon ${i}`, roastLevel:'light', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:i, doseUsedG:0, bagSizeG:250 }));
+      const page = await newTrackedPage({ viewport: { width: 1440, height: 900 } });
+      await page.addInitScript((b) => { if (sessionStorage.getItem('k6')) return; sessionStorage.setItem('k6', '1'); localStorage.setItem('brewconsole_beans', b); }, JSON.stringify(beans));
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await navTo(page, 'beans');
+      const [list, add, tri] = await page.evaluate(() => ['bean-list', 'bean-add-link', 'triage-open-btn'].map(id => { const r = document.getElementById(id).getBoundingClientRect(); return { l: Math.round(r.left), r: Math.round(r.right), t: Math.round(r.top), w: r.width }; }));
+      assert.equal(add.l, list.l, 'links gelijk met de lijst'); assert.equal(tri.r, list.r, 'rechts gelijk met de lijst');
+      assert.equal(add.t, tri.t, 'naast elkaar'); assert.ok(add.w <= 720 && tri.w <= 720, 'VA-35: geen knop breder dan 720 px');
+      await page.close();
+    });
+
+    test('K7: "Kop opslaan", "roast" in de foutmelding, en de voortgang springt niet', () => {
+      const html = fs.readFileSync(APP_HTML_PATH, 'utf8');
+      assert.match(html, /id="brewlog-save-btn">Kop opslaan</);
+      assert.match(html, /Kies de roast — die bepaalt temperatuur en maling\./);
+      assert.match(html, /`Extra vraag · \$\{TASTING_STEP_LABELS\[curKey\]\}`/);
     });
   });
 

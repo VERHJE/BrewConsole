@@ -68,6 +68,16 @@ const PHOTOS = [
   'photos/splash-wide.webp'
 ];
 
+/* K4: het manifest en de app-iconen staan sinds de installeerbaarheidsfix als losse bestanden
+   naast index.html (een data:-manifest kan geen start_url hebben). Ze horen bij de offline app. */
+const SHELL_FILES = [
+  'manifest.webmanifest',
+  'icons/apple-touch-icon.png',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
+  'icons/icon-maskable-512.png'
+];
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
@@ -81,7 +91,7 @@ self.addEventListener('install', (event) => {
        cache:'reload' (R24): een opnieuw bewerkte foto met dezelfde naam
        komt zo bij de volgende installatie mee, niet een oude uit de
        HTTP-cache. */
-    await Promise.allSettled(PHOTOS.map((url) => cache.add(new Request(url, { cache: 'reload' }))));
+    await Promise.allSettled(PHOTOS.concat(SHELL_FILES).map((url) => cache.add(new Request(url, { cache: 'reload' }))));
   })());
 });
 
