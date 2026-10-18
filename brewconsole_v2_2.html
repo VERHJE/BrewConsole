@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Brew Console</title>
+<!-- K25: een linkvoorbeeld als je de app deelt. -->
+<meta name="description" content="Recept, timer en logboek voor V60 en Chemex, dat per boon leert van je koppen.">
+<meta property="og:title" content="Brew Console">
+<meta property="og:description" content="Recept, timer en logboek voor V60 en Chemex, dat per boon leert van je koppen.">
+<meta property="og:type" content="website">
 <!-- K4: een echt manifestbestand. Een data:-URL kan geen start_url hebben ("start-url-not-valid"),
      en Chrome installeert pas met iconen van 192 en 512 px. -->
 <link rel="manifest" href="manifest.webmanifest">
@@ -137,6 +142,13 @@
     --bronze-lobe-hi:rgba(255,242,226,.08); --bronze-lobe-lo:rgba(38,14,3,.07);
     /* Tekst in gevaarkleur (de knopvulling --danger blijft voor witte tekst). */
     --danger-text:#E06A80;
+    /* K20: het donkere palet onder een eigen naam. Het lichte thema overschrijft deze niet, zodat het
+       timerscherm (dat altijd op een donkere foto staat) in beide thema's donker blijft. */
+    --night-surface:#1C1C1A; --night-surface-2:#2A2A26; --night-border:#3B2E24;
+    --night-text:#EDE6D9; --night-text-dim:#A5988A; --night-text-faint:#9C8F82;
+    --night-copper:#D4A574; --night-copper-light:#E6C199; --night-copper-dim:#4E3E30;
+    --night-surface-floating:rgba(28,28,26,.72); --night-surface-floating-border:rgba(237,230,217,.08);
+    --night-accent-glow:rgba(212,165,116,.28); --night-shadow-card:0 1px 2px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.12);
 
     /* Diepte (§3.2) — Level 3 modal bestond al via .modal-overlay hieronder; deze twee
        zijn nieuw, voor kaarten (Level 1) en floating/glass-elementen (Level 2). */
@@ -160,9 +172,11 @@
     /* Zelfde Style Guide-omzetting als het donkere thema hierboven, HSL-herafgeleid
        vanaf de nieuwe Cream/Caramel-basis. */
     --bg:#EDE7DC;
-    --surface:#E2DACD;
-    --surface-2:#D9D0C1;
-    --border:#BFB5A2;
+    /* K20: kaarten lichter dan de achtergrond (bijna wit papier) in plaats van beige op beige; meer
+       scheiding en frisser. Donkere tekst haalt op deze vlakken alleen méér contrast. */
+    --surface:#F8F4EC;
+    --surface-2:#EFE8DC;
+    --border:#D3C8B5;
     --text:#2B1810;
     --text-dim:#5C4A38;
     /* #695643 haalt 4,56:1 op --surface-2 (WCAG AA). */
@@ -182,12 +196,22 @@
 
     /* Zelfde aliaslaag als het donkere thema; de lichte waarden zijn de bestaande, op contrast
        gecontroleerde tokens. */
-    --surface-floating:rgba(226,218,205,.78);
+    --surface-floating:rgba(248,244,236,.82);
     --surface-floating-border:rgba(43,24,16,.08);
-    --surface-bar:rgba(226,218,205,.94);
+    --surface-bar:rgba(248,244,236,.94);
     --accent-glow:rgba(170,112,57,.22);
     --success-soft:rgba(119,144,90,.14);
-    --shadow-card:0 1px 2px rgba(43,24,16,.12), 0 0 0 1px rgba(43,24,16,.06);
+    --shadow-card:0 1px 2px rgba(43,24,16,.08), 0 2px 10px rgba(43,24,16,.05);
+  }
+  /* K20: het timerscherm staat op een donkere foto; in het lichte thema kreeg het een crèmekleurige
+     wijzerplaat en lichte knoppen op die foto. Het houdt nu in beide thema's het donkere palet. */
+  html[data-theme="light"] #screen-brew{
+    --surface:var(--night-surface); --surface-2:var(--night-surface-2); --border:var(--night-border);
+    --text:var(--night-text); --text-dim:var(--night-text-dim); --text-faint:var(--night-text-faint);
+    --copper:var(--night-copper); --copper-light:var(--night-copper-light); --copper-dim:var(--night-copper-dim);
+    --surface-floating:var(--night-surface-floating); --surface-floating-border:var(--night-surface-floating-border);
+    --accent-glow:var(--night-accent-glow); --shadow-card:var(--night-shadow-card);
+    color-scheme:dark;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   /* VA-32: sectielabels zijn echte koppen (h2/h3) in dezelfde stijl; de klasse bepaalt het uiterlijk. */
@@ -391,6 +415,14 @@
     transition:border-color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
   @media (hover:hover){ .header-icon-btn:hover{ border-color:var(--copper); } }
+  .header-pill-btn{
+    display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 16px 0 12px; flex-shrink:0;
+    border-radius:var(--radius-pill); border:1px solid var(--copper-dim); background:var(--surface-2); color:var(--copper-light);
+    font-family:var(--font-body); font-weight:600; font-size:var(--fs-small); cursor:pointer;
+    transition:border-color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
+  }
+  @media (hover:hover){ .header-pill-btn:hover{ border-color:var(--copper); } }
+  .header-pill-btn:active{ transform:scale(.96); }
   .header-icon-btn:active{ transform:scale(.94); }
 
   /* Triage: icoon boven de titel; één vraag per stap met genummerde categorie, radiokaarten
@@ -491,6 +523,13 @@
 
   /* profile list */
   .choice-grid--1{display:flex; flex-direction:column; gap:10px;}
+  /* K13: gietstijlen achter één tik. */
+  .profile-styles-summary{display:flex; align-items:center; gap:8px; min-height:44px; cursor:pointer; list-style:none;}
+  .profile-styles-summary::-webkit-details-marker{display:none;}
+  .profile-styles-count{font-variant-numeric:tabular-nums; color:var(--text-faint);}
+  .profile-styles-summary .flavor-category-arrow{margin-left:auto;}
+  .profile-styles[open] .profile-styles-summary .flavor-category-arrow{transform:rotate(45deg);}
+  .profile-styles-list{display:flex; flex-direction:column; gap:10px; margin-top:4px;}
   .profile-row{
     display:flex; align-items:center; gap:14px;
     background:var(--surface);
@@ -616,6 +655,23 @@
   .history-more > summary{cursor:pointer; min-height:44px; display:flex; align-items:center; color:var(--copper-light); font-size:var(--fs-small);}
   .prep-best-ref{font-size:var(--fs-small); color:var(--copper-light); background:var(--surface); border:1px solid var(--copper-dim); border-radius:var(--radius-sm); padding:10px 12px; margin:0 0 12px;}
   .brewlog-entry-delete{display:inline-flex; align-items:center; min-height:44px; background:none; border:none; color:var(--text-faint); font-size:var(--fs-label); padding:0 2px; cursor:pointer; text-decoration:underline;} /* VA-32 */
+  .about-facts{margin:12px 0 0;}
+  .about-facts > div{padding:8px 0; border-top:1px solid var(--border);}
+  .about-facts dt{font-size:var(--fs-label); letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); margin-bottom:2px;}
+  .about-facts dd{margin:0; font-size:var(--fs-small); color:var(--text-dim); line-height:1.45;}
+  .water-links-intro{margin-bottom:4px;}
+  .water-links{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;}
+  .water-links a{display:inline-flex; align-items:center; min-height:44px; padding:0 12px; border:1px solid var(--border); border-radius:var(--radius-pill); color:var(--copper-light); text-decoration:none; font-size:var(--fs-small);}
+  #voice-test-btn{min-height:44px;}
+  /* K25: printversie — wat op het scherm staat, zwart op wit, zonder balken en knoppenrijen. */
+  @media print{
+    :root{--bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#FFFFFF; --border:#BBBBBB; --text:#000000; --text-dim:#222222; --text-faint:#444444; --copper:#000000; --copper-light:#000000;}
+    html[data-theme="light"]{--bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#FFFFFF; --border:#BBBBBB; --text:#000000; --text-dim:#222222; --text-faint:#444444; --copper:#000000; --copper-light:#000000;}
+    html{color-scheme:light;}
+    body::before, .navbar, .top-row, .prep-cta-row, .back-btn, .splash-screen, .undo-bar, .storage-alert, .install-hint, .live-brew-bar, #stats-grid::before{display:none !important;}
+    .stat-block, .bean-card, .flavor-category, .recipe-table{box-shadow:none !important; break-inside:avoid;}
+    .screen:not(.active){display:none !important;}
+  }
   /* K3: melding over je gegevens, bovenaan, los van de onderste balken. */
   .storage-alert{position:fixed; top:max(12px, var(--safe-t)); left:50%; transform:translateX(-50%); z-index:70;
     width:min(560px, calc(100vw - 32px)); box-sizing:border-box; background:var(--surface); border:1px solid var(--copper-dim);
@@ -746,7 +802,7 @@
   @media (hover:hover){ .stat-more-toggle:hover{ text-decoration:underline; } }
   .stat-more-body{ margin-top:4px; }
   /* Secundaire tegels (ratio, brouwtijd): kleiner en gedempt. */
-  .stat-block--secondary .stat-value{font-size:var(--fs-small); color:var(--text-dim); font-variant-numeric:tabular-nums;}
+  .stat-block--secondary .stat-value{font-size:var(--fs-body); color:var(--text-dim); font-variant-numeric:tabular-nums;}
   /* De watertegel is tikbaar (opent #water-modal). */
   /* Sprint 3 (UX-review F4): −/+ in de watertegel; het getal zelf opent de modal. */
   .stat-stepper{display:flex; align-items:center; justify-content:space-between; gap:4px;}
@@ -777,10 +833,11 @@
   }
   #stats-grid{align-items:stretch;} /* VA-36: tegels in één rij even hoog */
   .stat-block--secondary .stat-label{color:var(--text-faint);}
-  /* Sprint 5: ratio en brouwtijd compact — label en waarde op één regel, uitleg eronder. */
-  .stat-block--secondary{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; column-gap:8px; padding:10px 14px;}
-  .stat-block--secondary .stat-label{margin-bottom:0;}
-  .stat-block--secondary .stat-sub{flex-basis:100%;}
+  /* K16: ratio en brouwtijd hebben dezelfde opbouw als de andere tegels (label, getal, uitleg), alleen
+     kleiner en stiller. Eerst stond het label links en het getal rechts: drie opbouwen in één raster. */
+  .stat-block--secondary{padding:10px 14px;}
+  .stat-block--secondary .stat-label{margin-bottom:2px;}
+  .stat-sub--lead{color:var(--text-dim);}
 
   .style-note{
     font-size:var(--fs-small); color:var(--text-dim); line-height:1.5;
@@ -1562,7 +1619,31 @@
   .bean-card-tags{margin:2px 0 0; font-size:var(--fs-label); color:var(--text-faint);}
   .bean-card-fav-mark{color:var(--berry); font-family:var(--font-body); font-size:.8em;}
   .bean-card-meta[data-low-stock="true"]{color:var(--text);}
-  .bean-card-go{display:block; width:100%; margin-top:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .bean-card-go{
+    display:flex; align-items:center; justify-content:flex-end; gap:4px; width:fit-content; max-width:100%; margin:2px -8px -12px auto; padding:0 8px; min-height:44px;
+    background:none; border:none; color:var(--copper-light); font-family:var(--font-body); font-weight:600; font-size:var(--fs-small);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;
+  }
+  .bean-card-go:active{color:var(--copper);}
+  /* K18: drinkvenster, voorraad en verloop als beeld. */
+  .dw-bar{position:relative; height:8px; margin:12px 0 2px; border-radius:var(--radius-pill); background:var(--surface-2);}
+  .dw-seg{position:absolute; top:0; bottom:0; border-radius:var(--radius-pill);}
+  .dw-seg--rest{background:var(--copper-dim);}
+  .dw-seg--in{background:var(--copper);}
+  .dw-today{position:absolute; top:-5px; width:3px; height:18px; margin-left:-1.5px; border-radius:var(--radius-pill); background:var(--text); box-shadow:0 0 0 2px var(--surface);}
+  .dw-scale{position:relative; height:18px; margin-bottom:6px; font-size:var(--fs-label); color:var(--text-faint);}
+  .dw-scale span{position:absolute; top:2px; transform:translateX(-50%); white-space:nowrap;}
+  .stock-bar{height:6px; margin:10px 0 6px; border-radius:var(--radius-pill); background:var(--surface-2); overflow:hidden;}
+  .stock-bar span{display:block; height:100%; border-radius:var(--radius-pill); background:var(--copper-light);}
+  .bean-trend{margin:0 0 14px; padding:12px 14px 10px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);}
+  .bean-trend svg{display:block; width:100%; height:auto; overflow:visible;}
+  .bean-trend figcaption{margin-top:6px; font-size:var(--fs-label); color:var(--text-faint);}
+  .bean-trend-grid{stroke:var(--border); stroke-width:1;}
+  .bean-trend-axis{fill:var(--text-faint); font-size:var(--fs-label); font-family:var(--font-body);}
+  .bean-trend-line{fill:none; stroke:var(--copper); stroke-width:2; stroke-linejoin:round; stroke-linecap:round;}
+  .bean-trend-dot{fill:var(--copper-light); stroke:var(--surface); stroke-width:2;}
+  .bean-trend-grind{fill:var(--text-dim); font-size:var(--fs-label); font-family:var(--font-body); font-variant-numeric:tabular-nums;}
+  @media (hover:hover){ .bean-card-go:hover{text-decoration:underline; text-underline-offset:3px;} }
   .bean-search-row #bean-search-input{flex:none;}
   .bean-search-row #bean-sort-select{flex:none; align-self:flex-start; max-width:100%;}
   .backup-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;}
@@ -1679,6 +1760,15 @@
   .switch-thumb{position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:var(--text-dim); transition:transform var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out);}
   .counter-toggle[aria-checked="true"] .switch-track{background:var(--primary); border-color:var(--primary);}
   .counter-toggle[aria-checked="true"] .switch-thumb{transform:translateX(14px); background:var(--on-primary);}
+  .counter-toggle.settings-switch{margin:4px 0 0;}
+  /* K9: lopend brouwsel op elk scherm (behalve de timer en Home, dat zijn eigen banner heeft). */
+  .live-brew-bar{position:fixed; top:max(8px, var(--safe-t)); left:50%; transform:translateX(-50%); z-index:65;
+    display:flex; align-items:center; gap:10px; width:max-content; max-width:calc(100vw - 24px); min-height:44px; padding:6px 16px 6px 12px; box-sizing:border-box;
+    border-radius:var(--radius-pill); border:1px solid var(--copper-dim); background:var(--surface-bar); color:var(--text);
+    font-family:var(--font-body); font-size:var(--fs-small); box-shadow:0 6px 24px var(--ink-a35); cursor:pointer;}
+  .live-brew-bar::before{content:""; width:8px; height:8px; border-radius:50%; background:var(--copper); flex-shrink:0;}
+  .live-brew-time{font-weight:700; font-variant-numeric:tabular-nums;}
+  .live-brew-next{color:var(--text-dim); min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   #screen-brew[data-counter="on"] .brew-action-main{font-size:clamp(44px, 9vw, 92px); line-height:1.05;}
   #screen-brew[data-counter="on"] .brew-action-sub{font-size:var(--fs-body);}
   #screen-brew[data-counter="on"] .next-info{font-size:var(--fs-body);}
@@ -1985,6 +2075,13 @@
     color:var(--text-faint); margin:22px 0 10px;
   }
   .home-strip{display:flex; gap:10px; overflow-x:auto; padding-bottom:4px;}
+  /* K19: "Zo staat het" — rustige feitenrijen in één kaart. */
+  .home-insights{margin-top:22px;}
+  .home-insights-list{margin:0; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); box-shadow:var(--shadow-card);}
+  .home-insight{padding:12px 16px;}
+  .home-insight + .home-insight{border-top:1px solid var(--border);}
+  .home-insight dt{font-size:var(--fs-label); letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); margin-bottom:3px;}
+  .home-insight dd{margin:0; font-size:var(--fs-small); color:var(--text-dim); line-height:1.45; overflow-wrap:anywhere;}
   .home-strip-item{flex-shrink:0; width:130px; display:flex; flex-direction:column; justify-content:flex-start; align-items:stretch; transition:transform var(--motion-standard) var(--ease-out);} /* VA-14: een <button> centreert zijn inhoud verticaal; zo begint elk kaartje bovenaan */
   .home-strip-item .photo-slot{width:130px; height:88px; margin-bottom:6px;}
   @media (hover:hover){ .home-strip-item:hover{transform:translateY(-2px);} }
@@ -2537,6 +2634,12 @@
         <span class="home-cta-title"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 10h11v4a5.5 5.5 0 0 1-5.5 5.5H10A5.5 5.5 0 0 1 4.5 14v-4Z"/><path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5c-.6.8-.6 1.4 0 2.2M11.5 3.5c-.6.8-.6 1.4 0 2.2"/></svg> Nieuw brouwsel starten →</span>
         <span class="home-cta-desc">Kies je zetmethode en ga direct naar een recept op maat.</span>
       </button>
+      <!-- K19 (in de linkerkolom, zodat de twee kolommen op desktop in balans zijn): wat er nu speelt, uit je eigen gegevens: je laatste kop, versheid en voorraad van je
+           bonen, en hoe ver de app is met leren. Leeg-eerst: zonder gegevens geen blok. -->
+      <section class="home-insights" id="home-insights" aria-labelledby="home-insights-label" hidden>
+        <h2 class="home-section-label" id="home-insights-label">Zo staat het</h2>
+        <dl class="home-insights-list" id="home-insights-list"></dl>
+      </section>
       </div>
       <div class="home-side">
       <h2 class="home-section-label" id="home-beans-label" hidden>Jouw bonen</h2>
@@ -2604,9 +2707,10 @@
           <h1 class="title mb-2">Mijn bonen</h1>
           <p class="subtitle mb-0">Bewaar en ontdek je koffies.</p>
         </div>
-        <!-- Camera-icoon: het boonformulier begint met de scan-sectie (openBeanAddFromList()). -->
-        <button type="button" class="header-icon-btn" id="bean-add-header-btn" aria-label="Nieuwe boon toevoegen (scannen of handmatig)">
-          <svg class="w-20 h-20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 8h2.2l1.1-2h9.4l1.1 2H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="14" r="3.4"/></svg>
+        <!-- K17: toevoegen staat in de kop, met tekst (eerst alleen een camera-icoon, en de knop met
+             tekst pas onder de lijst). Het boonformulier begint met de scan-sectie (openBeanAddFromList()). -->
+        <button type="button" class="header-pill-btn" id="bean-add-header-btn" aria-label="Nieuwe boon toevoegen (scannen of handmatig)">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Boon</span>
         </button>
       </div>
       <div class="bean-search-row" id="bean-search-row" hidden>
@@ -2714,6 +2818,8 @@
 
       <!-- De volledige brouwgeschiedenis van déze boon, inline, met dezelfde kaarten als Historie. -->
       <div class="detail-tab-panel" data-tab-panel="historie" id="bean-detail-panel-historie" hidden>
+        <!-- K18: verloop per kop (lekker en maalstand), vanaf twee beoordeelde koppen. -->
+        <figure class="bean-trend" id="bean-detail-trend" hidden></figure>
         <div id="bean-detail-history-list"></div>
         <p class="empty-hint" id="bean-detail-history-empty" hidden>Nog geen gelogde koppen voor deze boon.</p>
       </div>
@@ -3409,7 +3515,15 @@
           <button type="button" class="chip" role="radio" data-theme-pref="light">Licht</button>
           <button type="button" class="chip" role="radio" data-theme-pref="dark">Donker</button>
         </div>
-        <p class="empty-hint m-8-0-0">Systeem volgt de instelling van je toestel. Op de timer blijft de tekst in beide thema's licht op een donkere foto.</p>
+        <p class="empty-hint m-8-0-0">Systeem volgt de instelling van je toestel. Het timerscherm blijft in beide thema's donker: het staat op een donkere foto.</p>
+      </div>
+
+      <!-- K8: gesproken aanwijzingen tijdens het zetten (proef, standaard uit). -->
+      <div class="bean-detail-section">
+        <h2 class="bean-detail-section-label">Zetten</h2>
+        <button type="button" class="counter-toggle settings-switch" id="voice-toggle" role="switch" aria-checked="false"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span class="switch-label">Gesproken aanwijzingen (proef)</span></button>
+        <p class="empty-hint m-8-0-0">De telefoon zegt bij elke giet hoeveel gram ("Giet tot 210 gram"), vijf seconden vooraf "Zo meteen: tot 210 gram", en "Laten doorlopen" na de laatste giet. Werkt offline, met de stem van je toestel. Het belletje blijft.</p>
+        <button type="button" class="link-secondary" id="voice-test-btn">Test de stem</button>
       </div>
 
       <!-- Audit BC-24: waterprofiel hoort bij je keuken, niet bij één recept. -->
@@ -3452,6 +3566,9 @@
         <!-- VA-25: eerst de velden en de uitkomst; de uitleg op verzoek. -->
         <details class="more-info mt-12" id="water-howto">
           <summary>Hoe vind ik dit?</summary>
+          <!-- K25: voor bedrijven waarvan het water per plaats verschilt geen gemiddelde (R-12), wel de weg erheen. -->
+          <p class="water-links-intro">Zoek op postcode bij je waterbedrijf (daar op "waterkwaliteit"):</p>
+          <div class="water-links"><a href="https://www.vitens.nl" target="_blank" rel="noopener">Vitens</a><a href="https://www.evides.nl" target="_blank" rel="noopener">Evides</a><a href="https://www.brabantwater.nl" target="_blank" rel="noopener">Brabant Water</a><a href="https://www.oasen.nl" target="_blank" rel="noopener">Oasen</a><a href="https://www.wml.nl" target="_blank" rel="noopener">WML</a><a href="https://www.wmd.nl" target="_blank" rel="noopener">WMD</a><a href="https://www.waterbedrijfgroningen.nl" target="_blank" rel="noopener">Waterbedrijf Groningen</a></div>
           <p>Kraanwater: zoek op je postcode het kwaliteitsoverzicht van je waterbedrijf ("totale hardheid" en "waterstofcarbonaat/HCO3"). Mineralenzakje of flessenwater: neem de waarden van de verpakking over. De SCA-richtwaarde is bedoeld voor wie water zelf mengt. De app zoekt zelf niets op via je postcode.</p>
           <p>Alkaliniteit staat op het kwaliteitsoverzicht per productiebedrijf, of meet je met een KH-druppeltest. HCO3 wordt omgerekend naar CaCO3-equivalent (×0,82) voor de SCA-vergelijking.</p>
           <p>Hardheid (calcium/magnesium) is niet hetzelfde als alkaliniteit (bufferende werking tegen zuren); vooral bij fruitige profielen bepaalt alkaliniteit minstens zo sterk hoe zuur de kop aankomt. Elke waarde krijgt daarom een eigen oordeel, nooit één samengevoegd "water is goed".</p>
@@ -3476,6 +3593,13 @@
       <div class="bean-detail-section">
         <h2 class="bean-detail-section-label">Over</h2>
         <p class="bean-detail-about">Brew Console 2.0 — een kleinere, fijnere, meer intentionele koffiewereld. Alle recept- en maaladviezen in deze app zijn gebaseerd op gedocumenteerde bronnen en je eigen gelogde koppen; waar dat niet kan, zegt de app dat expliciet i.p.v. een getal te verzinnen.</p>
+        <!-- K24: privacy, bronnen en versie op één plek. -->
+        <dl class="about-facts">
+          <div><dt>Je gegevens</dt><dd>Alles staat alleen op dit toestel; de app stuurt niets weg. Eén uitzondering: bij het scannen van een verpakkingsfoto haalt de app eenmalig de tekstherkenning (Tesseract.js) en haar taaldata van internet. De foto zelf blijft op je toestel.</dd></div>
+          <div><dt>Recepten</dt><dd>Gietschema's naar Tetsu Kasuya (4:6), James Hoffmann, Scott Rao, April Coffee Roasters en Matt Perger. Waterrichtwaarden van de SCA; waterbedrijven uit hun eigen kwaliteitsrapporten.</dd></div>
+          <div><dt>Molen</dt><dd>Maalstanden voor de Timemore C3S Pro.</dd></div>
+          <div><dt>Versie</dt><dd>Brew Console 2.0</dd></div>
+        </dl>
       </div>
     </section>
 
@@ -3497,6 +3621,10 @@
 <div class="undo-bar" id="undo-bar" role="status" aria-live="polite" hidden><span id="undo-bar-text"></span><button type="button" id="undo-bar-btn">Ongedaan maken</button></div>
 <!-- K3: storingen met je gegevens (onleesbare opslag, opslaan mislukt, onverwachte fout) worden
      gemeld in plaats van alleen in de console te staan. Zie showStorageAlert(). -->
+<!-- K9: lopend brouwsel buiten de timer; een tik brengt je terug (renderLiveBrewBar()). -->
+<button type="button" class="live-brew-bar" id="live-brew-bar" hidden><span class="live-brew-time" id="live-brew-time"></span><span class="live-brew-next" id="live-brew-next"></span></button>
+<!-- K22: de service worker meldt een nieuwe versie; nooit tijdens een brouwsel (maybeShowUpdateBar()). -->
+<div class="undo-bar update-bar" id="update-bar" role="status" aria-live="polite" hidden><span>Er is een nieuwe versie van de app.</span><button type="button" id="update-bar-btn">Vernieuwen</button></div>
 <div class="storage-alert" id="storage-alert" role="alert" hidden>
   <p id="storage-alert-text"></p>
   <div class="storage-alert-actions">
@@ -6197,6 +6325,22 @@ function beanProfileLabel(bean){
 function choiceLabelForState(){
   return profileLabel(state.profile, state.goal);
 }
+/* K13: een gelijkspel noemde elk label voluit ("Helder & fris en Helder & fris · Rao en Helder & fris ·
+   Hoffmann"). Nu per smaakdoel gegroepeerd: "Helder & fris: het gewone recept, Rao of Hoffmann". */
+function tieNoteText(labels, prefix){
+  const groups = new Map();
+  labels.forEach(l => {
+    const [base, style] = String(l).split(' · ');
+    if (!groups.has(base)) groups.set(base, []);
+    groups.get(base).push(style || null);
+  });
+  const orList = (xs) => xs.length > 1 ? `${xs.slice(0, -1).join(', ')} of ${xs[xs.length - 1]}` : xs[0];
+  const parts = [...groups.entries()].map(([base, styles]) => {
+    if (styles.length === 1) return styles[0] ? `${base} (${styles[0]})` : base;
+    return `${base}: ${orList(styles.map(st => st || 'het gewone recept'))}`;
+  });
+  return `${prefix || 'Deze boon'} past ongeveer even goed bij ${parts.join(' en bij ')}. De app kiest niet voor je: kies hieronder zelf wat je wilt volgen.`;
+}
 function renderProfileGrid(){
   const tieEl = document.getElementById('profile-tie-note'); // VA-34
   if (tieEl){ tieEl.textContent = state.profileTieNote || ''; tieEl.hidden = !state.profileTieNote; }
@@ -6219,8 +6363,11 @@ function renderProfileGrid(){
       <span><span class="profile-name">${escapeHtml(c.label)}</span><span class="profile-desc">${escapeHtml(c.desc)}</span>${detail}${twinHtml}</span>
     </button>`;
   };
+  // K13: de drie smaakdoelen dragen het scherm; de gietstijlen (met namen als Hoffmann en Rao) staan
+  // achter één tik. Is er al een gietstijl gekozen, dan staat het blok open.
+  const styleSelected = !current && styles.some(c => c.profile === state.profile);
   el.innerHTML = TASTE_CHOICES.map(c => row(c, true)).join('') +
-    (styles.length ? `<p class="profile-group-label">Of kies een gietstijl</p>${styles.map(c => row(c, false)).join('')}` : '');
+    (styles.length ? `<details class="profile-styles" id="profile-styles"${styleSelected ? ' open' : ''}><summary class="profile-group-label profile-styles-summary"><span>Of kies een gietstijl</span><span class="profile-styles-count">${styles.length}</span><span class="flavor-category-arrow" aria-hidden="true">+</span></summary><div class="profile-styles-list">${styles.map(c => row(c, false)).join('')}</div></details>` : '');
   el.querySelectorAll('[data-profile]').forEach(btn => {
     btn.addEventListener('click', () => {
       const taste = TASTE_CHOICES.find(c => c.taste === btn.getAttribute('data-taste'));
@@ -6386,7 +6533,7 @@ function renderAdviceChips(){
       const names = nearTieCandidates.map(k => {
         return profileDirectionLabel(k); // VA-10
       });
-      tieNoteEl.textContent = `Deze boon past ongeveer even goed bij ${names.join(' en ')} — er wordt geen keuze voor je gemaakt, kies zelf hieronder welk profiel je wilt volgen.`;
+      tieNoteEl.textContent = tieNoteText(names);
       tieNoteEl.dataset.pending = 'true';
       tieNoteEl.style.display = 'block';
     } else {
@@ -6519,7 +6666,7 @@ function brewBeanDirect(id){
   const tie = adviceState.flavorScores ? profileNearTieCandidates(adviceState.flavorScores) : null;
   if (tie && tie.length > 1){
     adviceState.profile = rawKeyForVisibleSelection(tie[0], adviceState.flavorScores);
-    applyAdvice({ toProfile: true, tieNote: `${bean.name || 'Deze boon'} past ongeveer even goed bij ${tie.map(k => profileDirectionLabel(k)).join(' en ')}. Kies hieronder wat je wilt proeven.` });
+    applyAdvice({ toProfile: true, tieNote: tieNoteText(tie.map(k => profileDirectionLabel(k)), bean.name || 'Deze boon') }); // K13
     return;
   }
   applyAdvice();
@@ -8118,7 +8265,9 @@ function renderBeanLibraryScreen(){
       </div>
       <!-- VA-13: één actie per kaart. Bewerken, favoriet, verwijderen, anders zetten en de
            geschiedenis staan op het boondetail (tik op de kaart). -->
-      <button class="bean-use-btn bean-card-go" ${b.lastBrew ? `data-again="${b.id}"` : `data-use="${b.id}"`}>${b.lastBrew ? `Zet opnieuw · ${escapeHtml(methodName)}${b.lastBrew.bypass ? ' (bypass)' : ''}` : 'Zet deze boon'}</button>
+      <!-- K17: de actie als koperen tekstknop rechtsonder in plaats van een volle knop per kaart:
+           de lijst oogt lichter, het tikvlak blijft 44 px hoog. -->
+      <button type="button" class="bean-card-go" ${b.lastBrew ? `data-again="${b.id}"` : `data-use="${b.id}"`}>${b.lastBrew ? `Zet opnieuw · ${escapeHtml(methodName)}${b.lastBrew.bypass ? ' (bypass)' : ''}` : 'Zet deze boon'}<span aria-hidden="true">→</span></button>
     </div>`;
   }).join('');
   el.querySelectorAll('[data-use]').forEach(btn=>btn.addEventListener('click', (e)=>{ e.stopPropagation(); brewBeanDirect(btn.getAttribute('data-use')); })); // VA-34
@@ -8180,6 +8329,45 @@ function renderHomeScreen(){
       btn.addEventListener('click', ()=>openBeanDetail(btn.getAttribute('data-open-detail')));
     });
   }
+  renderHomeInsights(); // K19
+}
+/* K19: "Zo staat het" op Home — alleen feiten uit je eigen gegevens (geen advies, geen
+   receptgetal): je laatste beoordeelde kop, welke bonen nu in hun drinkvenster zitten of bijna
+   op zijn, en hoeveel koppen en geteste stappen de app al heeft. */
+function homeInsightRows(nowMs){
+  const rows = [];
+  const d = (t) => new Date(t).toLocaleDateString('nl-NL', { day:'numeric', month:'short' });
+  const last = brewStore.filter(r => r && isBrewInLogView(r) && r.tasting && typeof r.tasting.liking === 'number')
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+  if (last){
+    const bean = last.beanId ? beanLibrary.find(b => b.id === last.beanId) : null;
+    const advice = last.recommendation && last.recommendation.type && last.recommendation.type !== 'NONE'
+      ? recommendationTexts(last.recommendation, null, {}).title : '';
+    rows.push({ key: 'last', label: 'Laatste kop', text: [bean ? bean.name : 'zonder boon', `${last.tasting.liking}/5`, last.createdAt ? d(last.createdAt) : null].filter(Boolean).join(' · ') + (advice ? `. ${advice}` : '') });
+  }
+  const names = (list) => list.length > 2 ? `${list.slice(0, 2).join(', ')} en ${list.length - 2} meer` : list.join(' en ');
+  const inWindow = beanLibrary.filter(b => { const dw = drinkWindowFor(b.roastDate, nowMs); return dw && dw.state === 'in'; }).map(b => b.name);
+  const resting = beanLibrary.map(b => ({ b, dw: drinkWindowFor(b.roastDate, nowMs) })).filter(x => x.dw && x.dw.state === 'resting');
+  const freshBits = [];
+  if (inWindow.length) freshBits.push(`in het venster: ${names(inWindow)}`);
+  if (resting.length) freshBits.push(`nog aan het rusten: ${names(resting.map(x => `${x.b.name} (${x.dw.daysToStart} ${x.dw.daysToStart === 1 ? 'dag' : 'dagen'})`))}`);
+  if (freshBits.length) rows.push({ key: 'fresh', label: 'Versheid', text: freshBits.join(' · ') });
+  const low = beanLibrary.map(b => ({ b, s: bagSummaryFor(b, brewStore) })).filter(x => !x.s.empty && x.s.cupsLeft != null && x.s.cupsLeft <= 3);
+  if (low.length) rows.push({ key: 'stock', label: 'Bijna op', text: names(low.map(x => `${x.b.name} (± ${x.s.cupsLeft} ${x.s.cupsLeft === 1 ? 'kop' : 'koppen'})`)) });
+  const cups = loggedCupCount();
+  if (cups){
+    const st = adviceOutcomeStats(brewStore);
+    rows.push({ key: 'learn', label: 'Wat de app weet', text: `${cups} ${cups === 1 ? 'kop' : 'koppen'} gelogd` + (st.gate === 'insufficient' ? ` · ${st.tested} van de ${ADVICE_GATE_MIN_TESTED} geteste stappen voor een oordeel over de adviezen` : '') });
+  }
+  return rows;
+}
+function renderHomeInsights(){
+  const box = document.getElementById('home-insights');
+  const list = document.getElementById('home-insights-list');
+  if (!box || !list) return;
+  const rows = homeInsightRows(Date.now());
+  box.hidden = !rows.length;
+  list.innerHTML = rows.map(r => `<div class="home-insight" data-insight="${r.key}"><dt>${escapeHtml(r.label)}</dt><dd>${escapeHtml(r.text)}</dd></div>`).join('');
 }
 /* Sprint 2 (UX-review F3): "Je volgende kop". Eerst een boon met een klaargezette stap
    (nieuwste eerst) — mits die stap bij dezelfde methode hoort als de vorige kop, want
@@ -8588,6 +8776,47 @@ function bagSummaryFor(bean, store){
   const cupsLeft = remainingG != null && lastDose ? Math.max(0, Math.floor(remainingG / lastDose)) : null;
   return { cups: recs.length, avgLiking: avg, remainingG, cupsLeft, best: bestCupOf(recs), empty: remainingG != null && remainingG <= 0 };
 }
+/* K18: het drinkvenster en de voorraad als beeld, naast de bestaande tekst (die blijft: hij zegt
+   ook "vuistregel, geen meting"). De balk loopt van de branddatum tot dag 42 (FRESHNESS_TIERS
+   'old'); de streep is vandaag. */
+const DW_BAR_DAYS = 42;
+function drinkWindowBarHtml(dw){
+  const pct = (n) => Math.max(0, Math.min(100, n / DW_BAR_DAYS * 100));
+  const r = (x) => Math.round(x * 10) / 10;
+  const today = r(pct(Math.min(dw.day, DW_BAR_DAYS)));
+  const startP = r(pct(dw.start)), endP = r(pct(dw.end + 1));
+  return `<div class="dw-bar" role="img" aria-label="Dag ${dw.day} na branden. Rust tot dag ${dw.start - 1}, venster dag ${dw.start} tot ${dw.end}.">
+      <span class="dw-seg dw-seg--rest" style="left:0; width:${startP}%"></span>
+      <span class="dw-seg dw-seg--in" style="left:${startP}%; width:${r(endP - startP)}%"></span>
+      <span class="dw-today" style="left:${today}%"></span>
+    </div>
+    <div class="dw-scale" aria-hidden="true"><span style="left:${r(startP / 2)}%">rust</span><span style="left:${r((startP + endP) / 2)}%">venster</span><span style="left:${r((endP + 100) / 2)}%">daarna</span></div>`;
+}
+function stockBarHtml(remainingG, bagSizeG){
+  const p = Math.round(Math.max(0, Math.min(1, remainingG / bagSizeG)) * 1000) / 10;
+  return `<div class="stock-bar" role="img" aria-label="Nog ${fmt(Math.max(0, remainingG), 0)} van ${fmt(bagSizeG, 0)} g in de zak"><span style="width:${p}%"></span></div>`;
+}
+/* K18: verloop per kop met deze boon — hoe lekker (1–5) en op welke maalstand, oud → nieuw. Alleen
+   tonen wat gelogd is; de lijn zegt niets over oorzaak. Hoogstens de laatste 12 koppen. */
+function renderBeanTrend(beanId){
+  const fig = document.getElementById('bean-detail-trend');
+  if (!fig) return;
+  const recs = brewStore.filter(r => r && r.beanId === beanId && isBrewInLogView(r) && r.tasting && typeof r.tasting.liking === 'number')
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).slice(-12);
+  if (recs.length < 2){ fig.hidden = true; fig.innerHTML = ''; return; }
+  const W = 300, top = 12, step = 14, n = recs.length;
+  const x = (i) => Math.round(16 + i * (W - 32) / (n - 1));
+  const y = (l) => top + (5 - l) * step;
+  const pts = recs.map((r, i) => ({ x: x(i), y: y(r.tasting.liking), g: cupSetupOf(r).grind }));
+  const grid = [1, 3, 5].map(l => `<line class="bean-trend-grid" x1="0" x2="${W}" y1="${y(l)}" y2="${y(l)}"/><text class="bean-trend-axis" x="0" y="${y(l) - 3}">${l}</text>`).join('');
+  const line = `<polyline class="bean-trend-line" points="${pts.map(p => `${p.x},${p.y}`).join(' ')}"/>`;
+  const dots = pts.map(p => `<circle class="bean-trend-dot" cx="${p.x}" cy="${p.y}" r="4"/>`).join('');
+  const grinds = pts.map(p => p.g != null ? `<text class="bean-trend-grind" x="${p.x}" y="${y(1) + 20}" text-anchor="middle">${p.g}</text>` : '').join('');
+  const summary = recs.map(r => { const g = cupSetupOf(r).grind; return `${r.tasting.liking}/5${g != null ? ` op klik ${g}` : ''}`; }).join(', ');
+  fig.innerHTML = `<svg viewBox="0 0 ${W} ${y(1) + 26}" role="img" aria-label="Verloop per kop, oud naar nieuw: ${escapeHtml(summary)}">${grid}${line}${dots}${grinds}</svg>
+    <figcaption>Lekker per kop (1–5), oud → nieuw · onder elke kop je maalstand</figcaption>`;
+  fig.hidden = false;
+}
 function renderBeanDetailBag(bean){
   const block = document.getElementById('bean-detail-bag');
   const body = document.getElementById('bean-detail-bag-body');
@@ -8602,7 +8831,7 @@ function renderBeanDetailBag(bean){
       : dw.state === 'in' ? `nu dag ${dw.day}: in het venster, nog ${dw.daysLeft} ${dw.daysLeft === 1 ? 'dag' : 'dagen'}.`
       : dw.state === 'past' ? `nu dag ${dw.day}: voorbij het venster, verwacht minder frisse topnoten.`
       : `nu dag ${dw.day}: waarschijnlijk voorbij de piek.`;
-    lines.push(`<p class="bean-detail-best-brew-facts">${escapeHtml(head)}</p><p class="bean-detail-best-brew-facts-sub">${escapeHtml(now)} Proef zelf: dit is een vuistregel, geen meting.</p>`);
+    lines.push(`<p class="bean-detail-best-brew-facts">${escapeHtml(head)}</p>${drinkWindowBarHtml(dw)}<p class="bean-detail-best-brew-facts-sub">${escapeHtml(now)} Proef zelf: dit is een vuistregel, geen meting.</p>`);
   } else {
     lines.push(`<p class="bean-detail-best-brew-facts-sub">Vul de branddatum in voor een drinkvenster.</p>`);
   }
@@ -8611,6 +8840,7 @@ function renderBeanDetailBag(bean){
     sum.avgLiking != null ? `gemiddeld ${fmt(sum.avgLiking, 1)}/5` : null,
     sum.empty ? 'zak waarschijnlijk leeg' : sum.remainingG != null ? `nog ± ${fmt(sum.remainingG, 0)} g${sum.cupsLeft != null ? ` (± ${sum.cupsLeft} ${sum.cupsLeft === 1 ? 'kop' : 'koppen'})` : ''}` : null
   ].filter(Boolean);
+  if (bean.bagSizeG && sum.remainingG != null) lines.push(stockBarHtml(sum.remainingG, bean.bagSizeG));
   if (stockBits.length) lines.push(`<p class="bean-detail-best-brew-facts-sub">${escapeHtml(stockBits.join(' · '))}</p>`);
   if (dw && dw.state === 'in' && sum.cupsLeft != null && sum.cupsLeft > dw.daysLeft){
     lines.push(`<p class="bean-detail-best-brew-facts-sub">${escapeHtml(`Je hebt meer koppen over (${sum.cupsLeft}) dan dagen in het venster (${dw.daysLeft}).`)}</p>`);
@@ -8723,6 +8953,7 @@ function renderBeanDetailHistoryTab(beanId){
   const list = document.getElementById('bean-detail-history-list');
   const empty = document.getElementById('bean-detail-history-empty');
   if (!list) return;
+  renderBeanTrend(beanId); // K18
   const entries = brewLog.filter(e=>e.beanId===beanId).slice().sort((a,b)=>b.timestamp-a.timestamp);
   if (!entries.length){
     list.innerHTML = '';
@@ -8898,6 +9129,24 @@ async function exportBackup(){
     }
   }
 
+  // K24: op een telefoon het deelmenu (bewaren in Bestanden/iCloud Drive, mailen, AirDrop); een
+  // download landde op de iPhone in een map die je zelden terugvindt. Op een computer blijft het
+  // een download. Annuleren in het deelmenu is geen back-up.
+  const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  if (coarse && typeof File === 'function' && navigator.canShare){
+    const file = new File([json], filename, { type: 'application/json' });
+    if (navigator.canShare({ files: [file] })){
+      try{
+        await navigator.share({ files: [file], title: 'Brew Console back-up' });
+        markBackupDone();
+        setBackupStatus(`Back-up gedeeld: ${beanLibrary.length} bonen, ${brewLog.length} gelogde koppen. Bewaar hem bijvoorbeeld in Bestanden of iCloud Drive.`, false);
+        return;
+      } catch(err){
+        if (err && err.name === 'AbortError'){ setBackupStatus('Delen geannuleerd; er is geen back-up gemaakt.', false); return; }
+        // andere fout: val terug op de download hieronder
+      }
+    }
+  }
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -13333,7 +13582,7 @@ function renderPrep(){
         <button type="button" class="stat-value stat-value--btn" id="stats-water-open" aria-label="Waterhoeveelheid kiezen"><span id="serving-value">${state.waterMl}<span class="unit"> ml</span></span></button>
         <button type="button" id="serving-plus" aria-label="Meer water">+</button>
       </div>
-      <div class="stat-sub">${state.bypass ? `waarvan ${rec.pourWaterMl} ml door de koffie` : '± 50 ml per tik, of tik het getal'}</div>
+      ${state.bypass ? `<div class="stat-sub">waarvan ${rec.pourWaterMl} ml door de koffie</div>` : ''}
     </div>
     <div class="stat-block stat-block--hero stat-block--grind${grindAdjusted ? ' stat-block--adjusted' : ''}">
       <div class="stat-label">Maalgraad${grindAdjusted ? ' · jouw stap' : grindFromStand ? ' · jouw stand' : ''}</div>
@@ -13341,14 +13590,14 @@ function renderPrep(){
       ${grindAdjusted ? `<div class="stat-sub stat-sub--adjusted">was ${escapeHtml(String(pAdj.fromValue))} · stap uit je vorige kop</div>` : ''}
       ${grindFromStand ? `<div class="stat-sub stat-sub--adjusted">zoals je vorige kop${rec.grindStartingPoint != null && rec.grindStartingPoint !== state.grindStand ? ` · basisrecept: klik ${rec.grindStartingPoint}` : ''}</div>` : ''}
       ${rec.grindShortContact ? `<div class="stat-sub">1 klik fijner: kort schema (${fmtTime(rec.totalTime)})</div>` : ''}
-      ${rec.grindMicron == null && rec.grindStartingPoint != null && rec.grindStartingRange ? `<div class="stat-sub">${grindAdjusted || grindFromStand ? '' : 'start hier · '}klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} is het startgebied</div><div class="stat-sub">zuur en snel door? fijner · bitter en traag? grover</div>` : ''}
+      ${rec.grindMicron == null && rec.grindStartingPoint != null && rec.grindStartingRange ? `<div class="stat-sub">startgebied: klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax}</div>` : ''}
       ${rec.grindMicron == null && rec.grindStartingPoint == null && rec.grindBandLabel && grindValue !== rec.grindBandLabel ? `<div class="stat-sub">${escapeHtml(rec.grindBandLabel)}</div>` : ''}
       ${rec.grindMicron == null && rec.grindStartingPoint == null && typeof state.grindStand !== 'number' ? `<div class="stat-sub" id="grind-own-click-hint">geen klikgetal bekend · vul na het zetten je klik in bij "Anders…", dan onthoudt de app jouw stand</div>` : ''}
       ${batchHint ? `<div class="stat-sub" id="batch-hint">${escapeHtml(batchHint)}</div>` : ''}
       ${rec.grindMicron != null ? `<div class="stat-sub">stand ${rec.grindStand} · Timemore C3S Pro</div>` : ''}
       ${grindMoreNotes.length || rec.grindMicron == null ? `
       <button type="button" class="stat-more-toggle" id="grind-more-toggle" aria-expanded="false">Meer over deze maalstand ↓</button>
-      <div class="stat-more-body" id="grind-more-body" hidden>${rec.grindMicron == null ? `<div class="stat-sub">Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}</div>` : ''}${grindMoreNotes.map(n=>`<div class="stat-sub">${n}</div>`).join('')}</div>` : ''}
+      <div class="stat-more-body" id="grind-more-body" hidden>${rec.grindMicron == null && rec.grindStartingPoint != null ? `<div class="stat-sub stat-sub--lead">Bijstellen: zuur en snel door? fijner · bitter en traag? grover</div>` : ''}${rec.grindMicron == null ? `<div class="stat-sub">Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}</div>` : ''}${grindMoreNotes.map(n=>`<div class="stat-sub">${n}</div>`).join('')}</div>` : ''}
     </div>
     <div class="stat-block stat-block--hero">
       <div class="stat-label">${statIconTemp}Temperatuur</div>
@@ -13708,9 +13957,11 @@ if (NAV_HISTORY && typeof window.addEventListener === 'function') window.addEven
 
 function showScreen(name, opts){
   if (!(opts && opts.fromHistory)) recordNavigation(name);
+  maybeShowUpdateBar(); // K22
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const target = document.getElementById('screen-'+name);
   target.classList.add('active');
+  try { renderLiveBrewBar(); } catch(e){ /* K9: de balk mag een schermwissel nooit breken */ }
   // Sprint 1 (UX-review F5): via de tabbalk geopend = hoofdscherm, dan hoort er geen
   // "← Methode"/"← Mijn bonen" boven; via een link binnen de app blijft de terugknop.
   // Bij het terug-gebaar (fromHistory) blijft de eerdere stand van dit scherm staan.
@@ -14150,6 +14401,9 @@ function startBrewClock(){
   const rec = beginBrewRecord();
   timer.recordId = rec.id;
   startTimerLoop();
+  // K8: de eerste zin in deze tik (iOS laat spraak pas toe na een gebaar).
+  const firstPour = state.recipe.steps.find(s => s.add > 0);
+  if (firstPour) speak(spokenForStep(firstPour, false));
   // VA-19: de klaar-kaart (met deze knop) verdwijnt; terug naar boven zodat de klok en de
   // eerste instructie in beeld staan, en de focus naar de pauzeknop in plaats van nergens.
   window.scrollTo({ top:0, behavior:'auto' });
@@ -14268,6 +14522,7 @@ function tick(){
   updateDial();
   checkPreAlert();
   checkStepChange();
+  renderLiveBrewBar(); // K9
 }
 
 // Fase 2: één afronding voor alle routes (Bed droog, Einde tijdens het uitlopen, limiet).
@@ -14534,7 +14789,7 @@ function updateDial(){
       kind = 'done';
       main = 'Klaar';
       const bd = finishedRec && finishedRec.actual ? finishedRec.actual.bedDrySec : null;
-      sub = bd != null ? `Bed droog na ${fmtTime(bd)}` : 'Bed-droog-tijd niet vastgelegd';
+      sub = bd != null ? `Bed droog na ${fmtTime(bd)}${doneVsPlanText(bd, total)}` : 'Bed-droog-tijd niet vastgelegd';
     } else if (phase.kind === 'pour'){
       kind = 'pour';
       main = `Giet tot ${phase.targetG} g`;
@@ -14591,6 +14846,14 @@ function updateDial(){
   if (nextInfo.textContent !== nextText) nextInfo.textContent = nextText;
 }
 
+/* K10: het klaar-moment zegt hoe de gemeten tijd zich verhoudt tot het schema — een feit, geen
+   oordeel (dat volgt pas uit het proeven). Binnen 5 s telt als "zoals het schema". */
+function doneVsPlanText(bedDrySec, totalSec){
+  if (bedDrySec == null || !totalSec) return '';
+  const diff = bedDrySec - totalSec;
+  if (Math.abs(diff) <= 5) return ` · zoals het schema (${fmtTime(totalSec)})`;
+  return ` · ${fmtTime(Math.abs(diff))} ${diff < 0 ? 'sneller' : 'langer'} dan het schema (${fmtTime(totalSec)})`;
+}
 function flashDial(){
   const w = document.getElementById('dial-wrap');
   if (!w) return;
@@ -14608,7 +14871,11 @@ function checkStepChange(){
       el.toggleAttribute('data-active', i===idx);
       el.toggleAttribute('data-done', i<idx);
     });
-    if (idx > 0 || timer.elapsed > 0){ beep(); vibrate(120); flashDial(); }
+    if (idx > 0 || timer.elapsed > 0){
+      beep(); vibrate(120); flashDial();
+      const steps = state.recipe.steps;
+      speak(spokenForStep(steps[idx], idx === steps.length - 1)); // K8
+    }
   }
 }
 
@@ -14626,6 +14893,7 @@ function checkPreAlert(){
   if (remaining <= 5 && remaining > 0 && timer.preAlertedFor !== idx){
     timer.preAlertedFor = idx;
     preAlertBeep();
+    if (next.add > 0) speak(`Zo meteen: tot ${next.to} gram`); // K8
     vibrate([40,40,40]);
     const el = document.getElementById('next-info');
     el.classList.remove('pre-alert');
@@ -14711,6 +14979,77 @@ function preAlertBeep(){
 }
 function vibrate(pattern){ if (navigator.vibrate) navigator.vibrate(pattern || 120); }
 
+/* K8: gesproken aanwijzingen (proef, standaard uit). De stem van het toestel (Web Speech API, werkt
+   offline). iOS laat spraak pas toe na een tik; de eerste zin valt daarom in "Start de klok". Het
+   belletje en de puls blijven, de stem komt erbij. */
+const VOICE_KEY = 'brewconsole_voice';
+function voiceOn(){ try { return localStorage.getItem(VOICE_KEY) === '1'; } catch(e){ return false; } }
+function setVoiceOn(on){
+  try { if (on) localStorage.setItem(VOICE_KEY, '1'); else localStorage.removeItem(VOICE_KEY); } catch(e){ /* alleen deze sessie */ }
+  const t = document.getElementById('voice-toggle');
+  if (t) t.setAttribute('aria-checked', String(!!on));
+}
+function dutchVoice(){
+  try {
+    const voices = window.speechSynthesis.getVoices() || [];
+    return voices.find(v => /^nl[-_]NL/i.test(v.lang)) || voices.find(v => /^nl/i.test(v.lang)) || null;
+  } catch(e){ return null; }
+}
+function speak(text, force){
+  if (!(force || voiceOn()) || !('speechSynthesis' in window) || typeof SpeechSynthesisUtterance !== 'function') return false;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'nl-NL';
+    const v = dutchVoice(); if (v) u.voice = v;
+    u.rate = 1.0;
+    window.speechSynthesis.speak(u);
+    return true;
+  } catch(e){ return false; }
+}
+// Wat er bij een staponderdeel gezegd wordt: alleen het doel op de weegschaal, zoals op het scherm.
+function spokenForStep(step, isLast){
+  if (!step) return '';
+  if (step.add > 0) return `Giet tot ${step.to} gram`;
+  return isLast ? 'Laten doorlopen. Tik Bed droog zodra het bed droog is.' : '';
+}
+document.getElementById('voice-toggle').addEventListener('click', () => {
+  const on = !voiceOn();
+  setVoiceOn(on);
+  if (on) speak('Gesproken aanwijzingen staan aan.', true);
+});
+document.getElementById('voice-test-btn').addEventListener('click', () => {
+  if (!speak('Giet tot tweehonderdtien gram.', true)){
+    const b = document.getElementById('voice-test-btn');
+    if (b) b.textContent = 'Deze browser heeft geen stem';
+  }
+});
+setVoiceOn(voiceOn());
+
+/* K9: een smalle balk bovenaan op elk scherm behalve de timer en Home (Home heeft zijn eigen
+   banner), zolang er een brouwsel loopt: de tijd en de volgende stap. Bijgewerkt door tick() en
+   bij elke schermwissel. */
+function renderLiveBrewBar(){
+  const bar = document.getElementById('live-brew-bar');
+  if (!bar) return;
+  const active = document.querySelector('.screen.active');
+  const where = active ? active.id : '';
+  const brewing = typeof isActiveBrewBrewing === 'function' && isActiveBrewBrewing() && state.recipe && !timer.finished;
+  const show = !!brewing && where !== 'screen-brew' && where !== 'screen-home';
+  bar.hidden = !show;
+  if (!show) return;
+  const phase = currentBrewPhase();
+  const paused = !timer.running;
+  const next = paused ? 'gepauzeerd'
+    : phase.kind === 'pour' ? `nu: giet tot ${phase.targetG} g`
+    : phase.kind === 'wait' ? `tot ${phase.nextTargetG} g over ${fmtTime(phase.remainingSec)}`
+    : 'laten doorlopen · tik Bed droog';
+  document.getElementById('live-brew-time').textContent = fmtTime(timer.elapsed);
+  document.getElementById('live-brew-next').textContent = next;
+  bar.setAttribute('aria-label', `Brouwsel bezig, ${fmtTime(timer.elapsed)}, ${next}. Terug naar de timer.`);
+}
+document.getElementById('live-brew-bar').addEventListener('click', () => openActiveBrew());
+
 /* Losse test-knop op het prep-scherm: speelt direct een belletje af en
    probeert te trillen, zodat je vóór het zetten al weet of geluid werkt
    (en niet pas ontdekt dat het uit stond tijdens de eerste pour). Deze
@@ -14760,6 +15099,17 @@ function closeDialog(overlay){
   if (openDialogs.length || !opener || !opener.isConnected || !opener.getClientRects().length) return;
   try { opener.focus({ preventScroll:true }); } catch(e){ /* oudere browsers */ }
 }
+// K25: spatiebalk = pauze/hervat op het timerscherm (iPad met toetsenbord, computer). Niet als de
+// focus in een veld of op een knop staat (daar doet de spatie al iets).
+document.addEventListener('keydown', (e) => {
+  if (e.key !== ' ' || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (!document.getElementById('screen-brew').classList.contains('active')) return;
+  if (e.target && e.target.closest && e.target.closest('input, textarea, select, button, summary, [contenteditable], a')) return;
+  const pause = document.getElementById('pause-btn');
+  if (!pause || pause.getClientRects().length === 0) return;
+  e.preventDefault();
+  pause.click();
+});
 document.addEventListener('keydown', (e)=>{
   const top = openDialogs[openDialogs.length - 1];
   if (!top || top.overlay.hidden) return;
@@ -15054,7 +15404,21 @@ function registerOfflineServiceWorker(){
   if (!('serviceWorker' in navigator)) return;
   if (location.protocol !== 'https:' && location.hostname !== 'localhost') return; // SW vereist https (of localhost)
   navigator.serviceWorker.register('./sw.js').catch(e => console.warn('Service worker registratie mislukt', e));
+  // K22: de app start uit de cache; staat er een nieuwere versie klaar, dan meldt de worker dat.
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'brewconsole-update-ready'){ updatePending = true; maybeShowUpdateBar(); }
+  });
+  navigator.serviceWorker.ready.then(reg => { if (reg.active) reg.active.postMessage({ type: 'brewconsole-ask-update' }); }).catch(() => {});
 }
+var updatePending = false; // var: showScreen() kan al vóór deze regel draaien
+// Nooit midden in een brouwsel: dan wacht de melding tot het volgende scherm na afloop.
+function maybeShowUpdateBar(){
+  const bar = document.getElementById('update-bar');
+  if (!bar || !updatePending) return;
+  const rec = typeof activeBrewRecord === 'function' ? activeBrewRecord() : null;
+  bar.hidden = !!(rec && !rec.deletedAt && rec.lifecycle === 'brewing');
+}
+document.getElementById('update-bar-btn').addEventListener('click', () => location.reload());
 
 /* Expertreview idee 20: aanrechtmodus. Een per-toestel voorkeur (localStorage); zonder
    voorkeur aan op een tablet (≥ 700 px breed én ≥ 600 px hoog) en uit op een telefoon. */

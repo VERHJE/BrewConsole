@@ -217,6 +217,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await assertBecomesActive(page, '#screen-roast');
     await page.click('#roast-grid [data-roast] >> nth=0');
     await assertBecomesActive(page, '#screen-profile');
+    if (await page.locator('#profile-styles').getAttribute('open') === null) await page.click('#profile-styles > summary'); // K13: gietstijlen achter één tik
     await page.click('#profile-grid [data-profile="fresh_clean"]');
     await assertBecomesActive(page, '#screen-prep');
 
@@ -254,6 +255,10 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     // Profielen zonder eigen recept (vol_rond, bloemig_delicaat, sirooprig_vol) staan er niet meer.
     assert.deepEqual(await page.locator('#profile-grid [data-taste]').evaluateAll(els => els.map(e => e.getAttribute('data-taste'))), ['bright', 'balanced', 'rich']);
     assert.equal(await page.locator('#profile-grid [data-style]').count(), 5);
+    // K13: de gietstijlen staan dicht; na één tik zijn ze er allemaal.
+    assert.equal(await page.locator('#profile-styles').getAttribute('open'), null);
+    assert.match(await page.locator('#profile-styles > summary').innerText(), /Of kies een gietstijl\s*5/i);
+    await page.click('#profile-styles > summary');
     await assertNoZeroSizeElements(page, '#profile-grid [data-profile]', 'profile-grid buttons');
     // Op de V60 geeft elke keuze een eigen recept: geen "zelfde recept als …".
     assert.equal(await page.locator('#profile-grid .profile-twin-note').count(), 0);
@@ -2280,8 +2285,12 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     const rec = await page.evaluate(() => ({ start: state.recipe.grindStartingPoint, min: state.recipe.grindStartingRange.clicksMin, max: state.recipe.grindStartingRange.clicksMax }));
     const grind = page.locator('#stats-grid .stat-block', { hasText: 'Maalgraad' });
     assert.equal((await grind.locator('.stat-value').textContent()).trim(), `Klik ${rec.start}`);
-    assert.match(await grind.innerText(), new RegExp(`start hier · klik ${rec.min}–${rec.max} is het startgebied`));
-    assert.match(await grind.innerText(), /zuur en snel door\? fijner · bitter en traag\? grover/);
+    assert.match(await grind.innerText(), new RegExp(`startgebied: klik ${rec.min}–${rec.max}`));
+    // K16: de bijstelregel staat achter "Meer over deze maalstand", niet meer vast in de tegel.
+    assert.doesNotMatch(await grind.innerText(), /zuur en snel door/);
+    await page.click('#grind-more-toggle');
+    assert.match(await grind.innerText(), /Bijstellen: zuur en snel door\? fijner · bitter en traag\? grover/);
+    await page.click('#grind-more-toggle');
     for (const label of ['Gemalen koffie', 'Temperatuur', 'Ratio', 'Maalgraad', 'Brouwtijd']){
       const n = await page.locator('#stats-grid .stat-block', { hasText: label }).locator('.stat-sub').count();
       assert.ok(n >= 1, `${label} heeft een uitlegregel`);
@@ -2567,13 +2576,15 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     const layout = await page.evaluate(() => {
       selectMethod('v60'); selectRoast('light'); showScreen('profile');
       const grid = document.getElementById('profile-grid');
-      const kids = [...grid.children];
+      // K13: de gietstijlen staan in een uitklapblok (#profile-styles); de volgorde in het document
+      // blijft smaakdoelen → label → gietstijlen.
+      const kids = [...grid.querySelectorAll('.profile-group-label, [data-profile]')];
       const labelIdx = kids.findIndex(el => el.classList.contains('profile-group-label'));
       const keyIdx = (k) => kids.findIndex(el => el.getAttribute('data-profile') === k);
       adviceState.flavorScores = { heel_fruitig: 2, fruitig_clean: 3, fresh_clean: 1, vol_rond: 0, zoet: 0 };
       renderAdviceChips();
       return {
-        label: labelIdx >= 0 ? kids[labelIdx].textContent : null,
+        label: labelIdx >= 0 ? kids[labelIdx].querySelector('span').textContent : null,
         flavorBefore: ['heel_fruitig', 'klassiek'].every(k => keyIdx(k) >= 0 && keyIdx(k) < labelIdx),
         styleAfter: PROFILE_TECHNIQUE_ONLY_KEYS.filter(k => keyIdx(k) >= 0).every(k => keyIdx(k) > labelIdx),
         adviceText: document.getElementById('advice-profile').textContent,
@@ -4044,6 +4055,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('#home-start-brew-btn');
       await page.click('[data-method="v60"]');
       await page.click('[data-roast="light"]');
+      if (await page.locator('#profile-styles').getAttribute('open') === null) await page.click('#profile-styles > summary'); // K13: gietstijlen achter één tik
       await page.click('#profile-grid [data-profile="fresh_clean"]');
       await assertBecomesActive(page, '#screen-prep');
       assert.match(await page.locator('#summary-tag').innerText(), /HOFFMANN|Hoffmann/);
@@ -4268,7 +4280,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await navTo(page, 'beans');
       await page.click('[data-use="bean-tie"]');
       await assertBecomesActive(page, '#screen-profile');
-      assert.match(await page.locator('#profile-tie-note').innerText(), /Tie Boon past ongeveer even goed bij .+ en .+/);
+      assert.match(await page.locator('#profile-tie-note').innerText(), /Tie Boon past ongeveer even goed bij .+(?: en bij |: ).+\. De app kiest niet voor je/); // K13: gegroepeerd per smaakdoel
+      if (await page.locator('#profile-styles').getAttribute('open') === null) await page.click('#profile-styles > summary'); // K13: gietstijlen achter één tik
       await page.click('#profile-grid [data-profile="fresh_clean"]');
       await assertBecomesActive(page, '#screen-prep');
       assert.match(await page.locator('#prep-bean-line').innerText(), /Tie Boon/);
@@ -5089,6 +5102,202 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.match(html, /id="brewlog-save-btn">Kop opslaan</);
       assert.match(html, /Kies de roast — die bepaalt temperatuur en maling\./);
       assert.match(html, /`Extra vraag · \$\{TASTING_STEP_LABELS\[curKey\]\}`/);
+    });
+  });
+
+  describe('Analyse 10/10: K16–K20', () => {
+    const day = 86400000;
+    const seed = () => {
+      const roastDate = new Date(Date.now() - 10 * day).toISOString().slice(0, 10);
+      const beans = [{ id:'bt1', name:'Boon T', roastLevel:'light', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:200, bagSizeG:250, roastDate, lastBrew:{ method:'v60', waterMl:300, bypass:false, bypassPct:null } }];
+      const rec = (id, liking, grind, at) => ({ id, schemaVersion: 6, createdAt: at, updatedAt: at, lifecycle: 'logged', beanId: 'bt1', beanSnapshot: null, equipment: {}, waterSnapshot: null, goal: null,
+        plan: { methodId: 'v60', profileId: 'klassiek', roastId: 'light', waterMl: 300, doseG: 20, ratioText: '1:15', tempC: 95, grindStartingPoint: 15, grindTarget: grind, strengthStep: 0, bypass: null, steps: [], expectedTotalSec: 210, inputs: null, appliedAdjust: null },
+        actual: { doseG: 20, doseSource: 'U', grindClick: grind, grindSource: 'U', confirmed: true, events: [], bedDrySec: 220, completedAt: at },
+        derived: {}, tasting: { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking, complete: true, approved: liking >= 4 }, diagnosis: null,
+        recommendation: { type: 'KEEP' }, flags: {}, favorite: false, sideEffectsAppliedAt: at, deletedAt: null });
+      const now = Date.now();
+      return { beans: JSON.stringify(beans), brews: JSON.stringify([rec('t1', 2, 16, now - 3 * day), rec('t2', 3, 15, now - 2 * day), rec('t3', 5, 14, now - day)]) };
+    };
+    async function seededPage(opts, theme){
+      const page = await newTrackedPage(opts || { viewport: { width: 390, height: 844 } });
+      await page.addInitScript(({ d, theme }) => { if (sessionStorage.getItem('k16')) return; sessionStorage.setItem('k16', '1'); localStorage.setItem('brewconsole_beans', d.beans); localStorage.setItem('brewconsole_brews', d.brews); if (theme) localStorage.setItem('brewconsole_theme', theme); }, { d: seed(), theme });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      return page;
+    }
+
+    test('K16: receptscherm — geen vaste waterhulptekst; ratio en brouwtijd met het label boven het getal', async () => {
+      const page = await newTrackedPage();
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.evaluate(() => { selectMethod('v60'); selectRoast('light'); selectProfile('klassiek'); });
+      assert.doesNotMatch(await page.locator('#stats-water-block').innerText(), /per tik/);
+      for (const label of ['Ratio', 'Brouwtijd']){
+        const r = await page.locator('#stats-grid .stat-block', { hasText: label }).evaluate(b => ({ l: b.querySelector('.stat-label').getBoundingClientRect().bottom, v: b.querySelector('.stat-value').getBoundingClientRect().top }));
+        assert.ok(r.l <= r.v + 0.5, `${label}: label boven het getal`);
+      }
+      await page.close();
+    });
+
+    test('K17: bonen — "+ Boon" in de kop; de actie op de kaart is een tekstknop van 44 px hoog', async () => {
+      const page = await seededPage();
+      await navTo(page, 'beans');
+      assert.match(await page.locator('#bean-add-header-btn').innerText(), /Boon/);
+      const go = page.locator('.bean-card[data-open-detail="bt1"] .bean-card-go');
+      assert.match(await go.innerText(), /Zet opnieuw · V60/);
+      const r = await go.evaluate(b => ({ h: b.getBoundingClientRect().height, family: b.classList.contains('bean-use-btn'), border: getComputedStyle(b).borderTopStyle }));
+      assert.ok(r.h >= 43.99, `tikvlak ${r.h} px`); assert.equal(r.family, false); assert.equal(r.border, 'none'); // subpixel-afronding
+      await page.close();
+    });
+
+    test('K18: boondetail — drinkvenster als balk met vandaag, voorraadbalk, verloop per kop', async () => {
+      const page = await seededPage();
+      await navTo(page, 'beans');
+      await page.click('.bean-card[data-open-detail="bt1"] .bean-card-open');
+      await assertBecomesActive(page, '#screen-bean-detail');
+      const dw = await page.evaluate(() => ({ today: parseFloat(document.querySelector('#bean-detail-bag .dw-today').style.left), label: document.querySelector('#bean-detail-bag .dw-bar').getAttribute('aria-label'), stock: parseFloat(document.querySelector('#bean-detail-bag .stock-bar span').style.width) }));
+      assert.ok(Math.abs(dw.today - 10 / 42 * 100) < 0.2, `vandaag op ${dw.today}%`);
+      assert.match(dw.label, /^Dag 10 na branden\. Rust tot dag 6, venster dag 7 tot 21\.$/);
+      assert.equal(dw.stock, 20, 'nog 50 van 250 g');
+      await page.click('#bean-detail-tabs [data-tab="historie"]');
+      assert.equal(await page.locator('#bean-detail-trend').isVisible(), true);
+      assert.equal(await page.locator('#bean-detail-trend circle').count(), 3);
+      assert.match(await page.locator('#bean-detail-trend svg').getAttribute('aria-label'), /2\/5 op klik 16, 3\/5 op klik 15, 5\/5 op klik 14$/);
+      await page.close();
+    });
+
+    test('K19: Home — "Zo staat het" met je laatste kop, versheid, voorraad en wat de app weet', async () => {
+      const page = await seededPage();
+      const rows = await page.evaluate(() => [...document.querySelectorAll('#home-insights .home-insight')].map(r => [r.dataset.insight, r.querySelector('dd').textContent]));
+      const by = Object.fromEntries(rows);
+      assert.match(by.last, /^Boon T · 5\/5 · /);
+      assert.match(by.fresh, /in het venster: Boon T/);
+      assert.match(by.stock, /Boon T \(± 2 koppen\)/);
+      assert.match(by.learn, /^3 koppen gelogd/);
+      await page.close();
+      const empty = await newTrackedPage();
+      await empty.goto(FILE_URL, { waitUntil: 'load' });
+      assert.equal(await empty.locator('#home-insights').isVisible(), false, 'leeg-eerst: geen blok zonder gegevens');
+      await empty.close();
+    });
+
+    test('K20: licht thema — kaarten lichter dan de achtergrond; het timerscherm blijft donker', async () => {
+      const page = await seededPage(undefined, 'light');
+      const lum = (c) => { const [r, g, b] = c.match(/\d+/g).map(Number); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+      const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+      const card = await page.evaluate(() => getComputedStyle(document.querySelector('.home-cta')).backgroundColor);
+      assert.ok(lum(card) > lum(bg), `kaart ${card} lichter dan achtergrond ${bg}`);
+      const face = await page.evaluate(() => { const s = document.getElementById('screen-brew'); return getComputedStyle(s).getPropertyValue('--surface').trim(); });
+      assert.equal(face.toUpperCase(), '#1C1C1A');
+      await page.close();
+    });
+  });
+
+  describe('Analyse 10/10: K8–K10, K13, K24, K25', () => {
+    async function toBrew(page, voice){
+      await page.addInitScript((voice) => {
+        window.__spoken = [];
+        if (window.speechSynthesis){ window.speechSynthesis.speak = (u) => window.__spoken.push(u.text); window.speechSynthesis.cancel = () => {}; }
+        if (voice && !sessionStorage.getItem('k8')){ sessionStorage.setItem('k8', '1'); localStorage.setItem('brewconsole_voice', '1'); }
+      }, voice);
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.click('#home-start-brew-btn');
+      await page.click('[data-method="v60"]');
+      await page.click('[data-roast="light"]');
+      await page.click('[data-profile="klassiek"]');
+      await startBrewing(page);
+      await assertBecomesActive(page, '#screen-brew');
+    }
+
+    test('K8: gesproken aanwijzingen — standaard stil; aan: eerste giet, "zo meteen" en elke nieuwe giet', async () => {
+      const off = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await toBrew(off, false);
+      await off.clock.fastForward('01:00');
+      assert.deepEqual(await off.evaluate(() => window.__spoken), [], 'standaard uit');
+      await off.close();
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await toBrew(page, true);
+      const steps = await page.evaluate(() => state.recipe.steps.filter(s => s.add > 0).map(s => ({ t: s.t, to: s.to })));
+      await page.clock.fastForward((steps[1].t - 3) * 1000);
+      await page.clock.fastForward(4000);
+      const spoken = await page.evaluate(() => window.__spoken);
+      assert.equal(spoken[0], `Giet tot ${steps[0].to} gram`, 'de eerste giet bij Start de klok');
+      assert.ok(spoken.includes(`Zo meteen: tot ${steps[1].to} gram`), spoken.join(' | '));
+      assert.ok(spoken.includes(`Giet tot ${steps[1].to} gram`), spoken.join(' | '));
+      assert.equal(await page.locator('#voice-toggle').getAttribute('aria-checked'), 'true');
+      await page.close();
+    });
+
+    test('K9: buiten de timer en Home een live balk met tijd en volgende stap; een tik brengt je terug', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await toBrew(page, false);
+      await page.clock.fastForward(5000);
+      await page.click('#home-btn');
+      await assertBecomesActive(page, '#screen-home');
+      assert.equal(await page.locator('#live-brew-bar').isVisible(), false, 'Home heeft zijn eigen banner');
+      await navTo(page, 'beans');
+      assert.equal(await page.locator('#live-brew-bar').isVisible(), true);
+      const t1 = await page.locator('#live-brew-time').innerText();
+      await page.clock.fastForward(3000);
+      assert.notEqual(await page.locator('#live-brew-time').innerText(), t1, 'de tijd loopt mee');
+      assert.match(await page.locator('#live-brew-next').innerText(), /giet tot \d+ g|tot \d+ g over \d+:\d\d/);
+      await page.click('#live-brew-bar');
+      await assertBecomesActive(page, '#screen-brew');
+      assert.equal(await page.locator('#live-brew-bar').isVisible(), false);
+      await page.close();
+    });
+
+    test('K10: klaar — de gemeten tijd naast het schema', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await toBrew(page, false);
+      const total = await page.evaluate(() => state.recipe.totalTime);
+      await page.clock.fastForward((total - 10) * 1000);
+      await page.click('#bed-dry-btn');
+      const sub = await page.locator('#brew-action-sub').innerText();
+      const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+      assert.match(sub, new RegExp(`Bed droog na ${fmt(total - 10)} · 0:10 sneller dan het schema \\(${fmt(total)}\\)`));
+      await page.close();
+    });
+
+    test('K13: gelijkspel per smaakdoel gegroepeerd, geen herhaalde namen', async () => {
+      const page = await newTrackedPage();
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      const t = await page.evaluate(() => tieNoteText(['Helder & fris', 'Helder & fris · Rao', 'Helder & fris · Hoffmann']));
+      assert.equal(t, 'Deze boon past ongeveer even goed bij Helder & fris: het gewone recept, Rao of Hoffmann. De app kiest niet voor je: kies hieronder zelf wat je wilt volgen.');
+      const t2 = await page.evaluate(() => tieNoteText(['Helder & fris', 'Rond & vol'], 'Kenya'));
+      assert.match(t2, /^Kenya past ongeveer even goed bij Helder & fris en bij Rond & vol\./);
+      await page.close();
+    });
+
+    test('K24: back-up via het deelmenu op een telefoon; Over noemt privacy en bronnen', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+      await page.addInitScript(() => { navigator.canShare = () => true; navigator.share = async (d) => { window.__shared = d.files[0].name; }; });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await navTo(page, 'settings');
+      await page.click('#backup-export-btn');
+      await page.waitForFunction(() => !!window.__shared);
+      assert.match(await page.evaluate(() => window.__shared), /^brew-console-backup-\d{4}-\d\d-\d\d\.json$/);
+      assert.match(await page.locator('#backup-status').innerText(), /Back-up gedeeld/);
+      const about = await page.locator('.about-facts').innerText();
+      assert.match(about, /Alles staat alleen op dit toestel/);
+      assert.match(about, /Tetsu Kasuya/);
+      await page.close();
+    });
+
+    test('K25: spatie = pauze op de timer; linkvoorbeeld; printversie zonder balken', async () => {
+      const html = fs.readFileSync(APP_HTML_PATH, 'utf8');
+      assert.match(html, /<meta name="description" content="[^"]+">/);
+      assert.match(html, /<meta property="og:title" content="Brew Console">/);
+      const page = await newTrackedPage({ viewport: { width: 1024, height: 768 } });
+      await toBrew(page, false);
+      await page.locator('body').focus();
+      await page.evaluate(() => document.activeElement && document.activeElement.blur());
+      await page.keyboard.press(' ');
+      assert.equal(await page.evaluate(() => timer.running), false, 'spatie pauzeert');
+      await page.keyboard.press(' ');
+      assert.equal(await page.evaluate(() => timer.running), true, 'spatie hervat');
+      await page.click('#home-btn');
+      await page.emulateMedia({ media: 'print' });
+      assert.equal(await page.locator('.navbar').isVisible(), false);
+      await page.close();
     });
   });
 

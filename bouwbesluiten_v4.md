@@ -695,3 +695,86 @@ Alle 955 tests slagen. De rekenkern is ongewijzigd.
 - de R-04-voortgang zegt nu "Extra vraag".
 
 Alle 961 tests slagen.
+
+## Analyse 10/10: K16 t/m K20 (beeld en rust)
+
+**Aanleiding.** Ronde C uit de analyse "waar zit nog echte winst". Deze ronde verandert niets aan recepten, advies of de rekenkern (de engine-bundel staat op dezelfde hash). Alles wat getoond wordt, komt uit bestaande gegevens.
+
+- **K16 · Receptscherm:**
+  - Ratio en brouwtijd hebben dezelfde opbouw als de andere tegels (label, getal, uitleg), alleen kleiner. Eerst stond het label links en het getal rechts: drie verschillende opbouwen in één raster.
+  - De vaste hulptekst "± 50 ml per tik, of tik het getal" is weg; de −/+ en het getal wijzen zichzelf.
+  - De maaltegel toont "startgebied: klik 15–17". De bijstelregel ("zuur en snel door? fijner · bitter en traag? grover") staat nu bovenaan onder "Meer over deze maalstand".
+- **K17 · Bonen:**
+  - Toevoegen staat in de kop als "+ Boon" (eerst alleen een camera-icoon; de knop met tekst kwam pas onder de lijst).
+  - De actie op elke kaart is een koperen tekstknop rechtsonder ("Zet opnieuw · V60 →") in plaats van een volle omrande knop. Het tikvlak blijft 44 px hoog.
+- **K18 · Boondetail:**
+  - Het drinkvenster is een balk van branden tot dag 42: rust en venster in koper, met een streep voor vandaag.
+  - De voorraad is een balk (wat er nog in de zak zit).
+  - Onder Historie staat het verloop per kop: hoe lekker (1–5) met de maalstand eronder, oud → nieuw, hoogstens 12 koppen, vanaf twee beoordeelde koppen.
+  - De bestaande tekst blijft, inclusief "vuistregel, geen meting". Het verloop toont alleen wat gelogd is en zegt niets over oorzaak.
+- **K19 · Home:** in de linkerkolom staat "Zo staat het", één kaart met feitenrijen:
+  - je laatste beoordeelde kop;
+  - welke bonen in hun drinkvenster zitten of nog rusten;
+  - welke bijna op zijn (3 koppen of minder);
+  - hoeveel koppen en geteste stappen de app heeft.
+  Zonder gegevens is het blok er niet (leeg-eerst).
+- **K20 · Licht thema:**
+  - Kaarten zijn bijna wit papier (`--surface: #F8F4EC`) op de crème achtergrond, in plaats van beige op beige. Donkere tekst haalt daardoor alleen meer contrast; de axe-scan blijft schoon.
+  - Het timerscherm houdt in beide thema's het donkere palet via `--night-*`-tokens. Eerst kreeg het in het lichte thema een crème wijzerplaat en lichte knoppen op de donkere foto.
+
+**Testresultaten:**
+- Nieuw blok "Analyse 10/10: K16–K20" in `tests/kernflow.smoke.test.mjs`.
+- De BC-12-test is bijgewerkt: de bijstelregel staat nu achter "Meer over deze maalstand".
+- Alle 966 tests slagen.
+
+## Analyse 10/10: K22–K25, K13, K8–K10 (techniek, keuze en zetmoment)
+
+**Aanleiding.** De rest van de analyse, na de besluiten van Jelle:
+- de app is alleen voor hem, dus geen molenkeuze en geen introductie (K15 vervalt);
+- de proefkaart houdt zijn vragen (K14 geparkeerd);
+- gesproken aanwijzingen uitproberen;
+- het icoon blijft zoals het is (K21 geparkeerd);
+- de bouwstap mag (K23).
+
+Deze ronde verandert niets aan recepten, advies of de rekenkern (de engine-bundel staat op dezelfde hash).
+
+- **K22 · Opstarten:**
+  - `sw.js` serveert het opstarten nu eerst uit de cache. Daarvoor wachtte hij tot 3 s op het netwerk, wat je op trage keukenwifi merkte.
+  - Tegelijk haalt de worker de nieuwste versie op. Is die anders, dan bewaart hij hem en meldt hij `brewconsole-update-ready`; de app toont dan "Er is een nieuwe versie" met "Vernieuwen".
+  - Tijdens een brouwsel verschijnt die melding nooit. Er is nog steeds geen `skipWaiting()`.
+  - Een app die later opstart, vraagt zelf of er iets klaarstaat (`brewconsole-ask-update`).
+  - `CACHE_VERSION` gaat naar 4, omdat de strategie verandert.
+- **K23 · Bouwstap:**
+  - `npm run build` maakt `dist/` (niet in git): `index.html` zonder commentaar, plus `sw.js`, het manifest, de iconen en de foto's.
+  - Er komen geen pakketten bij. Een kleine lexer herkent strings, template literals en reguliere expressies, zodat bijvoorbeeld `https://` blijft staan.
+  - De rekenkern blijft byte voor byte gelijk. Elk script gaat na het strippen door de parser van Node.
+  - Resultaat: 931 → ±700 kB, gecomprimeerd 284 → 185 kB (−35 %).
+  - `npm run qa:dist` draait de gedragstests op de gebouwde versie (`BREWCONSOLE_APP_HTML`); `tests/build.test.mjs` controleert de lexer, de rekenkern en dat de gebouwde app laadt.
+  - **Publiceren:** `npm run build`, dan de map `dist/` publiceren in plaats van de hoofdmap.
+- **K24 · Back-up en Over:**
+  - Op een telefoon gaat de back-up via het deelmenu (Bestanden, iCloud Drive, mail). Annuleren telt niet als back-up. Op een computer blijft het een download.
+  - "Over" noemt nu vier dingen: wat er met je gegevens gebeurt (alles op het toestel, alleen het scannen haalt eenmalig Tesseract.js), de receptbronnen, de molen en de versie.
+- **K25 · Kleine extra's:**
+  - De spatiebalk pauzeert en hervat op de timer, maar niet als de focus in een veld of op een knop staat.
+  - Er is een linkvoorbeeld (`description`, `og:*`).
+  - Er is een printversie: zwart op wit, zonder balken en knoppenrijen.
+  - Bij "Hoe vind ik dit?" (water) staan links naar Vitens, Evides, Brabant Water, Oasen, WML, WMD en Waterbedrijf Groningen om op postcode te zoeken. De keuze uit R-12 om voor die bedrijven geen gemiddelde te tonen, blijft.
+- **K13 · Smaakkeuze:**
+  - De drie smaakdoelen dragen het scherm. De gietstijlen (Hoffmann, Rao, April…) staan achter één tik ("Of kies een gietstijl · 5"); is er al een gekozen, dan staat het blok open.
+  - Een gelijkspel wordt per smaakdoel gegroepeerd: "Helder & fris: het gewone recept, Rao of Hoffmann" in plaats van drie keer "Helder & fris".
+- **K8 · Gesproken aanwijzingen (proef, standaard uit):**
+  - Aan te zetten onder Instellingen › Zetten, met "Test de stem".
+  - De stem van het toestel zegt:
+    - de eerste giet bij "Start de klok" (iOS laat spraak pas toe na een tik);
+    - "Zo meteen: tot X gram" bij de voorwaarschuwing;
+    - "Giet tot X gram" bij elke nieuwe giet;
+    - "Laten doorlopen" na de laatste.
+  - Het belletje en de puls blijven.
+- **K9 · Live balk:** zolang er een brouwsel loopt, staat bovenaan op elk scherm (behalve de timer en Home, dat zijn eigen banner heeft) een balk met de tijd en de volgende stap. Een tik brengt je terug naar de timer.
+- **K10 · Klaar:** het klaar-moment zet de gemeten tijd naast het schema ("Bed droog na 3:20 · 0:10 sneller dan het schema (3:30)"). Dat is alleen een feit; binnen 5 s staat er "zoals het schema".
+
+**Testresultaten:**
+- Nieuwe blokken "Analyse 10/10: K8–K10, K13, K24, K25" en `tests/build.test.mjs`.
+- De SW-test voor een nieuwe deploy is herschreven voor K22.
+- De BC-23-test en drie tests die een gietstijl kiezen, openen eerst het uitklapblok (K13).
+- De gelijkspeltest volgt de nieuwe zin.
