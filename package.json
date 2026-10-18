@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
-    "qa": "node qa/run-qa.js"
+    "qa": "node qa/run-qa.js",
+    "build": "node scripts/build.mjs",
+    "qa:dist": "node scripts/build.mjs && BREWCONSOLE_APP_HTML=dist/index.html node --test tests/adversarial-robustness.test.mjs tests/brewconsole.pure-logic.test.mjs tests/kernflow.smoke.test.mjs"
   },
   "devDependencies": {
     "playwright": "^1.62.1"

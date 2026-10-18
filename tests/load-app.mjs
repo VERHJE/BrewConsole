@@ -7,7 +7,8 @@ import path from 'node:path';
 import vm from 'node:vm';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const APP_HTML_PATH = path.resolve(__dirname, '..', 'brewconsole_v2_2.html');
+// K23: met BREWCONSOLE_APP_HTML draait dezelfde suite op een gebouwde versie (bijv. dist/index.html).
+export const APP_HTML_PATH = process.env.BREWCONSOLE_APP_HTML ? path.resolve(process.env.BREWCONSOLE_APP_HTML) : path.resolve(__dirname, '..', 'brewconsole_v2_2.html');
 
 function autoMock(label){
   const store = Object.create(null);

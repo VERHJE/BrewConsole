@@ -13,30 +13,33 @@
    (file://) is een service worker sowieso onmogelijk.
 
    STRATEGIE
-   - Navigatie (het opstarten van de app) -> netwerk eerst, met een korte
-     time-out, en anders de cache. Online krijg je dus altijd meteen de
-     nieuwste deploy; offline of op trage keukenwifi start de app door
-     vanaf de cache in plaats van te blijven hangen.
+   - Navigatie (het opstarten van de app) -> K22: cache eerst. De app start
+     altijd meteen vanaf de cache, ook op trage keukenwifi (eerst wachtte
+     hij tot 3 s op het netwerk). Tegelijk haalt de worker op de achtergrond
+     de nieuwste versie op; is die anders, dan bewaart hij hem en meldt hij
+     het aan de app, die "Nieuwe versie" toont (niet tijdens een brouwsel).
+     Een tik op "Vernieuwen" laadt hem. Zonder cache (de allereerste start)
+     gaat het gewoon via het netwerk.
    - Al het overige -> cache eerst. In de praktijk is dat weinig, omdat
      de app één HTML-bestand met ingebedde assets is; het vangt het
      manifest, het icoon en later eventuele losse bestanden af.
 
    BEWUST GEEN skipWaiting()
    Een nieuwe worker neemt pas over bij een koude start, nooit midden in
-   een lopende brouw. Voor de inhoud maakt dat niets uit: de HTML komt
-   online toch al vers van het netwerk.
+   een lopende brouw. Een nieuwe HTML komt ook nooit vanzelf: alleen na een
+   tik op "Vernieuwen", of bij de volgende start.
 
    CACHE_VERSION
-   Staat op 3 sinds de vijf roastfoto's weg zijn (VA-47): zo verdwijnt hun
+   Staat op 4 sinds K22 (cache eerst voor het opstarten). Op 3 sinds de vijf roastfoto's weg zijn (VA-47): zo verdwijnt hun
    ±0,9 MB ook uit de cache van wie de app al had. Op 2 kwamen de foto's
    bij installatie in de cache (PHOTOS).
    Hoeft alleen omhoog als de strategie in DIT bestand verandert, of als
    je een oude cache geforceerd wilt weggooien. Voor gewone inhouds-
-   wijzigingen aan index.html is ophogen niet nodig — die worden door de
-   netwerk-eerst-regel hierboven al opgehaald.
+   wijzigingen aan index.html is ophogen niet nodig — die haalt de
+   achtergrondverversing hierboven op.
    ============================================================ */
 
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 4;
 const CACHE = 'brew-console-v' + CACHE_VERSION;
 
 /* De app-shell is de scope-root zelf. Bij een manifest met
@@ -124,31 +127,54 @@ self.addEventListener('fetch', (event) => {
   if (!sameOrigin) return;
 
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request));
+    event.respondWith(cacheFirstShell(event));
     return;
   }
   event.respondWith(cacheFirst(request));
 });
 
-async function networkFirst(request) {
+/* K22: start vanaf de cache; ververs op de achtergrond. updateReady blijft staan tot een start
+   de nieuwe versie uit de cache serveert, zodat een app die later vraagt het ook nog hoort. */
+let updateReady = false;
+async function cacheFirstShell(event) {
   const cache = await caches.open(CACHE);
+  const cached = await cache.match(APP_SHELL);
+  if (cached) {
+    updateReady = false; // wat nu geserveerd wordt, is de nieuwste versie die de cache kent
+    event.waitUntil(refreshShell(cache, event.request.url).catch(() => {}));
+    return cached;
+  }
   try {
-    const response = await fetchWithTimeout(request, NET_TIMEOUT_MS);
-    if (response && response.ok) {
-      /* Altijd onder de vaste APP_SHELL-sleutel opslaan, zodat een start
-         met bijvoorbeeld een query-parameter dezelfde cache vult en
-         leest in plaats van een tweede kopie aan te maken. */
-      cache.put(APP_SHELL, response.clone());
-    }
+    const response = await fetchWithTimeout(event.request, NET_TIMEOUT_MS);
+    if (response && response.ok) cache.put(APP_SHELL, response.clone());
     return response;
   } catch (e) {
-    const cached = await cache.match(APP_SHELL);
-    if (cached) return cached;
-    const fallback = await cache.match(request);
-    if (fallback) return fallback;
-    return Response.error();
+    const fallback = await cache.match(event.request);
+    return fallback || Response.error();
   }
 }
+async function refreshShell(cache, url) {
+  const response = await fetch(url, { cache: 'no-cache' });
+  if (!response || !response.ok) return;
+  const cached = await cache.match(APP_SHELL);
+  const [oldText, newText] = await Promise.all([cached ? cached.text() : Promise.resolve(null), response.clone().text()]);
+  if (oldText === newText) return;
+  await cache.put(APP_SHELL, response);
+  if (oldText === null) return;
+  updateReady = true;
+  await notifyUpdate();
+}
+async function notifyUpdate() {
+  const all = await self.clients.matchAll({ type: 'window' });
+  all.forEach((c) => c.postMessage({ type: 'brewconsole-update-ready' }));
+}
+// De app vraagt bij het opstarten of er al een nieuwe versie klaarstaat (het bericht hierboven kan
+// eerder verstuurd zijn dan de app luisterde).
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'brewconsole-ask-update' && updateReady && event.source) {
+    event.source.postMessage({ type: 'brewconsole-update-ready' });
+  }
+});
 
 async function cacheFirst(request) {
   const cache = await caches.open(CACHE);

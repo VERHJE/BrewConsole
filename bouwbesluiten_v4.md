@@ -726,3 +726,55 @@ Alle 961 tests slagen.
 - Nieuw blok "Analyse 10/10: K16–K20" in `tests/kernflow.smoke.test.mjs`.
 - De BC-12-test is bijgewerkt: de bijstelregel staat nu achter "Meer over deze maalstand".
 - Alle 966 tests slagen.
+
+## Analyse 10/10: K22–K25, K13, K8–K10 (techniek, keuze en zetmoment)
+
+**Aanleiding.** De rest van de analyse, na de besluiten van Jelle:
+- de app is alleen voor hem, dus geen molenkeuze en geen introductie (K15 vervalt);
+- de proefkaart houdt zijn vragen (K14 geparkeerd);
+- gesproken aanwijzingen uitproberen;
+- het icoon blijft zoals het is (K21 geparkeerd);
+- de bouwstap mag (K23).
+
+Deze ronde verandert niets aan recepten, advies of de rekenkern (de engine-bundel staat op dezelfde hash).
+
+- **K22 · Opstarten:**
+  - `sw.js` serveert het opstarten nu eerst uit de cache. Daarvoor wachtte hij tot 3 s op het netwerk, wat je op trage keukenwifi merkte.
+  - Tegelijk haalt de worker de nieuwste versie op. Is die anders, dan bewaart hij hem en meldt hij `brewconsole-update-ready`; de app toont dan "Er is een nieuwe versie" met "Vernieuwen".
+  - Tijdens een brouwsel verschijnt die melding nooit. Er is nog steeds geen `skipWaiting()`.
+  - Een app die later opstart, vraagt zelf of er iets klaarstaat (`brewconsole-ask-update`).
+  - `CACHE_VERSION` gaat naar 4, omdat de strategie verandert.
+- **K23 · Bouwstap:**
+  - `npm run build` maakt `dist/` (niet in git): `index.html` zonder commentaar, plus `sw.js`, het manifest, de iconen en de foto's.
+  - Er komen geen pakketten bij. Een kleine lexer herkent strings, template literals en reguliere expressies, zodat bijvoorbeeld `https://` blijft staan.
+  - De rekenkern blijft byte voor byte gelijk. Elk script gaat na het strippen door de parser van Node.
+  - Resultaat: 931 → ±700 kB, gecomprimeerd 284 → 185 kB (−35 %).
+  - `npm run qa:dist` draait de gedragstests op de gebouwde versie (`BREWCONSOLE_APP_HTML`); `tests/build.test.mjs` controleert de lexer, de rekenkern en dat de gebouwde app laadt.
+  - **Publiceren:** `npm run build`, dan de map `dist/` publiceren in plaats van de hoofdmap.
+- **K24 · Back-up en Over:**
+  - Op een telefoon gaat de back-up via het deelmenu (Bestanden, iCloud Drive, mail). Annuleren telt niet als back-up. Op een computer blijft het een download.
+  - "Over" noemt nu vier dingen: wat er met je gegevens gebeurt (alles op het toestel, alleen het scannen haalt eenmalig Tesseract.js), de receptbronnen, de molen en de versie.
+- **K25 · Kleine extra's:**
+  - De spatiebalk pauzeert en hervat op de timer, maar niet als de focus in een veld of op een knop staat.
+  - Er is een linkvoorbeeld (`description`, `og:*`).
+  - Er is een printversie: zwart op wit, zonder balken en knoppenrijen.
+  - Bij "Hoe vind ik dit?" (water) staan links naar Vitens, Evides, Brabant Water, Oasen, WML, WMD en Waterbedrijf Groningen om op postcode te zoeken. De keuze uit R-12 om voor die bedrijven geen gemiddelde te tonen, blijft.
+- **K13 · Smaakkeuze:**
+  - De drie smaakdoelen dragen het scherm. De gietstijlen (Hoffmann, Rao, April…) staan achter één tik ("Of kies een gietstijl · 5"); is er al een gekozen, dan staat het blok open.
+  - Een gelijkspel wordt per smaakdoel gegroepeerd: "Helder & fris: het gewone recept, Rao of Hoffmann" in plaats van drie keer "Helder & fris".
+- **K8 · Gesproken aanwijzingen (proef, standaard uit):**
+  - Aan te zetten onder Instellingen › Zetten, met "Test de stem".
+  - De stem van het toestel zegt:
+    - de eerste giet bij "Start de klok" (iOS laat spraak pas toe na een tik);
+    - "Zo meteen: tot X gram" bij de voorwaarschuwing;
+    - "Giet tot X gram" bij elke nieuwe giet;
+    - "Laten doorlopen" na de laatste.
+  - Het belletje en de puls blijven.
+- **K9 · Live balk:** zolang er een brouwsel loopt, staat bovenaan op elk scherm (behalve de timer en Home, dat zijn eigen banner heeft) een balk met de tijd en de volgende stap. Een tik brengt je terug naar de timer.
+- **K10 · Klaar:** het klaar-moment zet de gemeten tijd naast het schema ("Bed droog na 3:20 · 0:10 sneller dan het schema (3:30)"). Dat is alleen een feit; binnen 5 s staat er "zoals het schema".
+
+**Testresultaten:**
+- Nieuwe blokken "Analyse 10/10: K8–K10, K13, K24, K25" en `tests/build.test.mjs`.
+- De SW-test voor een nieuwe deploy is herschreven voor K22.
+- De BC-23-test en drie tests die een gietstijl kiezen, openen eerst het uitklapblok (K13).
+- De gelijkspeltest volgt de nieuwe zin.

@@ -128,7 +128,7 @@ describe('Service worker registratie (bijlage A — bevinding F, opgelost)', () 
     await page.evaluate(() => navigator.serviceWorker.ready);
     const onDisk = fs.readdirSync(path.join(ROOT, 'photos'));
     const cached = await page.evaluate(async () => {
-      const cache = await caches.open('brew-console-v3');
+      const cache = await caches.open('brew-console-v4');
       return (await cache.keys()).map(r => new URL(r.url).pathname);
     });
     for (const f of onDisk) assert.ok(cached.includes('/photos/' + f), `${f} staat niet in de cache`);
@@ -141,7 +141,7 @@ describe('Service worker registratie (bijlage A — bevinding F, opgelost)', () 
     await ctx.close();
   });
 
-  test('na een nieuwe "deploy" (gewijzigde HTML) krijgt een online start meteen de nieuwe versie (netwerk-eerst)', async () => {
+  test('K22: na een nieuwe "deploy" start de app uit de cache, meldt "Nieuwe versie" en laadt die na Vernieuwen', async () => {
     // Zet een tweede server op die een licht gewijzigde kopie serveert, om de
     // netwerk-eerst-strategie te bewijzen zonder de echte app te hoeven aanpassen.
     const html = fs.readFileSync(path.join(ROOT, 'brewconsole_v2_2.html'), 'utf8');
@@ -171,11 +171,16 @@ describe('Service worker registratie (bijlage A — bevinding F, opgelost)', () 
     await first.close();
 
     // "Nieuwe deploy": wijzig het bestand op schijf, dan gewoon opnieuw online openen.
+    // K22: de start komt meteen uit de cache (de oude versie); de worker haalt de nieuwe op de
+    // achtergrond, de app meldt "Nieuwe versie", en "Vernieuwen" laadt hem.
     fs.writeFileSync(path.join(tmpDir, 'index.html'), patched.replace(marker, marker + '<!--v2-->'));
     const second = await ctx.newPage();
     await second.goto(base2, { waitUntil: 'load' });
-    const html2 = await second.content();
-    assert.ok(html2.includes(marker + '<!--v2-->'), 'online start moet meteen de nieuwste versie tonen (netwerk-eerst), niet de gecachete');
+    assert.ok(!(await second.content()).includes('<!--v2-->'), 'de start komt meteen uit de cache');
+    await second.waitForFunction(() => !document.getElementById('update-bar').hidden, null, { timeout: 15000 });
+    await Promise.all([second.waitForNavigation({ waitUntil: 'load' }), second.click('#update-bar-btn')]);
+    assert.ok((await second.content()).includes(marker + '<!--v2-->'), 'na Vernieuwen draait de nieuwste versie');
+    assert.equal(await second.locator('#update-bar').isVisible(), false, 'en dan geen melding meer');
     await second.close();
     await ctx.close();
     server2.close();

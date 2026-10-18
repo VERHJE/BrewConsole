@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Brew Console</title>
+<!-- K25: een linkvoorbeeld als je de app deelt. -->
+<meta name="description" content="Recept, timer en logboek voor V60 en Chemex, dat per boon leert van je koppen.">
+<meta property="og:title" content="Brew Console">
+<meta property="og:description" content="Recept, timer en logboek voor V60 en Chemex, dat per boon leert van je koppen.">
+<meta property="og:type" content="website">
 <!-- K4: een echt manifestbestand. Een data:-URL kan geen start_url hebben ("start-url-not-valid"),
      en Chrome installeert pas met iconen van 192 en 512 px. -->
 <link rel="manifest" href="manifest.webmanifest">
@@ -518,6 +523,13 @@
 
   /* profile list */
   .choice-grid--1{display:flex; flex-direction:column; gap:10px;}
+  /* K13: gietstijlen achter één tik. */
+  .profile-styles-summary{display:flex; align-items:center; gap:8px; min-height:44px; cursor:pointer; list-style:none;}
+  .profile-styles-summary::-webkit-details-marker{display:none;}
+  .profile-styles-count{font-variant-numeric:tabular-nums; color:var(--text-faint);}
+  .profile-styles-summary .flavor-category-arrow{margin-left:auto;}
+  .profile-styles[open] .profile-styles-summary .flavor-category-arrow{transform:rotate(45deg);}
+  .profile-styles-list{display:flex; flex-direction:column; gap:10px; margin-top:4px;}
   .profile-row{
     display:flex; align-items:center; gap:14px;
     background:var(--surface);
@@ -643,6 +655,23 @@
   .history-more > summary{cursor:pointer; min-height:44px; display:flex; align-items:center; color:var(--copper-light); font-size:var(--fs-small);}
   .prep-best-ref{font-size:var(--fs-small); color:var(--copper-light); background:var(--surface); border:1px solid var(--copper-dim); border-radius:var(--radius-sm); padding:10px 12px; margin:0 0 12px;}
   .brewlog-entry-delete{display:inline-flex; align-items:center; min-height:44px; background:none; border:none; color:var(--text-faint); font-size:var(--fs-label); padding:0 2px; cursor:pointer; text-decoration:underline;} /* VA-32 */
+  .about-facts{margin:12px 0 0;}
+  .about-facts > div{padding:8px 0; border-top:1px solid var(--border);}
+  .about-facts dt{font-size:var(--fs-label); letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); margin-bottom:2px;}
+  .about-facts dd{margin:0; font-size:var(--fs-small); color:var(--text-dim); line-height:1.45;}
+  .water-links-intro{margin-bottom:4px;}
+  .water-links{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;}
+  .water-links a{display:inline-flex; align-items:center; min-height:44px; padding:0 12px; border:1px solid var(--border); border-radius:var(--radius-pill); color:var(--copper-light); text-decoration:none; font-size:var(--fs-small);}
+  #voice-test-btn{min-height:44px;}
+  /* K25: printversie — wat op het scherm staat, zwart op wit, zonder balken en knoppenrijen. */
+  @media print{
+    :root{--bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#FFFFFF; --border:#BBBBBB; --text:#000000; --text-dim:#222222; --text-faint:#444444; --copper:#000000; --copper-light:#000000;}
+    html[data-theme="light"]{--bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#FFFFFF; --border:#BBBBBB; --text:#000000; --text-dim:#222222; --text-faint:#444444; --copper:#000000; --copper-light:#000000;}
+    html{color-scheme:light;}
+    body::before, .navbar, .top-row, .prep-cta-row, .back-btn, .splash-screen, .undo-bar, .storage-alert, .install-hint, .live-brew-bar, #stats-grid::before{display:none !important;}
+    .stat-block, .bean-card, .flavor-category, .recipe-table{box-shadow:none !important; break-inside:avoid;}
+    .screen:not(.active){display:none !important;}
+  }
   /* K3: melding over je gegevens, bovenaan, los van de onderste balken. */
   .storage-alert{position:fixed; top:max(12px, var(--safe-t)); left:50%; transform:translateX(-50%); z-index:70;
     width:min(560px, calc(100vw - 32px)); box-sizing:border-box; background:var(--surface); border:1px solid var(--copper-dim);
@@ -1731,6 +1760,15 @@
   .switch-thumb{position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:var(--text-dim); transition:transform var(--motion-standard) var(--ease-out), background var(--motion-standard) var(--ease-out);}
   .counter-toggle[aria-checked="true"] .switch-track{background:var(--primary); border-color:var(--primary);}
   .counter-toggle[aria-checked="true"] .switch-thumb{transform:translateX(14px); background:var(--on-primary);}
+  .counter-toggle.settings-switch{margin:4px 0 0;}
+  /* K9: lopend brouwsel op elk scherm (behalve de timer en Home, dat zijn eigen banner heeft). */
+  .live-brew-bar{position:fixed; top:max(8px, var(--safe-t)); left:50%; transform:translateX(-50%); z-index:65;
+    display:flex; align-items:center; gap:10px; width:max-content; max-width:calc(100vw - 24px); min-height:44px; padding:6px 16px 6px 12px; box-sizing:border-box;
+    border-radius:var(--radius-pill); border:1px solid var(--copper-dim); background:var(--surface-bar); color:var(--text);
+    font-family:var(--font-body); font-size:var(--fs-small); box-shadow:0 6px 24px var(--ink-a35); cursor:pointer;}
+  .live-brew-bar::before{content:""; width:8px; height:8px; border-radius:50%; background:var(--copper); flex-shrink:0;}
+  .live-brew-time{font-weight:700; font-variant-numeric:tabular-nums;}
+  .live-brew-next{color:var(--text-dim); min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   #screen-brew[data-counter="on"] .brew-action-main{font-size:clamp(44px, 9vw, 92px); line-height:1.05;}
   #screen-brew[data-counter="on"] .brew-action-sub{font-size:var(--fs-body);}
   #screen-brew[data-counter="on"] .next-info{font-size:var(--fs-body);}
@@ -3480,6 +3518,14 @@
         <p class="empty-hint m-8-0-0">Systeem volgt de instelling van je toestel. Het timerscherm blijft in beide thema's donker: het staat op een donkere foto.</p>
       </div>
 
+      <!-- K8: gesproken aanwijzingen tijdens het zetten (proef, standaard uit). -->
+      <div class="bean-detail-section">
+        <h2 class="bean-detail-section-label">Zetten</h2>
+        <button type="button" class="counter-toggle settings-switch" id="voice-toggle" role="switch" aria-checked="false"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span class="switch-label">Gesproken aanwijzingen (proef)</span></button>
+        <p class="empty-hint m-8-0-0">De telefoon zegt bij elke giet hoeveel gram ("Giet tot 210 gram"), vijf seconden vooraf "Zo meteen: tot 210 gram", en "Laten doorlopen" na de laatste giet. Werkt offline, met de stem van je toestel. Het belletje blijft.</p>
+        <button type="button" class="link-secondary" id="voice-test-btn">Test de stem</button>
+      </div>
+
       <!-- Audit BC-24: waterprofiel hoort bij je keuken, niet bij één recept. -->
       <div class="bean-detail-section" id="settings-water-section">
         <h2 class="bean-detail-section-label">Water</h2>
@@ -3520,6 +3566,9 @@
         <!-- VA-25: eerst de velden en de uitkomst; de uitleg op verzoek. -->
         <details class="more-info mt-12" id="water-howto">
           <summary>Hoe vind ik dit?</summary>
+          <!-- K25: voor bedrijven waarvan het water per plaats verschilt geen gemiddelde (R-12), wel de weg erheen. -->
+          <p class="water-links-intro">Zoek op postcode bij je waterbedrijf (daar op "waterkwaliteit"):</p>
+          <div class="water-links"><a href="https://www.vitens.nl" target="_blank" rel="noopener">Vitens</a><a href="https://www.evides.nl" target="_blank" rel="noopener">Evides</a><a href="https://www.brabantwater.nl" target="_blank" rel="noopener">Brabant Water</a><a href="https://www.oasen.nl" target="_blank" rel="noopener">Oasen</a><a href="https://www.wml.nl" target="_blank" rel="noopener">WML</a><a href="https://www.wmd.nl" target="_blank" rel="noopener">WMD</a><a href="https://www.waterbedrijfgroningen.nl" target="_blank" rel="noopener">Waterbedrijf Groningen</a></div>
           <p>Kraanwater: zoek op je postcode het kwaliteitsoverzicht van je waterbedrijf ("totale hardheid" en "waterstofcarbonaat/HCO3"). Mineralenzakje of flessenwater: neem de waarden van de verpakking over. De SCA-richtwaarde is bedoeld voor wie water zelf mengt. De app zoekt zelf niets op via je postcode.</p>
           <p>Alkaliniteit staat op het kwaliteitsoverzicht per productiebedrijf, of meet je met een KH-druppeltest. HCO3 wordt omgerekend naar CaCO3-equivalent (×0,82) voor de SCA-vergelijking.</p>
           <p>Hardheid (calcium/magnesium) is niet hetzelfde als alkaliniteit (bufferende werking tegen zuren); vooral bij fruitige profielen bepaalt alkaliniteit minstens zo sterk hoe zuur de kop aankomt. Elke waarde krijgt daarom een eigen oordeel, nooit één samengevoegd "water is goed".</p>
@@ -3544,6 +3593,13 @@
       <div class="bean-detail-section">
         <h2 class="bean-detail-section-label">Over</h2>
         <p class="bean-detail-about">Brew Console 2.0 — een kleinere, fijnere, meer intentionele koffiewereld. Alle recept- en maaladviezen in deze app zijn gebaseerd op gedocumenteerde bronnen en je eigen gelogde koppen; waar dat niet kan, zegt de app dat expliciet i.p.v. een getal te verzinnen.</p>
+        <!-- K24: privacy, bronnen en versie op één plek. -->
+        <dl class="about-facts">
+          <div><dt>Je gegevens</dt><dd>Alles staat alleen op dit toestel; de app stuurt niets weg. Eén uitzondering: bij het scannen van een verpakkingsfoto haalt de app eenmalig de tekstherkenning (Tesseract.js) en haar taaldata van internet. De foto zelf blijft op je toestel.</dd></div>
+          <div><dt>Recepten</dt><dd>Gietschema's naar Tetsu Kasuya (4:6), James Hoffmann, Scott Rao, April Coffee Roasters en Matt Perger. Waterrichtwaarden van de SCA; waterbedrijven uit hun eigen kwaliteitsrapporten.</dd></div>
+          <div><dt>Molen</dt><dd>Maalstanden voor de Timemore C3S Pro.</dd></div>
+          <div><dt>Versie</dt><dd>Brew Console 2.0</dd></div>
+        </dl>
       </div>
     </section>
 
@@ -3565,6 +3621,10 @@
 <div class="undo-bar" id="undo-bar" role="status" aria-live="polite" hidden><span id="undo-bar-text"></span><button type="button" id="undo-bar-btn">Ongedaan maken</button></div>
 <!-- K3: storingen met je gegevens (onleesbare opslag, opslaan mislukt, onverwachte fout) worden
      gemeld in plaats van alleen in de console te staan. Zie showStorageAlert(). -->
+<!-- K9: lopend brouwsel buiten de timer; een tik brengt je terug (renderLiveBrewBar()). -->
+<button type="button" class="live-brew-bar" id="live-brew-bar" hidden><span class="live-brew-time" id="live-brew-time"></span><span class="live-brew-next" id="live-brew-next"></span></button>
+<!-- K22: de service worker meldt een nieuwe versie; nooit tijdens een brouwsel (maybeShowUpdateBar()). -->
+<div class="undo-bar update-bar" id="update-bar" role="status" aria-live="polite" hidden><span>Er is een nieuwe versie van de app.</span><button type="button" id="update-bar-btn">Vernieuwen</button></div>
 <div class="storage-alert" id="storage-alert" role="alert" hidden>
   <p id="storage-alert-text"></p>
   <div class="storage-alert-actions">
@@ -6265,6 +6325,22 @@ function beanProfileLabel(bean){
 function choiceLabelForState(){
   return profileLabel(state.profile, state.goal);
 }
+/* K13: een gelijkspel noemde elk label voluit ("Helder & fris en Helder & fris · Rao en Helder & fris ·
+   Hoffmann"). Nu per smaakdoel gegroepeerd: "Helder & fris: het gewone recept, Rao of Hoffmann". */
+function tieNoteText(labels, prefix){
+  const groups = new Map();
+  labels.forEach(l => {
+    const [base, style] = String(l).split(' · ');
+    if (!groups.has(base)) groups.set(base, []);
+    groups.get(base).push(style || null);
+  });
+  const orList = (xs) => xs.length > 1 ? `${xs.slice(0, -1).join(', ')} of ${xs[xs.length - 1]}` : xs[0];
+  const parts = [...groups.entries()].map(([base, styles]) => {
+    if (styles.length === 1) return styles[0] ? `${base} (${styles[0]})` : base;
+    return `${base}: ${orList(styles.map(st => st || 'het gewone recept'))}`;
+  });
+  return `${prefix || 'Deze boon'} past ongeveer even goed bij ${parts.join(' en bij ')}. De app kiest niet voor je: kies hieronder zelf wat je wilt volgen.`;
+}
 function renderProfileGrid(){
   const tieEl = document.getElementById('profile-tie-note'); // VA-34
   if (tieEl){ tieEl.textContent = state.profileTieNote || ''; tieEl.hidden = !state.profileTieNote; }
@@ -6287,8 +6363,11 @@ function renderProfileGrid(){
       <span><span class="profile-name">${escapeHtml(c.label)}</span><span class="profile-desc">${escapeHtml(c.desc)}</span>${detail}${twinHtml}</span>
     </button>`;
   };
+  // K13: de drie smaakdoelen dragen het scherm; de gietstijlen (met namen als Hoffmann en Rao) staan
+  // achter één tik. Is er al een gietstijl gekozen, dan staat het blok open.
+  const styleSelected = !current && styles.some(c => c.profile === state.profile);
   el.innerHTML = TASTE_CHOICES.map(c => row(c, true)).join('') +
-    (styles.length ? `<p class="profile-group-label">Of kies een gietstijl</p>${styles.map(c => row(c, false)).join('')}` : '');
+    (styles.length ? `<details class="profile-styles" id="profile-styles"${styleSelected ? ' open' : ''}><summary class="profile-group-label profile-styles-summary"><span>Of kies een gietstijl</span><span class="profile-styles-count">${styles.length}</span><span class="flavor-category-arrow" aria-hidden="true">+</span></summary><div class="profile-styles-list">${styles.map(c => row(c, false)).join('')}</div></details>` : '');
   el.querySelectorAll('[data-profile]').forEach(btn => {
     btn.addEventListener('click', () => {
       const taste = TASTE_CHOICES.find(c => c.taste === btn.getAttribute('data-taste'));
@@ -6454,7 +6533,7 @@ function renderAdviceChips(){
       const names = nearTieCandidates.map(k => {
         return profileDirectionLabel(k); // VA-10
       });
-      tieNoteEl.textContent = `Deze boon past ongeveer even goed bij ${names.join(' en ')} — er wordt geen keuze voor je gemaakt, kies zelf hieronder welk profiel je wilt volgen.`;
+      tieNoteEl.textContent = tieNoteText(names);
       tieNoteEl.dataset.pending = 'true';
       tieNoteEl.style.display = 'block';
     } else {
@@ -6587,7 +6666,7 @@ function brewBeanDirect(id){
   const tie = adviceState.flavorScores ? profileNearTieCandidates(adviceState.flavorScores) : null;
   if (tie && tie.length > 1){
     adviceState.profile = rawKeyForVisibleSelection(tie[0], adviceState.flavorScores);
-    applyAdvice({ toProfile: true, tieNote: `${bean.name || 'Deze boon'} past ongeveer even goed bij ${tie.map(k => profileDirectionLabel(k)).join(' en ')}. Kies hieronder wat je wilt proeven.` });
+    applyAdvice({ toProfile: true, tieNote: tieNoteText(tie.map(k => profileDirectionLabel(k)), bean.name || 'Deze boon') }); // K13
     return;
   }
   applyAdvice();
@@ -9050,6 +9129,24 @@ async function exportBackup(){
     }
   }
 
+  // K24: op een telefoon het deelmenu (bewaren in Bestanden/iCloud Drive, mailen, AirDrop); een
+  // download landde op de iPhone in een map die je zelden terugvindt. Op een computer blijft het
+  // een download. Annuleren in het deelmenu is geen back-up.
+  const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  if (coarse && typeof File === 'function' && navigator.canShare){
+    const file = new File([json], filename, { type: 'application/json' });
+    if (navigator.canShare({ files: [file] })){
+      try{
+        await navigator.share({ files: [file], title: 'Brew Console back-up' });
+        markBackupDone();
+        setBackupStatus(`Back-up gedeeld: ${beanLibrary.length} bonen, ${brewLog.length} gelogde koppen. Bewaar hem bijvoorbeeld in Bestanden of iCloud Drive.`, false);
+        return;
+      } catch(err){
+        if (err && err.name === 'AbortError'){ setBackupStatus('Delen geannuleerd; er is geen back-up gemaakt.', false); return; }
+        // andere fout: val terug op de download hieronder
+      }
+    }
+  }
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -13860,9 +13957,11 @@ if (NAV_HISTORY && typeof window.addEventListener === 'function') window.addEven
 
 function showScreen(name, opts){
   if (!(opts && opts.fromHistory)) recordNavigation(name);
+  maybeShowUpdateBar(); // K22
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const target = document.getElementById('screen-'+name);
   target.classList.add('active');
+  try { renderLiveBrewBar(); } catch(e){ /* K9: de balk mag een schermwissel nooit breken */ }
   // Sprint 1 (UX-review F5): via de tabbalk geopend = hoofdscherm, dan hoort er geen
   // "← Methode"/"← Mijn bonen" boven; via een link binnen de app blijft de terugknop.
   // Bij het terug-gebaar (fromHistory) blijft de eerdere stand van dit scherm staan.
@@ -14302,6 +14401,9 @@ function startBrewClock(){
   const rec = beginBrewRecord();
   timer.recordId = rec.id;
   startTimerLoop();
+  // K8: de eerste zin in deze tik (iOS laat spraak pas toe na een gebaar).
+  const firstPour = state.recipe.steps.find(s => s.add > 0);
+  if (firstPour) speak(spokenForStep(firstPour, false));
   // VA-19: de klaar-kaart (met deze knop) verdwijnt; terug naar boven zodat de klok en de
   // eerste instructie in beeld staan, en de focus naar de pauzeknop in plaats van nergens.
   window.scrollTo({ top:0, behavior:'auto' });
@@ -14420,6 +14522,7 @@ function tick(){
   updateDial();
   checkPreAlert();
   checkStepChange();
+  renderLiveBrewBar(); // K9
 }
 
 // Fase 2: één afronding voor alle routes (Bed droog, Einde tijdens het uitlopen, limiet).
@@ -14686,7 +14789,7 @@ function updateDial(){
       kind = 'done';
       main = 'Klaar';
       const bd = finishedRec && finishedRec.actual ? finishedRec.actual.bedDrySec : null;
-      sub = bd != null ? `Bed droog na ${fmtTime(bd)}` : 'Bed-droog-tijd niet vastgelegd';
+      sub = bd != null ? `Bed droog na ${fmtTime(bd)}${doneVsPlanText(bd, total)}` : 'Bed-droog-tijd niet vastgelegd';
     } else if (phase.kind === 'pour'){
       kind = 'pour';
       main = `Giet tot ${phase.targetG} g`;
@@ -14743,6 +14846,14 @@ function updateDial(){
   if (nextInfo.textContent !== nextText) nextInfo.textContent = nextText;
 }
 
+/* K10: het klaar-moment zegt hoe de gemeten tijd zich verhoudt tot het schema — een feit, geen
+   oordeel (dat volgt pas uit het proeven). Binnen 5 s telt als "zoals het schema". */
+function doneVsPlanText(bedDrySec, totalSec){
+  if (bedDrySec == null || !totalSec) return '';
+  const diff = bedDrySec - totalSec;
+  if (Math.abs(diff) <= 5) return ` · zoals het schema (${fmtTime(totalSec)})`;
+  return ` · ${fmtTime(Math.abs(diff))} ${diff < 0 ? 'sneller' : 'langer'} dan het schema (${fmtTime(totalSec)})`;
+}
 function flashDial(){
   const w = document.getElementById('dial-wrap');
   if (!w) return;
@@ -14760,7 +14871,11 @@ function checkStepChange(){
       el.toggleAttribute('data-active', i===idx);
       el.toggleAttribute('data-done', i<idx);
     });
-    if (idx > 0 || timer.elapsed > 0){ beep(); vibrate(120); flashDial(); }
+    if (idx > 0 || timer.elapsed > 0){
+      beep(); vibrate(120); flashDial();
+      const steps = state.recipe.steps;
+      speak(spokenForStep(steps[idx], idx === steps.length - 1)); // K8
+    }
   }
 }
 
@@ -14778,6 +14893,7 @@ function checkPreAlert(){
   if (remaining <= 5 && remaining > 0 && timer.preAlertedFor !== idx){
     timer.preAlertedFor = idx;
     preAlertBeep();
+    if (next.add > 0) speak(`Zo meteen: tot ${next.to} gram`); // K8
     vibrate([40,40,40]);
     const el = document.getElementById('next-info');
     el.classList.remove('pre-alert');
@@ -14863,6 +14979,77 @@ function preAlertBeep(){
 }
 function vibrate(pattern){ if (navigator.vibrate) navigator.vibrate(pattern || 120); }
 
+/* K8: gesproken aanwijzingen (proef, standaard uit). De stem van het toestel (Web Speech API, werkt
+   offline). iOS laat spraak pas toe na een tik; de eerste zin valt daarom in "Start de klok". Het
+   belletje en de puls blijven, de stem komt erbij. */
+const VOICE_KEY = 'brewconsole_voice';
+function voiceOn(){ try { return localStorage.getItem(VOICE_KEY) === '1'; } catch(e){ return false; } }
+function setVoiceOn(on){
+  try { if (on) localStorage.setItem(VOICE_KEY, '1'); else localStorage.removeItem(VOICE_KEY); } catch(e){ /* alleen deze sessie */ }
+  const t = document.getElementById('voice-toggle');
+  if (t) t.setAttribute('aria-checked', String(!!on));
+}
+function dutchVoice(){
+  try {
+    const voices = window.speechSynthesis.getVoices() || [];
+    return voices.find(v => /^nl[-_]NL/i.test(v.lang)) || voices.find(v => /^nl/i.test(v.lang)) || null;
+  } catch(e){ return null; }
+}
+function speak(text, force){
+  if (!(force || voiceOn()) || !('speechSynthesis' in window) || typeof SpeechSynthesisUtterance !== 'function') return false;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'nl-NL';
+    const v = dutchVoice(); if (v) u.voice = v;
+    u.rate = 1.0;
+    window.speechSynthesis.speak(u);
+    return true;
+  } catch(e){ return false; }
+}
+// Wat er bij een staponderdeel gezegd wordt: alleen het doel op de weegschaal, zoals op het scherm.
+function spokenForStep(step, isLast){
+  if (!step) return '';
+  if (step.add > 0) return `Giet tot ${step.to} gram`;
+  return isLast ? 'Laten doorlopen. Tik Bed droog zodra het bed droog is.' : '';
+}
+document.getElementById('voice-toggle').addEventListener('click', () => {
+  const on = !voiceOn();
+  setVoiceOn(on);
+  if (on) speak('Gesproken aanwijzingen staan aan.', true);
+});
+document.getElementById('voice-test-btn').addEventListener('click', () => {
+  if (!speak('Giet tot tweehonderdtien gram.', true)){
+    const b = document.getElementById('voice-test-btn');
+    if (b) b.textContent = 'Deze browser heeft geen stem';
+  }
+});
+setVoiceOn(voiceOn());
+
+/* K9: een smalle balk bovenaan op elk scherm behalve de timer en Home (Home heeft zijn eigen
+   banner), zolang er een brouwsel loopt: de tijd en de volgende stap. Bijgewerkt door tick() en
+   bij elke schermwissel. */
+function renderLiveBrewBar(){
+  const bar = document.getElementById('live-brew-bar');
+  if (!bar) return;
+  const active = document.querySelector('.screen.active');
+  const where = active ? active.id : '';
+  const brewing = typeof isActiveBrewBrewing === 'function' && isActiveBrewBrewing() && state.recipe && !timer.finished;
+  const show = !!brewing && where !== 'screen-brew' && where !== 'screen-home';
+  bar.hidden = !show;
+  if (!show) return;
+  const phase = currentBrewPhase();
+  const paused = !timer.running;
+  const next = paused ? 'gepauzeerd'
+    : phase.kind === 'pour' ? `nu: giet tot ${phase.targetG} g`
+    : phase.kind === 'wait' ? `tot ${phase.nextTargetG} g over ${fmtTime(phase.remainingSec)}`
+    : 'laten doorlopen · tik Bed droog';
+  document.getElementById('live-brew-time').textContent = fmtTime(timer.elapsed);
+  document.getElementById('live-brew-next').textContent = next;
+  bar.setAttribute('aria-label', `Brouwsel bezig, ${fmtTime(timer.elapsed)}, ${next}. Terug naar de timer.`);
+}
+document.getElementById('live-brew-bar').addEventListener('click', () => openActiveBrew());
+
 /* Losse test-knop op het prep-scherm: speelt direct een belletje af en
    probeert te trillen, zodat je vóór het zetten al weet of geluid werkt
    (en niet pas ontdekt dat het uit stond tijdens de eerste pour). Deze
@@ -14912,6 +15099,17 @@ function closeDialog(overlay){
   if (openDialogs.length || !opener || !opener.isConnected || !opener.getClientRects().length) return;
   try { opener.focus({ preventScroll:true }); } catch(e){ /* oudere browsers */ }
 }
+// K25: spatiebalk = pauze/hervat op het timerscherm (iPad met toetsenbord, computer). Niet als de
+// focus in een veld of op een knop staat (daar doet de spatie al iets).
+document.addEventListener('keydown', (e) => {
+  if (e.key !== ' ' || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (!document.getElementById('screen-brew').classList.contains('active')) return;
+  if (e.target && e.target.closest && e.target.closest('input, textarea, select, button, summary, [contenteditable], a')) return;
+  const pause = document.getElementById('pause-btn');
+  if (!pause || pause.getClientRects().length === 0) return;
+  e.preventDefault();
+  pause.click();
+});
 document.addEventListener('keydown', (e)=>{
   const top = openDialogs[openDialogs.length - 1];
   if (!top || top.overlay.hidden) return;
@@ -15206,7 +15404,21 @@ function registerOfflineServiceWorker(){
   if (!('serviceWorker' in navigator)) return;
   if (location.protocol !== 'https:' && location.hostname !== 'localhost') return; // SW vereist https (of localhost)
   navigator.serviceWorker.register('./sw.js').catch(e => console.warn('Service worker registratie mislukt', e));
+  // K22: de app start uit de cache; staat er een nieuwere versie klaar, dan meldt de worker dat.
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'brewconsole-update-ready'){ updatePending = true; maybeShowUpdateBar(); }
+  });
+  navigator.serviceWorker.ready.then(reg => { if (reg.active) reg.active.postMessage({ type: 'brewconsole-ask-update' }); }).catch(() => {});
 }
+var updatePending = false; // var: showScreen() kan al vóór deze regel draaien
+// Nooit midden in een brouwsel: dan wacht de melding tot het volgende scherm na afloop.
+function maybeShowUpdateBar(){
+  const bar = document.getElementById('update-bar');
+  if (!bar || !updatePending) return;
+  const rec = typeof activeBrewRecord === 'function' ? activeBrewRecord() : null;
+  bar.hidden = !!(rec && !rec.deletedAt && rec.lifecycle === 'brewing');
+}
+document.getElementById('update-bar-btn').addEventListener('click', () => location.reload());
 
 /* Expertreview idee 20: aanrechtmodus. Een per-toestel voorkeur (localStorage); zonder
    voorkeur aan op een tablet (≥ 700 px breed én ≥ 600 px hoog) en uit op een telefoon. */
