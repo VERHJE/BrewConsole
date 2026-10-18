@@ -137,6 +137,13 @@
     --bronze-lobe-hi:rgba(255,242,226,.08); --bronze-lobe-lo:rgba(38,14,3,.07);
     /* Tekst in gevaarkleur (de knopvulling --danger blijft voor witte tekst). */
     --danger-text:#E06A80;
+    /* K20: het donkere palet onder een eigen naam. Het lichte thema overschrijft deze niet, zodat het
+       timerscherm (dat altijd op een donkere foto staat) in beide thema's donker blijft. */
+    --night-surface:#1C1C1A; --night-surface-2:#2A2A26; --night-border:#3B2E24;
+    --night-text:#EDE6D9; --night-text-dim:#A5988A; --night-text-faint:#9C8F82;
+    --night-copper:#D4A574; --night-copper-light:#E6C199; --night-copper-dim:#4E3E30;
+    --night-surface-floating:rgba(28,28,26,.72); --night-surface-floating-border:rgba(237,230,217,.08);
+    --night-accent-glow:rgba(212,165,116,.28); --night-shadow-card:0 1px 2px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.12);
 
     /* Diepte (§3.2) — Level 3 modal bestond al via .modal-overlay hieronder; deze twee
        zijn nieuw, voor kaarten (Level 1) en floating/glass-elementen (Level 2). */
@@ -160,9 +167,11 @@
     /* Zelfde Style Guide-omzetting als het donkere thema hierboven, HSL-herafgeleid
        vanaf de nieuwe Cream/Caramel-basis. */
     --bg:#EDE7DC;
-    --surface:#E2DACD;
-    --surface-2:#D9D0C1;
-    --border:#BFB5A2;
+    /* K20: kaarten lichter dan de achtergrond (bijna wit papier) in plaats van beige op beige; meer
+       scheiding en frisser. Donkere tekst haalt op deze vlakken alleen méér contrast. */
+    --surface:#F8F4EC;
+    --surface-2:#EFE8DC;
+    --border:#D3C8B5;
     --text:#2B1810;
     --text-dim:#5C4A38;
     /* #695643 haalt 4,56:1 op --surface-2 (WCAG AA). */
@@ -182,12 +191,22 @@
 
     /* Zelfde aliaslaag als het donkere thema; de lichte waarden zijn de bestaande, op contrast
        gecontroleerde tokens. */
-    --surface-floating:rgba(226,218,205,.78);
+    --surface-floating:rgba(248,244,236,.82);
     --surface-floating-border:rgba(43,24,16,.08);
-    --surface-bar:rgba(226,218,205,.94);
+    --surface-bar:rgba(248,244,236,.94);
     --accent-glow:rgba(170,112,57,.22);
     --success-soft:rgba(119,144,90,.14);
-    --shadow-card:0 1px 2px rgba(43,24,16,.12), 0 0 0 1px rgba(43,24,16,.06);
+    --shadow-card:0 1px 2px rgba(43,24,16,.08), 0 2px 10px rgba(43,24,16,.05);
+  }
+  /* K20: het timerscherm staat op een donkere foto; in het lichte thema kreeg het een crèmekleurige
+     wijzerplaat en lichte knoppen op die foto. Het houdt nu in beide thema's het donkere palet. */
+  html[data-theme="light"] #screen-brew{
+    --surface:var(--night-surface); --surface-2:var(--night-surface-2); --border:var(--night-border);
+    --text:var(--night-text); --text-dim:var(--night-text-dim); --text-faint:var(--night-text-faint);
+    --copper:var(--night-copper); --copper-light:var(--night-copper-light); --copper-dim:var(--night-copper-dim);
+    --surface-floating:var(--night-surface-floating); --surface-floating-border:var(--night-surface-floating-border);
+    --accent-glow:var(--night-accent-glow); --shadow-card:var(--night-shadow-card);
+    color-scheme:dark;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   /* VA-32: sectielabels zijn echte koppen (h2/h3) in dezelfde stijl; de klasse bepaalt het uiterlijk. */
@@ -391,6 +410,14 @@
     transition:border-color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
   }
   @media (hover:hover){ .header-icon-btn:hover{ border-color:var(--copper); } }
+  .header-pill-btn{
+    display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 16px 0 12px; flex-shrink:0;
+    border-radius:var(--radius-pill); border:1px solid var(--copper-dim); background:var(--surface-2); color:var(--copper-light);
+    font-family:var(--font-body); font-weight:600; font-size:var(--fs-small); cursor:pointer;
+    transition:border-color var(--motion-standard) var(--ease-out), transform var(--motion-micro) var(--ease-out);
+  }
+  @media (hover:hover){ .header-pill-btn:hover{ border-color:var(--copper); } }
+  .header-pill-btn:active{ transform:scale(.96); }
   .header-icon-btn:active{ transform:scale(.94); }
 
   /* Triage: icoon boven de titel; één vraag per stap met genummerde categorie, radiokaarten
@@ -746,7 +773,7 @@
   @media (hover:hover){ .stat-more-toggle:hover{ text-decoration:underline; } }
   .stat-more-body{ margin-top:4px; }
   /* Secundaire tegels (ratio, brouwtijd): kleiner en gedempt. */
-  .stat-block--secondary .stat-value{font-size:var(--fs-small); color:var(--text-dim); font-variant-numeric:tabular-nums;}
+  .stat-block--secondary .stat-value{font-size:var(--fs-body); color:var(--text-dim); font-variant-numeric:tabular-nums;}
   /* De watertegel is tikbaar (opent #water-modal). */
   /* Sprint 3 (UX-review F4): −/+ in de watertegel; het getal zelf opent de modal. */
   .stat-stepper{display:flex; align-items:center; justify-content:space-between; gap:4px;}
@@ -777,10 +804,11 @@
   }
   #stats-grid{align-items:stretch;} /* VA-36: tegels in één rij even hoog */
   .stat-block--secondary .stat-label{color:var(--text-faint);}
-  /* Sprint 5: ratio en brouwtijd compact — label en waarde op één regel, uitleg eronder. */
-  .stat-block--secondary{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; column-gap:8px; padding:10px 14px;}
-  .stat-block--secondary .stat-label{margin-bottom:0;}
-  .stat-block--secondary .stat-sub{flex-basis:100%;}
+  /* K16: ratio en brouwtijd hebben dezelfde opbouw als de andere tegels (label, getal, uitleg), alleen
+     kleiner en stiller. Eerst stond het label links en het getal rechts: drie opbouwen in één raster. */
+  .stat-block--secondary{padding:10px 14px;}
+  .stat-block--secondary .stat-label{margin-bottom:2px;}
+  .stat-sub--lead{color:var(--text-dim);}
 
   .style-note{
     font-size:var(--fs-small); color:var(--text-dim); line-height:1.5;
@@ -1562,7 +1590,31 @@
   .bean-card-tags{margin:2px 0 0; font-size:var(--fs-label); color:var(--text-faint);}
   .bean-card-fav-mark{color:var(--berry); font-family:var(--font-body); font-size:.8em;}
   .bean-card-meta[data-low-stock="true"]{color:var(--text);}
-  .bean-card-go{display:block; width:100%; margin-top:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .bean-card-go{
+    display:flex; align-items:center; justify-content:flex-end; gap:4px; width:fit-content; max-width:100%; margin:2px -8px -12px auto; padding:0 8px; min-height:44px;
+    background:none; border:none; color:var(--copper-light); font-family:var(--font-body); font-weight:600; font-size:var(--fs-small);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;
+  }
+  .bean-card-go:active{color:var(--copper);}
+  /* K18: drinkvenster, voorraad en verloop als beeld. */
+  .dw-bar{position:relative; height:8px; margin:12px 0 2px; border-radius:var(--radius-pill); background:var(--surface-2);}
+  .dw-seg{position:absolute; top:0; bottom:0; border-radius:var(--radius-pill);}
+  .dw-seg--rest{background:var(--copper-dim);}
+  .dw-seg--in{background:var(--copper);}
+  .dw-today{position:absolute; top:-5px; width:3px; height:18px; margin-left:-1.5px; border-radius:var(--radius-pill); background:var(--text); box-shadow:0 0 0 2px var(--surface);}
+  .dw-scale{position:relative; height:18px; margin-bottom:6px; font-size:var(--fs-label); color:var(--text-faint);}
+  .dw-scale span{position:absolute; top:2px; transform:translateX(-50%); white-space:nowrap;}
+  .stock-bar{height:6px; margin:10px 0 6px; border-radius:var(--radius-pill); background:var(--surface-2); overflow:hidden;}
+  .stock-bar span{display:block; height:100%; border-radius:var(--radius-pill); background:var(--copper-light);}
+  .bean-trend{margin:0 0 14px; padding:12px 14px 10px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);}
+  .bean-trend svg{display:block; width:100%; height:auto; overflow:visible;}
+  .bean-trend figcaption{margin-top:6px; font-size:var(--fs-label); color:var(--text-faint);}
+  .bean-trend-grid{stroke:var(--border); stroke-width:1;}
+  .bean-trend-axis{fill:var(--text-faint); font-size:var(--fs-label); font-family:var(--font-body);}
+  .bean-trend-line{fill:none; stroke:var(--copper); stroke-width:2; stroke-linejoin:round; stroke-linecap:round;}
+  .bean-trend-dot{fill:var(--copper-light); stroke:var(--surface); stroke-width:2;}
+  .bean-trend-grind{fill:var(--text-dim); font-size:var(--fs-label); font-family:var(--font-body); font-variant-numeric:tabular-nums;}
+  @media (hover:hover){ .bean-card-go:hover{text-decoration:underline; text-underline-offset:3px;} }
   .bean-search-row #bean-search-input{flex:none;}
   .bean-search-row #bean-sort-select{flex:none; align-self:flex-start; max-width:100%;}
   .backup-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;}
@@ -1985,6 +2037,13 @@
     color:var(--text-faint); margin:22px 0 10px;
   }
   .home-strip{display:flex; gap:10px; overflow-x:auto; padding-bottom:4px;}
+  /* K19: "Zo staat het" — rustige feitenrijen in één kaart. */
+  .home-insights{margin-top:22px;}
+  .home-insights-list{margin:0; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); box-shadow:var(--shadow-card);}
+  .home-insight{padding:12px 16px;}
+  .home-insight + .home-insight{border-top:1px solid var(--border);}
+  .home-insight dt{font-size:var(--fs-label); letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); margin-bottom:3px;}
+  .home-insight dd{margin:0; font-size:var(--fs-small); color:var(--text-dim); line-height:1.45; overflow-wrap:anywhere;}
   .home-strip-item{flex-shrink:0; width:130px; display:flex; flex-direction:column; justify-content:flex-start; align-items:stretch; transition:transform var(--motion-standard) var(--ease-out);} /* VA-14: een <button> centreert zijn inhoud verticaal; zo begint elk kaartje bovenaan */
   .home-strip-item .photo-slot{width:130px; height:88px; margin-bottom:6px;}
   @media (hover:hover){ .home-strip-item:hover{transform:translateY(-2px);} }
@@ -2537,6 +2596,12 @@
         <span class="home-cta-title"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 10h11v4a5.5 5.5 0 0 1-5.5 5.5H10A5.5 5.5 0 0 1 4.5 14v-4Z"/><path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5c-.6.8-.6 1.4 0 2.2M11.5 3.5c-.6.8-.6 1.4 0 2.2"/></svg> Nieuw brouwsel starten →</span>
         <span class="home-cta-desc">Kies je zetmethode en ga direct naar een recept op maat.</span>
       </button>
+      <!-- K19 (in de linkerkolom, zodat de twee kolommen op desktop in balans zijn): wat er nu speelt, uit je eigen gegevens: je laatste kop, versheid en voorraad van je
+           bonen, en hoe ver de app is met leren. Leeg-eerst: zonder gegevens geen blok. -->
+      <section class="home-insights" id="home-insights" aria-labelledby="home-insights-label" hidden>
+        <h2 class="home-section-label" id="home-insights-label">Zo staat het</h2>
+        <dl class="home-insights-list" id="home-insights-list"></dl>
+      </section>
       </div>
       <div class="home-side">
       <h2 class="home-section-label" id="home-beans-label" hidden>Jouw bonen</h2>
@@ -2604,9 +2669,10 @@
           <h1 class="title mb-2">Mijn bonen</h1>
           <p class="subtitle mb-0">Bewaar en ontdek je koffies.</p>
         </div>
-        <!-- Camera-icoon: het boonformulier begint met de scan-sectie (openBeanAddFromList()). -->
-        <button type="button" class="header-icon-btn" id="bean-add-header-btn" aria-label="Nieuwe boon toevoegen (scannen of handmatig)">
-          <svg class="w-20 h-20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 8h2.2l1.1-2h9.4l1.1 2H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="14" r="3.4"/></svg>
+        <!-- K17: toevoegen staat in de kop, met tekst (eerst alleen een camera-icoon, en de knop met
+             tekst pas onder de lijst). Het boonformulier begint met de scan-sectie (openBeanAddFromList()). -->
+        <button type="button" class="header-pill-btn" id="bean-add-header-btn" aria-label="Nieuwe boon toevoegen (scannen of handmatig)">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Boon</span>
         </button>
       </div>
       <div class="bean-search-row" id="bean-search-row" hidden>
@@ -2714,6 +2780,8 @@
 
       <!-- De volledige brouwgeschiedenis van déze boon, inline, met dezelfde kaarten als Historie. -->
       <div class="detail-tab-panel" data-tab-panel="historie" id="bean-detail-panel-historie" hidden>
+        <!-- K18: verloop per kop (lekker en maalstand), vanaf twee beoordeelde koppen. -->
+        <figure class="bean-trend" id="bean-detail-trend" hidden></figure>
         <div id="bean-detail-history-list"></div>
         <p class="empty-hint" id="bean-detail-history-empty" hidden>Nog geen gelogde koppen voor deze boon.</p>
       </div>
@@ -3409,7 +3477,7 @@
           <button type="button" class="chip" role="radio" data-theme-pref="light">Licht</button>
           <button type="button" class="chip" role="radio" data-theme-pref="dark">Donker</button>
         </div>
-        <p class="empty-hint m-8-0-0">Systeem volgt de instelling van je toestel. Op de timer blijft de tekst in beide thema's licht op een donkere foto.</p>
+        <p class="empty-hint m-8-0-0">Systeem volgt de instelling van je toestel. Het timerscherm blijft in beide thema's donker: het staat op een donkere foto.</p>
       </div>
 
       <!-- Audit BC-24: waterprofiel hoort bij je keuken, niet bij één recept. -->
@@ -8118,7 +8186,9 @@ function renderBeanLibraryScreen(){
       </div>
       <!-- VA-13: één actie per kaart. Bewerken, favoriet, verwijderen, anders zetten en de
            geschiedenis staan op het boondetail (tik op de kaart). -->
-      <button class="bean-use-btn bean-card-go" ${b.lastBrew ? `data-again="${b.id}"` : `data-use="${b.id}"`}>${b.lastBrew ? `Zet opnieuw · ${escapeHtml(methodName)}${b.lastBrew.bypass ? ' (bypass)' : ''}` : 'Zet deze boon'}</button>
+      <!-- K17: de actie als koperen tekstknop rechtsonder in plaats van een volle knop per kaart:
+           de lijst oogt lichter, het tikvlak blijft 44 px hoog. -->
+      <button type="button" class="bean-card-go" ${b.lastBrew ? `data-again="${b.id}"` : `data-use="${b.id}"`}>${b.lastBrew ? `Zet opnieuw · ${escapeHtml(methodName)}${b.lastBrew.bypass ? ' (bypass)' : ''}` : 'Zet deze boon'}<span aria-hidden="true">→</span></button>
     </div>`;
   }).join('');
   el.querySelectorAll('[data-use]').forEach(btn=>btn.addEventListener('click', (e)=>{ e.stopPropagation(); brewBeanDirect(btn.getAttribute('data-use')); })); // VA-34
@@ -8180,6 +8250,45 @@ function renderHomeScreen(){
       btn.addEventListener('click', ()=>openBeanDetail(btn.getAttribute('data-open-detail')));
     });
   }
+  renderHomeInsights(); // K19
+}
+/* K19: "Zo staat het" op Home — alleen feiten uit je eigen gegevens (geen advies, geen
+   receptgetal): je laatste beoordeelde kop, welke bonen nu in hun drinkvenster zitten of bijna
+   op zijn, en hoeveel koppen en geteste stappen de app al heeft. */
+function homeInsightRows(nowMs){
+  const rows = [];
+  const d = (t) => new Date(t).toLocaleDateString('nl-NL', { day:'numeric', month:'short' });
+  const last = brewStore.filter(r => r && isBrewInLogView(r) && r.tasting && typeof r.tasting.liking === 'number')
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+  if (last){
+    const bean = last.beanId ? beanLibrary.find(b => b.id === last.beanId) : null;
+    const advice = last.recommendation && last.recommendation.type && last.recommendation.type !== 'NONE'
+      ? recommendationTexts(last.recommendation, null, {}).title : '';
+    rows.push({ key: 'last', label: 'Laatste kop', text: [bean ? bean.name : 'zonder boon', `${last.tasting.liking}/5`, last.createdAt ? d(last.createdAt) : null].filter(Boolean).join(' · ') + (advice ? `. ${advice}` : '') });
+  }
+  const names = (list) => list.length > 2 ? `${list.slice(0, 2).join(', ')} en ${list.length - 2} meer` : list.join(' en ');
+  const inWindow = beanLibrary.filter(b => { const dw = drinkWindowFor(b.roastDate, nowMs); return dw && dw.state === 'in'; }).map(b => b.name);
+  const resting = beanLibrary.map(b => ({ b, dw: drinkWindowFor(b.roastDate, nowMs) })).filter(x => x.dw && x.dw.state === 'resting');
+  const freshBits = [];
+  if (inWindow.length) freshBits.push(`in het venster: ${names(inWindow)}`);
+  if (resting.length) freshBits.push(`nog aan het rusten: ${names(resting.map(x => `${x.b.name} (${x.dw.daysToStart} ${x.dw.daysToStart === 1 ? 'dag' : 'dagen'})`))}`);
+  if (freshBits.length) rows.push({ key: 'fresh', label: 'Versheid', text: freshBits.join(' · ') });
+  const low = beanLibrary.map(b => ({ b, s: bagSummaryFor(b, brewStore) })).filter(x => !x.s.empty && x.s.cupsLeft != null && x.s.cupsLeft <= 3);
+  if (low.length) rows.push({ key: 'stock', label: 'Bijna op', text: names(low.map(x => `${x.b.name} (± ${x.s.cupsLeft} ${x.s.cupsLeft === 1 ? 'kop' : 'koppen'})`)) });
+  const cups = loggedCupCount();
+  if (cups){
+    const st = adviceOutcomeStats(brewStore);
+    rows.push({ key: 'learn', label: 'Wat de app weet', text: `${cups} ${cups === 1 ? 'kop' : 'koppen'} gelogd` + (st.gate === 'insufficient' ? ` · ${st.tested} van de ${ADVICE_GATE_MIN_TESTED} geteste stappen voor een oordeel over de adviezen` : '') });
+  }
+  return rows;
+}
+function renderHomeInsights(){
+  const box = document.getElementById('home-insights');
+  const list = document.getElementById('home-insights-list');
+  if (!box || !list) return;
+  const rows = homeInsightRows(Date.now());
+  box.hidden = !rows.length;
+  list.innerHTML = rows.map(r => `<div class="home-insight" data-insight="${r.key}"><dt>${escapeHtml(r.label)}</dt><dd>${escapeHtml(r.text)}</dd></div>`).join('');
 }
 /* Sprint 2 (UX-review F3): "Je volgende kop". Eerst een boon met een klaargezette stap
    (nieuwste eerst) — mits die stap bij dezelfde methode hoort als de vorige kop, want
@@ -8588,6 +8697,47 @@ function bagSummaryFor(bean, store){
   const cupsLeft = remainingG != null && lastDose ? Math.max(0, Math.floor(remainingG / lastDose)) : null;
   return { cups: recs.length, avgLiking: avg, remainingG, cupsLeft, best: bestCupOf(recs), empty: remainingG != null && remainingG <= 0 };
 }
+/* K18: het drinkvenster en de voorraad als beeld, naast de bestaande tekst (die blijft: hij zegt
+   ook "vuistregel, geen meting"). De balk loopt van de branddatum tot dag 42 (FRESHNESS_TIERS
+   'old'); de streep is vandaag. */
+const DW_BAR_DAYS = 42;
+function drinkWindowBarHtml(dw){
+  const pct = (n) => Math.max(0, Math.min(100, n / DW_BAR_DAYS * 100));
+  const r = (x) => Math.round(x * 10) / 10;
+  const today = r(pct(Math.min(dw.day, DW_BAR_DAYS)));
+  const startP = r(pct(dw.start)), endP = r(pct(dw.end + 1));
+  return `<div class="dw-bar" role="img" aria-label="Dag ${dw.day} na branden. Rust tot dag ${dw.start - 1}, venster dag ${dw.start} tot ${dw.end}.">
+      <span class="dw-seg dw-seg--rest" style="left:0; width:${startP}%"></span>
+      <span class="dw-seg dw-seg--in" style="left:${startP}%; width:${r(endP - startP)}%"></span>
+      <span class="dw-today" style="left:${today}%"></span>
+    </div>
+    <div class="dw-scale" aria-hidden="true"><span style="left:${r(startP / 2)}%">rust</span><span style="left:${r((startP + endP) / 2)}%">venster</span><span style="left:${r((endP + 100) / 2)}%">daarna</span></div>`;
+}
+function stockBarHtml(remainingG, bagSizeG){
+  const p = Math.round(Math.max(0, Math.min(1, remainingG / bagSizeG)) * 1000) / 10;
+  return `<div class="stock-bar" role="img" aria-label="Nog ${fmt(Math.max(0, remainingG), 0)} van ${fmt(bagSizeG, 0)} g in de zak"><span style="width:${p}%"></span></div>`;
+}
+/* K18: verloop per kop met deze boon — hoe lekker (1–5) en op welke maalstand, oud → nieuw. Alleen
+   tonen wat gelogd is; de lijn zegt niets over oorzaak. Hoogstens de laatste 12 koppen. */
+function renderBeanTrend(beanId){
+  const fig = document.getElementById('bean-detail-trend');
+  if (!fig) return;
+  const recs = brewStore.filter(r => r && r.beanId === beanId && isBrewInLogView(r) && r.tasting && typeof r.tasting.liking === 'number')
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).slice(-12);
+  if (recs.length < 2){ fig.hidden = true; fig.innerHTML = ''; return; }
+  const W = 300, top = 12, step = 14, n = recs.length;
+  const x = (i) => Math.round(16 + i * (W - 32) / (n - 1));
+  const y = (l) => top + (5 - l) * step;
+  const pts = recs.map((r, i) => ({ x: x(i), y: y(r.tasting.liking), g: cupSetupOf(r).grind }));
+  const grid = [1, 3, 5].map(l => `<line class="bean-trend-grid" x1="0" x2="${W}" y1="${y(l)}" y2="${y(l)}"/><text class="bean-trend-axis" x="0" y="${y(l) - 3}">${l}</text>`).join('');
+  const line = `<polyline class="bean-trend-line" points="${pts.map(p => `${p.x},${p.y}`).join(' ')}"/>`;
+  const dots = pts.map(p => `<circle class="bean-trend-dot" cx="${p.x}" cy="${p.y}" r="4"/>`).join('');
+  const grinds = pts.map(p => p.g != null ? `<text class="bean-trend-grind" x="${p.x}" y="${y(1) + 20}" text-anchor="middle">${p.g}</text>` : '').join('');
+  const summary = recs.map(r => { const g = cupSetupOf(r).grind; return `${r.tasting.liking}/5${g != null ? ` op klik ${g}` : ''}`; }).join(', ');
+  fig.innerHTML = `<svg viewBox="0 0 ${W} ${y(1) + 26}" role="img" aria-label="Verloop per kop, oud naar nieuw: ${escapeHtml(summary)}">${grid}${line}${dots}${grinds}</svg>
+    <figcaption>Lekker per kop (1–5), oud → nieuw · onder elke kop je maalstand</figcaption>`;
+  fig.hidden = false;
+}
 function renderBeanDetailBag(bean){
   const block = document.getElementById('bean-detail-bag');
   const body = document.getElementById('bean-detail-bag-body');
@@ -8602,7 +8752,7 @@ function renderBeanDetailBag(bean){
       : dw.state === 'in' ? `nu dag ${dw.day}: in het venster, nog ${dw.daysLeft} ${dw.daysLeft === 1 ? 'dag' : 'dagen'}.`
       : dw.state === 'past' ? `nu dag ${dw.day}: voorbij het venster, verwacht minder frisse topnoten.`
       : `nu dag ${dw.day}: waarschijnlijk voorbij de piek.`;
-    lines.push(`<p class="bean-detail-best-brew-facts">${escapeHtml(head)}</p><p class="bean-detail-best-brew-facts-sub">${escapeHtml(now)} Proef zelf: dit is een vuistregel, geen meting.</p>`);
+    lines.push(`<p class="bean-detail-best-brew-facts">${escapeHtml(head)}</p>${drinkWindowBarHtml(dw)}<p class="bean-detail-best-brew-facts-sub">${escapeHtml(now)} Proef zelf: dit is een vuistregel, geen meting.</p>`);
   } else {
     lines.push(`<p class="bean-detail-best-brew-facts-sub">Vul de branddatum in voor een drinkvenster.</p>`);
   }
@@ -8611,6 +8761,7 @@ function renderBeanDetailBag(bean){
     sum.avgLiking != null ? `gemiddeld ${fmt(sum.avgLiking, 1)}/5` : null,
     sum.empty ? 'zak waarschijnlijk leeg' : sum.remainingG != null ? `nog ± ${fmt(sum.remainingG, 0)} g${sum.cupsLeft != null ? ` (± ${sum.cupsLeft} ${sum.cupsLeft === 1 ? 'kop' : 'koppen'})` : ''}` : null
   ].filter(Boolean);
+  if (bean.bagSizeG && sum.remainingG != null) lines.push(stockBarHtml(sum.remainingG, bean.bagSizeG));
   if (stockBits.length) lines.push(`<p class="bean-detail-best-brew-facts-sub">${escapeHtml(stockBits.join(' · '))}</p>`);
   if (dw && dw.state === 'in' && sum.cupsLeft != null && sum.cupsLeft > dw.daysLeft){
     lines.push(`<p class="bean-detail-best-brew-facts-sub">${escapeHtml(`Je hebt meer koppen over (${sum.cupsLeft}) dan dagen in het venster (${dw.daysLeft}).`)}</p>`);
@@ -8723,6 +8874,7 @@ function renderBeanDetailHistoryTab(beanId){
   const list = document.getElementById('bean-detail-history-list');
   const empty = document.getElementById('bean-detail-history-empty');
   if (!list) return;
+  renderBeanTrend(beanId); // K18
   const entries = brewLog.filter(e=>e.beanId===beanId).slice().sort((a,b)=>b.timestamp-a.timestamp);
   if (!entries.length){
     list.innerHTML = '';
@@ -13333,7 +13485,7 @@ function renderPrep(){
         <button type="button" class="stat-value stat-value--btn" id="stats-water-open" aria-label="Waterhoeveelheid kiezen"><span id="serving-value">${state.waterMl}<span class="unit"> ml</span></span></button>
         <button type="button" id="serving-plus" aria-label="Meer water">+</button>
       </div>
-      <div class="stat-sub">${state.bypass ? `waarvan ${rec.pourWaterMl} ml door de koffie` : '± 50 ml per tik, of tik het getal'}</div>
+      ${state.bypass ? `<div class="stat-sub">waarvan ${rec.pourWaterMl} ml door de koffie</div>` : ''}
     </div>
     <div class="stat-block stat-block--hero stat-block--grind${grindAdjusted ? ' stat-block--adjusted' : ''}">
       <div class="stat-label">Maalgraad${grindAdjusted ? ' · jouw stap' : grindFromStand ? ' · jouw stand' : ''}</div>
@@ -13341,14 +13493,14 @@ function renderPrep(){
       ${grindAdjusted ? `<div class="stat-sub stat-sub--adjusted">was ${escapeHtml(String(pAdj.fromValue))} · stap uit je vorige kop</div>` : ''}
       ${grindFromStand ? `<div class="stat-sub stat-sub--adjusted">zoals je vorige kop${rec.grindStartingPoint != null && rec.grindStartingPoint !== state.grindStand ? ` · basisrecept: klik ${rec.grindStartingPoint}` : ''}</div>` : ''}
       ${rec.grindShortContact ? `<div class="stat-sub">1 klik fijner: kort schema (${fmtTime(rec.totalTime)})</div>` : ''}
-      ${rec.grindMicron == null && rec.grindStartingPoint != null && rec.grindStartingRange ? `<div class="stat-sub">${grindAdjusted || grindFromStand ? '' : 'start hier · '}klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax} is het startgebied</div><div class="stat-sub">zuur en snel door? fijner · bitter en traag? grover</div>` : ''}
+      ${rec.grindMicron == null && rec.grindStartingPoint != null && rec.grindStartingRange ? `<div class="stat-sub">startgebied: klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax}</div>` : ''}
       ${rec.grindMicron == null && rec.grindStartingPoint == null && rec.grindBandLabel && grindValue !== rec.grindBandLabel ? `<div class="stat-sub">${escapeHtml(rec.grindBandLabel)}</div>` : ''}
       ${rec.grindMicron == null && rec.grindStartingPoint == null && typeof state.grindStand !== 'number' ? `<div class="stat-sub" id="grind-own-click-hint">geen klikgetal bekend · vul na het zetten je klik in bij "Anders…", dan onthoudt de app jouw stand</div>` : ''}
       ${batchHint ? `<div class="stat-sub" id="batch-hint">${escapeHtml(batchHint)}</div>` : ''}
       ${rec.grindMicron != null ? `<div class="stat-sub">stand ${rec.grindStand} · Timemore C3S Pro</div>` : ''}
       ${grindMoreNotes.length || rec.grindMicron == null ? `
       <button type="button" class="stat-more-toggle" id="grind-more-toggle" aria-expanded="false">Meer over deze maalstand ↓</button>
-      <div class="stat-more-body" id="grind-more-body" hidden>${rec.grindMicron == null ? `<div class="stat-sub">Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}</div>` : ''}${grindMoreNotes.map(n=>`<div class="stat-sub">${n}</div>`).join('')}</div>` : ''}
+      <div class="stat-more-body" id="grind-more-body" hidden>${rec.grindMicron == null && rec.grindStartingPoint != null ? `<div class="stat-sub stat-sub--lead">Bijstellen: zuur en snel door? fijner · bitter en traag? grover</div>` : ''}${rec.grindMicron == null ? `<div class="stat-sub">Timemore C3S Pro · vertrouwen: ${translateGrindConfidence(rec.grindConfidence)}</div>` : ''}${grindMoreNotes.map(n=>`<div class="stat-sub">${n}</div>`).join('')}</div>` : ''}
     </div>
     <div class="stat-block stat-block--hero">
       <div class="stat-label">${statIconTemp}Temperatuur</div>

@@ -2280,8 +2280,12 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     const rec = await page.evaluate(() => ({ start: state.recipe.grindStartingPoint, min: state.recipe.grindStartingRange.clicksMin, max: state.recipe.grindStartingRange.clicksMax }));
     const grind = page.locator('#stats-grid .stat-block', { hasText: 'Maalgraad' });
     assert.equal((await grind.locator('.stat-value').textContent()).trim(), `Klik ${rec.start}`);
-    assert.match(await grind.innerText(), new RegExp(`start hier · klik ${rec.min}–${rec.max} is het startgebied`));
-    assert.match(await grind.innerText(), /zuur en snel door\? fijner · bitter en traag\? grover/);
+    assert.match(await grind.innerText(), new RegExp(`startgebied: klik ${rec.min}–${rec.max}`));
+    // K16: de bijstelregel staat achter "Meer over deze maalstand", niet meer vast in de tegel.
+    assert.doesNotMatch(await grind.innerText(), /zuur en snel door/);
+    await page.click('#grind-more-toggle');
+    assert.match(await grind.innerText(), /Bijstellen: zuur en snel door\? fijner · bitter en traag\? grover/);
+    await page.click('#grind-more-toggle');
     for (const label of ['Gemalen koffie', 'Temperatuur', 'Ratio', 'Maalgraad', 'Brouwtijd']){
       const n = await page.locator('#stats-grid .stat-block', { hasText: label }).locator('.stat-sub').count();
       assert.ok(n >= 1, `${label} heeft een uitlegregel`);
@@ -5089,6 +5093,92 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.match(html, /id="brewlog-save-btn">Kop opslaan</);
       assert.match(html, /Kies de roast — die bepaalt temperatuur en maling\./);
       assert.match(html, /`Extra vraag · \$\{TASTING_STEP_LABELS\[curKey\]\}`/);
+    });
+  });
+
+  describe('Analyse 10/10: K16–K20', () => {
+    const day = 86400000;
+    const seed = () => {
+      const roastDate = new Date(Date.now() - 10 * day).toISOString().slice(0, 10);
+      const beans = [{ id:'bt1', name:'Boon T', roastLevel:'light', profileKey:'klassiek', process:'washed', flavorNotes:[], addedAt:1, doseUsedG:200, bagSizeG:250, roastDate, lastBrew:{ method:'v60', waterMl:300, bypass:false, bypassPct:null } }];
+      const rec = (id, liking, grind, at) => ({ id, schemaVersion: 6, createdAt: at, updatedAt: at, lifecycle: 'logged', beanId: 'bt1', beanSnapshot: null, equipment: {}, waterSnapshot: null, goal: null,
+        plan: { methodId: 'v60', profileId: 'klassiek', roastId: 'light', waterMl: 300, doseG: 20, ratioText: '1:15', tempC: 95, grindStartingPoint: 15, grindTarget: grind, strengthStep: 0, bypass: null, steps: [], expectedTotalSec: 210, inputs: null, appliedAdjust: null },
+        actual: { doseG: 20, doseSource: 'U', grindClick: grind, grindSource: 'U', confirmed: true, events: [], bedDrySec: 220, completedAt: at },
+        derived: {}, tasting: { strength: 'just_right', acidity: 'lively', finish: ['sweet_clean'], liking, complete: true, approved: liking >= 4 }, diagnosis: null,
+        recommendation: { type: 'KEEP' }, flags: {}, favorite: false, sideEffectsAppliedAt: at, deletedAt: null });
+      const now = Date.now();
+      return { beans: JSON.stringify(beans), brews: JSON.stringify([rec('t1', 2, 16, now - 3 * day), rec('t2', 3, 15, now - 2 * day), rec('t3', 5, 14, now - day)]) };
+    };
+    async function seededPage(opts, theme){
+      const page = await newTrackedPage(opts || { viewport: { width: 390, height: 844 } });
+      await page.addInitScript(({ d, theme }) => { if (sessionStorage.getItem('k16')) return; sessionStorage.setItem('k16', '1'); localStorage.setItem('brewconsole_beans', d.beans); localStorage.setItem('brewconsole_brews', d.brews); if (theme) localStorage.setItem('brewconsole_theme', theme); }, { d: seed(), theme });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      return page;
+    }
+
+    test('K16: receptscherm — geen vaste waterhulptekst; ratio en brouwtijd met het label boven het getal', async () => {
+      const page = await newTrackedPage();
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.evaluate(() => { selectMethod('v60'); selectRoast('light'); selectProfile('klassiek'); });
+      assert.doesNotMatch(await page.locator('#stats-water-block').innerText(), /per tik/);
+      for (const label of ['Ratio', 'Brouwtijd']){
+        const r = await page.locator('#stats-grid .stat-block', { hasText: label }).evaluate(b => ({ l: b.querySelector('.stat-label').getBoundingClientRect().bottom, v: b.querySelector('.stat-value').getBoundingClientRect().top }));
+        assert.ok(r.l <= r.v + 0.5, `${label}: label boven het getal`);
+      }
+      await page.close();
+    });
+
+    test('K17: bonen — "+ Boon" in de kop; de actie op de kaart is een tekstknop van 44 px hoog', async () => {
+      const page = await seededPage();
+      await navTo(page, 'beans');
+      assert.match(await page.locator('#bean-add-header-btn').innerText(), /Boon/);
+      const go = page.locator('.bean-card[data-open-detail="bt1"] .bean-card-go');
+      assert.match(await go.innerText(), /Zet opnieuw · V60/);
+      const r = await go.evaluate(b => ({ h: b.getBoundingClientRect().height, family: b.classList.contains('bean-use-btn'), border: getComputedStyle(b).borderTopStyle }));
+      assert.ok(r.h >= 44, `tikvlak ${r.h} px`); assert.equal(r.family, false); assert.equal(r.border, 'none');
+      await page.close();
+    });
+
+    test('K18: boondetail — drinkvenster als balk met vandaag, voorraadbalk, verloop per kop', async () => {
+      const page = await seededPage();
+      await navTo(page, 'beans');
+      await page.click('.bean-card[data-open-detail="bt1"] .bean-card-open');
+      await assertBecomesActive(page, '#screen-bean-detail');
+      const dw = await page.evaluate(() => ({ today: parseFloat(document.querySelector('#bean-detail-bag .dw-today').style.left), label: document.querySelector('#bean-detail-bag .dw-bar').getAttribute('aria-label'), stock: parseFloat(document.querySelector('#bean-detail-bag .stock-bar span').style.width) }));
+      assert.ok(Math.abs(dw.today - 10 / 42 * 100) < 0.2, `vandaag op ${dw.today}%`);
+      assert.match(dw.label, /^Dag 10 na branden\. Rust tot dag 6, venster dag 7 tot 21\.$/);
+      assert.equal(dw.stock, 20, 'nog 50 van 250 g');
+      await page.click('#bean-detail-tabs [data-tab="historie"]');
+      assert.equal(await page.locator('#bean-detail-trend').isVisible(), true);
+      assert.equal(await page.locator('#bean-detail-trend circle').count(), 3);
+      assert.match(await page.locator('#bean-detail-trend svg').getAttribute('aria-label'), /2\/5 op klik 16, 3\/5 op klik 15, 5\/5 op klik 14$/);
+      await page.close();
+    });
+
+    test('K19: Home — "Zo staat het" met je laatste kop, versheid, voorraad en wat de app weet', async () => {
+      const page = await seededPage();
+      const rows = await page.evaluate(() => [...document.querySelectorAll('#home-insights .home-insight')].map(r => [r.dataset.insight, r.querySelector('dd').textContent]));
+      const by = Object.fromEntries(rows);
+      assert.match(by.last, /^Boon T · 5\/5 · /);
+      assert.match(by.fresh, /in het venster: Boon T/);
+      assert.match(by.stock, /Boon T \(± 2 koppen\)/);
+      assert.match(by.learn, /^3 koppen gelogd/);
+      await page.close();
+      const empty = await newTrackedPage();
+      await empty.goto(FILE_URL, { waitUntil: 'load' });
+      assert.equal(await empty.locator('#home-insights').isVisible(), false, 'leeg-eerst: geen blok zonder gegevens');
+      await empty.close();
+    });
+
+    test('K20: licht thema — kaarten lichter dan de achtergrond; het timerscherm blijft donker', async () => {
+      const page = await seededPage(undefined, 'light');
+      const lum = (c) => { const [r, g, b] = c.match(/\d+/g).map(Number); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+      const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+      const card = await page.evaluate(() => getComputedStyle(document.querySelector('.home-cta')).backgroundColor);
+      assert.ok(lum(card) > lum(bg), `kaart ${card} lichter dan achtergrond ${bg}`);
+      const face = await page.evaluate(() => { const s = document.getElementById('screen-brew'); return getComputedStyle(s).getPropertyValue('--surface').trim(); });
+      assert.equal(face.toUpperCase(), '#1C1C1A');
+      await page.close();
     });
   });
 

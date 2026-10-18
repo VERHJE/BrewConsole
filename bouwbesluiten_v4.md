@@ -695,3 +695,34 @@ Alle 955 tests slagen. De rekenkern is ongewijzigd.
 - de R-04-voortgang zegt nu "Extra vraag".
 
 Alle 961 tests slagen.
+
+## Analyse 10/10: K16 t/m K20 (beeld en rust)
+
+**Aanleiding.** Ronde C uit de analyse "waar zit nog echte winst". Deze ronde verandert niets aan recepten, advies of de rekenkern (de engine-bundel staat op dezelfde hash). Alles wat getoond wordt, komt uit bestaande gegevens.
+
+- **K16 · Receptscherm:**
+  - Ratio en brouwtijd hebben dezelfde opbouw als de andere tegels (label, getal, uitleg), alleen kleiner. Eerst stond het label links en het getal rechts: drie verschillende opbouwen in één raster.
+  - De vaste hulptekst "± 50 ml per tik, of tik het getal" is weg; de −/+ en het getal wijzen zichzelf.
+  - De maaltegel toont "startgebied: klik 15–17". De bijstelregel ("zuur en snel door? fijner · bitter en traag? grover") staat nu bovenaan onder "Meer over deze maalstand".
+- **K17 · Bonen:**
+  - Toevoegen staat in de kop als "+ Boon" (eerst alleen een camera-icoon; de knop met tekst kwam pas onder de lijst).
+  - De actie op elke kaart is een koperen tekstknop rechtsonder ("Zet opnieuw · V60 →") in plaats van een volle omrande knop. Het tikvlak blijft 44 px hoog.
+- **K18 · Boondetail:**
+  - Het drinkvenster is een balk van branden tot dag 42: rust en venster in koper, met een streep voor vandaag.
+  - De voorraad is een balk (wat er nog in de zak zit).
+  - Onder Historie staat het verloop per kop: hoe lekker (1–5) met de maalstand eronder, oud → nieuw, hoogstens 12 koppen, vanaf twee beoordeelde koppen.
+  - De bestaande tekst blijft, inclusief "vuistregel, geen meting". Het verloop toont alleen wat gelogd is en zegt niets over oorzaak.
+- **K19 · Home:** in de linkerkolom staat "Zo staat het", één kaart met feitenrijen:
+  - je laatste beoordeelde kop;
+  - welke bonen in hun drinkvenster zitten of nog rusten;
+  - welke bijna op zijn (3 koppen of minder);
+  - hoeveel koppen en geteste stappen de app heeft.
+  Zonder gegevens is het blok er niet (leeg-eerst).
+- **K20 · Licht thema:**
+  - Kaarten zijn bijna wit papier (`--surface: #F8F4EC`) op de crème achtergrond, in plaats van beige op beige. Donkere tekst haalt daardoor alleen meer contrast; de axe-scan blijft schoon.
+  - Het timerscherm houdt in beide thema's het donkere palet via `--night-*`-tokens. Eerst kreeg het in het lichte thema een crème wijzerplaat en lichte knoppen op de donkere foto.
+
+**Testresultaten:**
+- Nieuw blok "Analyse 10/10: K16–K20" in `tests/kernflow.smoke.test.mjs`.
+- De BC-12-test is bijgewerkt: de bijstelregel staat nu achter "Meer over deze maalstand".
+- Alle 966 tests slagen.
