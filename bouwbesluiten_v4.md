@@ -658,3 +658,40 @@ Getest in het blok "Primaire knop: geborsteld champagnekoper".
 - "Eerdere koppen" en het hartje.
 
 Alle 955 tests slagen. De rekenkern is ongewijzigd.
+
+## Analyse 10/10: K1 t/m K7 (fouten en vertrouwen)
+
+**Aanleiding.** De analyse "waar zit nog echte winst" (17 okt 2026) vond zeven kleine, geverifieerde fouten. Deze ronde verandert niets aan recepten, advies of de rekenkern (de engine-bundel is ongewijzigd).
+
+- **K1 · Boondetail › Recepten:** de kaart stond zonder binnenruimte (de logboekkaart heeft die sinds VA-12 alleen op de uitklapregel). Hij heeft nu een eigen kaart (`.bean-recipe-card`) en de knop "Zet dit recept opnieuw". Die zet methode, water, sterkte en maalstand van de laatste kop met die methode klaar, via dezelfde route als "Zet je beste kop opnieuw". Op het receptscherm staat dan "Je laatste kop met de V60 (…)", niet "Je beste kop".
+- **K2 · "Brouwsel bezig" op Home:**
+  - De tijd loopt nu elke seconde mee; eerst bleef hij staan op het moment dat je Home opende.
+  - Een koperen stip vervangt de emoji (VA-22).
+  - Zolang er een brouwsel loopt, verdwijnt "Je volgende kop" en is "Nieuw brouwsel starten" geen gevulde knop meer.
+- **K3 · Gegevens bij storingen:**
+  - Een onleesbare of verkeerd gevormde bonenlijst wordt apart bewaard (`brewconsole_beans_corrupt_<tijd>`, zoals het logboek al deed) voordat de voorbeeldbonen hem kunnen overschrijven. Een verkeerd gevormde lijst gaf eerst een crash en een halve Home.
+  - Bovenaan verschijnt een melding met "Back-up maken". Dat gebeurt bij:
+    - een onleesbare bonenlijst of een onleesbaar logboek;
+    - opslag die niet beschikbaar is;
+    - opslaan dat mislukt;
+    - een onverwachte fout.
+  - Elke soort melding verschijnt één keer per sessie. Eerst stond dit alleen in de console.
+- **K4 · Installeren:**
+  - Het manifest is een eigen bestand (`manifest.webmanifest`); een data:-URL kan geen `start_url` hebben (Chrome: "start-url-not-valid").
+  - Iconen van 192 en 512 px (ook maskable) en een iPhone-icoon van 180 px staan in `icons/` en in de offline-cache (`SHELL_FILES` in `sw.js`). Chrome meldt nu geen installatiefout meer.
+  - De iconen zijn vergroot uit het bestaande icoon van 160 px; een nieuw beeldmerk is K21.
+  - De HTML is ±94 kB kleiner.
+  - **Let op bij publiceren:** `manifest.webmanifest` en de map `icons/` moeten naast `index.html` staan.
+- **K5 · Schermlezer:** de sorteerkeuze bij Bonen en de waterschuif hebben een naam.
+- **K6 · Desktop › Bonen:** "+ Nieuwe boon" en "Waarom smaakt dit anders?" staan vanaf 900 px naast elkaar, samen precies zo breed als de bonenlijst; elk blijft onder 720 px (VA-35). De lege lijst blijft zoals hij was.
+- **K7 · Taal en proefkaart:**
+  - De knop heet "Kop opslaan" (was "Loggen opslaan").
+  - Waar het veld "Roast" heet, zeggen de foutmelding en de scancontrole nu ook "roast" (was "branding").
+  - "Wat miste je?" telt als "Extra vraag", zodat de voortgang niet meer van "van 6" naar "van 7" springt.
+  - Zolang de nadere vraag "Eerst nog: gezet zoals gepland?" openstaat, verdwijnt hetzelfde blok bovenaan.
+
+**Testresultaten:** het blok "Analyse 10/10: K1–K7" in `tests/kernflow.smoke.test.mjs` plus een extra controle in de R-16-test. Twee bestaande tests zijn bijgewerkt:
+- de scancontrole zegt nu "roast";
+- de R-04-voortgang zegt nu "Extra vraag".
+
+Alle 961 tests slagen.
