@@ -10031,7 +10031,7 @@ function recomputeRecipeForRecord(rec){
    maling) komt uit de bestaande engine; die blijft ongewijzigd en rekent mee ter vergelijking.
    Alles hieronder is puur: geen DOM, alleen opslag via engine2On()/setEngine2().
    ============================================================ */
-const ENGINE2_VERSION = 'e2-2026.3';
+const ENGINE2_VERSION = 'e2-2026.4';
 const ENGINE2_KEY = 'brewconsole_engine2';
 // Massabalans (Guinard e.a. 2023, J. Food Sci.): EY = TDS/(1−TDS) · (W/D − R_abs), R_abs ≈ 2,1 bij filter.
 const E2_R_ABS = 2.1;
@@ -10084,6 +10084,14 @@ const E2_TDS_RANGE = { min: 0.4, max: 2.5 };
 const E2_EY_MIN_N = 3;
 const E2_EY_WINDOW = 20;
 const E2_TRIAL_KEY = 'brewconsole_e2_trial';
+// e2-2026.4 · doorloop per zak: krimp naar je brewerwaarde met het gewicht van 3 koppen [aanname];
+// pas vanaf 2 koppen van die zak.
+const E2_TIME_BEAN_K = 3;
+const E2_TIME_BEAN_MIN_N = 2;
+// Een doorloop die meer dan 20 % (en meer dan 3× je gewone spreiding) afwijkt, is een processignaal.
+const E2_DRAIN_SIGNAL = 0.20;
+// Een proeftip die bij jou 2× slechter uitviel (en vaker slechter dan beter), zet Engine 2 niet meer klaar.
+const E2_TRIAL_VERDICT_N = 2;
 const E2_STRENGTH_ORDINAL = { much_too_weak: -2, too_weak: -1, just_right: 0, too_strong: 1, much_too_strong: 2 };
 const E2_GRID = (function(){
   const g = [];
@@ -10356,7 +10364,8 @@ function e2Decide(obs, baselineLn){
 
 // Tijdmodel: Bed droog tegen het verwachte einde van de bestaande engine, per brewer en techniek
 // (zonder bypass). De mediaan van je laatste 10 verhoudingen schaalt het verwachte einde.
-function e2TimeModel(store, method, technique){
+function e2TimeModel(store, method, technique, opts){
+  const o = opts || {};
   const ratios = [];
   (store || []).filter(r => r && !r.deletedAt && r.plan && r.actual &&
       (r.lifecycle === 'completed' || r.lifecycle === 'logged') &&
@@ -10366,15 +10375,37 @@ function e2TimeModel(store, method, technique){
     .forEach(r => {
       const base = r.plan.inputs && r.plan.inputs.e2 && typeof r.plan.inputs.e2.baseTotalSec === 'number'
         ? r.plan.inputs.e2.baseTotalSec : r.plan.expectedDrainEndSec;
-      if (typeof base === 'number' && base > 0) ratios.push({ ratio: r.actual.bedDrySec / base, click: typeof r.actual.grindClick === 'number' ? r.actual.grindClick : null });
+      if (typeof base === 'number' && base > 0) ratios.push({ ratio: r.actual.bedDrySec / base, click: typeof r.actual.grindClick === 'number' ? r.actual.grindClick : null, beanId: r.beanId || null });
     });
-  const recent = ratios.slice(-E2_TIME_WINDOW).map(x => x.ratio);
-  if (recent.length < E2_TIME_MIN_N) return { n: recent.length, factor: null, grind: e2GrindEffect(ratios) };
+  const recentPts = ratios.slice(-E2_TIME_WINDOW);
+  const recent = recentPts.map(x => x.ratio);
+  const grind = e2GrindEffect(ratios);
+  if (recent.length < E2_TIME_MIN_N) return { n: recent.length, factor: null, grind };
   const factor = medianOf(recent);
   const dev = medianOf(recent.map(x => Math.abs(x - factor)));
   const lastClick = ratios.length ? ratios[ratios.length - 1].click : null;
-  if (!(factor >= 0.7 && factor <= 1.5)) return { n: recent.length, factor: null, outOfRange: factor, grind: e2GrindEffect(ratios) };
-  return { n: recent.length, factor, spread: dev, lastClick, grind: e2GrindEffect(ratios) };
+  if (!(factor >= 0.7 && factor <= 1.5)) return { n: recent.length, factor: null, outOfRange: factor, grind };
+  // e2-2026.4 · per zak: alleen het niveau, gekrompen naar je brewerwaarde (ontwerp §4.3).
+  let bean = { n: 0, factor: null };
+  if (o.beanId){
+    const mine = ratios.filter(x => x.beanId === o.beanId).slice(-E2_TIME_WINDOW);
+    if (mine.length >= E2_TIME_BEAN_MIN_N){
+      const lnMean = mine.reduce((a, x) => a + Math.log(x.ratio), 0) / mine.length;
+      const lnF = (mine.length * lnMean + E2_TIME_BEAN_K * Math.log(factor)) / (mine.length + E2_TIME_BEAN_K);
+      bean = { n: mine.length, factor: Math.exp(lnF) };
+    }
+  }
+  // e2-2026.4 · een andere maalstand dan je recente koppen: met een bekend effect per klik schuift
+  // ook het verwachte einde mee.
+  let clickShift = 0;
+  const clicks = recentPts.map(x => x.click).filter(c => typeof c === 'number');
+  if (grind.perClick != null && typeof o.plannedClick === 'number' && clicks.length){
+    const meanClick = clicks.reduce((a, b) => a + b, 0) / clicks.length;
+    clickShift = Math.max(-4, Math.min(4, o.plannedClick - meanClick));
+  }
+  const level = bean.factor != null ? bean.factor : factor;
+  const expectedFactor = level * Math.exp(grind.perClick != null ? grind.perClick * clickShift : 0);
+  return { n: recent.length, factor, spread: dev, lastClick, grind, bean, clickShift, expectedFactor };
 }
 // Wat één klik met je doorloop doet: kleinste kwadraten van ln(Bed droog / schema) op de klik, over je
 // laatste 20 koppen met een ingevulde klik. Alleen als er minstens twee standen met elk 2 koppen zijn.
@@ -10449,9 +10480,11 @@ function engine2PlanFor(baseRec, method, store, opts){
   const ratio = e2RatioForTds(targetTds, retention.value, ey);
   const doseG = Math.round(baseRec.water / ratio * 10) / 10;
   const band = dec.summary ? { lowRatio: e2RatioForTds(Math.exp(dec.summary.q90Ln), retention.value, ey), highRatio: e2RatioForTds(Math.exp(dec.summary.q10Ln), retention.value, ey) } : null;
-  const time = baseRec.technique ? e2TimeModel(store, method, baseRec.technique) : { n: 0, factor: null };
+  const plannedClick = typeof o.plannedClick === 'number' ? o.plannedClick : (typeof baseRec.grindStartingPoint === 'number' ? baseRec.grindStartingPoint : null);
+  const time = baseRec.technique ? e2TimeModel(store, method, baseRec.technique, { beanId: o.beanId || null, plannedClick }) : { n: 0, factor: null };
   const bypass = !!(baseRec.bypassMl > 0);
-  const totalTimeSec = (time.factor != null && !bypass) ? Math.round(baseRec.totalTime * time.factor / 5) * 5 : null;
+  const tf = time.factor != null ? (time.expectedFactor || time.factor) : null;
+  const totalTimeSec = (tf != null && tf >= 0.6 && tf <= 1.7 && !bypass) ? Math.round(baseRec.totalTime * tf / 5) * 5 : null;
   // Hoeveel klikken je naar de schematijd van de techniek brengen (alleen als het effect van een
   // klik bekend is en je meer dan 12 % afwijkt).
   let grindToSchedule = null;
@@ -10492,7 +10525,20 @@ function e2TipsFor(tasting, ctx){
   if (finish.includes('drying')){
     tips.push({ key: 'drying', kind: 'controle', text: 'Droog of wrang komt eerder van ongelijk doorlopen dan van het recept. Giet rustig en in het midden, spoel het filter goed, en kijk of het terugkomt.' });
   }
-  if (t.strength !== 'just_right') return tips;
+  // e2-2026.4 · de doorloop als processignaal (ontwerp §4.3): wijkt Bed droog ver af van wat jij
+  // gewoonlijk haalt, dan is er iets met het proces, niet met je sterkte.
+  const d = c.drain;
+  if (d && d.actualSec > 0 && d.expectedSec > 0){
+    const rel = d.actualSec / d.expectedSec - 1;
+    const limit = Math.max(E2_DRAIN_SIGNAL, 3 * (d.spreadRel || 0));
+    if (Math.abs(rel) > limit){
+      const pct = Math.round(Math.abs(rel) * 100);
+      tips.push(rel > 0
+        ? { key: 'drain_slow', kind: 'controle', text: `Bed droog op ${fmtTime(d.actualSec)}, terwijl je gewoonlijk rond ${fmtTime(d.expectedSec)} zit (${pct} % langzamer). Dat wijst op een verstopping: veel fijnstof, een te fijne stand of een dichtgeslagen filter. Kijk daar eerst naar; Engine 2 verandert je sterkte hier niet om.` }
+        : { key: 'drain_fast', kind: 'controle', text: `Bed droog op ${fmtTime(d.actualSec)}, terwijl je gewoonlijk rond ${fmtTime(d.expectedSec)} zit (${pct} % sneller). Dat wijst op kanaalvorming of een te grove stand: giet rustiger en in het midden, en kijk of de molen nog op je stand staat.` });
+    }
+  }
+  if (t.strength !== 'just_right') return e2ApplyTrialVerdicts(tips, c.outcomes);
   if (finish.includes('bitter') || t.missed === 'less_bitter'){
     tips.push({ key: 'bitter', kind: 'proef', trial: { strength: -0.5, grind: 0 }, text: 'Bitter terwijl de sterkte goed is: bitter volgt vooral de sterkte, minder de maling. Zet één keer de sterkte op −4 % in plaats van grover te malen, en vergelijk.' });
   }
@@ -10522,7 +10568,43 @@ function e2TipsFor(tasting, ctx){
   if (t.missed === 'body'){
     tips.push({ key: 'body', kind: 'proef', trial: { strength: 0.5, grind: 0 }, text: 'Meer body: mondgevoel volgt de sterkte. Probeer één keer de sterkte op +4 %.' });
   }
-  return tips;
+  return e2ApplyTrialVerdicts(tips, c.outcomes);
+}
+// e2-2026.4 · leren van je proeven: een tip die bij jou vaker beter uitviel staat voorop; een tip die
+// 2× slechter uitviel (en vaker slechter dan beter) zet Engine 2 niet meer klaar. Altijd met de telling.
+function e2TrialVerdict(o){
+  if (!o || !o.tested) return null;
+  if (o.worse >= E2_TRIAL_VERDICT_N && o.worse > o.better) return 'niet';
+  if (o.better >= E2_TRIAL_VERDICT_N && o.better > o.worse) return 'werkt';
+  return 'open';
+}
+function e2ApplyTrialVerdicts(tips, outcomes){
+  if (!outcomes) return tips;
+  const out = tips.map(t => {
+    const o = t.kind === 'proef' ? outcomes[t.key] : null;
+    const v = e2TrialVerdict(o);
+    if (!v) return t;
+    const tally = `${o.tested}× geprobeerd: ${o.better} beter, ${o.same} gelijk, ${o.worse} slechter`;
+    if (v === 'niet') return Object.assign({}, t, { verdict: v, trial: null, text: `${t.text} Bij jou: ${tally}. Engine 2 zet deze proef daarom niet meer klaar.` });
+    if (v === 'werkt') return Object.assign({}, t, { verdict: v, text: `${t.text} Bij jou: ${tally}.` });
+    return Object.assign({}, t, { verdict: v, text: `${t.text} Tot nu toe: ${tally}.` });
+  });
+  const rank = (t) => t.kind === 'controle' ? 0 : t.verdict === 'werkt' ? 1 : t.verdict === 'niet' ? 3 : 2;
+  return out.map((t, i) => ({ t, i })).sort((a, b) => rank(a.t) - rank(b.t) || a.i - b.i).map(x => x.t);
+}
+// Wat de proeven uit de hendeltabel opleverden, per tip (antwoord op "Vergeleken met je vorige kop").
+function e2TrialOutcomes(store){
+  const outcomes = {};
+  (store || []).forEach(r => {
+    const t = r && !r.deletedAt && r.plan && r.plan.inputs && r.plan.inputs.e2 && r.plan.inputs.e2.trial;
+    if (!t || !r.tasting) return;
+    const o = outcomes[t.key] || (outcomes[t.key] = { tested: 0, better: 0, same: 0, worse: 0 });
+    o.tested += 1;
+    if (r.tasting.vsLast === 'better') o.better += 1;
+    else if (r.tasting.vsLast === 'same') o.same += 1;
+    else if (r.tasting.vsLast === 'worse') o.worse += 1;
+  });
+  return outcomes;
 }
 function e2RatioText(ratio){ return nlRatio(`1:${fmt(ratio, 1)}`); }
 // Een tip uit de hendeltabel die klaarstaat voor je volgende kop (één tegelijk).
@@ -10556,22 +10638,29 @@ function e2Meetlat(store, trials){
   const e2Changes = last.filter(e => e.steps !== 0).length;
   const oldChanges = (store || []).filter(r => lastIds.has(r.id) && r.recommendation && r.recommendation.type === 'ADJUST').length;
   const good = lastObs.filter(o => o.ord === 0).length;
-  const outcomes = {};
-  (store || []).forEach(r => {
-    const t = r && !r.deletedAt && r.plan && r.plan.inputs && r.plan.inputs.e2 && r.plan.inputs.e2.trial;
-    if (!t || !r.tasting) return;
-    const o = outcomes[t.key] || (outcomes[t.key] = { tested: 0, better: 0, same: 0, worse: 0 });
-    o.tested += 1;
-    if (r.tasting.vsLast === 'better') o.better += 1;
-    else if (r.tasting.vsLast === 'same') o.same += 1;
-    else if (r.tasting.vsLast === 'worse') o.worse += 1;
-  });
+  const outcomes = e2TrialOutcomes(store);
   // Gemeten extractie per brewer (alleen brewers met minstens één meting).
   const ey = {};
   Array.from(new Set((store || []).filter(r => r && !r.deletedAt && r.plan && e2MeasuredTds(r) != null).map(r => r.plan.methodId)))
     .forEach(m => { const em = e2EyModel(store, m, rFor(m)); if (em.n) ey[m] = em; });
+  // e2-2026.4 · de rest van de meetlat uit het ontwerp (§9): "lekker" (4 of 5) over je laatste 10
+  // koppen met een waardering, en hoeveel koppen een nieuwe zak nodig had tot de eerste "lekker".
+  const tasted = (store || []).filter(r => r && !r.deletedAt && r.tasting && typeof r.tasting.liking === 'number')
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  const lastTasted = tasted.slice(-10);
+  const lekker = { n: lastTasted.length, hits: lastTasted.filter(r => r.tasting.liking >= 4).length };
+  const perBean = {};
+  tasted.forEach(r => { if (r.beanId) (perBean[r.beanId] = perBean[r.beanId] || []).push(r); });
+  const toFirst = [];
+  let notYet = 0;
+  Object.values(perBean).forEach(list => {
+    const i = list.findIndex(r => r.tasting.liking >= 4);
+    if (i >= 0) toFirst.push(i + 1); else notYet += 1;
+  });
+  const firstLekker = { beans: toFirst.length + notYet, median: toFirst.length ? medianOf(toFirst) : null, notYet };
   return { n: lastObs.length, e2Changes, oldChanges, good, pairs: obs.filter(o => o.type === 'pair').length,
-    sdLn: dec.summary ? dec.summary.sdLn : null, mode: dec.mode, outcomes, ey, measured: obs.filter(o => o.measured).length };
+    sdLn: dec.summary ? dec.summary.sdLn : null, mode: dec.mode, outcomes, ey, measured: obs.filter(o => o.measured).length,
+    lekker, firstLekker };
 }
 // De beslissing van Engine 2 over één geproefde kop, in woorden.
 function e2DecisionText(entry){
@@ -11274,12 +11363,26 @@ function renderEngine2Meetlat(store){
   } else {
     parts.push(`<p class="insights-note m-0-0-4" data-e2-meetlat="changes">${escapeHtml(`Laatste ${m.n} ${m.n === 1 ? 'kop' : 'koppen'}: Engine 2 veranderde je sterkte ${m.e2Changes}×. De oude engine stelde bij ${m.oldChanges} van die koppen een stap voor.`)}</p>`);
     parts.push(`<p class="insights-note m-0-0-4" data-e2-meetlat="good">${escapeHtml(`Sterkte goed: ${m.good} van de ${m.n} (${Math.round(m.good / m.n * 100)} %).`)}</p>`);
+    if (m.n >= 5){
+      const per10 = Math.round(m.e2Changes / m.n * 10 * 10) / 10;
+      parts.push(`<p class="insights-note m-0-0-4" data-e2-meetlat="per10">${escapeHtml(`Dat is ${fmt(per10, 1)} wijzigingen per 10 koppen; het doel is hooguit 2.${per10 <= 2 ? ' Gehaald.' : ''}`)}</p>`);
+    }
     if (m.sdLn != null) parts.push(`<p class="insights-note m-0-0-4" data-e2-meetlat="sd">${escapeHtml(`Zekerheid over je sterkte: ±${Math.round((Math.exp(m.sdLn) - 1) * 100)} % · ${m.mode === 'rust' ? 'je zit goed' : 'Engine 2 zoekt nog'}${m.pairs ? ` · ${m.pairs} ${m.pairs === 1 ? 'blinde vergelijking' : 'blinde vergelijkingen'}` : ''}.`)}</p>`);
+  }
+  if (m.lekker && m.lekker.n){
+    parts.push(`<p class="insights-note m-0-0-4" data-e2-meetlat="lekker">${escapeHtml(`Lekker (4 of 5): ${m.lekker.hits} van je laatste ${m.lekker.n} ${m.lekker.n === 1 ? 'kop' : 'koppen'} met een waardering.`)}</p>`);
+  }
+  if (m.firstLekker && m.firstLekker.beans){
+    const f = m.firstLekker;
+    parts.push(`<p class="insights-note m-0-0-4" data-e2-meetlat="first">${escapeHtml(f.median != null
+      ? `Nieuwe zak tot de eerste lekkere kop: ${fmt(f.median, f.median % 1 ? 1 : 0)} ${f.median === 1 ? 'kop' : 'koppen'} (mediaan over ${f.beans - f.notYet} ${f.beans - f.notYet === 1 ? 'zak' : 'zakken'})${f.notYet ? `; ${f.notYet} ${f.notYet === 1 ? 'zak' : 'zakken'} nog zonder` : ''}.`
+      : `Nog geen zak met een lekkere kop (${f.beans} ${f.beans === 1 ? 'zak' : 'zakken'}).`)}</p>`);
   }
   const keys = Object.keys(m.outcomes);
   if (keys.length){
     parts.push(`<p class="insights-note m-10-0-6"><strong class="c-text">Proeven uit het advies</strong> (vergeleken met je vorige kop)</p>` +
-      keys.map(k => { const o = m.outcomes[k]; return `<p class="insights-note m-0-0-4" data-e2-trial-row>${escapeHtml(`${E2_TIP_LABELS[k] || k}: ${o.tested}× geprobeerd · ${o.better} beter · ${o.same} gelijk · ${o.worse} slechter`)}</p>`; }).join(''));
+      keys.map(k => { const o = m.outcomes[k]; const v = e2TrialVerdict(o);
+        return `<p class="insights-note m-0-0-4" data-e2-trial-row>${escapeHtml(`${E2_TIP_LABELS[k] || k}: ${o.tested}× geprobeerd · ${o.better} beter · ${o.same} gelijk · ${o.worse} slechter${v === 'werkt' ? ' · werkt bij jou, staat voorop' : v === 'niet' ? ' · werkt bij jou niet, wordt niet meer klaargezet' : ''}`)}</p>`; }).join(''));
   }
   const eyKeys = Object.keys(m.ey);
   if (eyKeys.length){
@@ -14268,7 +14371,7 @@ function handleRecommendationClick(e){
     if (!tipRec) return;
     if (tipCancel) setE2PendingTrial(null);
     else {
-      const tip = e2TipsFor(tipRec.tasting, {}).find(t => t.key === tipBtn.dataset.e2Tip);
+      const tip = e2TipsFor(tipRec.tasting, { outcomes: e2TrialOutcomes(brewStore) }).find(t => t.key === tipBtn.dataset.e2Tip);
       const trial = e2TrialFromTip(tipRec, tip, Date.now());
       if (trial) setE2PendingTrial(trial);
     }
@@ -14509,7 +14612,8 @@ function engine2PlanForState(){
   if (!engine2On()) return null;
   try {
     const base = computeRecipe(state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL, 0, state.bypassPct, null);
-    return engine2PlanFor(base, state.method, brewStore, { trials: abTrials, beanId: state.beanId || null });
+    return engine2PlanFor(base, state.method, brewStore, { trials: abTrials, beanId: state.beanId || null,
+      plannedClick: typeof state.grindStand === 'number' ? state.grindStand : null });
   } catch(e){ console.warn('Engine 2 viel terug op de bestaande engine:', e); return null; }
 }
 // De Engine 2-kaart boven de sterkteknoppen: jouw sterkte, hoe zeker, en het verwachte einde.
@@ -14549,7 +14653,11 @@ function renderEngine2Card(){
   if (e.dilutionG > 0) lines.push(`Lichter dan de dosisgrens: zet ${fmt(e.doseG, 1)} g en voeg na het zetten ${e.dilutionG} g heet water toe. Dat geeft dezelfde kop als zetten met meer water.`);
   if (pl.calibration) lines.push(`Engine 2 weet je sterkte nog op ±${Math.round((Math.exp(pl.sdLn) - 1) * 100)} %. Een blinde vergelijking (onder "Meer voor deze kop") leert hem dat het snelst.`);
   if (Math.abs(e.doseG - pl.baseDoseG) >= 0.1) lines.push(`De oude engine zou ${fmt(pl.baseDoseG, 1)} g zetten (${e2RatioText(pl.baseRatio)}).`);
-  if (e.totalTimeSec) lines.push(`Verwacht klaar rond ${fmtTime(e.totalTimeSec)}: jouw eigen doorloop over ${pl.time.n} koppen. Het schema zelf zegt ${fmtTime(e.baseTotalSec)}.`);
+  if (e.totalTimeSec){
+    const tb = pl.time.bean && pl.time.bean.factor != null ? ` Met deze zak (${pl.time.bean.n} koppen) loopt hij ${pl.time.bean.factor > pl.time.factor ? 'iets langzamer' : 'iets sneller'} door dan gewoonlijk.` : '';
+    const tc = pl.time.clickShift && pl.time.grind && pl.time.grind.perClick != null ? ` Je maalt ${fmt(Math.abs(pl.time.clickShift), 1)} ${Math.abs(pl.time.clickShift) === 1 ? 'klik' : 'klikken'} ${pl.time.clickShift < 0 ? 'fijner' : 'grover'} dan je laatste koppen; dat zit erin.` : '';
+    lines.push(`Verwacht klaar rond ${fmtTime(e.totalTimeSec)}: jouw eigen doorloop over ${pl.time.n} koppen. Het schema zelf zegt ${fmtTime(e.baseTotalSec)}.${tb}${tc}`);
+  }
   if (pl.grindToSchedule){
     const g = pl.grindToSchedule;
     lines.push(`Eén klik grover maakt je doorloop ${Math.abs(g.perClickPct).toString().replace('.', ',')} % ${g.perClickPct < 0 ? 'korter' : 'langer'}. Wil je dichter bij de ${fmtTime(e.baseTotalSec)} van het schema: ${Math.abs(g.clicks)} ${Math.abs(g.clicks) === 1 ? 'klik' : 'klikken'} ${g.clicks > 0 ? 'grover' : 'fijner'}. Dat is een keuze voor het proces, niet voor de sterkte.`);
@@ -14594,7 +14702,14 @@ function renderEngine2Panel(rec, el){
   const rAbs = rFor(method);
   const eyModel = e2EyModel(brewStore, method, rAbs);
   const ey = eyModel.n >= E2_EY_MIN_N ? eyModel.eyMean : E2_EY_NOMINAL;
-  const tips = e2TipsFor(rec.tasting, { doseG: dose, waterG: water, rAbs, ey, eyPerClick: eyModel.perClick });
+  // e2-2026.4: Bed droog tegen jouw verwachte einde bij het zetten (alleen als dat er was).
+  let drain = null;
+  const e2In = rec.plan && rec.plan.inputs && rec.plan.inputs.e2;
+  if (e2In && e2In.totalTimeSec > 0 && rec.actual && rec.actual.bedDrySec > 0 && !rec.plan.bypass){
+    const tm = rec.plan.technique ? e2TimeModel(brewStore, method, rec.plan.technique) : null;
+    drain = { actualSec: rec.actual.bedDrySec, expectedSec: e2In.totalTimeSec, spreadRel: tm && tm.factor ? (tm.spread || 0) / tm.factor : 0 };
+  }
+  const tips = e2TipsFor(rec.tasting, { doseG: dose, waterG: water, rAbs, ey, eyPerClick: eyModel.perClick, drain, outcomes: e2TrialOutcomes(brewStore) });
   const nextRatio = entry ? e2RatioForTds(Math.exp(entry.afterLn), rAbs, ey) : null;
   const nextLine = nextRatio && water ? `Je sterkte voor de volgende kop: ${e2RatioText(nextRatio)}, dat is ${fmt(water / nextRatio, 1)} g op ${water} g.` : '';
   // e2-2026.3: een gemeten TDS op deze kop, en de extractie die daaruit volgt.

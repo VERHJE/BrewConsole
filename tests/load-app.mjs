@@ -144,7 +144,8 @@ export function loadApp(){
       e2PairObservations, e2AllObservations, e2PairProb, e2Utility, e2BeanOffset, e2CalibrationFor, e2GrindEffect,
       E2_PAIR_W, E2_PAIR_NONE, E2_CAL_SD, E2_CAL_STEP_WIDE, E2_CAL_STEP_NARROW, E2_BEAN_MIN_N, E2_GRIND_MIN_N,
       e2MeasuredTds, e2EyModel, e2EyFor, e2PendingTrial, setE2PendingTrial, e2TrialFromTip, e2Meetlat,
-      E2_TDS_RANGE, E2_EY_MIN_N, E2_TRIAL_KEY, E2_TIP_LABELS
+      E2_TDS_RANGE, E2_EY_MIN_N, E2_TRIAL_KEY, E2_TIP_LABELS,
+      e2TrialVerdict, e2ApplyTrialVerdicts, e2TrialOutcomes, E2_TIME_BEAN_K, E2_DRAIN_SIGNAL
     };`,
     sandbox,
     { filename: 'test-exports-shim.js' }
