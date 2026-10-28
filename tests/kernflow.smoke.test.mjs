@@ -855,6 +855,38 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     await page.close();
   });
 
+  // e2-2026.3: een gemeten TDS (refractometer) onder "Meer meten" komt in het record; een
+  // onmogelijke waarde (tikfout) niet.
+  test('e2-2026.3: een gemeten TDS wordt opgeslagen, een tikfout niet', async () => {
+    for (const [typed, expected] of [['1.38', 1.38], ['13.8', null]]){
+      const page = await newTrackedPage();
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await navTo(page, 'method');
+      await assertBecomesActive(page, '#screen-method');
+      await page.click('[data-method="v60"]');
+      await page.click('#roast-grid [data-roast] >> nth=0');
+      await page.click('#profile-grid [data-profile="klassiek"]');
+      await assertBecomesActive(page, '#screen-prep');
+      await startBrewing(page);
+      await assertBecomesActive(page, '#screen-brew');
+      await page.clock.fastForward(FAST_FORWARD);
+      await page.waitForFunction(() => getComputedStyle(document.getElementById('brewlog-open-btn')).display !== 'none');
+      await page.click('#brewlog-open-btn');
+      await assertBecomesActive(page, '#screen-brewlog');
+      await page.click('#brewlog-more > summary');
+      assert.equal(await page.locator('#brewlog-tds').inputValue(), '');
+      await page.fill('#brewlog-tds', typed);
+      await saveLog(page);
+      await page.waitForFunction(() => document.getElementById('brewlog-saved-msg').hidden === false);
+      const tds = await page.evaluate(() => {
+        const recs = JSON.parse(localStorage.getItem('brewconsole_brews') || '[]');
+        return recs[recs.length - 1].actual.tdsPct;
+      });
+      assert.equal(tds, expected, `ingetikt ${typed}`);
+      await page.close();
+    }
+  });
+
   // NIEUW (Implementatieplan Zetadvies v3.0, §5 — Fase 5 testplan, "Aparte migratietest en
   // back-up-rondgangtest verplicht", risico: raakt persistence + import/export tegelijk).
   // Deel 1: een schemaVersion-1-logging (van vóór Fase 5, dus zonder de nieuwe velden) mag

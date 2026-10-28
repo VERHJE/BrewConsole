@@ -995,3 +995,27 @@ Jelle: "bouw de volgende stappen van Engine 2". Details staan in `docs/engine2.m
   - `tests/engine2.test.mjs`: 18 nieuwe tests, 50 in totaal;
   - `tests/engine2.smoke.test.mjs`: 2 nieuwe browsertests, 6 in totaal.
 - **Jouw recept:** blijft zonder paren gelijk (1:18,9 bij 350 ml).
+
+## Engine 2 · e2-2026.3: gemeten TDS, tips als proef, meetlat (keuze Jelle, okt 2026)
+
+Jelle: "bouw de volgende stappen van Engine 2". Details staan in `docs/engine2.md` §8.
+
+- **Gemeten TDS:**
+  - een optioneel refractometerveld onder "Meer meten" (0,4–2,5 %, anders niet opgeslagen);
+  - een gemeten kop telt met de gemeten TDS;
+  - vanaf 3 metingen per brewer rekent Engine 2 met je eigen extractie, en leert hij wat één klik met de extractie doet.
+- **Karakter:** de scherp-zuur-tip rekent met je gemeten extractie per klik, als die bekend is. Het blijft een tip.
+- **Tips als proef:**
+  - "Probeer bij je volgende kop" zet één proef klaar (sterkte, en bij scherp zuur ook de maling);
+  - het receptscherm stelt hem één keer in, met "Toch niet";
+  - Start neemt hem mee in het record (`plan.inputs.e2.trial`);
+  - de uitkomst is "Vergeleken met je vorige kop".
+- **Meetlat** in Statistieken: wijzigingen Engine 2 tegen de oude engine, goede koppen, zekerheid, proefuitkomsten, gemeten extractie.
+- **Home:** een Engine 2-regel op "Je volgende kop".
+- **Niet gedaan:** automatisch leren van proefuitkomsten. Daar zijn eerst uitkomsten voor nodig.
+- **Toetsing:**
+  - `tests/engine2.test.mjs`: 11 nieuwe tests, 61 in totaal;
+  - `tests/engine2.smoke.test.mjs`: 3 nieuwe browsertests, 9 in totaal;
+  - `tests/kernflow.smoke.test.mjs`: 1 nieuwe (TDS opslaan);
+  - volledige suite 1075/1075. De rekenkern-hash is ongewijzigd.
+- **Jouw data:** geen TDS-metingen, dus hetzelfde recept (15,8 g op 300 ml, 18,5 g op 350 ml). De meetlat over je laatste 9 koppen: Engine 2 veranderde 2×, de oude engine stelde 6× een stap voor; sterkte goed bij 4 van de 9.

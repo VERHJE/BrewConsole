@@ -181,3 +181,91 @@ describe('Engine 2 in de app · e2-2026.2', () => {
     await page.close();
   });
 });
+
+describe('Engine 2 in de app · e2-2026.3', () => {
+  let browser;
+  before(async () => { browser = await chromium.launch({ executablePath, args: ['--no-sandbox'] }); });
+  after(async () => { if (browser) await browser.close(); });
+
+  async function openPrep(seed){
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    const errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await page.addInitScript((s) => {
+      if (sessionStorage.getItem('e2seed')) return;
+      sessionStorage.setItem('e2seed', '1');
+      localStorage.setItem('brewconsole_brews', JSON.stringify(s));
+    }, seed);
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.evaluate(() => document.querySelector('.navbar [data-nav="method"]').click());
+    await page.click('[data-method="v60"]');
+    await page.click('#roast-grid [data-roast="medium"]');
+    await page.click('#profile-styles > summary');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await page.waitForSelector('#screen-prep.active');
+    return { page, errors };
+  }
+  const seedBitter = () => [1, 2, 3].map(i => cup(i, 16.3, 300, 'just_right')).concat([cup(4, 16.3, 300, 'just_right', { finish: ['bitter'] })]);
+
+  test('tip als proef: klaarzetten, op het receptscherm ingesteld, en bij Start in het record', async () => {
+    const { page, errors } = await openPrep(seedBitter());
+    const before = await page.evaluate(() => state.recipe.dose);
+    await page.evaluate(() => renderRecommendationPanel(getBrewRecord('e2s_4')));
+    await page.evaluate(() => document.querySelector('[data-e2-tip="bitter"]').click());
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_e2_trial')));
+    assert.equal(stored.key, 'bitter');
+    assert.equal(stored.fromBrewId, 'e2s_4');
+    assert.match(await page.locator('#reco-card').innerText(), /Staat klaar voor je volgende kop/);
+
+    await page.evaluate(() => renderPrep());
+    const on = await page.evaluate(() => ({ dose: state.recipe.dose, step: state.strengthAdjust }));
+    assert.equal(on.step, -0.5);
+    assert.ok(on.dose < before, `${on.dose} g tegen ${before} g`);
+    assert.equal(await page.locator('#e2-trial-note').isVisible(), true);
+    assert.match(await page.locator('#e2-trial-note').textContent(), /Proef · Bitter → lichter/);
+    assert.match(await page.evaluate(() => e2NextCupLine('v60')), /Engine 2 · jouw sterkte 1:\d+,\d · .*proef klaar: Bitter → lichter/);
+
+    const rec = await page.evaluate(() => beginBrewRecord());
+    assert.equal(rec.plan.inputs.e2.trial.key, 'bitter');
+    assert.equal(rec.plan.strengthStep, -0.5);
+    assert.equal(await page.evaluate(() => localStorage.getItem('brewconsole_e2_trial')), null, 'één kop, één proef');
+    assert.deepEqual(errors, []);
+    await page.close();
+  });
+
+  test('"Toch niet" zet de proef en de sterkte terug', async () => {
+    const { page, errors } = await openPrep(seedBitter());
+    await page.evaluate(() => renderRecommendationPanel(getBrewRecord('e2s_4')));
+    await page.evaluate(() => document.querySelector('[data-e2-tip="bitter"]').click());
+    await page.evaluate(() => renderPrep());
+    assert.equal(await page.evaluate(() => state.strengthAdjust), -0.5);
+    await page.click('#e2-trial-cancel');
+    assert.equal(await page.evaluate(() => state.strengthAdjust), 0);
+    assert.equal(await page.locator('#e2-trial-note').isHidden(), true);
+    assert.equal(await page.evaluate(() => localStorage.getItem('brewconsole_e2_trial')), null);
+    assert.deepEqual(errors, []);
+    await page.close();
+  });
+
+  test('gemeten TDS: in het advies, en de meetlat in Statistieken', async () => {
+    const seed = seedBitter();
+    seed.forEach((r, i) => { r.actual.tdsPct = 1.30 + i * 0.01; r.actual.cupWeightG = 262; });
+    seed[3].plan.inputs = { e2: { trial: { key: 'bitter' } } };
+    seed[3].tasting.vsLast = 'better';
+    const { page, errors } = await openPrep(seed);
+    const plan = await page.evaluate(() => ({ ey: state.e2Plan.ey, n: state.e2Plan.eyModel.n }));
+    assert.equal(plan.n, 4);
+    assert.ok(Math.abs(plan.ey - 0.21) < 0.01, String(plan.ey));
+    await page.evaluate(() => renderRecommendationPanel(getBrewRecord('e2s_4')));
+    assert.match(await page.locator('#reco-card').innerText(), /Gemeten: TDS 1,33 %, extractie \d+,\d %/);
+    await page.evaluate(() => renderInsightsScreen('history-stats-body'));
+    const meet = await page.locator('#e2-meetlat').textContent();
+    assert.match(meet, /Engine 2 · meetlat/);
+    assert.match(meet, /Laatste 4 koppen/);
+    assert.match(meet, /Sterkte goed: 4 van de 4/);
+    assert.match(meet, /Bitter → lichter: 1× geprobeerd · 1 beter/);
+    assert.match(meet, /V60: \d+,\d % gemiddeld uit 4 metingen · Engine 2 rekent hiermee/);
+    assert.deepEqual(errors, []);
+    await page.close();
+  });
+});

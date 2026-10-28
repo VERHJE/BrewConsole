@@ -1,4 +1,4 @@
-// Engine 2 (e2-2026.1): rekenkern, persoonlijke sterkte, beslisregel, tijdmodel en hendeltabel.
+// Engine 2 (e2-2026.1–.3): rekenkern, persoonlijke sterkte, beslisregel, tijdmodel, hendeltabel, metingen.
 // Alleen verzonnen voorbeelddata; zie docs/engine2.md voor de onderbouwing van de constanten.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
@@ -352,5 +352,106 @@ describe('Engine 2 · e2-2026.2: maling en doorloop', () => {
     const plan = api.engine2PlanFor(base, 'v60', store, {});
     assert.ok(plan.time.grind.perClick < 0);
     assert.ok(plan.grindToSchedule && plan.grindToSchedule.clicks > 0, JSON.stringify(plan.grindToSchedule));
+  });
+});
+
+describe('Engine 2 · e2-2026.3: gemeten TDS en extractie', () => {
+  const measured = (o) => {
+    const r = cup({ dose: o.dose || 17, water: o.water || 300, strength: o.strength || 'just_right', method: o.method || 'v60' });
+    r.actual.tdsPct = o.tds;
+    if (o.cup != null) r.actual.cupWeightG = o.cup;
+    if (o.click != null) r.actual.grindClick = o.click;
+    return r;
+  };
+  test('alleen een plausibele meting telt', () => {
+    assert.equal(api.e2MeasuredTds(measured({ tds: 1.42 })), 1.42);
+    assert.equal(api.e2MeasuredTds(measured({ tds: 0.2 })), null);
+    assert.equal(api.e2MeasuredTds(measured({ tds: 14 })), null, 'tikfout (Brix of zonder komma)');
+    assert.equal(api.e2MeasuredTds(cup({ dose: 17, strength: 'just_right' })), null);
+  });
+  test('een gemeten kop telt met de gemeten TDS, niet met de berekende', () => {
+    const [o] = api.e2Observations([measured({ tds: 1.5 })], 2.1);
+    assert.equal(o.tds, 1.5);
+    assert.equal(o.measured, true);
+    const [p] = api.e2Observations([cup({ dose: 17, strength: 'just_right' })], 2.1);
+    assert.equal(p.measured, false);
+    assert.ok(Math.abs(p.tds - api.e2Tds(17, 300)) < 1e-12);
+  });
+  test('extractie met kopgewicht is exact: TDS · kop / dosis', () => {
+    const store = [1, 2, 3].map(() => measured({ tds: 1.4, cup: 255, dose: 17 }));
+    const m = api.e2EyModel(store, 'v60', 2.1);
+    assert.equal(m.n, 3);
+    assert.ok(Math.abs(m.eyMean - 0.014 * 255 / 17) < 1e-9);
+    assert.ok(Math.abs(api.e2EyFor(store, 'v60', 2.1) - 0.21) < 1e-9);
+  });
+  test('onder 3 metingen rekent Engine 2 met de nominale 20 %', () => {
+    const store = [1, 2].map(() => measured({ tds: 1.4, cup: 255 }));
+    assert.equal(api.e2EyFor(store, 'v60', 2.1), api.E2_EY_NOMINAL);
+    assert.equal(api.e2EyModel(store, 'chemex', 2.1).n, 0, 'per brewer');
+  });
+  test('wat één klik met de extractie doet, vanaf twee standen met elk twee metingen', () => {
+    const store = [
+      measured({ tds: 1.47, cup: 255, click: 14 }), measured({ tds: 1.48, cup: 255, click: 14 }),
+      measured({ tds: 1.33, cup: 255, click: 16 }), measured({ tds: 1.34, cup: 255, click: 16 })
+    ];
+    const m = api.e2EyModel(store, 'v60', 2.1);
+    assert.ok(m.perClick != null && m.perClick < 0, JSON.stringify(m));
+    assert.ok(Math.abs(m.perClick + 0.0105) < 0.002, String(m.perClick));
+  });
+  test('een andere extractie verschuift de TDS, niet de dosis die je sterkte geeft', () => {
+    const store = [cup({ dose: 17, strength: 'too_strong' }), cup({ dose: 17, strength: 'too_strong' }), cup({ dose: 16.3, strength: 'just_right' }), cup({ dose: 16.3, strength: 'just_right' })];
+    const r20 = api.e2Decide(api.e2Observations(store, 2.1, 0.20), 0);
+    const r22 = api.e2Decide(api.e2Observations(store, 2.1, 0.22), 0);
+    const a = api.e2RatioForTds(Math.exp(r20.targetLn), 2.1, 0.20);
+    const b = api.e2RatioForTds(Math.exp(r22.targetLn), 2.1, 0.22);
+    assert.ok(Math.abs(a - b) < 0.1, `1:${a.toFixed(2)} tegen 1:${b.toFixed(2)}`);
+  });
+});
+
+describe('Engine 2 · e2-2026.3: tips als proef en de meetlat', () => {
+  test('scherp zuur: met een gemeten extractie per klik wordt de dosiscorrectie groter of kleiner', () => {
+    const t = { strength: 'just_right', acidity: 'sharp', finish: [] };
+    const grams = (tips) => Number((tips.find(x => x.key === 'sharp').text.match(/(\d+,\d) g minder/) || [0, '0'])[1].replace(',', '.'));
+    const base = api.e2TipsFor(t, { doseG: 17, waterG: 300, rAbs: 2.1 });
+    const strong = api.e2TipsFor(t, { doseG: 17, waterG: 300, rAbs: 2.1, ey: 0.20, eyPerClick: -0.02 });
+    assert.ok(grams(strong) > grams(base), `${grams(strong)} tegen ${grams(base)}`);
+    assert.match(strong.find(x => x.key === 'sharp').text, /Volgens je eigen metingen/);
+    assert.deepEqual(JSON.parse(JSON.stringify(strong.find(x => x.key === 'sharp').trial)), { strength: -0.5, grind: -1 });
+  });
+  test('elke proeftip heeft een klaarzetbare proef; controles niet', () => {
+    const tips = api.e2TipsFor({ strength: 'just_right', acidity: 'sharp', finish: ['bitter', 'dry'], missed: 'body' }, { doseG: 17, waterG: 300 });
+    tips.forEach(x => assert.equal(!!x.trial, x.kind === 'proef', x.key));
+  });
+  test('een proef uit een tip onthoudt de maalstand van de kop', () => {
+    const r = cup({ dose: 17, strength: 'just_right' });
+    r.actual.grindClick = 15;
+    const trial = api.e2TrialFromTip(r, { key: 'sharp', trial: { strength: -0.5, grind: -1 } }, 123);
+    assert.equal(trial.id, 'e2t_123');
+    assert.equal(trial.fromGrindClick, 15);
+    assert.equal(trial.grind, -1);
+    assert.equal(trial.method, 'v60');
+    assert.equal(api.e2TrialFromTip(r, { key: 'x' }, 1), null, 'zonder proef geen proef');
+  });
+  test('klaargezette proef: opslaan en weer weghalen', () => {
+    api.setE2PendingTrial({ id: 'e2t_1', key: 'bitter', method: 'v60' });
+    assert.equal(api.e2PendingTrial().key, 'bitter');
+    api.setE2PendingTrial(null);
+    assert.equal(api.e2PendingTrial(), null);
+  });
+  test('meetlat telt wijzigingen, goede koppen en proefuitkomsten', () => {
+    const store = [1, 2, 3, 4].map(() => cup({ dose: 18.8, strength: 'too_strong' }))
+      .concat([1, 2, 3].map(() => cup({ dose: 16.3, strength: 'just_right' })));
+    store[1].recommendation = { type: 'ADJUST' };
+    store[5].plan.inputs = { e2: { trial: { key: 'bitter' } } };
+    store[5].tasting.vsLast = 'better';
+    store[6].plan.inputs = { e2: { trial: { key: 'bitter' } } };
+    store[6].tasting.vsLast = 'same';
+    const m = api.e2Meetlat(store, []);
+    assert.equal(m.n, 7);
+    assert.equal(m.good, 3);
+    assert.equal(m.oldChanges, 1);
+    assert.ok(m.e2Changes >= 1 && m.e2Changes <= 4, String(m.e2Changes));
+    assert.deepEqual(JSON.parse(JSON.stringify(m.outcomes.bitter)), { tested: 2, better: 1, same: 1, worse: 0 });
+    assert.deepEqual(JSON.parse(JSON.stringify(m.ey)), {});
   });
 });

@@ -142,7 +142,9 @@ export function loadApp(){
       e2Observations, e2Decide, e2TimeModel, engine2PlanFor, e2InputsOf, e2TipsFor, e2DecisionText, effectivePendingAdjust,
       E2_R_ABS, E2_EY_NOMINAL, E2_NOISE_SD, E2_SLOPES, E2_HALF_STEP, E2_THRESHOLD_SEARCH, E2_THRESHOLD_REST, E2_GRID, E2_STRENGTH_ORDINAL,
       e2PairObservations, e2AllObservations, e2PairProb, e2Utility, e2BeanOffset, e2CalibrationFor, e2GrindEffect,
-      E2_PAIR_W, E2_PAIR_NONE, E2_CAL_SD, E2_CAL_STEP_WIDE, E2_CAL_STEP_NARROW, E2_BEAN_MIN_N, E2_GRIND_MIN_N
+      E2_PAIR_W, E2_PAIR_NONE, E2_CAL_SD, E2_CAL_STEP_WIDE, E2_CAL_STEP_NARROW, E2_BEAN_MIN_N, E2_GRIND_MIN_N,
+      e2MeasuredTds, e2EyModel, e2EyFor, e2PendingTrial, setE2PendingTrial, e2TrialFromTip, e2Meetlat,
+      E2_TDS_RANGE, E2_EY_MIN_N, E2_TRIAL_KEY, E2_TIP_LABELS
     };`,
     sandbox,
     { filename: 'test-exports-shim.js' }
