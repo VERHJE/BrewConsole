@@ -931,3 +931,44 @@ In Statistiek staat een nieuw blok, alleen-lezen:
   - `MODEL_POLICY` naar 4.0 en `diag-2026.4`;
   - de UI-tekst over wat een profiel stuurt;
   - de gouden recepten.
+
+## Engine 2 (e2-2026.1): persoonlijke sterkte, tijdmodel en hendeltabel (keuze Jelle, okt 2026)
+
+**Waarom:** het onderzoek in `onderzoek_audit_engine_recepten.md` en het ontwerp (Engine 2) laten vier dingen zien.
+1. Sterkte (TDS) is de hoofdas van smaak (R01, R03, UC Davis-dataset).
+2. Een los kop-oordeel is een zwak signaal. Een stap op elk antwoord zet het recept bijna elke tweede kop om.
+3. De voorkeur is persoonlijk.
+4. Je eigen doorloop wijkt structureel af van het schema.
+
+Jelle koos ervoor Engine 2 te bouwen en te gebruiken: "Engine 2 is belangrijker dan de bestaande app, deze kan aangepast worden".
+
+**Wat het doet** (volledig: `docs/engine2.md`):
+- **Sterkte:** Engine 2 zet je sterkte uit al je geproefde koppen samen, met een rooster-posterior. Hoe scherp je proeft, leert hij zelf.
+- **Bijsturen:** de sterkte verandert pas bij voldoende bewijs: drempel 0,70 zolang je zoekt, 0,85 in rust.
+- **Verwacht einde:** dat volgt je eigen Bed droog, zodra er 3 koppen zijn.
+- **Advies na het proeven:** dat komt uit een hendeltabel uit de data:
+  - bitter en zoetheid gemist → eerst lichter, niet anders malen;
+  - scherp zuur bij een goede sterkte → fijner én iets minder koffie;
+  - droog → controle.
+
+**Aansluiting op de app:**
+- **Standaard aan.** Uit te zetten in Instellingen → Rekenkern; dan werkt alles als voorheen.
+- **Bestaande engine:** levert de techniek. Zijn recept zonder Engine 2-argument is ongewijzigd, dus de gouden recepten blijven gelijk en de rekenkern-hash ook.
+- **Onder Engine 2:**
+  - de sterkte per zak ("Zet opnieuw") en klaargezette dosisstappen van de oude engine gelden niet; maalstappen wel;
+  - het Engine 2-paneel vervangt het oude advies, dat ter vergelijking zichtbaar blijft.
+- **Record:** elke kop bewaart `plan.inputs.e2`, zodat het recept na herladen exact terug te rekenen is.
+
+**Getoetst:**
+- `tests/engine2.test.mjs`:
+  - de massabalans en de omgekeerde formule;
+  - de antwoordkansen;
+  - de beslisregel: drempel, rust, eerste koppen, half meetellen, deterministisch;
+  - het tijdmodel;
+  - het recept: dosis, grens, eindtijd, handmatige afwijking;
+  - de hendeltabel;
+  - de schakelaar.
+- Een proefrit op de eigen back-up (alleen lokaal, niet in de repo) gaf:
+  - doel 1:18,9 (band 1:17,8–1:21,7);
+  - 2 wijzigingen in 9 koppen, tegen 6 bij de oude engine;
+  - verwacht einde 4:20 in plaats van 3:30.

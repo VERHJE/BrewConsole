@@ -137,7 +137,10 @@ export function loadApp(){
       PROFILE_RATIO, profileRatioFor, personalDoseTimeExponent, PERSONAL_EXPONENT_MIN_N, drainTimeSummary, drainTapSummary, adviceByLever, medianOf,
       RAO_TOTAL_SEC, USE_MEASURED_RETENTION_KEY,
       bestCupOf, adviceChainOf, cupSetupOf, BEST_CUP_MIN_LIKING,
-      profileLabel, profileDirectionLabel, keepUnitsTogether, prepNoteOrder
+      profileLabel, profileDirectionLabel, keepUnitsTogether, prepNoteOrder,
+      ENGINE2_VERSION, ENGINE2_KEY, engine2On, setEngine2, e2Tds, e2RatioForTds, e2RetentionFor, e2Phi, e2AnswerProb,
+      e2Observations, e2Decide, e2TimeModel, engine2PlanFor, e2InputsOf, e2TipsFor, e2DecisionText, effectivePendingAdjust,
+      E2_R_ABS, E2_EY_NOMINAL, E2_NOISE_SD, E2_SLOPES, E2_HALF_STEP, E2_THRESHOLD_SEARCH, E2_THRESHOLD_REST, E2_GRID, E2_STRENGTH_ORDINAL
     };`,
     sandbox,
     { filename: 'test-exports-shim.js' }

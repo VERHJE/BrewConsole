@@ -3103,6 +3103,8 @@
       <div class="stats-grid" id="stats-grid"></div>
       <p class="technique-line" id="technique-line"></p>
       <p class="technique-tasting" id="technique-tasting"></p>
+      <!-- Engine 2: één regel waar je sterkte vandaan komt; de uitleg staat achter "Waarom dit recept?". -->
+      <p class="technique-tasting e2-line" id="e2-line" hidden></p>
       <!-- VA-04: hoogstens één melding, de belangrijkste (arrangePrepNotes()); de rest staat achter
            "Waarom dit recept?". -->
       <section class="prep-notes" id="prep-notes" aria-labelledby="prep-notes-title" hidden>
@@ -3119,6 +3121,7 @@
           <span class="flavor-category-arrow">+</span>
         </summary>
         <div class="flavor-category-body">
+          <div class="prep-next-adjust e2-card" id="e2-card" hidden></div>
           <div id="evidence-badge-row" class="badge-row"></div>
           <p class="style-note" id="style-note"></p>
           <div class="prep-notes-more" id="prep-notes-more" hidden>
@@ -3526,6 +3529,14 @@
           <button type="button" class="chip" role="radio" data-theme-pref="dark">Donker</button>
         </div>
         <p class="empty-hint m-8-0-0">Systeem volgt de instelling van je toestel. Het timerscherm blijft in beide thema's donker: het staat op een donkere foto.</p>
+      </div>
+
+      <!-- Engine 2 (e2-2026.1): standaard aan; uit = de oude engine met sterkte en stappen per zak. -->
+      <div class="bean-detail-section" id="engine2-section">
+        <h2 class="bean-detail-section-label">Rekenkern</h2>
+        <button type="button" class="counter-toggle settings-switch" id="engine2-toggle" role="switch" aria-checked="true"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span class="switch-label">Engine 2</span></button>
+        <p class="empty-hint m-8-0-0">Engine 2 leert je sterkte uit al je geproefde koppen samen, over al je zakken heen, en past hem alleen aan als je antwoorden er duidelijk om vragen. Het verwachte einde volgt je eigen doorloop. Staat hij uit, dan werkt de oude engine, met een sterkte en stappen per zak.</p>
+        <p class="freshness-readout" id="engine2-status"></p>
       </div>
 
       <!-- K8: gesproken aanwijzingen tijdens het zetten (proef, standaard uit). -->
@@ -5995,7 +6006,7 @@ function profileRatioFor(profileKey, methodKey){
   return r;
 }
 
-function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, experimentalFlag, roastDays, altitudeMasl, bypassEnabled, flavorFermentEvidence, waterHardnessMgLArg, strengthAdjust, bypassPctArg){
+function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, experimentalFlag, roastDays, altitudeMasl, bypassEnabled, flavorFermentEvidence, waterHardnessMgLArg, strengthAdjust, bypassPctArg, e2Arg){
   const B = window.BrewEngineBundle;
 
   // Veiligheidsnet, zelfde geest als de oude terugval-op-'klassiek': een onverwachte
@@ -6108,16 +6119,29 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
       retentionApplied = { value: m.gemiddelde, n: m.n, assumed: B.LIQUID_RETAINED_RATIO };
     }
   }
+  // Engine 2: jouw sterkte vervangt de dosis van het basisrecept (binnen de toestelgrens); het water
+  // blijft het gevraagde volume. Zie engine2PlanFor().
+  let e2Applied = null;
+  if (e2Arg && typeof e2Arg.doseG === 'number' && e2Arg.doseG > 0 && baseDose > 0 && waterMl > 0){
+    const ceiling = (brewer && brewer.doseCeiling && brewer.doseCeiling.state === 'RESOLVED') ? brewer.doseCeiling.value : null;
+    const d = ceiling ? clamp(e2Arg.doseG, ceiling.min, ceiling.max) : e2Arg.doseG;
+    baseDose = Math.round(d * 10) / 10;
+    const clampedE2 = !!(ceiling && Math.abs(d - e2Arg.doseG) > 0.05);
+    doseEdge = clampedE2 ? { side: e2Arg.doseG < ceiling.min ? 'min' : 'max', dose: baseDose, ratio: waterMl / baseDose, targetRatio: waterMl / e2Arg.doseG } : null;
+    retentionApplied = null;
+    e2Applied = { version: e2Arg.version || ENGINE2_VERSION, doseG: baseDose, wantedDoseG: e2Arg.doseG, clamped: clampedE2,
+      targetTds: e2Arg.targetTds != null ? e2Arg.targetTds : null, totalTimeSec: null, baseTotalSec: null };
+  }
   // D2-1: bij een dosis op de grens is het water het gevraagde volume (de engine rekende het
   // water bij het venstermidden uit); de ratio hieronder volgt daaruit.
-  const water = (doseEdge || profileRatio || retentionApplied) ? waterMl : (core.water.state === 'RESOLVED' ? core.water.value : waterMl);
+  const water = (doseEdge || profileRatio || retentionApplied || e2Applied) ? waterMl : (core.water.state === 'RESOLVED' ? core.water.value : waterMl);
 
   // Sterkte-hendel: pure, expliciet-handmatige gebruikersvoorkeur, geen evidence-claim
   // (zelfde geest als voorheen) — verschuift alleen de dosis, water blijft gelijk.
   const strengthStep = clamp(Math.round((strengthAdjust || 0) * 2) / 2, -1, 1);
   let dose = baseDose;
   let ratioText = doseEdge ? nlRatio(`1:${fmt(doseEdge.ratio, 1)}`)
-    : (profileRatio || retentionApplied) ? nlRatio(`1:${fmt(water / baseDose, 1)}`)
+    : (profileRatio || retentionApplied || e2Applied) ? nlRatio(`1:${fmt(water / baseDose, 1)}`)
     : (core.ratio.state === 'RESOLVED' ? nlRatio(core.ratio.value) : '—');
   let strengthNote = '';
   // De sterktehendel werkt ná de constraint-check van generateCandidates(): deze klem houdt
@@ -6217,6 +6241,18 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
       doseTimeScale = { factor, refDoseG: KASUYA_REFERENCE_DOSE_G, baseSec: totalTime, exponent, personalN: personal ? personal.n : 0 };
       totalTime = scaled;
       steps[steps.length - 1].t = totalTime;
+    }
+  }
+  // Engine 2: het verwachte einde volgens je eigen doorloop (e2TimeModel()), alleen zonder bypass en
+  // alleen als het na de laatste giet valt. De giet-momenten blijven staan.
+  if (e2Applied){
+    e2Applied.baseTotalSec = totalTime;
+    const lastPour = steps.filter(s => s.add > 0).reduce((m, s) => Math.max(m, s.t), 0);
+    const tail = steps[steps.length - 1];
+    if (typeof e2Arg.totalTimeSec === 'number' && !bypassActuallyApplied && tail && tail.add === 0 && e2Arg.totalTimeSec >= lastPour + 15){
+      totalTime = e2Arg.totalTimeSec;
+      tail.t = totalTime;
+      e2Applied.totalTimeSec = totalTime;
     }
   }
   // Gieten op doorlopen (keuze Jelle): bij Kasuya wacht de app vanaf de derde giet op "Erdoor" —
@@ -6347,6 +6383,8 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     doseTimeScale,
     // Stapindexen die bij "gieten op doorlopen" op een Erdoor-tik wachten (alleen Kasuya).
     drainGates,
+    // Engine 2: null, of { version, doseG, wantedDoseG, clamped, targetTds, totalTimeSec, baseTotalSec }.
+    engine2: e2Applied,
     // De Model Policy-versie van dit recept; gaat mee op elke logging zodat een latere policy oude
     // loggings niet herinterpreteert.
     modelPolicyVersion: MODEL_POLICY.version
@@ -6891,11 +6929,11 @@ function brewAgain(id, override){
   // proefkaart verandert daarna precies één ding (applyPendingAdjustToState()).
   const stand = override ? null : beanStandFor(bean, state.method);
   if (override){
-    state.strengthAdjust = typeof override.strengthStep === 'number' ? override.strengthStep : 0;
+    state.strengthAdjust = (!engine2On() && typeof override.strengthStep === 'number') ? override.strengthStep : 0;
     state.grindStand = typeof override.grindClick === 'number' ? override.grindClick : null;
     state.standApplied = null;
   } else if (stand){
-    state.strengthAdjust = typeof stand.strengthStep === 'number' ? stand.strengthStep : 0;
+    state.strengthAdjust = (!engine2On() && typeof stand.strengthStep === 'number') ? stand.strengthStep : 0;
     state.grindStand = typeof stand.grindClick === 'number' ? stand.grindClick : null;
     state.standApplied = stand;
   } else {
@@ -8556,7 +8594,7 @@ function renderHomeInsights(){
    gezet = geen kaart (leeg-eerst, niets verzonnen). */
 function nextCupTarget(){
   const withAdjust = beanLibrary
-    .filter(b => b.pendingAdjust && b.lastBrew && b.pendingAdjust.method === b.lastBrew.method)
+    .filter(b => effectivePendingAdjust(b) && b.lastBrew && b.pendingAdjust.method === b.lastBrew.method)
     .sort((a, b) => (b.pendingAdjust.createdAt || 0) - (a.pendingAdjust.createdAt || 0))[0];
   if (withAdjust) return { bean: withAdjust, adjust: withAdjust.pendingAdjust };
   const recent = brewLog.slice().sort((a, b) => b.timestamp - a.timestamp)
@@ -9943,7 +9981,306 @@ function recipeInputsFromRecord(rec){
 }
 function recomputeRecipeForRecord(rec){
   const i = recipeInputsFromRecord(rec);
-  return computeRecipe(i.method, i.roast, i.profile, i.waterMl, i.process, i.experimental, i.roastDays, i.altitude, i.bypass, i.fermentEvidence, i.waterHardnessMgL, i.strengthAdjust, i.bypassPct);
+  return computeRecipe(i.method, i.roast, i.profile, i.waterMl, i.process, i.experimental, i.roastDays, i.altitude, i.bypass, i.fermentEvidence, i.waterHardnessMgL, i.strengthAdjust, i.bypassPct, i.e2 || null);
+}
+
+/* ============================================================
+   ENGINE 2 (e2-2026.1) — zie docs/engine2.md.
+   Engine 2 zet je sterkte (de dosis) uit al je geproefde koppen samen, over alle zakken en
+   brewers heen, en verandert die alleen bij voldoende bewijs. Daarnaast kalibreert hij het
+   verwachte einde op je eigen doorloop en geeft hij na het proeven advies volgens een
+   hendeltabel die uit de UC Davis-data is afgeleid. De techniek (gietschema, temperatuur,
+   maling) komt uit de bestaande engine; die blijft ongewijzigd en rekent mee ter vergelijking.
+   Alles hieronder is puur: geen DOM, alleen opslag via engine2On()/setEngine2().
+   ============================================================ */
+const ENGINE2_VERSION = 'e2-2026.1';
+const ENGINE2_KEY = 'brewconsole_engine2';
+// Massabalans (Guinard e.a. 2023, J. Food Sci.): EY = TDS/(1−TDS) · (W/D − R_abs), R_abs ≈ 2,1 bij filter.
+const E2_R_ABS = 2.1;
+// Nominale extractie: Engine 2 rekent sterkte heen (kop → TDS) en terug (doel → dosis) met dezelfde
+// waarde, dus die valt weg; alleen de getoonde TDS-procenten hangen ervan af.
+const E2_EY_NOMINAL = 0.20;
+// Ruis van het sterkte-antwoord binnen een persoon (UC Davis-dataset, 3.186 proeverijen) en de
+// hellingen waarover Engine 2 middelt: hoe scherp jij proeft, leert hij uit je eigen antwoorden.
+const E2_NOISE_SD = 0.70;
+const E2_SLOPES = [1.61, 3, 5, 8, 12];
+const E2_PRIOR_SD = 0.25;
+const E2_HALF_STEP = Math.log(1.04);
+// Beslisdrempels (simulatie met het ruismodel): 0,70 zolang je zoekt, 0,85 zodra je goed zit.
+const E2_THRESHOLD_SEARCH = 0.70;
+const E2_THRESHOLD_REST = 0.85;
+// Rust: je laatste drie koppen op het doel waren "goed" en de onzekerheid is kleiner dan ±12 %.
+const E2_REST_SD = 0.12;
+const E2_MAX_STEPS = 2;
+// Laat geproefd of met bypass gezet: telt half mee (smaak en extractie zijn dan minder zeker).
+const E2_SOFT_WEIGHT = 0.5;
+// Vergeten: een kop van 30 koppen geleden telt half.
+const E2_FORGET = Math.pow(0.5, 1 / 30);
+const E2_TIME_MIN_N = 3;
+const E2_TIME_WINDOW = 10;
+const E2_STRENGTH_ORDINAL = { much_too_weak: -2, too_weak: -1, just_right: 0, too_strong: 1, much_too_strong: 2 };
+const E2_GRID = (function(){
+  const g = [];
+  for (let x = Math.log(0.80); x <= Math.log(1.90) + 1e-9; x += 0.005) g.push(x);
+  return g;
+})();
+
+function engine2On(){
+  try { return localStorage.getItem(ENGINE2_KEY) !== '0'; } catch(e){ return true; }
+}
+function setEngine2(on){
+  try { localStorage.setItem(ENGINE2_KEY, on ? '1' : '0'); } catch(e){ /* alleen deze sessie */ }
+}
+
+function e2Tds(doseG, waterG, rAbs, ey){
+  const e = ey == null ? E2_EY_NOMINAL : ey;
+  const r = rAbs == null ? E2_R_ABS : rAbs;
+  if (!(doseG > 0) || !(waterG > 0) || waterG / doseG <= r) return null;
+  const x = e / (waterG / doseG - r);
+  return 100 * x / (1 + x);
+}
+function e2RatioForTds(tdsPct, rAbs, ey){
+  const e = ey == null ? E2_EY_NOMINAL : ey;
+  const r = rAbs == null ? E2_R_ABS : rAbs;
+  const t = tdsPct / 100;
+  return e * (1 - t) / t + r;
+}
+// Je gemeten vasthouden (V10, n ≥ 5) vervangt de aanname. measuredRetention() meet (water − kop)/dosis;
+// de kop bevat ook de opgeloste koffie, dus het vastgehouden water is dat plus de extractie.
+function e2RetentionFor(method){
+  const m = measuredRetention(method);
+  if (m && m.gemiddelde != null) return { value: Math.round((m.gemiddelde + E2_EY_NOMINAL) * 100) / 100, n: m.n, measured: true };
+  return { value: E2_R_ABS, n: 0, measured: false };
+}
+
+// Normale verdelingsfunctie (Abramowitz & Stegun 7.1.26, fout < 1,5e-7).
+function e2Phi(z){
+  const s = z < 0 ? -1 : 1;
+  const x = Math.abs(z) / Math.SQRT2;
+  const t = 1 / (1 + 0.3275911 * x);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return 0.5 * (1 + s * y);
+}
+// Kans op een sterkte-antwoord bij kop-TDS T en doel g (ln TDS): latente afwijking B·ln(T/doel) + ruis.
+function e2AnswerProb(ord, lnT, g, slope){
+  const mu = slope * (lnT - g);
+  const sd = E2_NOISE_SD;
+  const cut = { '-2': [-Infinity, -1.5], '-1': [-1.5, -0.5], '0': [-0.5, 0.5], '1': [0.5, 1.5], '2': [1.5, Infinity] }[String(ord)];
+  const hi = cut[1] === Infinity ? 1 : e2Phi((cut[1] - mu) / sd);
+  const lo = cut[0] === -Infinity ? 0 : e2Phi((cut[0] - mu) / sd);
+  return Math.max(1e-12, hi - lo);
+}
+
+// Alle geproefde koppen met een sterkte-antwoord, oud → nieuw, over alle zakken en brewers.
+function e2Observations(store, rAbsFor){
+  const out = [];
+  const memo = {};
+  const rOf = (m) => {
+    if (typeof rAbsFor !== 'function') return rAbsFor || E2_R_ABS;
+    if (!(m in memo)) memo[m] = rAbsFor(m);
+    return memo[m];
+  };
+  (store || []).forEach(r => {
+    if (!r || r.deletedAt || !r.tasting || !r.plan) return;
+    const ord = E2_STRENGTH_ORDINAL[r.tasting.strength];
+    if (ord === undefined) return;
+    const dose = r.actual && typeof r.actual.doseG === 'number' && r.actual.doseG > 0 ? r.actual.doseG : r.plan.doseG;
+    const water = r.plan.waterMl;
+    const tds = e2Tds(dose, water, rOf(r.plan.methodId));
+    if (tds == null) return;
+    const soft = !!r.tasting.late || !!r.plan.bypass;
+    out.push({ id: r.id, at: r.createdAt || 0, lnT: Math.log(tds), tds, ord, weight: soft ? E2_SOFT_WEIGHT : 1,
+      method: r.plan.methodId, beanId: r.beanId || null, doseG: dose, waterG: water, late: !!r.tasting.late, bypass: !!r.plan.bypass });
+  });
+  return out.sort((a, b) => a.at - b.at);
+}
+
+// Rooster-posterior over je doel (ln TDS), gemiddeld over de hellingen. Incrementeel met vergeten:
+// elke nieuwe kop dempt de eerdere bewijskracht met E2_FORGET.
+function e2NewPosterior(priorCenterLn){
+  const logPrior = E2_GRID.map(g => -0.5 * Math.pow((g - priorCenterLn) / E2_PRIOR_SD, 2));
+  return { priorCenterLn, logPrior, ll: E2_SLOPES.map(() => E2_GRID.map(() => 0)), n: 0 };
+}
+function e2AddObservation(post, o){
+  post.ll = post.ll.map((row, bi) => row.map((v, gi) =>
+    v * E2_FORGET + o.weight * Math.log(e2AnswerProb(o.ord, o.lnT, E2_GRID[gi], E2_SLOPES[bi]))));
+  post.n += 1;
+  return post;
+}
+function e2Summary(post){
+  const rows = post.ll.map(row => row.map((v, gi) => v + post.logPrior[gi]));
+  let max = -Infinity;
+  rows.forEach(row => row.forEach(v => { if (v > max) max = v; }));
+  const w = E2_GRID.map(() => 0);
+  const slopeMass = rows.map(row => {
+    let s = 0;
+    row.forEach((v, gi) => { const e = Math.exp(v - max); w[gi] += e; s += e; });
+    return s;
+  });
+  const tot = w.reduce((a, b) => a + b, 0);
+  const p = w.map(x => x / tot);
+  const q = (frac) => { let c = 0; for (let i = 0; i < p.length; i++){ c += p[i]; if (c >= frac) return E2_GRID[i]; } return E2_GRID[E2_GRID.length - 1]; };
+  const mean = p.reduce((a, x, i) => a + x * E2_GRID[i], 0);
+  const sd = Math.sqrt(p.reduce((a, x, i) => a + x * Math.pow(E2_GRID[i] - mean, 2), 0));
+  const sm = slopeMass.reduce((a, b) => a + b, 0);
+  const slopeShare = slopeMass.map(x => x / sm);
+  const slopeMean = slopeShare.reduce((a, x, i) => a + x * E2_SLOPES[i], 0);
+  return { p, medianLn: q(0.5), q10Ln: q(0.1), q90Ln: q(0.9), meanLn: mean, sdLn: sd, slopeMean, slopeShare, n: post.n };
+}
+function e2ProbBeyond(sum, refLn){
+  let up = 0, dn = 0;
+  sum.p.forEach((x, i) => {
+    if (E2_GRID[i] > refLn + E2_HALF_STEP / 2) up += x;
+    else if (E2_GRID[i] < refLn - E2_HALF_STEP / 2) dn += x;
+  });
+  return { up, dn };
+}
+
+/* De beslisregel, afgespeeld over al je koppen: het doel begint bij je eerste geproefde kop en
+   verschuift alleen als de kans dat een andere sterkte beter past de drempel haalt (0,70 tijdens
+   zoeken, 0,85 in rust), met hooguit twee halve stappen per keer (bij de eerste twee koppen één). Deterministisch: dezelfde
+   geschiedenis geeft altijd hetzelfde doel. Zonder koppen: het doel is het recept zelf. */
+function e2Decide(obs, baselineLn){
+  if (!obs.length) return { targetLn: baselineLn, mode: 'start', n: 0, trail: [], summary: null };
+  let post = e2NewPosterior(obs[0].lnT);
+  let target = obs[0].lnT;
+  let mode = 'zoeken';
+  const trail = [];
+  obs.forEach((o, idx) => {
+    e2AddObservation(post, o);
+    const sum = e2Summary(post);
+    const before = target;
+    const thr = mode === 'rust' ? E2_THRESHOLD_REST : E2_THRESHOLD_SEARCH;
+    const pr = e2ProbBeyond(sum, target);
+    let k = 0;
+    if (pr.up > thr || pr.dn > thr){
+      k = Math.round((sum.medianLn - target) / E2_HALF_STEP);
+      const maxSteps = idx < 2 ? 1 : E2_MAX_STEPS; // de eerste twee koppen: hooguit een halve stap
+      k = Math.max(-maxSteps, Math.min(maxSteps, k));
+      if (k === 0) k = pr.up > pr.dn ? 1 : -1;
+      target += k * E2_HALF_STEP;
+    }
+    const recent = obs.slice(Math.max(0, idx - 2), idx + 1);
+    const atTarget = recent.length === 3 && recent.every(r => r.ord === 0 && Math.abs(r.lnT - before) < E2_HALF_STEP);
+    if (k !== 0) mode = 'zoeken';
+    else if (sum.sdLn < E2_REST_SD && atTarget) mode = 'rust';
+    trail.push({ id: o.id, beforeLn: before, afterLn: target, steps: k, up: pr.up, dn: pr.dn, mode, threshold: thr });
+  });
+  return { targetLn: target, mode, n: obs.length, trail, summary: e2Summary(post) };
+}
+
+// Tijdmodel: Bed droog tegen het verwachte einde van de bestaande engine, per brewer en techniek
+// (zonder bypass). De mediaan van je laatste 10 verhoudingen schaalt het verwachte einde.
+function e2TimeModel(store, method, technique){
+  const ratios = [];
+  (store || []).filter(r => r && !r.deletedAt && r.plan && r.actual &&
+      (r.lifecycle === 'completed' || r.lifecycle === 'logged') &&
+      r.plan.methodId === method && r.plan.technique === technique && !r.plan.bypass &&
+      typeof r.actual.bedDrySec === 'number' && r.actual.bedDrySec > 0)
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+    .forEach(r => {
+      const base = r.plan.inputs && r.plan.inputs.e2 && typeof r.plan.inputs.e2.baseTotalSec === 'number'
+        ? r.plan.inputs.e2.baseTotalSec : r.plan.expectedDrainEndSec;
+      if (typeof base === 'number' && base > 0) ratios.push(r.actual.bedDrySec / base);
+    });
+  const recent = ratios.slice(-E2_TIME_WINDOW);
+  if (recent.length < E2_TIME_MIN_N) return { n: recent.length, factor: null };
+  const factor = medianOf(recent);
+  const dev = medianOf(recent.map(x => Math.abs(x - factor)));
+  if (!(factor >= 0.7 && factor <= 1.5)) return { n: recent.length, factor: null, outOfRange: factor };
+  return { n: recent.length, factor, spread: dev };
+}
+
+/* Het Engine 2-plan bij een basisrecept van de bestaande engine (sterkte 0). Geeft de dosis en het
+   verwachte einde dat computeRecipe() als e2Arg overneemt, plus alles wat de kaart en het advies
+   tonen. */
+function engine2PlanFor(baseRec, method, store){
+  if (!baseRec || !(baseRec.dose > 0) || !(baseRec.water > 0)) return null;
+  const retention = e2RetentionFor(method);
+  const rFor = (m) => e2RetentionFor(m).value;
+  const obs = e2Observations(store, rFor);
+  // De bedoelde sterkte van het basisrecept: lag de dosis op de toestelgrens, dan telt de verhouding
+  // die het recept eigenlijk wilde (doseEdge.targetRatio), zodat de grensmelding gewoon blijft.
+  const baseWantedDose = baseRec.doseEdge && baseRec.doseEdge.targetRatio > 0 ? baseRec.water / baseRec.doseEdge.targetRatio : baseRec.dose;
+  const baseTds = e2Tds(baseWantedDose, baseRec.water, retention.value);
+  if (baseTds == null) return null;
+  const dec = e2Decide(obs, Math.log(baseTds));
+  const targetTds = Math.exp(dec.targetLn);
+  const ratio = e2RatioForTds(targetTds, retention.value);
+  const doseG = Math.round(baseRec.water / ratio * 10) / 10;
+  const band = dec.summary ? { lowRatio: e2RatioForTds(Math.exp(dec.summary.q90Ln), retention.value), highRatio: e2RatioForTds(Math.exp(dec.summary.q10Ln), retention.value) } : null;
+  const time = baseRec.technique ? e2TimeModel(store, method, baseRec.technique) : { n: 0, factor: null };
+  const bypass = !!(baseRec.bypassMl > 0);
+  const totalTimeSec = (time.factor != null && !bypass) ? Math.round(baseRec.totalTime * time.factor / 5) * 5 : null;
+  const last = dec.trail.length ? dec.trail[dec.trail.length - 1] : null;
+  return {
+    version: ENGINE2_VERSION, doseG, targetTds, ratio, band, mode: dec.mode, n: dec.n,
+    sdLn: dec.summary ? dec.summary.sdLn : null, slopeMean: dec.summary ? dec.summary.slopeMean : null,
+    retention, baseDoseG: baseRec.dose, baseRatio: baseRec.water / baseRec.dose, baseTds,
+    baseTotalSec: baseRec.totalTime, totalTimeSec, time, last, trail: dec.trail
+  };
+}
+// Wat er bewaard wordt bij de start van een kop (record plan.inputs.e2): genoeg om het recept na
+// herladen exact terug te rekenen en het tijdmodel eerlijk te houden.
+function e2InputsOf(plan){
+  if (!plan) return null;
+  return { version: plan.version, doseG: plan.doseG, totalTimeSec: plan.totalTimeSec, baseTotalSec: plan.baseTotalSec,
+    targetTds: Math.round(plan.targetTds * 1000) / 1000, mode: plan.mode, n: plan.n };
+}
+
+/* Hendeltabel van Engine 2 voor alles behalve de sterkte zelf (die regelt de posterior). Afgeleid
+   uit de UC Davis-data (binnen persoon): bitter en zoet volgen de sterkte; zuur volgt de sterkte en
+   daalt met de extractie, maar bij een vaste verhouding stijgt de sterkte mee met fijner malen.
+   Labels: 'proef' = hypothese die je zelf toetst (E7–E9), 'controle' = geen receptstap. */
+function e2TipsFor(tasting, ctx){
+  const t = tasting || {};
+  const c = ctx || {};
+  const finish = Array.isArray(t.finish) ? t.finish : [];
+  const tips = [];
+  if (finish.includes('drying')){
+    tips.push({ key: 'drying', kind: 'controle', text: 'Droog of wrang komt eerder van ongelijk doorlopen dan van het recept. Giet rustig en in het midden, spoel het filter goed, en kijk of het terugkomt.' });
+  }
+  if (t.strength !== 'just_right') return tips;
+  if (finish.includes('bitter') || t.missed === 'less_bitter'){
+    tips.push({ key: 'bitter', kind: 'proef', text: 'Bitter terwijl de sterkte goed is: bitter volgt vooral de sterkte, minder de maling. Zet één keer de sterkte op −4 % in plaats van grover te malen, en vergelijk.' });
+  }
+  if (t.acidity === 'sharp'){
+    let doseBit = '';
+    if (c.doseG > 0 && c.waterG > 0){
+      const r = c.rAbs || E2_R_ABS;
+      const tds = e2Tds(c.doseG, c.waterG, r);
+      if (tds != null){
+        const d2 = c.waterG / e2RatioForTds(tds, r, E2_EY_NOMINAL + 0.01);
+        const delta = Math.round((c.doseG - d2) * 10) / 10;
+        if (delta > 0) doseBit = ` en ${fmt(delta, 1)} g minder koffie`;
+      }
+    }
+    tips.push({ key: 'sharp', kind: 'proef', text: `Scherp zuur bij een goede sterkte: één klik fijner${doseBit}. Alleen fijner maakt de kop ook sterker, en sterker is weer zuurder; met iets minder koffie blijft de sterkte gelijk.` });
+  }
+  if (t.missed === 'sweet'){
+    tips.push({ key: 'sweet', kind: 'proef', text: 'Zoetheid gemist: zoet hoort bij een iets lichtere kop, met weinig bitter en zuur, niet bij fijner malen. Zet één keer de sterkte op −4 %.' });
+  }
+  if (t.missed === 'fruit'){
+    tips.push({ key: 'fruit', kind: 'proef', text: 'Meer fruit of helderheid: probeer één keer de sterkte op −4 %.' });
+  }
+  if (t.missed === 'body'){
+    tips.push({ key: 'body', kind: 'proef', text: 'Meer body: mondgevoel volgt de sterkte. Probeer één keer de sterkte op +4 %.' });
+  }
+  return tips;
+}
+function e2RatioText(ratio){ return nlRatio(`1:${fmt(ratio, 1)}`); }
+// De beslissing van Engine 2 over één geproefde kop, in woorden.
+function e2DecisionText(entry){
+  if (!entry) return null;
+  if (!entry.steps) return { title: 'Sterkte houden', body: entry.mode === 'rust'
+    ? 'Je zit goed. Engine 2 verandert pas iets als je antwoorden er duidelijk om vragen (85 % kans).'
+    : 'Eén kop is een zwak signaal. Engine 2 verandert de sterkte pas als de kans dat een andere sterkte beter past 70 % haalt.' };
+  const n = Math.abs(entry.steps);
+  const pct = Math.round((Math.exp(n * E2_HALF_STEP) - 1) * 100);
+  const dir = entry.steps < 0 ? 'lichter' : 'sterker';
+  const prob = Math.round(100 * (entry.steps < 0 ? entry.dn : entry.up));
+  return { title: `${n === 1 ? 'Een halve stap' : 'Een stap'} ${dir} (±${pct} %)`,
+    body: `Je antwoorden samen wijzen met ${prob} % kans op een ${dir}e kop. Je volgende recept staat al zo klaar.` };
 }
 
 /* ---- Fase 3: proefkaart (pure functies) ----
@@ -10848,7 +11185,8 @@ function beginBrewRecord(){
       altitude: state.altitude, bypass: !!state.bypass, fermentEvidence: !!state.fermentEvidence,
       waterHardnessMgL: waterHardnessMgL, strengthAdjust: state.strengthAdjust || 0,
       bypassPct: state.bypassPct, bypassMoment: state.bypassMoment,
-      roastDate: state.roastDate || null, openedDate: state.openedDate || null, intendedUse: state.intendedUse || null
+      roastDate: state.roastDate || null, openedDate: state.openedDate || null, intendedUse: state.intendedUse || null,
+      e2: state.e2Plan ? e2InputsOf(state.e2Plan) : null
     }
   });
   upsertBrewRecord(rec);
@@ -12863,10 +13201,10 @@ function renderStrengthToggle(){
       // in computeRecipe() blijft de garantie.
       const probe = computeRecipe(state.method, state.roast, state.profile, state.waterMl,
         state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude,
-        state.bypass, state.fermentEvidence, waterHardnessMgL, o.v);
+        state.bypass, state.fermentEvidence, waterHardnessMgL, o.v, state.bypassPct, state.e2Plan || null);
       const neutraal = computeRecipe(state.method, state.roast, state.profile, state.waterMl,
         state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude,
-        state.bypass, state.fermentEvidence, waterHardnessMgL, 0);
+        state.bypass, state.fermentEvidence, waterHardnessMgL, 0, state.bypassPct, state.e2Plan || null);
       const zinloos = o.v !== 0 && probe.dose > 0 && Math.abs(probe.dose - neutraal.dose) < 0.15;
       return `<button type="button" class="chip" data-strength="${o.v}" aria-label="${o.aria}" data-selected="${(state.strengthAdjust||0)===o.v}"${zinloos ? ' disabled title="Bij dit watervolume zit de dosis al aan de rand van het gevalideerde bereik — deze stap zou niets veranderen."' : ''}>${o.label}</button>`;
     })()
@@ -12876,7 +13214,11 @@ function renderStrengthToggle(){
     renderPrep();
   }));
   const noteEl = document.getElementById('strength-note');
-  if (noteEl){
+  if (noteEl && state.e2Plan){
+    noteEl.textContent = state.strengthAdjust
+      ? `Handmatig ${state.strengthAdjust > 0 ? '+' : ''}${Math.round(state.strengthAdjust*STRENGTH_DOSE_STEP*100)}% ten opzichte van Engine 2, voor deze kop. Ook deze kop telt mee voor je sterkte.`
+      : 'Engine 2 zet je sterkte. Deze knoppen zijn een handmatige afwijking voor één kop, bijvoorbeeld om een tip uit je proefkaart te proberen.';
+  } else if (noteEl){
     noteEl.textContent = state.strengthAdjust
       ? `Dosis ${state.strengthAdjust > 0 ? '+' : ''}${Math.round(state.strengthAdjust*STRENGTH_DOSE_STEP*100)}% t.o.v. het standaardrecept${Math.abs(state.strengthAdjust) === 0.5 ? ' (een halve stap)' : ''} — watervolume blijft gelijk. Kan gecombineerd worden met de concentraat/bypass-methode hieronder.`
       : 'Staat op standaard — verandert de dosis/ratio niet. Voor een concentraat-methode (andere aanpak, zie hieronder) gebruik je Concentraat + bypass.';
@@ -13262,6 +13604,7 @@ function setAbLighter(on){ try { if (on) localStorage.setItem(AB_LIGHTER_KEY, '1
 // keuze (daarna kun je gewoon zelf een andere stand kiezen). Een ander doel draait de automatisch
 // gezette stap terug.
 function applyGoalStrengthPreference(){
+  if (engine2On()){ if (state.goalLighterApplied && state.strengthAdjust === AB_LIGHTER_STEP) state.strengthAdjust = 0; state.goalLighterApplied = false; return; }
   if (state.goal === 'bright' && abLighterEnabled()){
     if (!state.goalLighterApplied && (state.strengthAdjust || 0) === 0){ state.strengthAdjust = AB_LIGHTER_STEP; state.goalLighterApplied = true; }
   } else if (state.goalLighterApplied){
@@ -13271,8 +13614,8 @@ function applyGoalStrengthPreference(){
 }
 function abDosesForState(){
   const args = [state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL];
-  const control = computeRecipe(...args, 0, state.bypassPct);
-  const variant = computeRecipe(...args, AB_LIGHTER_STEP, state.bypassPct);
+  const control = computeRecipe(...args, 0, state.bypassPct, state.e2Plan || null);
+  const variant = computeRecipe(...args, AB_LIGHTER_STEP, state.bypassPct, state.e2Plan || null);
   return { control, variant };
 }
 function renderAbTrial(){
@@ -13349,8 +13692,16 @@ function handleAbTrialClick(e){
 // De stap die klaarstaat voor de volgende kop met deze boon (+ methode).
 function pendingAdjustForState(){
   const bean = state.beanId ? beanLibrary.find(b => b.id === state.beanId) : null;
-  const p = bean && bean.pendingAdjust;
+  const p = effectivePendingAdjust(bean);
   return p && p.method === state.method ? p : null;
+}
+// Engine 2 regelt de sterkte zelf, over al je zakken samen: een klaargezette dosisstap van de oude
+// engine geldt dan niet. Een maalstap wel (dat is proces, geen sterkte).
+function effectivePendingAdjust(bean){
+  const p = bean && bean.pendingAdjust;
+  if (!p) return null;
+  if (engine2On() && p.lever === 'dose') return null;
+  return p;
 }
 // Een klaargezette dosisstap wordt meteen ingesteld (bewust gekozen door de gebruiker);
 // een maalstap is iets wat je zelf aan de molen doet — die toont het receptscherm.
@@ -13410,7 +13761,7 @@ function diagnosisContextForRecord(rec){
 function doseForRecordAt(rec, strengthStep){
   try {
     const i = recipeInputsFromRecord(rec);
-    return computeRecipe(i.method, i.roast, i.profile, i.waterMl, i.process, i.experimental, i.roastDays, i.altitude, i.bypass, i.fermentEvidence, i.waterHardnessMgL, strengthStep, i.bypassPct).dose;
+    return computeRecipe(i.method, i.roast, i.profile, i.waterMl, i.process, i.experimental, i.roastDays, i.altitude, i.bypass, i.fermentEvidence, i.waterHardnessMgL, strengthStep, i.bypassPct, i.e2 || null).dose;
   } catch(e){ return null; }
 }
 function recommendationExtraForRecord(rec){
@@ -13503,6 +13854,7 @@ function pendingCheckTexts(bean){
 function renderRecommendationPanel(rec){
   const el = document.getElementById('reco-card');
   if (!el) return;
+  if (rec && rec.tasting && engine2On()){ renderEngine2Panel(rec, el); return; }
   if (!rec || !rec.recommendation){ el.hidden = true; el.innerHTML = ''; return; }
   const r = rec.recommendation;
   const tx = recommendationTexts(r, rec.diagnosis, recommendationExtraForRecord(rec));
@@ -13605,10 +13957,10 @@ function renderPrepStandNote(){
   const st = state.standApplied;
   const base = state.recipe && state.recipe.grindStartingPoint;
   const grindDiffers = st && typeof st.grindClick === 'number' && st.grindClick !== base;
-  const strengthDiffers = st && (st.strengthStep || 0) !== 0;
+  const strengthDiffers = !engine2On() && st && (st.strengthStep || 0) !== 0;
   if (!st || st.method !== state.method || !(grindDiffers || strengthDiffers)){ el.hidden = true; el.innerHTML = ''; return; }
   const when = st.brewCreatedAt ? new Date(st.brewCreatedAt).toLocaleDateString('nl-NL', { day:'numeric', month:'short' }) : '';
-  const bits = [typeof st.grindClick === 'number' ? `klik ${st.grindClick}` : null, strengthWords(st.strengthStep || 0)].filter(Boolean).join(' · ');
+  const bits = [typeof st.grindClick === 'number' ? `klik ${st.grindClick}` : null, engine2On() ? null : strengthWords(st.strengthStep || 0)].filter(Boolean).join(' · ');
   const meta = [when, st.liking ? `${st.liking}/5` : null].filter(Boolean).join(', ');
   const doubt = (st.liking != null && st.liking <= 2) || st.check;
   el.innerHTML = `<p class="prep-next-adjust-title">Jouw stand voor deze boon</p>
@@ -13718,11 +14070,110 @@ function arrangePrepNotes(){
   const countEl = document.getElementById('why-recipe-count');
   if (countEl) countEl.textContent = rest ? `+${rest} ${rest === 1 ? 'melding' : 'meldingen'}` : '';
 }
+// Engine 2 bij de huidige keuze: het basisrecept (sterkte 0) van de bestaande engine, met daarop
+// jouw sterkte uit al je koppen. Een fout in Engine 2 valt terug op de bestaande engine.
+function engine2PlanForState(){
+  if (!engine2On()) return null;
+  try {
+    const base = computeRecipe(state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL, 0, state.bypassPct, null);
+    return engine2PlanFor(base, state.method, brewStore);
+  } catch(e){ console.warn('Engine 2 viel terug op de bestaande engine:', e); return null; }
+}
+// De Engine 2-kaart boven de sterkteknoppen: jouw sterkte, hoe zeker, en het verwachte einde.
+function renderEngine2Card(){
+  const el = document.getElementById('e2-card');
+  if (!el) return;
+  const pl = state.e2Plan;
+  const rec = state.recipe;
+  const lineEl = document.getElementById('e2-line');
+  if (!pl || !rec || !rec.engine2){
+    el.hidden = true; el.innerHTML = '';
+    if (lineEl){ lineEl.hidden = true; lineEl.textContent = ''; }
+    return;
+  }
+  if (lineEl){
+    lineEl.textContent = pl.n
+      ? `Engine 2 · jouw sterkte uit ${pl.n} geproefde ${pl.n === 1 ? 'kop' : 'koppen'} · ${pl.mode === 'rust' ? 'je zit goed' : 'zoekt nog'}`
+      : 'Engine 2 · startpunt: proef en beantwoord de sterktevraag, dan leert hij je sterkte';
+    lineEl.hidden = false;
+  }
+  const e = rec.engine2;
+  const ratioNow = rec.water / e.doseG;
+  const lines = [];
+  if (pl.n){
+    lines.push(`Uit ${pl.n} geproefde ${pl.n === 1 ? 'kop' : 'koppen'}, over al je zakken samen.${pl.band ? ` Waarschijnlijk tussen ${e2RatioText(pl.band.lowRatio)} en ${e2RatioText(pl.band.highRatio)}.` : ''}`);
+    lines.push(pl.mode === 'rust'
+      ? 'Je zit goed: Engine 2 verandert je sterkte pas bij sterk bewijs.'
+      : 'Engine 2 zoekt nog: hij verandert je sterkte pas als je antwoorden er duidelijk om vragen.');
+  } else {
+    lines.push('Nog geen geproefde koppen: Engine 2 begint bij dit recept en leert van je antwoord op de sterktevraag in de proefkaart.');
+  }
+  if (e.clamped) lines.push(e.wantedDoseG < e.doseG
+    ? `Lichter kan bij ${rec.water} g water niet binnen de dosisgrens van deze brewer. Kies meer water voor een lichtere kop.`
+    : `Sterker kan bij ${rec.water} g water niet binnen de dosisgrens van deze brewer. Kies minder water voor een sterkere kop.`);
+  if (Math.abs(e.doseG - pl.baseDoseG) >= 0.1) lines.push(`De oude engine zou ${fmt(pl.baseDoseG, 1)} g zetten (${e2RatioText(pl.baseRatio)}).`);
+  if (e.totalTimeSec) lines.push(`Verwacht klaar rond ${fmtTime(e.totalTimeSec)}: jouw eigen doorloop over ${pl.time.n} koppen. Het schema zelf zegt ${fmtTime(e.baseTotalSec)}.`);
+  if (pl.retention.measured) lines.push(`Met je gemeten vasthouden (${fmt(pl.retention.value, 2)} g per gram).`);
+  el.innerHTML = `<p class="prep-next-adjust-title">Engine 2 · ${pl.n ? 'jouw sterkte' : 'startpunt'}</p>
+    <p class="prep-next-adjust-text">${escapeHtml(e2RatioText(ratioNow))} · ${escapeHtml(fmt(e.doseG, 1))} g op ${escapeHtml(String(rec.water))} g</p>
+    ${lines.map(l => `<p class="prep-next-adjust-note">${escapeHtml(l)}</p>`).join('')}`;
+  el.hidden = false;
+}
+// Status in Instellingen.
+function renderEngine2Status(){
+  const el = document.getElementById('engine2-status');
+  if (!el) return;
+  if (!engine2On()){ el.textContent = 'Uit: de oude engine is actief.'; return; }
+  try {
+    const obs = e2Observations(brewStore, m => e2RetentionFor(m).value);
+    if (!obs.length){ el.textContent = `Aan (${ENGINE2_VERSION}). Nog geen geproefde koppen met een sterkte-antwoord.`; return; }
+    const dec = e2Decide(obs, 0);
+    const tds = Math.exp(dec.targetLn);
+    el.textContent = `Aan (${ENGINE2_VERSION}). Jouw sterkte op de V60: ${e2RatioText(e2RatioForTds(tds, e2RetentionFor('v60').value))}, uit ${dec.n} geproefde ${dec.n === 1 ? 'kop' : 'koppen'}${dec.mode === 'rust' ? '. Je zit goed.' : '. Engine 2 zoekt nog.'}`;
+  } catch(e){ el.textContent = `Aan (${ENGINE2_VERSION}).`; }
+}
+// Het advies na het proeven, als Engine 2 aan staat: de sterktebeslissing, de tips uit de
+// hendeltabel, en ter vergelijking wat de oude engine had gezegd. Geen knop: de sterkte voor je
+// volgende kop staat al klaar op het receptscherm.
+function renderEngine2Panel(rec, el){
+  const rFor = (m) => e2RetentionFor(m).value;
+  const obs = e2Observations(brewStore, rFor);
+  const dec = e2Decide(obs, 0);
+  const entry = dec.trail.find(x => x.id === rec.id) || null;
+  const tx = entry ? e2DecisionText(entry)
+    : { title: 'Geen sterkte-antwoord', body: 'Zonder antwoord op de sterktevraag leert Engine 2 niets van deze kop.' };
+  const water = rec.plan && rec.plan.waterMl;
+  const dose = rec.actual && typeof rec.actual.doseG === 'number' && rec.actual.doseG > 0 ? rec.actual.doseG : (rec.plan && rec.plan.doseG);
+  const rAbs = rFor(rec.plan && rec.plan.methodId);
+  const tips = e2TipsFor(rec.tasting, { doseG: dose, waterG: water, rAbs });
+  const nextRatio = entry ? e2RatioForTds(Math.exp(entry.afterLn), rAbs) : null;
+  const nextLine = nextRatio && water ? `Je sterkte voor de volgende kop: ${e2RatioText(nextRatio)}, dat is ${fmt(water / nextRatio, 1)} g op ${water} g.` : '';
+  let oldLine = '';
+  try {
+    if (rec.recommendation){
+      const old = recommendationTexts(rec.recommendation, rec.diagnosis, recommendationExtraForRecord(rec));
+      if (old && old.titleShort) oldLine = `Ter vergelijking, de oude engine: ${old.titleShort}`;
+    }
+  } catch(e){ oldLine = ''; }
+  const bean = rec.beanId ? beanLibrary.find(b => b.id === rec.beanId) : null;
+  el.dataset.type = entry && entry.steps ? 'ADJUST' : 'REPEAT';
+  el.innerHTML =
+    `<p class="reco-kicker">Engine 2 · advies voor je volgende kop</p>` +
+    `<p class="reco-title">${escapeHtml(tx.title)}</p>` +
+    `<p class="reco-body">${escapeHtml(tx.body)}</p>` +
+    (nextLine ? `<p class="reco-body">${escapeHtml(nextLine)}</p>` : '') +
+    tips.map(t => `<p class="reco-note"><strong>${t.kind === 'controle' ? 'Controle' : 'Probeer'}:</strong> ${escapeHtml(t.text)}</p>`).join('') +
+    (oldLine ? `<p class="reco-note">${escapeHtml(oldLine)}</p>` : '') +
+    (!bean ? `<p class="reco-status">Koppel een boon om deze kop bij de boon te bewaren en "Zet opnieuw" te kunnen gebruiken.</p><button type="button" class="link-secondary" id="reco-link-bean-btn">Koppel een boon</button>` : '');
+  el.hidden = false;
+}
 function renderPrep(){
   const m = METHOD_INFO[state.method], r = ROAST_INFO[state.roast], p = PROFILE_INFO[state.profile];
   applyGoalStrengthPreference(); // BC-10: alleen als je dat zelf aanzette na je blinde proeven
-  state.recipe = computeRecipe(state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL, state.strengthAdjust, state.bypassPct);
+  state.e2Plan = engine2PlanForState(); // Engine 2: jouw sterkte en verwachte einde (null als hij uit staat)
+  state.recipe = computeRecipe(state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL, state.strengthAdjust, state.bypassPct, state.e2Plan);
   const rec = state.recipe;
+  renderEngine2Card();
 
   renderRoastDateInput();
   renderOpenedDateInput();
@@ -13900,7 +14351,9 @@ function renderPrep(){
         : `<div class="stat-sub">${rec.doseEdge.side === 'min' ? 'iets sterker' : 'iets lichter'} dan het midden van je doel (nog binnen het doel)</div>`)
     : '';
   // V1: waar de verhouding vandaan komt.
-  const ratioBasisSub = rec.profileRatio && !rec.doseEdge
+  const ratioBasisSub = (rec.engine2 && state.e2Plan && state.e2Plan.n > 0 && !rec.doseEdge)
+    ? `<div class="stat-sub" id="ratio-basis">Engine 2: jouw sterkte uit ${state.e2Plan.n} ${state.e2Plan.n === 1 ? 'kop' : 'koppen'}</div>`
+    : rec.profileRatio && !rec.doseEdge
     ? `<div class="stat-sub" id="ratio-basis">${rec.profileRatio.sourced ? 'volgens' : 'eigen stap,'} ${escapeHtml(rec.profileRatio.basis)}</div>`
     : rec.retentionApplied ? `<div class="stat-sub" id="ratio-basis">met jouw gemeten vasthouden (${fmt(rec.retentionApplied.value, 2)} g/g, n=${rec.retentionApplied.n})</div>` : '';
   // D4-2: richting-hint bij duidelijk kleine/grote brouwsels — tekst, geen receptgetal.
@@ -13978,7 +14431,7 @@ function renderPrep(){
     <div class="stat-block stat-block--secondary">
       <div class="stat-label">Brouwtijd</div>
       <div class="stat-value">${fmtTime(rec.totalTime)}</div>
-      <div class="stat-sub">schema · tik "Bed droog" voor je echte tijd</div>
+      <div class="stat-sub">${rec.engine2 && rec.engine2.totalTimeSec ? `jouw doorloop · schema ${fmtTime(rec.engine2.baseTotalSec)} · tik "Bed droog"` : 'schema · tik "Bed droog" voor je echte tijd'}</div>
       ${drainActiveFor(rec) ? `<div class="stat-sub" id="drain-note">gieten op doorlopen: vanaf giet 3 tik je Erdoor, dus de tijd volgt jouw bed</div>` : ''}
       ${rec.doseTimeScale ? `<div class="stat-sub" id="dose-time-note">+${fmtTime(rec.totalTime - rec.doseTimeScale.baseSec)}: bij ${fmt(rec.dose, 1)} g loopt het bed trager door (Kasuya: ${fmtTime(rec.doseTimeScale.baseSec)} bij ${rec.doseTimeScale.refDoseG} g${rec.doseTimeScale.personalN ? `; gerekend met jouw eigen doorloop uit ${rec.doseTimeScale.personalN} koppen` : ''})</div>` : ''}
     </div>
@@ -15679,6 +16132,17 @@ function setRetentionPref(on){
 }
 document.getElementById('retention-toggle').addEventListener('click', () => setRetentionPref(!useMeasuredRetentionOn()));
 setRetentionPref(useMeasuredRetentionOn());
+function syncEngine2Toggle(){
+  const t = document.getElementById('engine2-toggle');
+  if (t) t.setAttribute('aria-checked', String(engine2On()));
+  renderEngine2Status();
+}
+document.getElementById('engine2-toggle').addEventListener('click', () => {
+  setEngine2(!engine2On());
+  syncEngine2Toggle();
+  if (document.getElementById('screen-prep').classList.contains('active') && state.recipe) renderPrep();
+});
+syncEngine2Toggle();
 document.getElementById('brew-ready-start').addEventListener('click', startBrewClock); // R-15
 // Fase 3: proefkaart + doel op het receptscherm (event-delegatie: de inhoud wordt opnieuw opgebouwd).
 document.getElementById('tasting-card').addEventListener('click', handleTastingCardClick);
