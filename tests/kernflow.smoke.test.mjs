@@ -573,7 +573,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     const engineMin = await page.evaluate(() => engineValidVolumeRange('v60', 'klassiek').min);
     assert.equal(engineMin, 240);
     assert.equal(finalMl, engineMin, `De schuifregelaar moet precies op het engine-geldige minimum stoppen, kreeg "${current}"`);
-    assert.match(await page.locator('#stats-grid .stat-block').first().innerText(), /15,0 g[\s\S]*ondergrens van dit toestel/);
+    // V1: Gebalanceerd zet op 1:16, dus 240 ml geeft precies 15,0 g (op de grens, niet erbuiten).
+    assert.match(await page.locator('#stats-grid .stat-block').first().innerText(), /15,0 g/);
 
     // Het getoonde recept moet exact dit (geklemde) volume tonen — geen mismatch tussen
     // de schuifregelaar en het daadwerkelijk berekende recept.
@@ -2443,7 +2444,9 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
   test('D2-1/D4-2: V60 250 ml op de ondergrens met label; hints bij kleine V60 en kleine/grote Chemex', async () => {
     const page = await newTrackedPage();
     await page.goto(FILE_URL, { waitUntil: 'load' });
-    await page.evaluate(() => { selectMethod('v60'); selectRoast('medium'); selectProfile('klassiek'); state.waterMl = 250; renderPrep(); });
+    // V1: de Kasuya-smaken hebben sinds MODEL_POLICY 4.0 een eigen verhouding; het venster (en dus
+    // het label "ondergrens" bij 250 ml) geldt voor het Basisrecept.
+    await page.evaluate(() => { selectMethod('v60'); selectRoast('medium'); selectProfile('evenwichtig_flex'); state.waterMl = 250; renderPrep(); });
     const grid = page.locator('#stats-grid');
     let txt = await grid.innerText();
     assert.match(txt, /15,0 g/);

@@ -862,7 +862,7 @@ Deze ronde verandert niets aan recepten, advies of de rekenkern (de engine-bunde
 
 **Regels:**
 - Profielen zonder eigen bron (Basisrecept, Bloemig, Sirooprig, Perger) en de Chemex-recepten behalve Hoffmann houden het venster.
-- De dosis blijft binnen 15–22 g. Op de grens zegt de verhoudingstegel dat de verhouding daardoor afwijkt; elders staat de herkomst eronder ("volgens Kasuya 20 g op 300 ml" of "eigen stap: …").
+- De dosis blijft binnen 15–22 g. Op de grens zegt de verhoudingstegel dat de verhouding daardoor afwijkt; elders staat de herkomst eronder ("volgens Kasuya, 20 g op 300 ml" of "eigen stap, tussen 1:15 en 1:17").
 - De sterktestappen (±8 %/±4 %) werken erbovenop.
 - `MODEL_POLICY.version` gaat naar 4.0, dus oude koppen houden hun versie.
 - De gouden recepten zijn opnieuw gegenereerd. Alleen de acht bedoelde profielen veranderen: zeven op de V60 en Hoffmann op de Chemex.

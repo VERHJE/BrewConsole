@@ -5975,13 +5975,13 @@ function doseEdgeFor(provisionalDose, waterMl, ceiling, ratioRange){
    De dosis blijft binnen de grens van het toestel (V60 15–22 g); valt hij erbuiten, dan staat
    hij op de grens en zegt de app dat de verhouding daardoor afwijkt. */
 const PROFILE_RATIO = {
-  zoet:          { ratio: 15,   basis: 'Kasuya 20 g op 300 ml', sourced: true, methodOnly: 'v60' },
-  klassiek:      { ratio: 16,   basis: 'tussen Kasuya (1:15) en Helder & fris', sourced: false, methodOnly: 'v60' },
-  vol_rond:      { ratio: 16,   basis: 'tussen Kasuya (1:15) en Helder & fris', sourced: false, methodOnly: 'v60' },
-  heel_fruitig:  { ratio: 17,   basis: 'lichter voor helderheid (lagere sterkte)', sourced: false, methodOnly: 'v60' },
-  fresh_clean:   { ratio: 50/3, basis: 'Hoffmann 30 g op 500 g', sourced: true },
-  robuust:       { ratio: 15,   basis: 'April 20 g op 300 g', sourced: true, methodOnly: 'v60' },
-  fruitig_clean: { ratio: 16.5, basis: 'Rao 20 g op 330 ml', sourced: true, methodOnly: 'v60' }
+  zoet:          { ratio: 15,   basis: 'Kasuya, 20 g op 300 ml', sourced: true, methodOnly: 'v60' },
+  klassiek:      { ratio: 16,   basis: 'tussen 1:15 en 1:17', sourced: false, methodOnly: 'v60' },
+  vol_rond:      { ratio: 16,   basis: 'tussen 1:15 en 1:17', sourced: false, methodOnly: 'v60' },
+  heel_fruitig:  { ratio: 17,   basis: 'lichter, voor helderheid', sourced: false, methodOnly: 'v60' },
+  fresh_clean:   { ratio: 50/3, basis: 'Hoffmann, 30 g op 500 g', sourced: true },
+  robuust:       { ratio: 15,   basis: 'April, 20 g op 300 g', sourced: true, methodOnly: 'v60' },
+  fruitig_clean: { ratio: 16.5, basis: 'Rao, 20 g op 330 ml', sourced: true, methodOnly: 'v60' }
 };
 /* V10 (audit): de vaste aanname van 2,0 g vastgehouden water per gram koffie (kern,
    LIQUID_RETAINED_RATIO) kan worden vervangen door je eigen meting (measuredRetention(), n ≥ 5).
@@ -13901,7 +13901,7 @@ function renderPrep(){
     : '';
   // V1: waar de verhouding vandaan komt.
   const ratioBasisSub = rec.profileRatio && !rec.doseEdge
-    ? `<div class="stat-sub" id="ratio-basis">${rec.profileRatio.sourced ? 'volgens' : 'eigen stap:'} ${escapeHtml(rec.profileRatio.basis)}</div>`
+    ? `<div class="stat-sub" id="ratio-basis">${rec.profileRatio.sourced ? 'volgens' : 'eigen stap,'} ${escapeHtml(rec.profileRatio.basis)}</div>`
     : rec.retentionApplied ? `<div class="stat-sub" id="ratio-basis">met jouw gemeten vasthouden (${fmt(rec.retentionApplied.value, 2)} g/g, n=${rec.retentionApplied.n})</div>` : '';
   // D4-2: richting-hint bij duidelijk kleine/grote brouwsels — tekst, geen receptgetal.
   const batchScale = batchScaleFor(state.method, rec.dose);
