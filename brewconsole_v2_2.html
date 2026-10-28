@@ -10025,8 +10025,15 @@ const E2_GRID = (function(){
   return g;
 })();
 
+// Een eigen keuze (Instellingen) wint altijd. Zonder keuze is Engine 2 aan, tenzij de pagina een
+// andere standaard meekreeg (window.__brewconsoleEngine2Default = false; de smoketests van de oude
+// engine gebruiken dat, zodat ze niets in de opslag hoeven te schrijven).
 function engine2On(){
-  try { return localStorage.getItem(ENGINE2_KEY) !== '0'; } catch(e){ return true; }
+  let v = null;
+  try { v = localStorage.getItem(ENGINE2_KEY); } catch(e){ v = null; }
+  if (v === '1') return true;
+  if (v === '0') return false;
+  return !(typeof window !== 'undefined' && window.__brewconsoleEngine2Default === false);
 }
 function setEngine2(on){
   try { localStorage.setItem(ENGINE2_KEY, on ? '1' : '0'); } catch(e){ /* alleen deze sessie */ }

@@ -94,10 +94,12 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
 
   // Engine 2 staat in de app standaard aan. Deze smoketests beschrijven de oude engine (advies per
   // kop, stappen per zak), die met Engine 2 uit ongewijzigd bestaat; de Engine 2-flow staat in
-  // tests/engine2.smoke.test.mjs. Een test die zelf de sleutel zet, houdt zijn eigen waarde.
+  // tests/engine2.smoke.test.mjs. Een test die zelf de sleutel zet (Instellingen), houdt zijn eigen waarde.
   async function newTrackedPage(opts){
     const page = await browser.newPage(opts);
-    await page.addInitScript(() => { try { if (localStorage.getItem('brewconsole_engine2') === null) localStorage.setItem('brewconsole_engine2', '0'); } catch(e){ /* geen opslag */ } });
+    // Alleen een standaard op window, niets in de opslag: een schrijfactie bij elke navigatie maakte
+    // tests die de opslag vullen en meteen herladen wankel (Fase 6 faalde 2 van de 6 keer).
+    await page.addInitScript(() => { window.__brewconsoleEngine2Default = false; });
     page.on('console', msg => {
       if (msg.type() === 'error') consoleErrors.push(msg.text());
     });
