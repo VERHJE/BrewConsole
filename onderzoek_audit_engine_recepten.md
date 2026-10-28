@@ -226,6 +226,7 @@ Gemeten met de echte `computeRecipe()` (V60 250–400 ml, Chemex 300–700 ml).
 | V7 | De TS-bron van de rekenkern in de repo, of de bouwherkomst vastleggen | Kern niet reproduceerbaar te herbouwen (B.4) | Midden (onderhoud) | Hoog (feit) | S tot M | Laag | **P2** |
 | V8 | Validatiepaneel: Erdoor- en bed-droog-tijden per hoeveelheid, adviesresultaten | Er is al data, maar geen overzicht (`adviceOutcomeStats`, `drained`-events) | Midden | n.v.t. | M | Laag | **P2** |
 | V9 | Exponent 0,4 vervangen door een eigen fit zodra er ≥ 8 koppen per hoeveelheid zijn (optie F) | 0,4 is een aanname (C.7) | Laag tot midden | Laag | M | Laag | **P3** |
+| V11 | De wisselvallige R-02-schermtest herleiden en robuust maken (geen test overslaan) | Mislukt af en toe met een time-out na herladen (F.1) | Laag (gebruiker), Midden (vertrouwen in CI) | Hoog (gezien) | S tot M | Laag | **P2** |
 | V10 | Vasthoudfactor 2,0 vervangen door de eigen meting (schakelaar) | De meting bestaat al, wordt nog niet gebruikt | Laag | Midden | S | Midden (alle getallen) | **P3** |
 
 **Toelichting bij de belangrijkste:**
@@ -251,7 +252,10 @@ Gemeten met de echte `computeRecipe()` (V60 250–400 ml, Chemex 300–700 ml).
 ## F. Validatieplan
 
 ### F.1 Al uitgevoerd
-- **Volledige testrun** (`npm test`) als nulmeting op 6c70ed3: **liep nog bij het schrijven; uitslag volgt in een volgende commit**.
+- **Volledige testrun** (`npm test`) als nulmeting op 6c70ed3: 988 tests, 987 geslaagd, 1 mislukt.
+  - De mislukte test is R-02 ("Zet opnieuw … ook na een herstart", `kernflow.smoke.test.mjs:3591`): een time-out van 30 s op `[data-next-cup-go]` na het herladen.
+  - Dezelfde test faalde eerder één keer op CI (commit 9a19c01). Los gedraaid slaagt hij hier 2 van 2 keer, en de GitHub-CI van PR #35 op 6c70ed3 was groen.
+  - Conclusie: een **wisselvallige test**, geen aangetoonde fout in de app. De oorzaak is niet gevonden; zie V11..
 - **Eigen controleberekening:**
   - 26.730 receptcombinaties, 0 schendingen van de vier invarianten (B.1).
   - Verhoudingen per cluster: 1:17,62 en 1:17,36 (midden), 1:17,51 en 1:17,27 (middelpunt van het venster).
