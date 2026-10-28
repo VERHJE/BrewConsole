@@ -6130,7 +6130,7 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     doseEdge = clampedE2 ? { side: e2Arg.doseG < ceiling.min ? 'min' : 'max', dose: baseDose, ratio: waterMl / baseDose, targetRatio: waterMl / e2Arg.doseG } : null;
     retentionApplied = null;
     e2Applied = { version: e2Arg.version || ENGINE2_VERSION, doseG: baseDose, wantedDoseG: e2Arg.doseG, clamped: clampedE2,
-      targetTds: e2Arg.targetTds != null ? e2Arg.targetTds : null, totalTimeSec: null, baseTotalSec: null };
+      targetTds: e2Arg.targetTds != null ? e2Arg.targetTds : null, totalTimeSec: null, baseTotalSec: null, dilutionG: 0 };
   }
   // D2-1: bij een dosis op de grens is het water het gevraagde volume (de engine rekende het
   // water bij het venstermidden uit); de ratio hieronder volgt daaruit.
@@ -6253,6 +6253,17 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
       totalTime = e2Arg.totalTimeSec;
       tail.t = totalTime;
       e2Applied.totalTimeSec = totalTime;
+    }
+    // Lichter dan de dosisgrens toelaat: zet op de grens en vul na het zetten aan met heet water tot
+    // je sterkte (zelfde TDS en extractie als een zetting met meer water; Guinard e.a. 2023).
+    if (e2Applied.clamped && doseEdge && doseEdge.side === 'min' && !bypassActuallyApplied && typeof e2Arg.targetTds === 'number' && e2Arg.targetTds > 0){
+      const rAbsE2 = e2Arg.rAbs > 0 ? e2Arg.rAbs : E2_R_ABS;
+      const tNow = e2Tds(dose, water, rAbsE2);
+      if (tNow != null && tNow > e2Arg.targetTds * 1.01){
+        const mb = water - rAbsE2 * dose + E2_EY_NOMINAL * dose;
+        const dil = Math.round(mb * (tNow / e2Arg.targetTds - 1) / 5) * 5;
+        if (dil >= 10) e2Applied.dilutionG = dil;
+      }
     }
   }
   // Gieten op doorlopen (keuze Jelle): bij Kasuya wacht de app vanaf de derde giet op "Erdoor" —
@@ -9993,7 +10004,7 @@ function recomputeRecipeForRecord(rec){
    maling) komt uit de bestaande engine; die blijft ongewijzigd en rekent mee ter vergelijking.
    Alles hieronder is puur: geen DOM, alleen opslag via engine2On()/setEngine2().
    ============================================================ */
-const ENGINE2_VERSION = 'e2-2026.1';
+const ENGINE2_VERSION = 'e2-2026.2';
 const ENGINE2_KEY = 'brewconsole_engine2';
 // Massabalans (Guinard e.a. 2023, J. Food Sci.): EY = TDS/(1−TDS) · (W/D − R_abs), R_abs ≈ 2,1 bij filter.
 const E2_R_ABS = 2.1;
@@ -10018,6 +10029,28 @@ const E2_SOFT_WEIGHT = 0.5;
 const E2_FORGET = Math.pow(0.5, 1 / 30);
 const E2_TIME_MIN_N = 3;
 const E2_TIME_WINDOW = 10;
+// e2-2026.2 · blinde paren (Thurstone): nut U(s) = −k·(s − doel)²/W², ruis N(0; 1) op het verschil.
+// W = 0,17 (ln) betekent: staat het doel precies op kop A en is kop B 15 % anders, dan kiest je
+// tong A met ±75 % kans; bij 8 % verschil ±58 % (aanname, zie docs/engine2.md §8). Te sterk kost
+// 1,8× meer dan te slap (UC Davis-dataset). "Geen verschil" = |verschil| < 0,3.
+const E2_PAIR_W = 0.17;
+const E2_PAIR_NONE = 0.3;
+const E2_COST_STRONG = 1.35;
+const E2_COST_WEAK = 0.75;
+// Kalibratiepaar: voorgesteld zolang de onzekerheid groter is dan ±10 %; ±15 % uit elkaar zolang
+// ze groter is dan ±12 %, daarna ±8 %.
+const E2_CAL_SD = 0.10;
+const E2_CAL_WIDE_SD = 0.12;
+const E2_CAL_STEP_WIDE = Math.log(1.15);
+const E2_CAL_STEP_NARROW = Math.log(1.08);
+// Afwijking per zak: prior N(0; 0,05) in ln TDS, pas vanaf 3 koppen van die zak, alleen bij 70 %
+// kans op minstens een halve stap.
+const E2_BEAN_PRIOR_SD = 0.05;
+const E2_BEAN_MIN_N = 3;
+const E2_BEAN_GRID = [-0.16, -0.12, -0.08, -0.04, 0, 0.04, 0.08, 0.12, 0.16];
+// Maling en doorloop: vanaf 6 koppen met minstens twee maalstanden (elk 2×).
+const E2_GRIND_MIN_N = 6;
+const E2_GRIND_WINDOW = 20;
 const E2_STRENGTH_ORDINAL = { much_too_weak: -2, too_weak: -1, just_right: 0, too_strong: 1, much_too_strong: 2 };
 const E2_GRID = (function(){
   const g = [];
@@ -10093,15 +10126,54 @@ function e2Observations(store, rAbsFor){
     if (ord === undefined) return;
     const dose = r.actual && typeof r.actual.doseG === 'number' && r.actual.doseG > 0 ? r.actual.doseG : r.plan.doseG;
     const water = r.plan.waterMl;
-    const tds = e2Tds(dose, water, rOf(r.plan.methodId));
+    const rAbs = rOf(r.plan.methodId);
+    let tds = e2Tds(dose, water, rAbs);
     if (tds == null) return;
+    // Na het zetten bijgevuld (Engine 2 onder de dosisgrens): de kop is lichter dan het bed.
+    const dil = r.plan.inputs && r.plan.inputs.e2 && r.plan.inputs.e2.dilutionG > 0 ? r.plan.inputs.e2.dilutionG : 0;
+    if (dil > 0){
+      const mb = water - rAbs * dose + E2_EY_NOMINAL * dose;
+      tds = tds * mb / (mb + dil);
+    }
     const soft = !!r.tasting.late || !!r.plan.bypass;
-    out.push({ id: r.id, at: r.createdAt || 0, lnT: Math.log(tds), tds, ord, weight: soft ? E2_SOFT_WEIGHT : 1,
+    out.push({ type: 'jar', id: r.id, at: r.createdAt || 0, lnT: Math.log(tds), tds, ord, weight: soft ? E2_SOFT_WEIGHT : 1,
       method: r.plan.methodId, beanId: r.beanId || null, doseG: dose, waterG: water, late: !!r.tasting.late, bypass: !!r.plan.bypass });
   });
   return out.sort((a, b) => a.at - b.at);
 }
 
+// Blinde paren uit de A/B-proef (abTrials): twee koppen met dezelfde maling en hetzelfde water, alleen
+// de dosis verschilt. Ook de oudere "helder"-proeven tellen: de doses staan erin. lnT = kop A
+// (het recept), lnB = kop B (de variant).
+function e2PairObservations(trials, rAbsFor){
+  const out = [];
+  (trials || []).forEach(t => {
+    if (!t || !t.preferred || !(t.controlDose > 0) || !(t.variantDose > 0) || !(t.waterMl > 0)) return;
+    if (Math.abs(t.controlDose - t.variantDose) < 0.1) return;
+    const rAbs = typeof rAbsFor === 'function' ? rAbsFor(t.method) : (rAbsFor || E2_R_ABS);
+    const a = e2Tds(t.controlDose, t.waterMl, rAbs);
+    const b = e2Tds(t.variantDose, t.waterMl, rAbs);
+    if (a == null || b == null) return;
+    const outcome = t.preferred === 'control' ? 'A' : t.preferred === 'variant' ? 'B' : 'none';
+    out.push({ type: 'pair', id: t.id, at: t.createdAt || 0, lnT: Math.log(a), lnA: Math.log(a), lnB: Math.log(b), outcome,
+      weight: 1, method: t.method || null, beanId: t.beanId || null });
+  });
+  return out;
+}
+function e2AllObservations(store, trials, rAbsFor){
+  return e2Observations(store, rAbsFor).concat(e2PairObservations(trials, rAbsFor)).sort((a, b) => a.at - b.at);
+}
+function e2Utility(s, g){
+  const k = s > g ? E2_COST_STRONG : E2_COST_WEAK;
+  return -k * Math.pow((s - g) / E2_PAIR_W, 2);
+}
+// Kans op de uitkomst van een blind paar bij doel g.
+function e2PairProb(outcome, lnA, lnB, g){
+  const d = e2Utility(lnA, g) - e2Utility(lnB, g);
+  if (outcome === 'A') return Math.max(1e-12, 1 - e2Phi(E2_PAIR_NONE - d));
+  if (outcome === 'B') return Math.max(1e-12, e2Phi(-E2_PAIR_NONE - d));
+  return Math.max(1e-12, e2Phi(E2_PAIR_NONE - d) - e2Phi(-E2_PAIR_NONE - d));
+}
 // Rooster-posterior over je doel (ln TDS), gemiddeld over de hellingen. Incrementeel met vergeten:
 // elke nieuwe kop dempt de eerdere bewijskracht met E2_FORGET.
 function e2NewPosterior(priorCenterLn){
@@ -10109,6 +10181,13 @@ function e2NewPosterior(priorCenterLn){
   return { priorCenterLn, logPrior, ll: E2_SLOPES.map(() => E2_GRID.map(() => 0)), n: 0 };
 }
 function e2AddObservation(post, o){
+  if (o.type === 'pair'){
+    // Een paar hangt niet af van hoe scherp je de sterktevraag beantwoordt: zelfde bijdrage per helling.
+    const ll = E2_GRID.map(g => o.weight * Math.log(e2PairProb(o.outcome, o.lnA, o.lnB, g)));
+    post.ll = post.ll.map(row => row.map((v, gi) => v * E2_FORGET + ll[gi]));
+    post.n += 1;
+    return post;
+  }
   post.ll = post.ll.map((row, bi) => row.map((v, gi) =>
     v * E2_FORGET + o.weight * Math.log(e2AnswerProb(o.ord, o.lnT, E2_GRID[gi], E2_SLOPES[bi]))));
   post.n += 1;
@@ -10168,9 +10247,16 @@ function e2Decide(obs, baselineLn){
       target += k * E2_HALF_STEP;
     }
     const recent = obs.slice(Math.max(0, idx - 2), idx + 1);
-    const atTarget = recent.length === 3 && recent.every(r => r.ord === 0 && Math.abs(r.lnT - before) < E2_HALF_STEP);
+    // "Goed op het doel": een sterkte-antwoord "goed" vlak bij het doel, of een blind paar waarin het
+    // recept (kop A, op het doel) won.
+    const atTarget = recent.length === 3 && recent.every(r => r.type === 'pair'
+      ? (r.outcome === 'A' && Math.abs(r.lnA - before) < E2_HALF_STEP)
+      : (r.ord === 0 && Math.abs(r.lnT - before) < E2_HALF_STEP));
+    // Rust alleen als het doel ook het midden van de schatting is: anders blijft Engine 2 zoeken.
+    const agrees = Math.abs(sum.medianLn - target) < E2_HALF_STEP / 2;
     if (k !== 0) mode = 'zoeken';
-    else if (sum.sdLn < E2_REST_SD && atTarget) mode = 'rust';
+    else if (sum.sdLn < E2_REST_SD && atTarget && agrees) mode = 'rust';
+    else if (mode === 'rust' && !agrees) mode = 'zoeken';
     trail.push({ id: o.id, beforeLn: before, afterLn: target, steps: k, up: pr.up, dn: pr.dn, mode, threshold: thr });
   });
   return { targetLn: target, mode, n: obs.length, trail, summary: e2Summary(post) };
@@ -10188,43 +10274,105 @@ function e2TimeModel(store, method, technique){
     .forEach(r => {
       const base = r.plan.inputs && r.plan.inputs.e2 && typeof r.plan.inputs.e2.baseTotalSec === 'number'
         ? r.plan.inputs.e2.baseTotalSec : r.plan.expectedDrainEndSec;
-      if (typeof base === 'number' && base > 0) ratios.push(r.actual.bedDrySec / base);
+      if (typeof base === 'number' && base > 0) ratios.push({ ratio: r.actual.bedDrySec / base, click: typeof r.actual.grindClick === 'number' ? r.actual.grindClick : null });
     });
-  const recent = ratios.slice(-E2_TIME_WINDOW);
-  if (recent.length < E2_TIME_MIN_N) return { n: recent.length, factor: null };
+  const recent = ratios.slice(-E2_TIME_WINDOW).map(x => x.ratio);
+  if (recent.length < E2_TIME_MIN_N) return { n: recent.length, factor: null, grind: e2GrindEffect(ratios) };
   const factor = medianOf(recent);
   const dev = medianOf(recent.map(x => Math.abs(x - factor)));
-  if (!(factor >= 0.7 && factor <= 1.5)) return { n: recent.length, factor: null, outOfRange: factor };
-  return { n: recent.length, factor, spread: dev };
+  const lastClick = ratios.length ? ratios[ratios.length - 1].click : null;
+  if (!(factor >= 0.7 && factor <= 1.5)) return { n: recent.length, factor: null, outOfRange: factor, grind: e2GrindEffect(ratios) };
+  return { n: recent.length, factor, spread: dev, lastClick, grind: e2GrindEffect(ratios) };
+}
+// Wat één klik met je doorloop doet: kleinste kwadraten van ln(Bed droog / schema) op de klik, over je
+// laatste 20 koppen met een ingevulde klik. Alleen als er minstens twee standen met elk 2 koppen zijn.
+function e2GrindEffect(points){
+  const pts = (points || []).filter(p => typeof p.click === 'number').slice(-E2_GRIND_WINDOW);
+  const counts = {};
+  pts.forEach(p => { counts[p.click] = (counts[p.click] || 0) + 1; });
+  const usable = Object.values(counts).filter(c => c >= 2).length;
+  if (pts.length < E2_GRIND_MIN_N || usable < 2) return { n: pts.length, perClick: null, clicks: Object.keys(counts).length };
+  const xs = pts.map(p => p.click), ys = pts.map(p => Math.log(p.ratio));
+  const mx = xs.reduce((a, b) => a + b, 0) / xs.length, my = ys.reduce((a, b) => a + b, 0) / ys.length;
+  const sxx = xs.reduce((a, x) => a + (x - mx) * (x - mx), 0);
+  if (!(sxx > 0)) return { n: pts.length, perClick: null, clicks: Object.keys(counts).length };
+  const b = xs.reduce((a, x, i) => a + (x - mx) * (ys[i] - my), 0) / sxx;
+  const res = ys.map((y, i) => y - (my + b * (xs[i] - mx)));
+  const se = Math.sqrt(res.reduce((a, r) => a + r * r, 0) / Math.max(1, pts.length - 2) / sxx);
+  const known = Math.abs(b) > 2 * se;
+  return { n: pts.length, perClick: known ? b : null, slope: b, se, clicks: Object.keys(counts).length };
 }
 
+/* Afwijking per zak: je persoonlijke doel staat vast (uit al je koppen); de vraag is of de koppen van
+   déze zak er consequent naast zitten. Klein en terughoudend (prior ±5 %), pas vanaf 3 koppen, en
+   alleen bij 70 % kans op minstens een halve stap. */
+function e2BeanOffset(obs, beanId, gLn, slope){
+  const mine = (obs || []).filter(o => o.type !== 'pair' && beanId && o.beanId === beanId);
+  if (mine.length < E2_BEAN_MIN_N) return { n: mine.length, offsetLn: 0, applies: false };
+  const B = slope > 0 ? slope : E2_SLOPES[0];
+  const logw = E2_BEAN_GRID.map(d => -0.5 * Math.pow(d / E2_BEAN_PRIOR_SD, 2)
+    + mine.reduce((a, o) => a + o.weight * Math.log(e2AnswerProb(o.ord, o.lnT, gLn + d, B)), 0));
+  const mx = Math.max(...logw);
+  const w = logw.map(x => Math.exp(x - mx));
+  const tot = w.reduce((a, b) => a + b, 0);
+  const p = w.map(x => x / tot);
+  const mean = p.reduce((a, x, i) => a + x * E2_BEAN_GRID[i], 0);
+  const up = p.reduce((a, x, i) => a + (E2_BEAN_GRID[i] >= E2_HALF_STEP / 2 ? x : 0), 0);
+  const dn = p.reduce((a, x, i) => a + (E2_BEAN_GRID[i] <= -E2_HALF_STEP / 2 ? x : 0), 0);
+  if (up < E2_THRESHOLD_SEARCH && dn < E2_THRESHOLD_SEARCH) return { n: mine.length, offsetLn: 0, applies: false, meanLn: mean, up, dn };
+  let k = Math.round(mean / E2_HALF_STEP);
+  k = Math.max(-E2_MAX_STEPS, Math.min(E2_MAX_STEPS, k)) || (up > dn ? 1 : -1);
+  return { n: mine.length, offsetLn: k * E2_HALF_STEP, applies: true, meanLn: mean, up, dn };
+}
+// Een kalibratiepaar: kop A = je recept, kop B ±8 of ±15 % in de richting waar Engine 2 het minst zeker
+// van is. Alleen zolang de onzekerheid groter is dan ±10 % en er al koppen zijn.
+function e2CalibrationFor(summary, targetLn, n){
+  if (!summary || n < 2 || !(summary.sdLn > E2_CAL_SD)) return null;
+  const pr = e2ProbBeyond(summary, targetLn);
+  const dir = pr.up > pr.dn ? 1 : -1;
+  const stepLn = summary.sdLn > E2_CAL_WIDE_SD ? E2_CAL_STEP_WIDE : E2_CAL_STEP_NARROW;
+  return { dir, stepLn, pct: Math.round((Math.exp(stepLn) - 1) * 100), variantLn: targetLn + dir * stepLn };
+}
 /* Het Engine 2-plan bij een basisrecept van de bestaande engine (sterkte 0). Geeft de dosis en het
    verwachte einde dat computeRecipe() als e2Arg overneemt, plus alles wat de kaart en het advies
    tonen. */
-function engine2PlanFor(baseRec, method, store){
+function engine2PlanFor(baseRec, method, store, opts){
   if (!baseRec || !(baseRec.dose > 0) || !(baseRec.water > 0)) return null;
+  const o = opts || {};
   const retention = e2RetentionFor(method);
   const rFor = (m) => e2RetentionFor(m).value;
-  const obs = e2Observations(store, rFor);
+  const obs = e2AllObservations(store, o.trials, rFor);
   // De bedoelde sterkte van het basisrecept: lag de dosis op de toestelgrens, dan telt de verhouding
   // die het recept eigenlijk wilde (doseEdge.targetRatio), zodat de grensmelding gewoon blijft.
   const baseWantedDose = baseRec.doseEdge && baseRec.doseEdge.targetRatio > 0 ? baseRec.water / baseRec.doseEdge.targetRatio : baseRec.dose;
   const baseTds = e2Tds(baseWantedDose, baseRec.water, retention.value);
   if (baseTds == null) return null;
   const dec = e2Decide(obs, Math.log(baseTds));
-  const targetTds = Math.exp(dec.targetLn);
+  const bean = o.beanId && dec.summary ? e2BeanOffset(obs, o.beanId, dec.targetLn, dec.summary.slopeMean) : { n: 0, offsetLn: 0, applies: false };
+  const targetLn = dec.targetLn + (bean.applies ? bean.offsetLn : 0);
+  const targetTds = Math.exp(targetLn);
   const ratio = e2RatioForTds(targetTds, retention.value);
   const doseG = Math.round(baseRec.water / ratio * 10) / 10;
   const band = dec.summary ? { lowRatio: e2RatioForTds(Math.exp(dec.summary.q90Ln), retention.value), highRatio: e2RatioForTds(Math.exp(dec.summary.q10Ln), retention.value) } : null;
   const time = baseRec.technique ? e2TimeModel(store, method, baseRec.technique) : { n: 0, factor: null };
   const bypass = !!(baseRec.bypassMl > 0);
   const totalTimeSec = (time.factor != null && !bypass) ? Math.round(baseRec.totalTime * time.factor / 5) * 5 : null;
+  // Hoeveel klikken je naar de schematijd van de techniek brengen (alleen als het effect van een
+  // klik bekend is en je meer dan 12 % afwijkt).
+  let grindToSchedule = null;
+  if (time.factor != null && time.grind && time.grind.perClick != null && Math.abs(Math.log(time.factor)) > Math.log(1.12)){
+    const clicks = Math.round(-Math.log(time.factor) / time.grind.perClick);
+    if (clicks !== 0 && Math.abs(clicks) <= 4) grindToSchedule = { clicks, perClickPct: Math.round((Math.exp(time.grind.perClick) - 1) * 1000) / 10 };
+  }
+  const cal = e2CalibrationFor(dec.summary, targetLn, dec.n);
+  const calibration = cal ? Object.assign({}, cal, { variantDoseG: Math.round(baseRec.water / e2RatioForTds(Math.exp(cal.variantLn), retention.value) * 10) / 10 }) : null;
+  const pairs = obs.filter(x => x.type === 'pair').length;
   const last = dec.trail.length ? dec.trail[dec.trail.length - 1] : null;
   return {
-    version: ENGINE2_VERSION, doseG, targetTds, ratio, band, mode: dec.mode, n: dec.n,
+    version: ENGINE2_VERSION, doseG, targetTds, ratio, band, mode: dec.mode, n: dec.n, pairs,
     sdLn: dec.summary ? dec.summary.sdLn : null, slopeMean: dec.summary ? dec.summary.slopeMean : null,
-    retention, baseDoseG: baseRec.dose, baseRatio: baseRec.water / baseRec.dose, baseTds,
-    baseTotalSec: baseRec.totalTime, totalTimeSec, time, last, trail: dec.trail
+    retention, rAbs: retention.value, baseDoseG: baseRec.dose, baseRatio: baseRec.water / baseRec.dose, baseTds,
+    baseTotalSec: baseRec.totalTime, totalTimeSec, time, grindToSchedule, bean, calibration, last, trail: dec.trail
   };
 }
 // Wat er bewaard wordt bij de start van een kop (record plan.inputs.e2): genoeg om het recept na
@@ -10232,7 +10380,9 @@ function engine2PlanFor(baseRec, method, store){
 function e2InputsOf(plan){
   if (!plan) return null;
   return { version: plan.version, doseG: plan.doseG, totalTimeSec: plan.totalTimeSec, baseTotalSec: plan.baseTotalSec,
-    targetTds: Math.round(plan.targetTds * 1000) / 1000, mode: plan.mode, n: plan.n };
+    targetTds: Math.round(plan.targetTds * 1000) / 1000, mode: plan.mode, n: plan.n, rAbs: plan.rAbs,
+    beanOffsetLn: plan.bean && plan.bean.applies ? plan.bean.offsetLn : 0,
+    dilutionG: plan.dilutionG > 0 ? plan.dilutionG : 0 };
 }
 
 /* Hendeltabel van Engine 2 voor alles behalve de sterkte zelf (die regelt de posterior). Afgeleid
@@ -13625,9 +13775,34 @@ function abDosesForState(){
   const variant = computeRecipe(...args, AB_LIGHTER_STEP, state.bypassPct, state.e2Plan || null);
   return { control, variant };
 }
+// Engine 2: het kalibratiepaar. Kop A = je recept, kop B ±8 of ±15 % koffie; de uitslag gaat als blind
+// paar de sterkte-posterior in (e2PairObservations()).
+function renderEngine2Pair(el){
+  const pl = state.e2Plan;
+  if (!abOpenTrial && !(pl && pl.calibration)){ el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  let body;
+  if (abOpenTrial){
+    const t = abOpenTrial;
+    const dose = (cup) => fmt(cup === t.cupForVariant ? t.variantDose : t.controlDose, 1);
+    body = `<p class="ab-text">Kop 1: <b>${dose(1)} g</b> · Kop 2: <b>${dose(2)} g</b>, verder precies hetzelfde (maling, water, schema). Zet het kopnummer op een stickertje <b>onder</b> elke kop, schuif de koppen door elkaar (of laat iemand anders dat doen) en proef zonder te kijken.</p>
+      <p class="ab-q">Welke vond je lekkerder? <span class="ab-q-hint">(het nummer onder de kop)</span></p><div class="chip-row">${['1','2','none'].map(a => `<button type="button" class="chip" data-ab-q="preferredCup" data-ab-a="${a}" data-selected="${t.preferredCup === a}">${a === 'none' ? 'Geen verschil' : 'Kop ' + a}</button>`).join('')}</div>
+      <div class="ab-actions"><button type="button" class="advisor-primary" id="ab-reveal-btn"${t.preferredCup ? '' : ' disabled'}>Onthullen en opslaan</button>
+      <button type="button" class="link-secondary" id="ab-cancel-btn">Annuleren</button></div>`;
+  } else {
+    const c = pl.calibration;
+    const own = state.recipe ? state.recipe.dose : pl.doseG;
+    body = `<p class="ab-text">Engine 2 weet je sterkte nog op ±${Math.round((Math.exp(pl.sdLn) - 1) * 100)} %. Eén blinde vergelijking zegt meer dan een paar losse koppen. Zet twee koppen vlak na elkaar, zelfde maling en water: <b>${fmt(own, 1)} g</b> en <b>${fmt(c.variantDoseG, 1)} g</b> (${c.pct} % ${c.dir > 0 ? 'meer' : 'minder'} koffie). Schuif ze door elkaar en proef zonder te kijken.</p>
+      ${abLastReveal ? `<p class="ab-reveal" id="ab-reveal">${escapeHtml(abLastReveal)}</p>` : ''}
+      ${pl.pairs ? `<p class="ab-tally">${pl.pairs} ${pl.pairs === 1 ? 'vergelijking' : 'vergelijkingen'} gedaan; ze tellen mee in je sterkte.</p>` : ''}
+      <button type="button" class="advisor-link" id="ab-start-btn">Start een vergelijking</button>`;
+  }
+  el.innerHTML = `<p class="ab-title">Blinde vergelijking voor je sterkte</p>${body}`;
+}
 function renderAbTrial(){
   const el = document.getElementById('ab-trial');
   if (!el) return;
+  if (engine2On()){ renderEngine2Pair(el); return; }
   if (state.goal !== 'bright' || !state.recipe || !(state.recipe.dose > 0)){ el.hidden = true; el.innerHTML = ''; return; }
   el.hidden = false;
   const matching = abTrialsForStep(abTrials, AB_LIGHTER_STEP);
@@ -13662,7 +13837,12 @@ function renderAbTrial(){
 function handleAbTrialClick(e){
   const btn = e.target.closest('button');
   if (!btn || btn.disabled) return;
-  if (btn.id === 'ab-start-btn'){
+  if (btn.id === 'ab-start-btn' && engine2On() && state.e2Plan && state.e2Plan.calibration && state.recipe){
+    const c = state.e2Plan.calibration;
+    abOpenTrial = { id: 'ab_' + Date.now(), createdAt: Date.now(), beanId: state.beanId || null, method: state.method, profile: state.profile, roast: state.roast, waterMl: state.waterMl,
+      controlDose: state.recipe.dose, variantDose: c.variantDoseG, variantStep: 'e2', kind: 'e2', cupForVariant: Math.random() < 0.5 ? 1 : 2, preferredCup: null, brighterCup: null };
+    abLastReveal = null;
+  } else if (btn.id === 'ab-start-btn'){
     const { control, variant } = abDosesForState();
     abOpenTrial = { id: 'ab_' + Date.now(), createdAt: Date.now(), beanId: state.beanId || null, method: state.method, profile: state.profile, roast: state.roast, waterMl: state.waterMl,
       controlDose: control.dose, variantDose: variant.dose, variantStep: AB_LIGHTER_STEP, cupForVariant: Math.random() < 0.5 ? 1 : 2, preferredCup: null, brighterCup: null };
@@ -13675,12 +13855,14 @@ function handleAbTrialClick(e){
     const t = abOpenTrial;
     const rec = { id: t.id, createdAt: t.createdAt, beanId: t.beanId, method: t.method, profile: t.profile, roast: t.roast, waterMl: t.waterMl,
       controlDose: t.controlDose, variantDose: t.variantDose, variantStep: t.variantStep, cupForVariant: t.cupForVariant,
-      preferred: abArmForAnswer(t.preferredCup, t.cupForVariant), brighter: abArmForAnswer(t.brighterCup, t.cupForVariant) };
+      preferred: abArmForAnswer(t.preferredCup, t.cupForVariant), brighter: abArmForAnswer(t.brighterCup, t.cupForVariant), kind: t.kind || null };
     abTrials.push(rec);
     saveAbTrials();
-    const pick = rec.preferred === 'variant' ? 'de kop met minder koffie' : rec.preferred === 'control' ? 'het gewone recept' : 'geen van beide';
-    abLastReveal = `Kop ${t.cupForVariant} had minder koffie (${fmt(t.variantDose, 1)} g). Je vond ${pick} lekkerder.`;
+    const more = t.variantDose > t.controlDose;
+    const pick = rec.preferred === 'variant' ? `de kop met ${more ? 'meer' : 'minder'} koffie` : rec.preferred === 'control' ? (t.kind === 'e2' ? 'je eigen recept' : 'het gewone recept') : 'geen van beide';
+    abLastReveal = `Kop ${t.cupForVariant} had ${more ? 'meer' : 'minder'} koffie (${fmt(t.variantDose, 1)} g). Je vond ${pick} lekkerder.${t.kind === 'e2' ? ' Engine 2 neemt dit mee in je sterkte.' : ''}`;
     abOpenTrial = null;
+    if (t.kind === 'e2'){ renderPrep(); return; }
   } else if (btn.id === 'ab-lighter-on'){
     setAbLighter(true);
     applyGoalStrengthPreference();
@@ -14083,7 +14265,7 @@ function engine2PlanForState(){
   if (!engine2On()) return null;
   try {
     const base = computeRecipe(state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL, 0, state.bypassPct, null);
-    return engine2PlanFor(base, state.method, brewStore);
+    return engine2PlanFor(base, state.method, brewStore, { trials: abTrials, beanId: state.beanId || null });
   } catch(e){ console.warn('Engine 2 viel terug op de bestaande engine:', e); return null; }
 }
 // De Engine 2-kaart boven de sterkteknoppen: jouw sterkte, hoe zeker, en het verwachte einde.
@@ -14118,8 +14300,18 @@ function renderEngine2Card(){
   if (e.clamped) lines.push(e.wantedDoseG < e.doseG
     ? `Lichter kan bij ${rec.water} g water niet binnen de dosisgrens van deze brewer. Kies meer water voor een lichtere kop.`
     : `Sterker kan bij ${rec.water} g water niet binnen de dosisgrens van deze brewer. Kies minder water voor een sterkere kop.`);
+  if (pl.pairs) lines.push(`Waarvan ${pl.pairs} ${pl.pairs === 1 ? 'blinde vergelijking' : 'blinde vergelijkingen'}: die wegen het zwaarst.`);
+  if (pl.bean && pl.bean.applies) lines.push(`Voor deze zak ${pl.bean.offsetLn < 0 ? 'iets lichter' : 'iets sterker'} (±${Math.round((Math.exp(Math.abs(pl.bean.offsetLn)) - 1) * 100)} %): de ${pl.bean.n} koppen ervan wijzen daar duidelijk op.`);
+  if (e.dilutionG > 0) lines.push(`Lichter dan de dosisgrens: zet ${fmt(e.doseG, 1)} g en voeg na het zetten ${e.dilutionG} g heet water toe. Dat geeft dezelfde kop als zetten met meer water.`);
+  if (pl.calibration) lines.push(`Engine 2 weet je sterkte nog op ±${Math.round((Math.exp(pl.sdLn) - 1) * 100)} %. Een blinde vergelijking (onder "Meer voor deze kop") leert hem dat het snelst.`);
   if (Math.abs(e.doseG - pl.baseDoseG) >= 0.1) lines.push(`De oude engine zou ${fmt(pl.baseDoseG, 1)} g zetten (${e2RatioText(pl.baseRatio)}).`);
   if (e.totalTimeSec) lines.push(`Verwacht klaar rond ${fmtTime(e.totalTimeSec)}: jouw eigen doorloop over ${pl.time.n} koppen. Het schema zelf zegt ${fmtTime(e.baseTotalSec)}.`);
+  if (pl.grindToSchedule){
+    const g = pl.grindToSchedule;
+    lines.push(`Eén klik grover maakt je doorloop ${Math.abs(g.perClickPct).toString().replace('.', ',')} % ${g.perClickPct < 0 ? 'korter' : 'langer'}. Wil je dichter bij de ${fmtTime(e.baseTotalSec)} van het schema: ${Math.abs(g.clicks)} ${Math.abs(g.clicks) === 1 ? 'klik' : 'klikken'} ${g.clicks > 0 ? 'grover' : 'fijner'}. Dat is een keuze voor het proces, niet voor de sterkte.`);
+  } else if (pl.time && pl.time.factor != null && Math.abs(Math.log(pl.time.factor)) > Math.log(1.12) && pl.time.grind && pl.time.grind.perClick == null){
+    lines.push(`Je doorloop wijkt ${Math.round(Math.abs(pl.time.factor - 1) * 100)} % af van het schema. Wat één klik daaraan doet, weet Engine 2 nog niet: zet eens drie koppen twee klikken grover, dan leert hij het.`);
+  }
   if (pl.retention.measured) lines.push(`Met je gemeten vasthouden (${fmt(pl.retention.value, 2)} g per gram).`);
   el.innerHTML = `<p class="prep-next-adjust-title">Engine 2 · ${pl.n ? 'jouw sterkte' : 'startpunt'}</p>
     <p class="prep-next-adjust-text">${escapeHtml(e2RatioText(ratioNow))} · ${escapeHtml(fmt(e.doseG, 1))} g op ${escapeHtml(String(rec.water))} g</p>
@@ -14132,7 +14324,7 @@ function renderEngine2Status(){
   if (!el) return;
   if (!engine2On()){ el.textContent = 'Uit: de oude engine is actief.'; return; }
   try {
-    const obs = e2Observations(brewStore, m => e2RetentionFor(m).value);
+    const obs = e2AllObservations(brewStore, abTrials, m => e2RetentionFor(m).value);
     if (!obs.length){ el.textContent = `Aan (${ENGINE2_VERSION}). Nog geen geproefde koppen met een sterkte-antwoord.`; return; }
     const dec = e2Decide(obs, 0);
     const tds = Math.exp(dec.targetLn);
@@ -14144,7 +14336,7 @@ function renderEngine2Status(){
 // volgende kop staat al klaar op het receptscherm.
 function renderEngine2Panel(rec, el){
   const rFor = (m) => e2RetentionFor(m).value;
-  const obs = e2Observations(brewStore, rFor);
+  const obs = e2AllObservations(brewStore, abTrials, rFor);
   const dec = e2Decide(obs, 0);
   const entry = dec.trail.find(x => x.id === rec.id) || null;
   const tx = entry ? e2DecisionText(entry)
@@ -14179,6 +14371,7 @@ function renderPrep(){
   applyGoalStrengthPreference(); // BC-10: alleen als je dat zelf aanzette na je blinde proeven
   state.e2Plan = engine2PlanForState(); // Engine 2: jouw sterkte en verwachte einde (null als hij uit staat)
   state.recipe = computeRecipe(state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL, state.strengthAdjust, state.bypassPct, state.e2Plan);
+  if (state.e2Plan && state.recipe && state.recipe.engine2) state.e2Plan.dilutionG = state.recipe.engine2.dilutionG || 0;
   const rec = state.recipe;
   renderEngine2Card();
 
@@ -14422,6 +14615,12 @@ function renderPrep(){
       <div class="stat-value">${rec.tempBand.min}–${rec.tempBand.max}<span class="unit"> °C</span></div>
       <div class="stat-sub">${escapeHtml(rec.tempInstruction || '')}</div>
     </div>
+    ${rec.engine2 && rec.engine2.dilutionG > 0 ? `
+    <div class="stat-block stat-block--wide bc-accent" id="e2-dilution-tile">
+      <div class="stat-label">+ Toevoegen na het zetten</div>
+      <div class="stat-value c-accent">+${rec.engine2.dilutionG}<span class="unit"> g</span></div>
+      <div class="stat-sub">heet water in de kan: Engine 2 wil lichter dan de dosisgrens toelaat</div>
+    </div>` : ''}
     ${state.bypass ? `
     <div class="stat-block stat-block--wide bc-accent">
       <div class="stat-label">+ Toevoegen na het zetten</div>

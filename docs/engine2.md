@@ -1,4 +1,4 @@
-# Engine 2 (e2-2026.1)
+# Engine 2 (e2-2026.2)
 
 Engine 2 zet je **sterkte** (de dosis) en je **verwachte einde**. Na het proeven geeft hij **advies** volgens een hendeltabel.
 
@@ -87,9 +87,59 @@ Bij een sterkteklacht geeft Engine 2 geen extra smaaktip: dat lost de sterkte ze
 - **Advies na het proeven:** het Engine 2-paneel vervangt het oude advies. Het oude advies wordt nog wel berekend en bewaard, en staat ter vergelijking onder het paneel.
 - **Record:** elke kop bewaart `plan.inputs.e2` (versie, dosis, eindtijd, basiseindtijd, doel, modus, n). Daarmee valt het recept na herladen exact terug te rekenen, en blijft het tijdmodel eerlijk.
 
-## 7. Nog niet in deze versie
+## 7. e2-2026.2: blinde paren, afwijking per zak, verdunnen, maling
 
-- Blinde A/B-paren als hoofdsignaal (Thurstone). De A/B-proef werkt wel, relatief tot Engine 2.
-- De karakter-as als automatische stap. Nu is die er alleen als tip, omdat de EY per klik zonder refractometer een aanname is.
-- Bypass als automatische route naar een lage sterkte onder de dosisgrens. Nu meldt Engine 2 de grens.
-- Een kleine smaakafwijking per zak.
+### 7.1 Blinde paren als sterkste signaal
+Elke afgeronde A/B-proef met twee doses is een blind paar. Dat geldt ook voor de oudere "helder"-proeven.
+- **Kop A en kop B:** kop A is het recept, kop B de variant.
+- **Model (Thurstone):**
+
+  ```
+  U(s) = −k·(s − doel)²/W²,  W = 0,17 (ln TDS),  k = 1,35 als s > doel (te sterk), 0,75 als s < doel
+  verschil d = U(A) − U(B) + N(0; 1);   A als d > 0,3,  B als d < −0,3,  anders "geen verschil"
+  ```
+
+  - **W [aanname].** Gekozen zodat iemand met zijn doel precies op kop A bij 15 % verschil in ±75 % van de gevallen A kiest, en bij 8 % verschil in ±58 %.
+  - **k.** De verhouding 1,8 komt uit de UC Davis-dataset: te sterk kost meer dan te slap.
+- **In de berekening:** een paar telt mee in dezelfde rooster-posterior en dezelfde beslisregel als de sterktevraag. Het hangt niet af van de helling.
+- **Rust:** een gewonnen paar op het doel telt als "goed".
+- **Kalibratiepaar:**
+  - **Wanneer:** zolang de onzekerheid groter is dan ±10 %, en er minstens 2 koppen zijn.
+  - **Wat:** Engine 2 stelt onder "Meer voor deze kop" een blinde vergelijking voor. Kop A is je recept; kop B ligt ±15 % ernaast zolang de onzekerheid groter is dan ±12 %, daarna ±8 %.
+  - **Richting:** kop B ligt aan de kant waar Engine 2 het minst zeker van is.
+  - **Na afloop:** de uitslag gaat direct de posterior in.
+  - **Oude proef:** de "helder"-proef van de oude engine verschijnt onder Engine 2 niet meer.
+
+### 7.2 Rust
+Engine 2 komt in rust bij drie keer "goed" op het doel, een onzekerheid kleiner dan ±12 %, **én** een doel dat binnen een kwart stap van het midden van de schatting ligt. Wijkt dat midden later meer af, dan zoekt Engine 2 weer met drempel 0,70.
+
+### 7.3 Afwijking per zak
+Je persoonlijke doel komt uit al je koppen. Per zak geldt een kleine, terughoudende afwijking:
+- prior N(0; 0,05) in ln TDS;
+- pas vanaf 3 koppen van die zak;
+- alleen bij 70 % kans op minstens een halve stap;
+- hooguit twee halve stappen.
+
+### 7.4 Lichter dan de dosisgrens
+Ligt je doel onder de dosisgrens van de brewer, dan zet Engine 2 op de grens en geeft hij een tegel "+X g heet water na het zetten":
+
+```
+X = M_b · (TDS_nu / TDS_doel − 1),   M_b = W − R_abs·D + EY·D
+```
+
+- **Waarom gelijkwaardig:** zelfde TDS en extractie als een zetting met meer water (Guinard e.a. 2023).
+- **Wanneer niet:** niet bij bypass.
+- **Record:** `plan.inputs.e2.dilutionG`. Bij het leren telt de kop met de verdunde TDS mee.
+
+### 7.5 Maling en doorloop
+Engine 2 schat met kleinste kwadraten wat één klik doet: ln(Bed droog / schema) tegen de klik, over je laatste 20 koppen met een ingevulde klik.
+- **Wanneer bekend:** vanaf 6 koppen met minstens twee standen van elk 2 koppen, en alleen als het effect groter is dan 2× de standaardfout.
+- **Wat de kaart dan zegt:** hoeveel klikken je naar de schematijd brengen.
+  - Dat is een procesadvies, niet voor de sterkte.
+  - Alleen bij meer dan 12 % afwijking, en maximaal 4 klikken.
+- **Zolang het effect onbekend is:** de kaart stelt een kleine proef voor (3 koppen, 2 klikken grover).
+
+## 8. Nog niet in deze versie
+- **De karakter-as als automatische stap.** Nu alleen als tip: de EY per klik blijft zonder refractometer een aanname.
+- **Een invoer voor een gemeten TDS (refractometer).**
+- **Chemex-templates met een eigen bron.**
