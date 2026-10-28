@@ -269,3 +269,63 @@ describe('Engine 2 in de app · e2-2026.3', () => {
     await page.close();
   });
 });
+
+describe('Engine 2 in de app · e2-2026.4', () => {
+  let browser;
+  before(async () => { browser = await chromium.launch({ executablePath, args: ['--no-sandbox'] }); });
+  after(async () => { if (browser) await browser.close(); });
+
+  async function openPrep(seed){
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    const errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await page.addInitScript((s) => {
+      if (sessionStorage.getItem('e2seed')) return;
+      sessionStorage.setItem('e2seed', '1');
+      localStorage.setItem('brewconsole_brews', JSON.stringify(s));
+    }, seed);
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.evaluate(() => document.querySelector('.navbar [data-nav="method"]').click());
+    await page.click('[data-method="v60"]');
+    await page.click('#roast-grid [data-roast="medium"]');
+    await page.click('#profile-styles > summary');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await page.waitForSelector('#screen-prep.active');
+    return { page, errors };
+  }
+
+  test('een veel tragere doorloop dan je gewone geeft een controle in het advies', async () => {
+    const seed = [1, 2, 3].map(i => cup(i, 16.3, 300, 'just_right'));
+    const slow = cup(4, 16.3, 300, 'just_right');
+    slow.actual.bedDrySec = 330;
+    slow.plan.inputs = { e2: { totalTimeSec: 255, baseTotalSec: 210 } };
+    const { page, errors } = await openPrep(seed.concat([slow]));
+    await page.evaluate(() => renderRecommendationPanel(getBrewRecord('e2s_4')));
+    const text = await page.locator('#reco-card').innerText();
+    assert.match(text, /Bed droog op 5:30, terwijl je gewoonlijk rond 4:15 zit \(29 % langzamer\)/);
+    assert.match(text, /verstopping/);
+    assert.deepEqual(errors, []);
+    await page.close();
+  });
+
+  test('een proef die bij jou 2× slechter uitviel, staat niet meer klaar', async () => {
+    const seed = [1, 2].map(i => cup(i, 16.3, 300, 'just_right'));
+    [3, 4].forEach(i => {
+      const r = cup(i, 16.3, 300, 'just_right', { vsLast: 'worse' });
+      r.plan.inputs = { e2: { trial: { key: 'bitter' } } };
+      seed.push(r);
+    });
+    seed.push(cup(5, 16.3, 300, 'just_right', { finish: ['bitter'] }));
+    const { page, errors } = await openPrep(seed);
+    await page.evaluate(() => renderRecommendationPanel(getBrewRecord('e2s_5')));
+    assert.equal(await page.locator('[data-e2-tip="bitter"]').count(), 0);
+    assert.match(await page.locator('#reco-card').innerText(), /2× geprobeerd: 0 beter, 0 gelijk, 2 slechter\. Engine 2 zet deze proef daarom niet meer klaar/);
+    await page.evaluate(() => renderInsightsScreen('history-stats-body'));
+    const meet = await page.locator('#e2-meetlat').textContent();
+    assert.match(meet, /Bitter → lichter: 2× geprobeerd .* werkt bij jou niet/);
+    assert.match(meet, /Lekker \(4 of 5\): 5 van je laatste 5 koppen/);
+    assert.match(meet, /wijzigingen per 10 koppen; het doel is hooguit 2/);
+    assert.deepEqual(errors, []);
+    await page.close();
+  });
+});

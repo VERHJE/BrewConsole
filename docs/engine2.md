@@ -1,4 +1,4 @@
-# Engine 2 (e2-2026.3)
+# Engine 2 (e2-2026.4)
 
 Engine 2 zet je **sterkte** (de dosis) en je **verwachte einde**. Na het proeven geeft hij **advies** volgens een hendeltabel.
 
@@ -187,7 +187,43 @@ Doel: minder wijzigingen bij evenveel goede koppen.
 ### 8.5 Home
 De kaart **Je volgende kop** heeft een regel "Engine 2 · jouw sterkte 1:x · je zit goed / zoekt nog", plus een klaargezette proef voor die brewer.
 
-## 9. Nog niet in deze versie
-- **Leren van proefuitkomsten.** De meetlat telt ze; een regel die tips na een paar keer "slechter" weglaat, komt pas als er genoeg uitkomsten zijn.
+## 9. e2-2026.4: leren van proeven, doorloop per zak, processignaal, meetlat
+
+### 9.1 Leren van je proeven
+Per proeftip telt Engine 2 de uitkomsten (`e2TrialOutcomes()`, uit `plan.inputs.e2.trial` en `tasting.vsLast`).
+- **Werkt bij jou:** minstens 2× beter, en vaker beter dan slechter. De tip staat voorop, met de telling.
+- **Werkt bij jou niet:** minstens 2× slechter, en vaker slechter dan beter. De tip blijft zichtbaar met de telling, maar zonder knop: Engine 2 zet hem niet meer klaar.
+- **Anders:** de tip blijft zoals hij was, met "tot nu toe" en de telling.
+- **Waarom zo weinig:** het gaat alleen om wat Engine 2 klaarzet, nooit om je recept. Een drempel van 2 [aanname] houdt de lijst eerlijk zonder dat één slechte kop een tip wegneemt.
+
+### 9.2 Doorloop per zak en per klik
+`e2TimeModel(store, method, technique, { beanId, plannedClick })`:
+- **Per zak alleen het niveau** (ontwerp §4.3): vanaf 2 koppen van die zak
+
+  ```
+  ln f_zak = (n·gem. ln(Bed droog/schema)_zak + 3·ln f_brewer) / (n + 3)
+  ```
+
+  Het gewicht 3 is een aanname: een zak moet het met een paar koppen laten zien.
+- **Per klik:** is het effect van één klik bekend (§7.5), en maal je anders dan het gemiddelde van je recente koppen, dan schuift het verwachte einde mee (`exp(b·Δklik)`, hooguit 4 klikken). De maalstand komt van het receptscherm, ook als een proef een klik fijner zet.
+- **Grenzen:** het verwachte einde blijft tussen 0,6× en 1,7× het schema.
+
+### 9.3 Doorloop als processignaal
+Wijkt Bed droog meer dan 20 % af van het verwachte einde **dat bij het zetten gold** (`plan.inputs.e2.totalTimeSec`), en meer dan 3× je gewone spreiding, dan geeft het advies een controle:
+- **langzamer:** verstopping: fijnstof, een te fijne stand of een dichtgeslagen filter;
+- **sneller:** kanaalvorming of een te grove stand.
+
+Je sterkte verandert hier niet door. Zonder persoonlijk verwacht einde (minder dan 3 koppen met Bed droog) geeft Engine 2 dit signaal niet; tegen het schema zou het bij jou elke kop afgaan.
+
+### 9.4 Meetlat, aangevuld (ontwerp §9)
+- wijzigingen per 10 koppen, tegen het doel van hooguit 2;
+- "lekker" (4 of 5) over je laatste 10 koppen met een waardering;
+- per zak hoeveel koppen tot de eerste lekkere (mediaan, en hoeveel zakken nog zonder);
+- bij de proeven het oordeel uit §9.1.
+
+### 9.5 Wat de data afraden: waardering als signaal voor je sterkte
+In de UC Davis-data verschilt de waardering tussen de beste en de slechtste sterkte maar ±0,3 punt (9-puntsschaal), tegen een ruis binnen een persoon van 1,56. Eén waardering zegt dus vrijwel niets over je sterkte; de sterktevraag en blinde paren wel. De waardering telt daarom alleen in de meetlat, niet in de posterior.
+
+## 10. Nog niet in deze versie
 - **De karakter-as als automatische stap.** Ook met een refractometer blijft het een tip: de smaakkant (scherp zuur) is per persoon.
 - **Chemex-templates met een eigen bron.**

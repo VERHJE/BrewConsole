@@ -1019,3 +1019,18 @@ Jelle: "bouw de volgende stappen van Engine 2". Details staan in `docs/engine2.m
   - `tests/kernflow.smoke.test.mjs`: 1 nieuwe (TDS opslaan);
   - volledige suite 1075/1075. De rekenkern-hash is ongewijzigd.
 - **Jouw data:** geen TDS-metingen, dus hetzelfde recept (15,8 g op 300 ml, 18,5 g op 350 ml). De meetlat over je laatste 9 koppen: Engine 2 veranderde 2×, de oude engine stelde 6× een stap voor; sterkte goed bij 4 van de 9.
+
+## Engine 2 · e2-2026.4: leren van proeven, doorloop per zak, processignaal (keuze Jelle, okt 2026)
+
+Jelle: "bouw de volgende stappen van Engine 2". Details staan in `docs/engine2.md` §9.
+
+- **Leren van proeven:** een tip die bij jou 2× beter uitviel, staat voorop. Een tip die 2× slechter uitviel (en vaker slechter dan beter), zet Engine 2 niet meer klaar. De telling staat er altijd bij. Het recept verandert hier nooit door.
+- **Doorloop per zak:** alleen het niveau, gekrompen naar de brewerwaarde (gewicht 3 koppen). Een andere maalstand schuift het verwachte einde mee, zodra het klikeffect bekend is.
+- **Processignaal:** Bed droog meer dan 20 % (en 3× de spreiding) naast je eigen verwachte einde geeft een controle (verstopping of kanaalvorming). Niet tegen het schema: dan zou het bij Jelle elke kop afgaan.
+- **Meetlat:** wijzigingen per 10 koppen (doel ≤ 2), "lekker" over de laatste 10, en koppen tot de eerste lekkere per zak.
+- **Bewust niet:** de waardering als signaal voor de sterkte. In de dataset scheelt die ±0,3 punt tegen een ruis van 1,56.
+- **Toetsing:**
+  - `tests/engine2.test.mjs`: 7 nieuwe tests, 68 in totaal;
+  - `tests/engine2.smoke.test.mjs`: 2 nieuwe browsertests, 11 in totaal.
+- **Jouw data:** dosis gelijk (15,8 g op 300 ml). Halo loopt iets sneller door, dus het verwachte einde wordt 4:15 in plaats van 4:20. Lekker bij 6 van je laatste 9 koppen; een nieuwe zak had mediaan 2,5 koppen nodig tot de eerste lekkere.
+

@@ -455,3 +455,85 @@ describe('Engine 2 · e2-2026.3: tips als proef en de meetlat', () => {
     assert.deepEqual(JSON.parse(JSON.stringify(m.ey)), {});
   });
 });
+
+describe('Engine 2 · e2-2026.4: doorloop per zak en per klik', () => {
+  const timed = (bedDry, beanId, click) => {
+    const r = cup({ dose: 18.8, bedDry, beanId });
+    if (click != null) r.actual.grindClick = click;
+    return r;
+  };
+  test('een zak die langzamer doorloopt, krijgt een eigen einde, gekrompen naar je gewone', () => {
+    const store = [1, 2, 3, 4, 5, 6].map(() => timed(252, 'b1')).concat([timed(294, 'b2'), timed(294, 'b2')]);
+    const all = api.e2TimeModel(store, 'v60', 'Kasuya 4:6');
+    const b2 = api.e2TimeModel(store, 'v60', 'Kasuya 4:6', { beanId: 'b2' });
+    assert.equal(b2.bean.n, 2);
+    const own = 294 / 210, f = all.factor;
+    const expected = Math.exp((2 * Math.log(own) + api.E2_TIME_BEAN_K * Math.log(f)) / (2 + api.E2_TIME_BEAN_K));
+    assert.ok(Math.abs(b2.bean.factor - expected) < 1e-9);
+    assert.ok(b2.expectedFactor > f && b2.expectedFactor < own);
+    assert.equal(api.e2TimeModel(store.concat([timed(300, 'b3')]), 'v60', 'Kasuya 4:6', { beanId: 'b3' }).bean.factor, null, 'één kop is te weinig');
+  });
+  test('fijner malen dan je laatste koppen: met een bekend klikeffect schuift het einde mee', () => {
+    const store = [];
+    for (const c of [15, 16, 17]) for (let i = 0; i < 3; i++) store.push(timed(Math.round(210 * Math.exp(0.35 - 0.07 * (c - 15)) + (i - 1)), 'b1', c));
+    const same = api.e2TimeModel(store, 'v60', 'Kasuya 4:6', { plannedClick: 16 });
+    const finer = api.e2TimeModel(store, 'v60', 'Kasuya 4:6', { plannedClick: 14 });
+    assert.ok(same.grind.perClick < 0);
+    assert.ok(Math.abs(same.clickShift) < 1e-9);
+    assert.ok(finer.expectedFactor > same.expectedFactor * 1.1, `${finer.expectedFactor} tegen ${same.expectedFactor}`);
+  });
+});
+
+describe('Engine 2 · e2-2026.4: processignaal en leren van proeven', () => {
+  const t = { strength: 'just_right', acidity: 'lively', finish: [] };
+  test('Bed droog ver na je gewone einde → controle, ook bij een sterkteklacht', () => {
+    const slow = api.e2TipsFor({ ...t, strength: 'too_strong' }, { drain: { actualSec: 330, expectedSec: 255, spreadRel: 0.03 } });
+    assert.equal(slow.length, 1);
+    assert.equal(slow[0].key, 'drain_slow');
+    assert.equal(slow[0].kind, 'controle');
+    const fast = api.e2TipsFor(t, { drain: { actualSec: 190, expectedSec: 255, spreadRel: 0.03 } });
+    assert.equal(fast[0].key, 'drain_fast');
+  });
+  test('binnen je gewone spreiding geen signaal', () => {
+    assert.equal(api.e2TipsFor(t, { drain: { actualSec: 280, expectedSec: 255, spreadRel: 0.03 } }).length, 0);
+    assert.equal(api.e2TipsFor(t, { drain: { actualSec: 320, expectedSec: 255, spreadRel: 0.09 } }).length, 0, '3× een grote spreiding');
+  });
+  test('uitkomsten per tip tellen uit de records', () => {
+    const recs = ['better', 'worse', 'same', null].map(v => {
+      const r = cup({ dose: 16.3, strength: 'just_right' });
+      r.plan.inputs = { e2: { trial: { key: 'bitter' } } };
+      r.tasting.vsLast = v;
+      return r;
+    });
+    assert.deepEqual(JSON.parse(JSON.stringify(api.e2TrialOutcomes(recs))), { bitter: { tested: 4, better: 1, same: 1, worse: 1 } });
+  });
+  test('oordeel: 2× slechter en vaker slechter dan beter → niet meer klaarzetten; 2× beter → voorop', () => {
+    assert.equal(api.e2TrialVerdict({ tested: 3, better: 0, same: 1, worse: 2 }), 'niet');
+    assert.equal(api.e2TrialVerdict({ tested: 4, better: 2, same: 0, worse: 2 }), 'open');
+    assert.equal(api.e2TrialVerdict({ tested: 2, better: 2, same: 0, worse: 0 }), 'werkt');
+    assert.equal(api.e2TrialVerdict(null), null);
+    const tasting = { strength: 'just_right', acidity: 'sharp', finish: ['bitter', 'drying'], missed: 'body' };
+    const tips = api.e2TipsFor(tasting, { doseG: 17, waterG: 300, outcomes: {
+      bitter: { tested: 3, better: 0, same: 1, worse: 2 }, body: { tested: 2, better: 2, same: 0, worse: 0 } } });
+    assert.equal(tips.map(x => x.key).join(','), 'drying,body,sharp,bitter');
+    const bitter = tips.find(x => x.key === 'bitter');
+    assert.equal(bitter.trial, null);
+    assert.match(bitter.text, /niet meer klaar/);
+    assert.match(tips.find(x => x.key === 'body').text, /Bij jou: 2× geprobeerd: 2 beter/);
+  });
+});
+
+describe('Engine 2 · e2-2026.4: meetlat', () => {
+  test('lekker over de laatste 10 en koppen tot de eerste lekkere per zak', () => {
+    const likes = { b1: [2, 3, 4, 5], b2: [4], b3: [2, 3] };
+    const store = [];
+    for (const [beanId, ls] of Object.entries(likes)) ls.forEach(l => {
+      const r = cup({ dose: 16.3, strength: 'just_right', beanId });
+      r.tasting.liking = l;
+      store.push(r);
+    });
+    const m = api.e2Meetlat(store, []);
+    assert.deepEqual(JSON.parse(JSON.stringify(m.lekker)), { n: 7, hits: 3 });
+    assert.deepEqual(JSON.parse(JSON.stringify(m.firstLekker)), { beans: 3, median: 2, notYet: 1 });
+  });
+});
