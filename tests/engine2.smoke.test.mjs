@@ -329,3 +329,28 @@ describe('Engine 2 in de app · e2-2026.4', () => {
     await page.close();
   });
 });
+
+describe('Engine 2 in de app · e2-2026.5', () => {
+  test('de meetlat toont het verloop van je sterkte als grafiek, met een uitleg in woorden', async () => {
+    const browser = await chromium.launch({ executablePath, args: ['--no-sandbox'] });
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    const errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    const seed = [cup(1, 18.8, 300, 'too_strong'), cup(2, 18.8, 300, 'too_strong'), cup(3, 17.6, 300, 'just_right'), cup(4, 17.6, 300, 'too_weak')];
+    await page.addInitScript((s) => {
+      if (sessionStorage.getItem('e2seed')) return;
+      sessionStorage.setItem('e2seed', '1');
+      localStorage.setItem('brewconsole_brews', JSON.stringify(s));
+    }, seed);
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.evaluate(() => renderInsightsScreen('history-stats-body'));
+    const fig = page.locator('#e2-trend');
+    assert.equal(await fig.count(), 1);
+    assert.equal(await page.locator('#e2-trend .e2-trend-mark').count(), 4);
+    assert.match(await fig.locator('svg').getAttribute('aria-label'), /Verloop over 4 waarnemingen; je doel nu 1:\d+,\d/);
+    assert.match(await fig.locator('figcaption').textContent(), /▲ te sterk · ● goed · ▼ te slap/);
+    assert.match(await page.locator('#e2-trend .e2-trend-mark title').first().textContent(), /kop 1:\d+,\d, te sterk; doel daarna 1:\d+,\d/);
+    assert.deepEqual(errors, []);
+    await browser.close();
+  });
+});

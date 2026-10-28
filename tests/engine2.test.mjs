@@ -537,3 +537,35 @@ describe('Engine 2 · e2-2026.4: meetlat', () => {
     assert.deepEqual(JSON.parse(JSON.stringify(m.firstLekker)), { beans: 3, median: 2, notYet: 1 });
   });
 });
+
+describe('Engine 2 · e2-2026.5: richting, verloop en herhaalbaarheid', () => {
+  test('de richting van een antwoord: te sterk → lichter, een gewonnen lichtere kop → lichter, geen verschil → geen', () => {
+    assert.equal(api.e2AnswerDirection({ type: 'jar', ord: 1 }), -1);
+    assert.equal(api.e2AnswerDirection({ type: 'jar', ord: -2 }), 1);
+    assert.equal(api.e2AnswerDirection({ type: 'jar', ord: 0 }), 0);
+    assert.equal(api.e2AnswerDirection({ type: 'pair', outcome: 'B', lnA: 0.3, lnB: 0.2 }), -1);
+    assert.equal(api.e2AnswerDirection({ type: 'pair', outcome: 'A', lnA: 0.3, lnB: 0.2 }), 1);
+    assert.equal(api.e2AnswerDirection({ type: 'pair', outcome: 'none', lnA: 0.3, lnB: 0.2 }), 0);
+  });
+  test('"veel te sterk" en daarna "te slap" op dezelfde kop: geen stap lichter na "te slap"', () => {
+    const store = [cup({ dose: 17, strength: 'much_too_strong' }), cup({ dose: 17, strength: 'too_weak' })];
+    const dec = api.e2Decide(api.e2Observations(store, 2.1), 0);
+    assert.ok(dec.trail[1].steps >= 0, String(dec.trail[1].steps));
+  });
+  test('verloop: per waarneming de kop, het doel daarna en de band, hoogstens 20', () => {
+    const store = Array.from({ length: 25 }, (_, i) => cup({ dose: 16 + (i % 3) * 0.5, strength: ['too_strong', 'just_right', 'too_weak'][i % 3] }));
+    const d = api.e2TrendData(store, []);
+    assert.equal(d.pts.length, 20);
+    d.pts.forEach(p => {
+      assert.ok(p.q10Ln <= p.targetLn + api.E2_HALF_STEP * 3 && p.q10Ln <= p.q90Ln);
+      assert.ok(Number.isFinite(p.cupLn) && Number.isFinite(p.targetLn));
+    });
+    assert.equal(api.e2TrendData([cup({ dose: 17, strength: 'too_strong' })], []), null, 'één kop: geen grafiek');
+  });
+  test('herhaalbaarheid: paren koppen met (bijna) dezelfde sterkte, en hoe vaak het antwoord gelijk was', () => {
+    const store = [cup({ dose: 17, strength: 'too_strong' }), cup({ dose: 17, strength: 'too_strong' }), cup({ dose: 17, strength: 'just_right' }),
+      cup({ dose: 15, strength: 'too_weak' }), cup({ dose: 17, strength: 'too_strong', late: true })];
+    const m = api.e2Meetlat(store, []);
+    assert.deepEqual(JSON.parse(JSON.stringify(m.repeat)), { pairs: 3, same: 1 });
+  });
+});

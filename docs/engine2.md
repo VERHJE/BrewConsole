@@ -1,4 +1,4 @@
-# Engine 2 (e2-2026.4)
+# Engine 2 (e2-2026.5)
 
 Engine 2 zet je **sterkte** (de dosis) en je **verwachte einde**. Na het proeven geeft hij **advies** volgens een hendeltabel.
 
@@ -224,6 +224,44 @@ Je sterkte verandert hier niet door. Zonder persoonlijk verwacht einde (minder d
 ### 9.5 Wat de data afraden: waardering als signaal voor je sterkte
 In de UC Davis-data verschilt de waardering tussen de beste en de slechtste sterkte maar ±0,3 punt (9-puntsschaal), tegen een ruis binnen een persoon van 1,56. Eén waardering zegt dus vrijwel niets over je sterkte; de sterktevraag en blinde paren wel. De waardering telt daarom alleen in de meetlat, niet in de posterior.
 
-## 10. Nog niet in deze versie
+## 10. e2-2026.5: snelheid, invarianten, verloop, herhaalbaarheid
+
+### 10.1 Snelheid
+De beslisregel wordt bij elke weergave over al je koppen afgespeeld: recept, advies, Home, meetlat en Instellingen. Gemeten vóór deze versie (Node, synthetische koppen): 126 ms per berekening bij 50 koppen, 1,6 s bij 1.000. Dat gebeurde bij elke tik op het receptscherm.
+- **Drempels één keer:** de tabel met antwoorddrempels werd ±1.100× per kop opnieuw aangemaakt.
+- **Onthouden** (`e2Decide()`): de laatste 4 uitkomsten blijven bewaard, met de toestand na alle koppen én na alle koppen op de laatste na. Een tweede berekening over dezelfde koppen kost dan 1–5 ms. Een nieuwe kop, of een gewijzigde laatste kop, rekent alleen die ene kop door: 2–5 ms.
+- **Exact:** de uitkomst is gelijk aan alles opnieuw afspelen. Dezelfde volgorde en dezelfde rekenkunde; een test vergelijkt het per kop.
+- **Nog steeds:** de eerste berekening na het openen van de app speelt alles af: ±70 ms bij 50 koppen, ±380 ms bij 365, ±750 ms bij 1.000.
+
+### 10.2 Invarianten-sweep (ontwerp §4.6)
+`tests/engine2.invariants.test.mjs` toetst eigenschappen over vele willekeurige reeksen, niet alleen over voorbeelden:
+- stapsgewijs rekenen is gelijk aan alles opnieuw afspelen;
+- een extra "te sterk" maakt het recept nooit sterker, een extra "te slap" nooit lichter. Hetzelfde geldt voor een blind paar;
+- per kop hooguit 2 halve stappen (1 in de eerste twee), binnen het rooster;
+- de volgorde in de opslag maakt niet uit;
+- de dosis blijft binnen de grens van de brewer, en binnen de grens precies de gewenste dosis;
+- aanvullen geeft, op 5 g na, de doel-TDS;
+- na de laatste giet blijft minstens 15 s over;
+- met geproefde koppen hangt je sterkte niet af van smaakkeuze, branding, proces, hoogte of water (verboden koppelingen);
+- de verhouding is onafhankelijk van de hoeveelheid water;
+- de afwijking per zak blijft binnen twee halve stappen.
+
+**Wat de sweep vond:** door het middelen over hellingen kon een tegenstrijdig antwoord de schatting de verkeerde kant op duwen. Bijvoorbeeld "veel te sterk" en daarna "te slap" op dezelfde kop: dan schoof Engine 2 lichter. Bij willekeurige antwoorden ging zo 2,3 % van de stappen tegen het net gegeven antwoord in; in jouw data nooit.
+
+**Regel sinds deze versie** (`e2AnswerDirection()`): een stap gaat nooit tegen het antwoord in dat je net gaf. Na "te sterk", of een blind paar waarin de lichtere kop won, volgt geen stap sterker, en omgekeerd. Een paar zonder verschil legt geen richting op.
+
+### 10.3 Verloop van je sterkte (meetlat)
+Bovenaan de meetlat staat een grafiek over de laatste 20 waarnemingen (`e2TrendData()`):
+- **Doel:** een koperen trap, met een lichte band van 10–90 % voor waar het waarschijnlijk ligt.
+- **Elke kop:** op zijn sterkte, met het antwoord als vorm: ▲ te sterk, ● goed, ▼ te slap, ■ blind paar. Het antwoord staat dus niet alleen in een kleur.
+- **Opbouw:** één as, sterker boven, met labels als verhouding. Per stip een tooltip met datum, kop, antwoord en het doel daarna.
+- **Samenvatting:** in woorden, als `aria-label` en als onderschrift.
+
+Per kop bewaart de beslisregel daarvoor ook `q10Ln` en `q90Ln` in de trail.
+
+### 10.4 Herhaalbaarheid (ontwerp E4)
+De meetlat telt over je laatste 30 gewone koppen de paren met (bijna) dezelfde sterkte (binnen 2 %), en hoe vaak je toen hetzelfde antwoord gaf. Bij jouw data was dat 6 van de 10. Hoe lager dat getal, hoe meer koppen Engine 2 nodig heeft voor een stap.
+
+## 11. Nog niet in deze versie
 - **De karakter-as als automatische stap.** Ook met een refractometer blijft het een tip: de smaakkant (scherp zuur) is per persoon.
 - **Chemex-templates met een eigen bron.**
