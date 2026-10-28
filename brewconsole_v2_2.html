@@ -2323,7 +2323,7 @@
   #finish-note{display:none;}
   #brewlog-open-btn{display:none;}
   #brew-steps{margin-top:14px !important;}
-  #brewlog-cup-weight{max-width:220px !important;}
+  #brewlog-cup-weight, #brewlog-tds{max-width:220px !important;}
   #brewlog-bypass-actual-hint{text-transform:none !important; letter-spacing:0 !important;}
   #brewlog-bypass-actual{max-width:220px !important;}
   #brewlog-save-btn{margin-top:14px !important;}
@@ -3105,6 +3105,8 @@
       <p class="technique-tasting" id="technique-tasting"></p>
       <!-- Engine 2: één regel waar je sterkte vandaan komt; de uitleg staat achter "Waarom dit recept?". -->
       <p class="technique-tasting e2-line" id="e2-line" hidden></p>
+      <!-- e2-2026.3: een tip uit de hendeltabel die als proef klaarstaat voor deze kop. -->
+      <div class="prep-next-adjust" id="e2-trial-note" hidden></div>
       <!-- VA-04: hoogstens één melding, de belangrijkste (arrangePrepNotes()); de rest staat achter
            "Waarom dit recept?". -->
       <section class="prep-notes" id="prep-notes" aria-labelledby="prep-notes-title" hidden>
@@ -3433,6 +3435,10 @@
              opgeslagen (saveBrewLogEntry()). -->
         <label class="fs-label c-faint d-block m-12-0-4" for="brewlog-cup-weight">Kopgewicht na afloop <span class="tt-none ls-0">(optioneel, gram) — zo zie je hoeveel water er in het koffiedik achterblijft. Na 5 metingen staat je eigen gemiddelde op het receptscherm, naast de vaste aanname van 2,0 g/g; die wordt niet automatisch vervangen. Met bypass: weeg ná het bijvullen.</span></label>
         <input type="number" id="brewlog-cup-weight" class="form-input" placeholder="bijv. 268" min="0" max="2000" step="1">
+
+        <!-- e2-2026.3: een gemeten TDS (refractometer). Optioneel; Engine 2 rekent er je extractie mee uit. -->
+        <label class="fs-label c-faint d-block m-12-0-4" for="brewlog-tds">TDS gemeten <span class="tt-none ls-0">(optioneel, refractometer, %) — meet na het bijvullen, op kamertemperatuur. Engine 2 gebruikt hem als de sterkte van deze kop, en rekent vanaf 3 metingen met jouw eigen extractie. Met een kopgewicht erbij is de extractie exact.</span></label>
+        <input type="number" id="brewlog-tds" class="form-input" placeholder="bijv. 1,35" min="0.4" max="2.5" step="0.01" inputmode="decimal">
 
         <!-- Wat er écht als bypass is toegevoegd, tegenover het geplande bedrag (rec.bypassMl). Alleen
              zichtbaar bij een kop met bypass (renderBrewLogHonestSummary()/openBrewLogEntry()). -->
@@ -6258,9 +6264,10 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     // je sterkte (zelfde TDS en extractie als een zetting met meer water; Guinard e.a. 2023).
     if (e2Applied.clamped && doseEdge && doseEdge.side === 'min' && !bypassActuallyApplied && typeof e2Arg.targetTds === 'number' && e2Arg.targetTds > 0){
       const rAbsE2 = e2Arg.rAbs > 0 ? e2Arg.rAbs : E2_R_ABS;
-      const tNow = e2Tds(dose, water, rAbsE2);
+      const eyE2 = e2Arg.ey > 0 ? e2Arg.ey : E2_EY_NOMINAL;
+      const tNow = e2Tds(dose, water, rAbsE2, eyE2);
       if (tNow != null && tNow > e2Arg.targetTds * 1.01){
-        const mb = water - rAbsE2 * dose + E2_EY_NOMINAL * dose;
+        const mb = water - rAbsE2 * dose + eyE2 * dose;
         const dil = Math.round(mb * (tNow / e2Arg.targetTds - 1) / 5) * 5;
         if (dil >= 10) e2Applied.dilutionG = dil;
       }
@@ -6864,6 +6871,7 @@ function applyAdvice(opts){
   state.strengthAdjust = 0; // C2: via het methode-advies begin je bewust opnieuw (R-02: "Zet opnieuw" onthoudt wél)
   state.grindStand = null; state.standApplied = null; // R-02
   state.goalLighterApplied = false; // BC-10
+  state.e2TrialApplied = null; state.e2TrialPrev = null; // e2-2026.3: een nieuwe sessie zet de proef opnieuw klaar
   state.beanId = adviceState.beanId || null;
   // R-07: het profiel dat je voor deze boon koos (ook na een bijna-gelijke stand) is voortaan
   // het profiel van de boon, zodat "Zet opnieuw" en "Zet deze boon" dezelfde keuze gebruiken.
@@ -6953,6 +6961,7 @@ function brewAgain(id, override){
     state.standApplied = null;
   }
   state.goalLighterApplied = false;
+  state.e2TrialApplied = null; state.e2TrialPrev = null; // e2-2026.3
   applyPendingAdjustToState(); // Fase 4
   updateServingBounds();
   renderMethodGrid();
@@ -8632,8 +8641,23 @@ function beanStockLine(bean){
 function standLineFor(bean){
   const st = bean && bean.lastBrew ? beanStandFor(bean, bean.lastBrew.method) : null;
   if (!st) return '';
-  const bits = [typeof st.grindClick === 'number' ? `klik ${st.grindClick}` : null, st.strengthStep ? strengthWords(st.strengthStep) : null].filter(Boolean);
+  const bits = [typeof st.grindClick === 'number' ? `klik ${st.grindClick}` : null, st.strengthStep && !engine2On() ? strengthWords(st.strengthStep) : null].filter(Boolean);
   return bits.length ? ` Jouw stand: ${bits.join(' · ')}.` : '';
+}
+// e2-2026.3: één regel Engine 2 op de kaart: je sterkte op deze brewer, en een klaargezette proef.
+function e2NextCupLine(method){
+  if (!engine2On() || !method) return '';
+  try {
+    const rFor = (m) => e2RetentionFor(m).value;
+    const eyFor = (m) => e2EyFor(brewStore, m, rFor(m));
+    const obs = e2AllObservations(brewStore, abTrials, rFor, eyFor);
+    if (!obs.length) return '';
+    const dec = e2Decide(obs, 0);
+    const ratio = e2RatioForTds(Math.exp(dec.targetLn), rFor(method), eyFor(method));
+    const t = e2PendingTrial();
+    const trialBit = t && t.method === method ? ` · proef klaar: ${E2_TIP_LABELS[t.key] || t.key}` : '';
+    return `Engine 2 · jouw sterkte ${e2RatioText(ratio)} · ${dec.mode === 'rust' ? 'je zit goed' : 'zoekt nog'}${trialBit}`;
+  } catch(e){ return ''; }
 }
 function renderNextCupCard(targetId){
   const el = document.getElementById(targetId);
@@ -8650,9 +8674,11 @@ function renderNextCupCard(targetId){
     : checkTx ? `${liking ? `Vorige kop: ${liking} van 5. ` : ''}${checkTx.title}.`
     : (liking ? `Vorige kop: ${liking} van 5.${standLineFor(t.bean)}` : 'Zet je vorige recept opnieuw.');
   const stock = beanStockLine(t.bean);
+  const e2Line = e2NextCupLine(t.bean.lastBrew.method);
   el.innerHTML = `<p class="next-cup-kicker">Je volgende kop${t.adjust ? ' · advies klaar' : ''}</p>
     <p class="next-cup-title">${escapeHtml(t.bean.name || 'Naamloze boon')} · ${escapeHtml(m ? m.name : t.bean.lastBrew.method)}</p>
     <p class="next-cup-line">${escapeHtml(line)}</p>
+    ${e2Line ? `<p class="next-cup-line" data-e2-next-cup>${escapeHtml(e2Line)}</p>` : ''}
     ${stock ? `<p class="next-cup-stock">${escapeHtml(stock)}</p>` : ''}
     <button type="button" class="start-btn next-cup-go btn-primary" data-next-cup-go="${t.bean.id}">${t.adjust ? 'Zet met dit advies' : 'Zet opnieuw'}${ARROW_ICON}</button>
     ${t.adjust ? `<button type="button" class="link-secondary" data-next-cup-skip="${t.bean.id}">Zonder deze stap zetten</button>` : ''}`;
@@ -8785,6 +8811,7 @@ function renderInsightsScreen(targetId){
 
   html += renderAdviceOutcomeSection(adviceOutcomeStats(brewStore));
   html += renderMeasurementsSection(brewStore); // V8
+  if (engine2On()) html += renderEngine2Meetlat(brewStore); // e2-2026.3
   html += renderRoasterOverview();
 
   if (brewLog.length < MIN_TREND_N){
@@ -9696,7 +9723,7 @@ function createBrewRecord(input){
     actual: {
       doseG: null, doseSource: null, grindClick: null, grindSource: null, confirmed: false,
       events: [{ type: 'start', at: nowMs, source: 'M', tSec: 0 }],
-      bedDrySec: null, completedAt: null, cupWeightG: null, bypassActualG: null
+      bedDrySec: null, completedAt: null, cupWeightG: null, bypassActualG: null, tdsPct: null
     },
     derived: {},
     tasting: null, diagnosis: null, recommendation: null,
@@ -10004,7 +10031,7 @@ function recomputeRecipeForRecord(rec){
    maling) komt uit de bestaande engine; die blijft ongewijzigd en rekent mee ter vergelijking.
    Alles hieronder is puur: geen DOM, alleen opslag via engine2On()/setEngine2().
    ============================================================ */
-const ENGINE2_VERSION = 'e2-2026.2';
+const ENGINE2_VERSION = 'e2-2026.3';
 const ENGINE2_KEY = 'brewconsole_engine2';
 // Massabalans (Guinard e.a. 2023, J. Food Sci.): EY = TDS/(1−TDS) · (W/D − R_abs), R_abs ≈ 2,1 bij filter.
 const E2_R_ABS = 2.1;
@@ -10051,6 +10078,12 @@ const E2_BEAN_GRID = [-0.16, -0.12, -0.08, -0.04, 0, 0.04, 0.08, 0.12, 0.16];
 // Maling en doorloop: vanaf 6 koppen met minstens twee maalstanden (elk 2×).
 const E2_GRIND_MIN_N = 6;
 const E2_GRIND_WINDOW = 20;
+// e2-2026.3 · gemeten TDS (refractometer): plausibel 0,4–2,5 %. Vanaf 3 metingen per brewer rekent
+// Engine 2 met jouw gemeten extractie in plaats van de nominale 20 %.
+const E2_TDS_RANGE = { min: 0.4, max: 2.5 };
+const E2_EY_MIN_N = 3;
+const E2_EY_WINDOW = 20;
+const E2_TRIAL_KEY = 'brewconsole_e2_trial';
 const E2_STRENGTH_ORDINAL = { much_too_weak: -2, too_weak: -1, just_right: 0, too_strong: 1, much_too_strong: 2 };
 const E2_GRID = (function(){
   const g = [];
@@ -10112,13 +10145,19 @@ function e2AnswerProb(ord, lnT, g, slope){
 }
 
 // Alle geproefde koppen met een sterkte-antwoord, oud → nieuw, over alle zakken en brewers.
-function e2Observations(store, rAbsFor){
+function e2Observations(store, rAbsFor, eyFor){
   const out = [];
   const memo = {};
   const rOf = (m) => {
     if (typeof rAbsFor !== 'function') return rAbsFor || E2_R_ABS;
     if (!(m in memo)) memo[m] = rAbsFor(m);
     return memo[m];
+  };
+  const eyMemo = {};
+  const eyOf = (m) => {
+    if (typeof eyFor !== 'function') return eyFor || E2_EY_NOMINAL;
+    if (!(m in eyMemo)) eyMemo[m] = eyFor(m);
+    return eyMemo[m];
   };
   (store || []).forEach(r => {
     if (!r || r.deletedAt || !r.tasting || !r.plan) return;
@@ -10127,16 +10166,19 @@ function e2Observations(store, rAbsFor){
     const dose = r.actual && typeof r.actual.doseG === 'number' && r.actual.doseG > 0 ? r.actual.doseG : r.plan.doseG;
     const water = r.plan.waterMl;
     const rAbs = rOf(r.plan.methodId);
-    let tds = e2Tds(dose, water, rAbs);
+    const ey = eyOf(r.plan.methodId);
+    const measuredTds = e2MeasuredTds(r);
+    let tds = measuredTds != null ? measuredTds : e2Tds(dose, water, rAbs, ey);
     if (tds == null) return;
-    // Na het zetten bijgevuld (Engine 2 onder de dosisgrens): de kop is lichter dan het bed.
+    // Na het zetten bijgevuld (Engine 2 onder de dosisgrens): de kop is lichter dan het bed. Een
+    // gemeten TDS is al de kop zelf.
     const dil = r.plan.inputs && r.plan.inputs.e2 && r.plan.inputs.e2.dilutionG > 0 ? r.plan.inputs.e2.dilutionG : 0;
-    if (dil > 0){
-      const mb = water - rAbs * dose + E2_EY_NOMINAL * dose;
+    if (dil > 0 && measuredTds == null){
+      const mb = water - rAbs * dose + ey * dose;
       tds = tds * mb / (mb + dil);
     }
     const soft = !!r.tasting.late || !!r.plan.bypass;
-    out.push({ type: 'jar', id: r.id, at: r.createdAt || 0, lnT: Math.log(tds), tds, ord, weight: soft ? E2_SOFT_WEIGHT : 1,
+    out.push({ type: 'jar', id: r.id, at: r.createdAt || 0, lnT: Math.log(tds), tds, ord, weight: soft ? E2_SOFT_WEIGHT : 1, measured: measuredTds != null,
       method: r.plan.methodId, beanId: r.beanId || null, doseG: dose, waterG: water, late: !!r.tasting.late, bypass: !!r.plan.bypass });
   });
   return out.sort((a, b) => a.at - b.at);
@@ -10145,14 +10187,15 @@ function e2Observations(store, rAbsFor){
 // Blinde paren uit de A/B-proef (abTrials): twee koppen met dezelfde maling en hetzelfde water, alleen
 // de dosis verschilt. Ook de oudere "helder"-proeven tellen: de doses staan erin. lnT = kop A
 // (het recept), lnB = kop B (de variant).
-function e2PairObservations(trials, rAbsFor){
+function e2PairObservations(trials, rAbsFor, eyFor){
   const out = [];
   (trials || []).forEach(t => {
     if (!t || !t.preferred || !(t.controlDose > 0) || !(t.variantDose > 0) || !(t.waterMl > 0)) return;
     if (Math.abs(t.controlDose - t.variantDose) < 0.1) return;
     const rAbs = typeof rAbsFor === 'function' ? rAbsFor(t.method) : (rAbsFor || E2_R_ABS);
-    const a = e2Tds(t.controlDose, t.waterMl, rAbs);
-    const b = e2Tds(t.variantDose, t.waterMl, rAbs);
+    const ey = typeof eyFor === 'function' ? eyFor(t.method) : (eyFor || E2_EY_NOMINAL);
+    const a = e2Tds(t.controlDose, t.waterMl, rAbs, ey);
+    const b = e2Tds(t.variantDose, t.waterMl, rAbs, ey);
     if (a == null || b == null) return;
     const outcome = t.preferred === 'control' ? 'A' : t.preferred === 'variant' ? 'B' : 'none';
     out.push({ type: 'pair', id: t.id, at: t.createdAt || 0, lnT: Math.log(a), lnA: Math.log(a), lnB: Math.log(b), outcome,
@@ -10160,8 +10203,57 @@ function e2PairObservations(trials, rAbsFor){
   });
   return out;
 }
-function e2AllObservations(store, trials, rAbsFor){
-  return e2Observations(store, rAbsFor).concat(e2PairObservations(trials, rAbsFor)).sort((a, b) => a.at - b.at);
+function e2AllObservations(store, trials, rAbsFor, eyFor){
+  return e2Observations(store, rAbsFor, eyFor).concat(e2PairObservations(trials, rAbsFor, eyFor)).sort((a, b) => a.at - b.at);
+}
+// Een gemeten TDS (refractometer) op een record, of null.
+function e2MeasuredTds(r){
+  const t = r && r.actual ? r.actual.tdsPct : null;
+  return typeof t === 'number' && t >= E2_TDS_RANGE.min && t <= E2_TDS_RANGE.max ? t : null;
+}
+/* Gemeten extractie per brewer, uit koppen met een gemeten TDS. Met een kopgewicht exact
+   (EY = TDS · kop / dosis); zonder via de massabalans met je vasthouden. Daarnaast wat één klik
+   met je extractie doet (zelfde regel als e2GrindEffect()). */
+function e2EyModel(store, method, rAbs){
+  const pts = [];
+  (store || []).filter(r => r && !r.deletedAt && r.plan && r.actual && r.plan.methodId === method && e2MeasuredTds(r) != null)
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+    .forEach(r => {
+      const tds = e2MeasuredTds(r) / 100;
+      const dose = typeof r.actual.doseG === 'number' && r.actual.doseG > 0 ? r.actual.doseG : r.plan.doseG;
+      const dil = r.plan.inputs && r.plan.inputs.e2 && r.plan.inputs.e2.dilutionG > 0 ? r.plan.inputs.e2.dilutionG : 0;
+      const water = (r.plan.waterMl || 0) + dil;
+      if (!(dose > 0) || !(water > 0)) return;
+      let ey;
+      if (typeof r.actual.cupWeightG === 'number' && r.actual.cupWeightG > 0) ey = tds * r.actual.cupWeightG / dose;
+      else ey = tds / (1 - tds) * (water / dose - (rAbs || E2_R_ABS));
+      if (!(ey > 0.10 && ey < 0.30)) return;
+      pts.push({ ey, click: typeof r.actual.grindClick === 'number' ? r.actual.grindClick : null });
+    });
+  const recent = pts.slice(-E2_EY_WINDOW);
+  if (!recent.length) return { n: 0, eyMean: null, perClick: null };
+  const eyMean = recent.reduce((a, p) => a + p.ey, 0) / recent.length;
+  const withClick = recent.filter(p => p.click != null);
+  const counts = {};
+  withClick.forEach(p => { counts[p.click] = (counts[p.click] || 0) + 1; });
+  let perClick = null;
+  if (withClick.length >= 4 && Object.values(counts).filter(c => c >= 2).length >= 2){
+    const xs = withClick.map(p => p.click), ys = withClick.map(p => p.ey);
+    const mx = xs.reduce((a, b) => a + b, 0) / xs.length, my = ys.reduce((a, b) => a + b, 0) / ys.length;
+    const sxx = xs.reduce((a, x) => a + (x - mx) * (x - mx), 0);
+    if (sxx > 0){
+      const b = xs.reduce((a, x, i) => a + (x - mx) * (ys[i] - my), 0) / sxx;
+      const res = ys.map((y, i) => y - (my + b * (xs[i] - mx)));
+      const se = Math.sqrt(res.reduce((a, r) => a + r * r, 0) / Math.max(1, ys.length - 2) / sxx);
+      if (Math.abs(b) > 2 * se) perClick = b;
+    }
+  }
+  return { n: recent.length, eyMean, perClick };
+}
+// De extractie waarmee Engine 2 rekent voor een brewer: gemeten vanaf 3 metingen, anders 20 %.
+function e2EyFor(store, method, rAbs){
+  const m = e2EyModel(store, method, rAbs);
+  return m.n >= E2_EY_MIN_N ? m.eyMean : E2_EY_NOMINAL;
 }
 function e2Utility(s, g){
   const k = s > g ? E2_COST_STRONG : E2_COST_WEAK;
@@ -10341,19 +10433,22 @@ function engine2PlanFor(baseRec, method, store, opts){
   const o = opts || {};
   const retention = e2RetentionFor(method);
   const rFor = (m) => e2RetentionFor(m).value;
-  const obs = e2AllObservations(store, o.trials, rFor);
+  const eyFor = (m) => e2EyFor(store, m, rFor(m));
+  const eyModel = e2EyModel(store, method, retention.value);
+  const ey = eyModel.n >= E2_EY_MIN_N ? eyModel.eyMean : E2_EY_NOMINAL;
+  const obs = e2AllObservations(store, o.trials, rFor, eyFor);
   // De bedoelde sterkte van het basisrecept: lag de dosis op de toestelgrens, dan telt de verhouding
   // die het recept eigenlijk wilde (doseEdge.targetRatio), zodat de grensmelding gewoon blijft.
   const baseWantedDose = baseRec.doseEdge && baseRec.doseEdge.targetRatio > 0 ? baseRec.water / baseRec.doseEdge.targetRatio : baseRec.dose;
-  const baseTds = e2Tds(baseWantedDose, baseRec.water, retention.value);
+  const baseTds = e2Tds(baseWantedDose, baseRec.water, retention.value, ey);
   if (baseTds == null) return null;
   const dec = e2Decide(obs, Math.log(baseTds));
   const bean = o.beanId && dec.summary ? e2BeanOffset(obs, o.beanId, dec.targetLn, dec.summary.slopeMean) : { n: 0, offsetLn: 0, applies: false };
   const targetLn = dec.targetLn + (bean.applies ? bean.offsetLn : 0);
   const targetTds = Math.exp(targetLn);
-  const ratio = e2RatioForTds(targetTds, retention.value);
+  const ratio = e2RatioForTds(targetTds, retention.value, ey);
   const doseG = Math.round(baseRec.water / ratio * 10) / 10;
-  const band = dec.summary ? { lowRatio: e2RatioForTds(Math.exp(dec.summary.q90Ln), retention.value), highRatio: e2RatioForTds(Math.exp(dec.summary.q10Ln), retention.value) } : null;
+  const band = dec.summary ? { lowRatio: e2RatioForTds(Math.exp(dec.summary.q90Ln), retention.value, ey), highRatio: e2RatioForTds(Math.exp(dec.summary.q10Ln), retention.value, ey) } : null;
   const time = baseRec.technique ? e2TimeModel(store, method, baseRec.technique) : { n: 0, factor: null };
   const bypass = !!(baseRec.bypassMl > 0);
   const totalTimeSec = (time.factor != null && !bypass) ? Math.round(baseRec.totalTime * time.factor / 5) * 5 : null;
@@ -10365,13 +10460,13 @@ function engine2PlanFor(baseRec, method, store, opts){
     if (clicks !== 0 && Math.abs(clicks) <= 4) grindToSchedule = { clicks, perClickPct: Math.round((Math.exp(time.grind.perClick) - 1) * 1000) / 10 };
   }
   const cal = e2CalibrationFor(dec.summary, targetLn, dec.n);
-  const calibration = cal ? Object.assign({}, cal, { variantDoseG: Math.round(baseRec.water / e2RatioForTds(Math.exp(cal.variantLn), retention.value) * 10) / 10 }) : null;
+  const calibration = cal ? Object.assign({}, cal, { variantDoseG: Math.round(baseRec.water / e2RatioForTds(Math.exp(cal.variantLn), retention.value, ey) * 10) / 10 }) : null;
   const pairs = obs.filter(x => x.type === 'pair').length;
   const last = dec.trail.length ? dec.trail[dec.trail.length - 1] : null;
   return {
     version: ENGINE2_VERSION, doseG, targetTds, ratio, band, mode: dec.mode, n: dec.n, pairs,
     sdLn: dec.summary ? dec.summary.sdLn : null, slopeMean: dec.summary ? dec.summary.slopeMean : null,
-    retention, rAbs: retention.value, baseDoseG: baseRec.dose, baseRatio: baseRec.water / baseRec.dose, baseTds,
+    retention, rAbs: retention.value, ey, eyModel, baseDoseG: baseRec.dose, baseRatio: baseRec.water / baseRec.dose, baseTds,
     baseTotalSec: baseRec.totalTime, totalTimeSec, time, grindToSchedule, bean, calibration, last, trail: dec.trail
   };
 }
@@ -10380,7 +10475,7 @@ function engine2PlanFor(baseRec, method, store, opts){
 function e2InputsOf(plan){
   if (!plan) return null;
   return { version: plan.version, doseG: plan.doseG, totalTimeSec: plan.totalTimeSec, baseTotalSec: plan.baseTotalSec,
-    targetTds: Math.round(plan.targetTds * 1000) / 1000, mode: plan.mode, n: plan.n, rAbs: plan.rAbs,
+    targetTds: Math.round(plan.targetTds * 1000) / 1000, mode: plan.mode, n: plan.n, rAbs: plan.rAbs, ey: plan.ey,
     beanOffsetLn: plan.bean && plan.bean.applies ? plan.bean.offsetLn : 0,
     dilutionG: plan.dilutionG > 0 ? plan.dilutionG : 0 };
 }
@@ -10399,33 +10494,85 @@ function e2TipsFor(tasting, ctx){
   }
   if (t.strength !== 'just_right') return tips;
   if (finish.includes('bitter') || t.missed === 'less_bitter'){
-    tips.push({ key: 'bitter', kind: 'proef', text: 'Bitter terwijl de sterkte goed is: bitter volgt vooral de sterkte, minder de maling. Zet één keer de sterkte op −4 % in plaats van grover te malen, en vergelijk.' });
+    tips.push({ key: 'bitter', kind: 'proef', trial: { strength: -0.5, grind: 0 }, text: 'Bitter terwijl de sterkte goed is: bitter volgt vooral de sterkte, minder de maling. Zet één keer de sterkte op −4 % in plaats van grover te malen, en vergelijk.' });
   }
   if (t.acidity === 'sharp'){
     let doseBit = '';
+    const ey0 = c.ey > 0 ? c.ey : E2_EY_NOMINAL;
+    // Wat één klik fijner aan extractie geeft: gemeten (refractometer), anders aangenomen 1 %-punt.
+    const dEy = c.eyPerClick != null ? Math.abs(c.eyPerClick) : 0.01;
     if (c.doseG > 0 && c.waterG > 0){
       const r = c.rAbs || E2_R_ABS;
-      const tds = e2Tds(c.doseG, c.waterG, r);
+      const tds = e2Tds(c.doseG, c.waterG, r, ey0);
       if (tds != null){
-        const d2 = c.waterG / e2RatioForTds(tds, r, E2_EY_NOMINAL + 0.01);
+        const d2 = c.waterG / e2RatioForTds(tds, r, ey0 + dEy);
         const delta = Math.round((c.doseG - d2) * 10) / 10;
         if (delta > 0) doseBit = ` en ${fmt(delta, 1)} g minder koffie`;
       }
     }
-    tips.push({ key: 'sharp', kind: 'proef', text: `Scherp zuur bij een goede sterkte: één klik fijner${doseBit}. Alleen fijner maakt de kop ook sterker, en sterker is weer zuurder; met iets minder koffie blijft de sterkte gelijk.` });
+    const measuredBit = c.eyPerClick != null ? ` Volgens je eigen metingen geeft één klik fijner ${fmt(dEy * 100, 1)} %-punt meer extractie.` : '';
+    tips.push({ key: 'sharp', kind: 'proef', trial: { strength: -0.5, grind: -1 }, text: `Scherp zuur bij een goede sterkte: één klik fijner${doseBit}. Alleen fijner maakt de kop ook sterker, en sterker is weer zuurder; met iets minder koffie blijft de sterkte gelijk.${measuredBit}` });
   }
   if (t.missed === 'sweet'){
-    tips.push({ key: 'sweet', kind: 'proef', text: 'Zoetheid gemist: zoet hoort bij een iets lichtere kop, met weinig bitter en zuur, niet bij fijner malen. Zet één keer de sterkte op −4 %.' });
+    tips.push({ key: 'sweet', kind: 'proef', trial: { strength: -0.5, grind: 0 }, text: 'Zoetheid gemist: zoet hoort bij een iets lichtere kop, met weinig bitter en zuur, niet bij fijner malen. Zet één keer de sterkte op −4 %.' });
   }
   if (t.missed === 'fruit'){
-    tips.push({ key: 'fruit', kind: 'proef', text: 'Meer fruit of helderheid: probeer één keer de sterkte op −4 %.' });
+    tips.push({ key: 'fruit', kind: 'proef', trial: { strength: -0.5, grind: 0 }, text: 'Meer fruit of helderheid: probeer één keer de sterkte op −4 %.' });
   }
   if (t.missed === 'body'){
-    tips.push({ key: 'body', kind: 'proef', text: 'Meer body: mondgevoel volgt de sterkte. Probeer één keer de sterkte op +4 %.' });
+    tips.push({ key: 'body', kind: 'proef', trial: { strength: 0.5, grind: 0 }, text: 'Meer body: mondgevoel volgt de sterkte. Probeer één keer de sterkte op +4 %.' });
   }
   return tips;
 }
 function e2RatioText(ratio){ return nlRatio(`1:${fmt(ratio, 1)}`); }
+// Een tip uit de hendeltabel die klaarstaat voor je volgende kop (één tegelijk).
+function e2PendingTrial(){
+  try { const raw = localStorage.getItem(E2_TRIAL_KEY); const v = raw ? JSON.parse(raw) : null; return v && v.key ? v : null; } catch(e){ return null; }
+}
+function setE2PendingTrial(t){
+  try { if (t) localStorage.setItem(E2_TRIAL_KEY, JSON.stringify(t)); else localStorage.removeItem(E2_TRIAL_KEY); } catch(e){ /* alleen deze sessie */ }
+}
+// Een klaarzetbare proef uit een tip van een geproefde kop.
+function e2TrialFromTip(rec, tip, nowMs){
+  if (!rec || !tip || !tip.trial) return null;
+  const click = rec.actual && typeof rec.actual.grindClick === 'number' ? rec.actual.grindClick
+    : rec.plan && typeof rec.plan.grindTarget === 'number' ? rec.plan.grindTarget
+    : (rec.plan && typeof rec.plan.grindStartingPoint === 'number' ? rec.plan.grindStartingPoint : null);
+  return { id: 'e2t_' + nowMs, key: tip.key, fromBrewId: rec.id, createdAt: nowMs, method: rec.plan ? rec.plan.methodId : null,
+    strength: tip.trial.strength || 0, grind: tip.trial.grind || 0, fromGrindClick: click };
+}
+const E2_TIP_LABELS = { bitter: 'Bitter → lichter', sharp: 'Scherp zuur → fijner en iets minder koffie', sweet: 'Zoetheid gemist → lichter', fruit: 'Fruit gemist → lichter', body: 'Body gemist → sterker' };
+// De meetlat van Engine 2: hoe vaak hij je recept verandert, hoe vaak de sterkte goed was, en wat de
+// proeven uit de hendeltabel opleverden. Puur tellen, geen oordeel.
+function e2Meetlat(store, trials){
+  const rFor = (m) => e2RetentionFor(m).value;
+  const eyFor = (m) => e2EyFor(store, m, rFor(m));
+  const obs = e2AllObservations(store, trials, rFor, eyFor);
+  const dec = e2Decide(obs, 0);
+  const jarTrail = dec.trail.filter(e => { const o = obs.find(x => x.id === e.id); return o && o.type === 'jar'; });
+  const last = jarTrail.slice(-10);
+  const lastIds = new Set(last.map(e => e.id));
+  const lastObs = obs.filter(o => lastIds.has(o.id));
+  const e2Changes = last.filter(e => e.steps !== 0).length;
+  const oldChanges = (store || []).filter(r => lastIds.has(r.id) && r.recommendation && r.recommendation.type === 'ADJUST').length;
+  const good = lastObs.filter(o => o.ord === 0).length;
+  const outcomes = {};
+  (store || []).forEach(r => {
+    const t = r && !r.deletedAt && r.plan && r.plan.inputs && r.plan.inputs.e2 && r.plan.inputs.e2.trial;
+    if (!t || !r.tasting) return;
+    const o = outcomes[t.key] || (outcomes[t.key] = { tested: 0, better: 0, same: 0, worse: 0 });
+    o.tested += 1;
+    if (r.tasting.vsLast === 'better') o.better += 1;
+    else if (r.tasting.vsLast === 'same') o.same += 1;
+    else if (r.tasting.vsLast === 'worse') o.worse += 1;
+  });
+  // Gemeten extractie per brewer (alleen brewers met minstens één meting).
+  const ey = {};
+  Array.from(new Set((store || []).filter(r => r && !r.deletedAt && r.plan && e2MeasuredTds(r) != null).map(r => r.plan.methodId)))
+    .forEach(m => { const em = e2EyModel(store, m, rFor(m)); if (em.n) ey[m] = em; });
+  return { n: lastObs.length, e2Changes, oldChanges, good, pairs: obs.filter(o => o.type === 'pair').length,
+    sdLn: dec.summary ? dec.summary.sdLn : null, mode: dec.mode, outcomes, ey, measured: obs.filter(o => o.measured).length };
+}
 // De beslissing van Engine 2 over één geproefde kop, in woorden.
 function e2DecisionText(entry){
   if (!entry) return null;
@@ -11116,6 +11263,36 @@ function renderMeasurementsSection(store){
       <p class="insights-note m-8-0-0">Alleen uit je eigen koppen, om de aannames van de app te toetsen. Zonder Bed droog-tik telt een kop hier niet mee.</p>
     </div>`;
 }
+// e2-2026.3 · de meetlat van Engine 2: hoe rustig hij is, hoe vaak je kop goed was, wat de proeven
+// opleverden. Puur tellen uit je eigen koppen (e2Meetlat()).
+function renderEngine2Meetlat(store){
+  let m;
+  try { m = e2Meetlat(store, abTrials); } catch(e){ return ''; }
+  const parts = [];
+  if (!m.n){
+    parts.push(`<p class="insights-note m-0-0-4">Nog geen geproefde koppen met een sterkte-antwoord. Na een paar koppen zie je hier hoe vaak Engine 2 je recept verandert en hoe vaak je sterkte goed was.</p>`);
+  } else {
+    parts.push(`<p class="insights-note m-0-0-4" data-e2-meetlat="changes">${escapeHtml(`Laatste ${m.n} ${m.n === 1 ? 'kop' : 'koppen'}: Engine 2 veranderde je sterkte ${m.e2Changes}×. De oude engine stelde bij ${m.oldChanges} van die koppen een stap voor.`)}</p>`);
+    parts.push(`<p class="insights-note m-0-0-4" data-e2-meetlat="good">${escapeHtml(`Sterkte goed: ${m.good} van de ${m.n} (${Math.round(m.good / m.n * 100)} %).`)}</p>`);
+    if (m.sdLn != null) parts.push(`<p class="insights-note m-0-0-4" data-e2-meetlat="sd">${escapeHtml(`Zekerheid over je sterkte: ±${Math.round((Math.exp(m.sdLn) - 1) * 100)} % · ${m.mode === 'rust' ? 'je zit goed' : 'Engine 2 zoekt nog'}${m.pairs ? ` · ${m.pairs} ${m.pairs === 1 ? 'blinde vergelijking' : 'blinde vergelijkingen'}` : ''}.`)}</p>`);
+  }
+  const keys = Object.keys(m.outcomes);
+  if (keys.length){
+    parts.push(`<p class="insights-note m-10-0-6"><strong class="c-text">Proeven uit het advies</strong> (vergeleken met je vorige kop)</p>` +
+      keys.map(k => { const o = m.outcomes[k]; return `<p class="insights-note m-0-0-4" data-e2-trial-row>${escapeHtml(`${E2_TIP_LABELS[k] || k}: ${o.tested}× geprobeerd · ${o.better} beter · ${o.same} gelijk · ${o.worse} slechter`)}</p>`; }).join(''));
+  }
+  const eyKeys = Object.keys(m.ey);
+  if (eyKeys.length){
+    parts.push(`<p class="insights-note m-10-0-6"><strong class="c-text">Gemeten extractie</strong> (refractometer)</p>` +
+      eyKeys.map(k => { const e = m.ey[k]; const name = METHOD_INFO[k] ? METHOD_INFO[k].name : k;
+        return `<p class="insights-note m-0-0-4" data-e2-ey-row>${escapeHtml(`${name}: ${fmt(e.eyMean * 100, 1)} % gemiddeld uit ${e.n} ${e.n === 1 ? 'meting' : 'metingen'}${e.n >= E2_EY_MIN_N ? ' · Engine 2 rekent hiermee' : ` · vanaf ${E2_EY_MIN_N} rekent Engine 2 hiermee`}${e.perClick != null ? ` · één klik fijner: ${e.perClick < 0 ? '+' : '−'}${fmt(Math.abs(e.perClick) * 100, 1)} %-punt` : ''}`)}</p>`; }).join(''));
+  }
+  return `<div class="bean-detail-section" id="e2-meetlat">
+      <h2 class="bean-detail-section-label">Engine 2 · meetlat</h2>
+      ${parts.join('')}
+      <p class="insights-note m-8-0-0">Minder wijzigingen bij evenveel goede koppen is beter: elke wijziging op ruis maakt je kop onrustiger.</p>
+    </div>`;
+}
 
 let brewStore = [];
 let activeBrewId = null;
@@ -11346,6 +11523,12 @@ function beginBrewRecord(){
       e2: state.e2Plan ? e2InputsOf(state.e2Plan) : null
     }
   });
+  // e2-2026.3: de tipproef die deze kop test; daarna is hij op (één kop, één proef).
+  const trial = e2TrialInEffect();
+  if (trial && rec.plan.inputs && rec.plan.inputs.e2){
+    rec.plan.inputs.e2.trial = { key: trial.key, fromBrewId: trial.fromBrewId, strength: trial.strength || 0, grind: trial.grind || 0 };
+    setE2PendingTrial(null);
+  }
   upsertBrewRecord(rec);
   setActiveBrewId(rec.id);
   persistBrewStore();
@@ -11438,6 +11621,8 @@ function openBrewLogEntry(){
   // Bij elke nieuwe logging leeg: anders blijft een eerder kopgewicht staan voor een ander brouwsel.
   const cupWeightEl = document.getElementById('brewlog-cup-weight');
   if (cupWeightEl) cupWeightEl.value = alreadyLogged && loggedRec.actual && loggedRec.actual.cupWeightG != null ? loggedRec.actual.cupWeightG : '';
+  const tdsEl = document.getElementById('brewlog-tds'); // e2-2026.3
+  if (tdsEl) tdsEl.value = alreadyLogged && loggedRec.actual && loggedRec.actual.tdsPct != null ? loggedRec.actual.tdsPct : '';
   // Alleen zichtbaar bij een kop met bypass; voorgevuld met het geplande bedrag (rec.bypassMl), zodat
   // "niets aanpassen" betekent "volgens plan", niet "onbekend".
   const bypassActualBlock = document.getElementById('brewlog-bypass-actual-block');
@@ -11849,6 +12034,9 @@ function saveBrewLogEntry(){
   next.actual = applyActuals(next.actual, next.plan, tastingDraft.actualsMode, edited);
   // Wat er ECHT gebeurde (door de gebruiker ingevuld, bron U) — nooit 0 voor een leeg veld.
   next.actual.cupWeightG = readOptionalNumberInput('brewlog-cup-weight');
+  // e2-2026.3: alleen een plausibele meting (0,4–2,5 %); iets anders is een tikfout, geen meting.
+  const tdsIn = readOptionalNumberInput('brewlog-tds');
+  next.actual.tdsPct = tdsIn != null && tdsIn >= E2_TDS_RANGE.min && tdsIn <= E2_TDS_RANGE.max ? Math.round(tdsIn * 100) / 100 : null;
   next.actual.bypassActualG = next.plan.bypass ? readOptionalNumberInput('brewlog-bypass-actual') : null;
   const completedAt = next.actual.completedAt || nowMs;
   const prev = findPreviousComparableBrew(brewStore, next);
@@ -14071,6 +14259,22 @@ function renderRecommendationPanel(rec){
   el.hidden = false;
 }
 function handleRecommendationClick(e){
+  // e2-2026.3: een tip uit de hendeltabel als proef voor je volgende kop (één tegelijk).
+  const tipBtn = e.target.closest('[data-e2-tip]');
+  const tipCancel = e.target.closest('[data-e2-tip-cancel]');
+  if (tipBtn || tipCancel){
+    const card = document.getElementById('reco-card');
+    const tipRec = card && card.dataset.e2RecId ? getBrewRecord(card.dataset.e2RecId) : activeBrewRecord();
+    if (!tipRec) return;
+    if (tipCancel) setE2PendingTrial(null);
+    else {
+      const tip = e2TipsFor(tipRec.tasting, {}).find(t => t.key === tipBtn.dataset.e2Tip);
+      const trial = e2TrialFromTip(tipRec, tip, Date.now());
+      if (trial) setE2PendingTrial(trial);
+    }
+    renderRecommendationPanel(tipRec);
+    return;
+  }
   if (e.target.closest('#reco-link-bean-btn')){ // R-06
     const linkRec = activeBrewRecord();
     if (!linkRec) return;
@@ -14261,6 +14465,46 @@ function arrangePrepNotes(){
 }
 // Engine 2 bij de huidige keuze: het basisrecept (sterkte 0) van de bestaande engine, met daarop
 // jouw sterkte uit al je koppen. Een fout in Engine 2 valt terug op de bestaande engine.
+// e2-2026.3 · een tip uit de hendeltabel als proef: geldt voor de volgende kop op dezelfde brewer.
+function e2ActiveTrial(){
+  if (!engine2On() || !state.method) return null;
+  const t = e2PendingTrial();
+  return t && t.method === state.method ? t : null;
+}
+function applyE2TrialToState(){
+  const t = e2ActiveTrial();
+  if (!t || state.e2TrialApplied === t.id) return;
+  state.e2TrialApplied = t.id;
+  state.e2TrialPrev = { strengthAdjust: state.strengthAdjust || 0, grindStand: state.grindStand };
+  state.strengthAdjust = t.strength || 0;
+  if (t.grind && typeof t.fromGrindClick === 'number') state.grindStand = t.fromGrindClick + t.grind;
+}
+// Staat de proef nog zoals klaargezet? Pas je zelf de sterkte aan, dan is het geen proef meer.
+function e2TrialInEffect(){
+  const t = e2ActiveTrial();
+  if (!t || state.e2TrialApplied !== t.id || (state.strengthAdjust || 0) !== (t.strength || 0)) return null;
+  return t;
+}
+function cancelE2Trial(){
+  const prev = state.e2TrialPrev;
+  setE2PendingTrial(null);
+  if (prev){ state.strengthAdjust = prev.strengthAdjust; state.grindStand = prev.grindStand; }
+  state.e2TrialApplied = null; state.e2TrialPrev = null;
+  renderPrep();
+}
+function renderE2TrialNote(){
+  const el = document.getElementById('e2-trial-note');
+  if (!el) return;
+  const t = e2TrialInEffect();
+  if (!t){ el.hidden = true; el.innerHTML = ''; return; }
+  const bits = [t.strength ? `sterkte ${t.strength < 0 ? '−' : '+'}4 %` : null,
+    t.grind && typeof t.fromGrindClick === 'number' ? `klik ${t.fromGrindClick + t.grind} (was ${t.fromGrindClick})` : t.grind ? `${Math.abs(t.grind)} klik ${t.grind < 0 ? 'fijner' : 'grover'}` : null].filter(Boolean).join(' · ');
+  el.innerHTML = `<p class="prep-next-adjust-title">Proef · ${escapeHtml(E2_TIP_LABELS[t.key] || t.key)}</p>
+    <p class="prep-next-adjust-text">${escapeHtml(bits)}</p>
+    <p class="prep-next-adjust-note">Staat hieronder al ingesteld. Beantwoord na het proeven "Vergeleken met je vorige kop", dan houdt Engine 2 bij wat deze proef je oplevert.</p>
+    <button type="button" class="link-secondary" id="e2-trial-cancel">Toch niet</button>`;
+  el.hidden = false;
+}
 function engine2PlanForState(){
   if (!engine2On()) return null;
   try {
@@ -14324,11 +14568,13 @@ function renderEngine2Status(){
   if (!el) return;
   if (!engine2On()){ el.textContent = 'Uit: de oude engine is actief.'; return; }
   try {
-    const obs = e2AllObservations(brewStore, abTrials, m => e2RetentionFor(m).value);
+    const rFor = (m) => e2RetentionFor(m).value;
+    const eyFor = (m) => e2EyFor(brewStore, m, rFor(m));
+    const obs = e2AllObservations(brewStore, abTrials, rFor, eyFor);
     if (!obs.length){ el.textContent = `Aan (${ENGINE2_VERSION}). Nog geen geproefde koppen met een sterkte-antwoord.`; return; }
     const dec = e2Decide(obs, 0);
     const tds = Math.exp(dec.targetLn);
-    el.textContent = `Aan (${ENGINE2_VERSION}). Jouw sterkte op de V60: ${e2RatioText(e2RatioForTds(tds, e2RetentionFor('v60').value))}, uit ${dec.n} geproefde ${dec.n === 1 ? 'kop' : 'koppen'}${dec.mode === 'rust' ? '. Je zit goed.' : '. Engine 2 zoekt nog.'}`;
+    el.textContent = `Aan (${ENGINE2_VERSION}). Jouw sterkte op de V60: ${e2RatioText(e2RatioForTds(tds, rFor('v60'), eyFor('v60')))}, uit ${dec.n} geproefde ${dec.n === 1 ? 'kop' : 'koppen'}${dec.mode === 'rust' ? '. Je zit goed.' : '. Engine 2 zoekt nog.'}`;
   } catch(e){ el.textContent = `Aan (${ENGINE2_VERSION}).`; }
 }
 // Het advies na het proeven, als Engine 2 aan staat: de sterktebeslissing, de tips uit de
@@ -14336,17 +14582,43 @@ function renderEngine2Status(){
 // volgende kop staat al klaar op het receptscherm.
 function renderEngine2Panel(rec, el){
   const rFor = (m) => e2RetentionFor(m).value;
-  const obs = e2AllObservations(brewStore, abTrials, rFor);
+  const eyFor = (m) => e2EyFor(brewStore, m, rFor(m));
+  const obs = e2AllObservations(brewStore, abTrials, rFor, eyFor);
   const dec = e2Decide(obs, 0);
   const entry = dec.trail.find(x => x.id === rec.id) || null;
   const tx = entry ? e2DecisionText(entry)
     : { title: 'Geen sterkte-antwoord', body: 'Zonder antwoord op de sterktevraag leert Engine 2 niets van deze kop.' };
+  const method = rec.plan && rec.plan.methodId;
   const water = rec.plan && rec.plan.waterMl;
   const dose = rec.actual && typeof rec.actual.doseG === 'number' && rec.actual.doseG > 0 ? rec.actual.doseG : (rec.plan && rec.plan.doseG);
-  const rAbs = rFor(rec.plan && rec.plan.methodId);
-  const tips = e2TipsFor(rec.tasting, { doseG: dose, waterG: water, rAbs });
-  const nextRatio = entry ? e2RatioForTds(Math.exp(entry.afterLn), rAbs) : null;
+  const rAbs = rFor(method);
+  const eyModel = e2EyModel(brewStore, method, rAbs);
+  const ey = eyModel.n >= E2_EY_MIN_N ? eyModel.eyMean : E2_EY_NOMINAL;
+  const tips = e2TipsFor(rec.tasting, { doseG: dose, waterG: water, rAbs, ey, eyPerClick: eyModel.perClick });
+  const nextRatio = entry ? e2RatioForTds(Math.exp(entry.afterLn), rAbs, ey) : null;
   const nextLine = nextRatio && water ? `Je sterkte voor de volgende kop: ${e2RatioText(nextRatio)}, dat is ${fmt(water / nextRatio, 1)} g op ${water} g.` : '';
+  // e2-2026.3: een gemeten TDS op deze kop, en de extractie die daaruit volgt.
+  const measured = e2MeasuredTds(rec);
+  let measuredLine = '';
+  if (measured != null && dose > 0){
+    const cupG = rec.actual && rec.actual.cupWeightG > 0 ? rec.actual.cupWeightG : null;
+    const dil = rec.plan.inputs && rec.plan.inputs.e2 && rec.plan.inputs.e2.dilutionG > 0 ? rec.plan.inputs.e2.dilutionG : 0;
+    const t = measured / 100;
+    const eyCup = cupG ? t * cupG / dose : t / (1 - t) * ((water + dil) / dose - rAbs);
+    measuredLine = `Gemeten: TDS ${fmt(measured, 2)} %, extractie ${fmt(eyCup * 100, 1)} %${cupG ? '' : ' (via je vasthouden; met een kopgewicht wordt dit exact)'}.${eyModel.n >= E2_EY_MIN_N ? ` Engine 2 rekent op deze brewer nu met jouw gemiddelde extractie van ${fmt(eyModel.eyMean * 100, 1)} % (${eyModel.n} metingen).` : ` Vanaf ${E2_EY_MIN_N} metingen rekent Engine 2 met jouw eigen extractie.`}`;
+  }
+  const pending = e2PendingTrial();
+  const tipHtml = (t) => {
+    let btn = '';
+    if (t.trial){
+      if (pending && pending.key === t.key && pending.fromBrewId === rec.id){
+        btn = `<span class="reco-status" data-e2-trial-status>Staat klaar voor je volgende kop.</span> <button type="button" class="link-secondary" data-e2-tip-cancel="1">Toch niet</button>`;
+      } else {
+        btn = `<button type="button" class="link-secondary" data-e2-tip="${escapeHtml(t.key)}">Probeer bij je volgende kop</button>`;
+      }
+    }
+    return `<p class="reco-note"><strong>${t.kind === 'controle' ? 'Controle' : 'Probeer'}:</strong> ${escapeHtml(t.text)}</p>${btn ? `<p class="reco-note">${btn}</p>` : ''}`;
+  };
   let oldLine = '';
   try {
     if (rec.recommendation){
@@ -14356,12 +14628,14 @@ function renderEngine2Panel(rec, el){
   } catch(e){ oldLine = ''; }
   const bean = rec.beanId ? beanLibrary.find(b => b.id === rec.beanId) : null;
   el.dataset.type = entry && entry.steps ? 'ADJUST' : 'REPEAT';
+  el.dataset.e2RecId = rec.id;
   el.innerHTML =
     `<p class="reco-kicker">Engine 2 · advies voor je volgende kop</p>` +
     `<p class="reco-title">${escapeHtml(tx.title)}</p>` +
     `<p class="reco-body">${escapeHtml(tx.body)}</p>` +
     (nextLine ? `<p class="reco-body">${escapeHtml(nextLine)}</p>` : '') +
-    tips.map(t => `<p class="reco-note"><strong>${t.kind === 'controle' ? 'Controle' : 'Probeer'}:</strong> ${escapeHtml(t.text)}</p>`).join('') +
+    (measuredLine ? `<p class="reco-body">${escapeHtml(measuredLine)}</p>` : '') +
+    tips.map(tipHtml).join('') +
     (oldLine ? `<p class="reco-note">${escapeHtml(oldLine)}</p>` : '') +
     (!bean ? `<p class="reco-status">Koppel een boon om deze kop bij de boon te bewaren en "Zet opnieuw" te kunnen gebruiken.</p><button type="button" class="link-secondary" id="reco-link-bean-btn">Koppel een boon</button>` : '');
   el.hidden = false;
@@ -14369,11 +14643,13 @@ function renderEngine2Panel(rec, el){
 function renderPrep(){
   const m = METHOD_INFO[state.method], r = ROAST_INFO[state.roast], p = PROFILE_INFO[state.profile];
   applyGoalStrengthPreference(); // BC-10: alleen als je dat zelf aanzette na je blinde proeven
+  applyE2TrialToState(); // e2-2026.3: een klaargezette tipproef, één keer per sessie
   state.e2Plan = engine2PlanForState(); // Engine 2: jouw sterkte en verwachte einde (null als hij uit staat)
   state.recipe = computeRecipe(state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL, state.strengthAdjust, state.bypassPct, state.e2Plan);
   if (state.e2Plan && state.recipe && state.recipe.engine2) state.e2Plan.dilutionG = state.recipe.engine2.dilutionG || 0;
   const rec = state.recipe;
   renderEngine2Card();
+  renderE2TrialNote();
 
   renderRoastDateInput();
   renderOpenedDateInput();
@@ -14577,6 +14853,8 @@ function renderPrep(){
   // R-02: geen klaargezette maalstap → je eigen stand van de vorige kop (ook op de Chemex, waar
   // de app zelf geen klik weet).
   const grindFromStand = !grindAdjusted && typeof state.grindStand === 'number' && rec.grindMicron == null && state.grindStand !== rec.grindStartingPoint;
+  const e2TrialNow = e2TrialInEffect();
+  const grindFromTrial = !grindAdjusted && !!(e2TrialNow && e2TrialNow.grind && typeof e2TrialNow.fromGrindClick === 'number') && rec.grindMicron == null;
   const doseFromStand = !doseAdjusted && !!state.standApplied && (state.standApplied.strengthStep || 0) !== 0 && state.strengthAdjust === state.standApplied.strengthStep;
   const grindValue = prepGrindValue(rec);
   document.getElementById('stats-grid').innerHTML = `
@@ -14596,10 +14874,11 @@ function renderPrep(){
       ${state.bypass ? `<div class="stat-sub">waarvan ${rec.pourWaterMl} ml door de koffie</div>` : ''}
     </div>
     <div class="stat-block stat-block--hero stat-block--grind${grindAdjusted ? ' stat-block--adjusted' : ''}">
-      <div class="stat-label">Maalgraad${grindAdjusted ? ' · jouw stap' : grindFromStand ? ' · jouw stand' : ''}</div>
+      <div class="stat-label">Maalgraad${grindAdjusted ? ' · jouw stap' : grindFromTrial ? ' · proef' : grindFromStand ? ' · jouw stand' : ''}</div>
       <div class="stat-value${/\d/.test(grindValue) ? '' : ' stat-value--word'}">${escapeHtml(grindValue)}</div>
       ${grindAdjusted ? `<div class="stat-sub stat-sub--adjusted">was ${escapeHtml(String(pAdj.fromValue))} · stap uit je vorige kop</div>` : ''}
-      ${grindFromStand ? `<div class="stat-sub stat-sub--adjusted">zoals je vorige kop${rec.grindStartingPoint != null && rec.grindStartingPoint !== state.grindStand ? ` · basisrecept: klik ${rec.grindStartingPoint}` : ''}</div>` : ''}
+      ${grindFromTrial ? `<div class="stat-sub stat-sub--adjusted">was ${escapeHtml(String(e2TrialNow.fromGrindClick))} · proef uit je vorige kop</div>` : ''}
+      ${grindFromStand && !grindFromTrial ? `<div class="stat-sub stat-sub--adjusted">zoals je vorige kop${rec.grindStartingPoint != null && rec.grindStartingPoint !== state.grindStand ? ` · basisrecept: klik ${rec.grindStartingPoint}` : ''}</div>` : ''}
       ${rec.grindShortContact ? `<div class="stat-sub">1 klik fijner: kort schema (${fmtTime(rec.totalTime)})</div>` : ''}
       ${rec.grindMicron == null && rec.grindStartingPoint != null && rec.grindStartingRange ? `<div class="stat-sub">startgebied: klik ${rec.grindStartingRange.clicksMin}–${rec.grindStartingRange.clicksMax}</div>` : ''}
       ${rec.grindMicron == null && rec.grindStartingPoint == null && rec.grindBandLabel && grindValue !== rec.grindBandLabel ? `<div class="stat-sub">${escapeHtml(rec.grindBandLabel)}</div>` : ''}
@@ -15027,6 +15306,7 @@ function selectMethod(key){
   state.bypassMoment = 'achteraf';
   state.strengthAdjust = 0;
   state.goalLighterApplied = false; // BC-10
+  state.e2TrialApplied = null; state.e2TrialPrev = null; // e2-2026.3
   renderMethodGrid();
   showScreen('roast');
   renderRoastGrid();
@@ -16373,6 +16653,9 @@ document.getElementById('prep-bean-line').addEventListener('click', (e)=>{ // R-
     if (bean && !state.roastDate && bean.roastDate) state.roastDate = bean.roastDate;
     renderPrep();
   });
+});
+document.getElementById('e2-trial-note').addEventListener('click', (e)=>{ // e2-2026.3
+  if (e.target.closest('#e2-trial-cancel')) cancelE2Trial();
 });
 document.getElementById('prep-stand-note').addEventListener('click', (e)=>{ // R-02
   if (e.target.closest('#prep-stand-reset')) resetStandToBase();

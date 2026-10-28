@@ -1,4 +1,4 @@
-# Engine 2 (e2-2026.2)
+# Engine 2 (e2-2026.3)
 
 Engine 2 zet je **sterkte** (de dosis) en je **verwachte einde**. Na het proeven geeft hij **advies** volgens een hendeltabel.
 
@@ -14,7 +14,7 @@ W/D = EY·(1−TDS)/TDS + R_abs
 ```
 
 - **R_abs (vastgehouden water).** Standaard 2,1 g/g, voor filter, uit dezelfde bron. Heb je minstens 5 gewogen koppen (V10), dan gebruikt Engine 2 je eigen waarde. `measuredRetention()` meet (water − kop)/dosis; omdat de kop ook de opgeloste koffie bevat, is het vastgehouden water die waarde plus de extractie.
-- **EY.** Nominaal 0,20. Engine 2 rekent heen (kop → TDS) en terug (doel → dosis) met dezelfde waarde, dus die valt weg in de dosis. Alleen de getoonde TDS-procenten hangen ervan af.
+- **EY.** Nominaal 0,20; vanaf 3 refractometermetingen per brewer je eigen gemiddelde (§8). Engine 2 rekent heen (kop → TDS) en terug (doel → dosis) met dezelfde waarde, dus die valt weg in de dosis. Alleen de getoonde TDS-procenten hangen ervan af.
 
 ## 2. Persoonlijke sterkte
 
@@ -85,7 +85,7 @@ Bij een sterkteklacht geeft Engine 2 geen extra smaaktip: dat lost de sterkte ze
   - de sterkteknoppen zijn een handmatige afwijking voor één kop; ook die kop telt mee.
 - **Oude stappen per zak:** de sterkte uit "Zet opnieuw" en klaargezette dosisstappen van de oude engine gelden niet. Engine 2 leert over al je zakken samen. Maalstappen blijven gelden, want dat is proces.
 - **Advies na het proeven:** het Engine 2-paneel vervangt het oude advies. Het oude advies wordt nog wel berekend en bewaard, en staat ter vergelijking onder het paneel.
-- **Record:** elke kop bewaart `plan.inputs.e2` (versie, dosis, eindtijd, basiseindtijd, doel, modus, n). Daarmee valt het recept na herladen exact terug te rekenen, en blijft het tijdmodel eerlijk.
+- **Record:** elke kop bewaart `plan.inputs.e2` (versie, dosis, eindtijd, basiseindtijd, doel, modus, n, R_abs, EY, verdunning, en een tipproef als die meeging). Daarmee valt het recept na herladen exact terug te rekenen, en blijft het tijdmodel eerlijk.
 
 ## 7. e2-2026.2: blinde paren, afwijking per zak, verdunnen, maling
 
@@ -139,7 +139,55 @@ Engine 2 schat met kleinste kwadraten wat één klik doet: ln(Bed droog / schema
   - Alleen bij meer dan 12 % afwijking, en maximaal 4 klikken.
 - **Zolang het effect onbekend is:** de kaart stelt een kleine proef voor (3 koppen, 2 klikken grover).
 
-## 8. Nog niet in deze versie
-- **De karakter-as als automatische stap.** Nu alleen als tip: de EY per klik blijft zonder refractometer een aanname.
-- **Een invoer voor een gemeten TDS (refractometer).**
+## 8. e2-2026.3: gemeten TDS, tips als proef, meetlat
+
+### 8.1 Gemeten TDS (refractometer)
+Onder **Meer meten** in het logformulier staat een optioneel veld **TDS gemeten** (`actual.tdsPct`).
+- **Geldig:** 0,4–2,5 %. Een andere waarde (bijv. 13,8 in plaats van 1,38) is een tikfout en wordt niet opgeslagen.
+- **Als sterkte:** een gemeten kop telt in de posterior met de gemeten TDS in plaats van de berekende. Een verdunde kop is al gemeten na het bijvullen, dus daar komt geen correctie meer op.
+- **Extractie per kop:**
+
+  ```
+  met kopgewicht:   EY = TDS · kop / dosis                    (exact)
+  zonder:           EY = TDS/(1−TDS) · (W_totaal/D − R_abs)   (massabalans)
+  ```
+
+  Alleen waarden tussen 10 en 30 % tellen.
+- **Jouw extractie:** het gemiddelde van de laatste 20 metingen per brewer (`e2EyModel()`). Vanaf 3 metingen rekent Engine 2 voor die brewer met jouw EY in plaats van 20 % (`e2EyFor()`), heen én terug. De dosis blijft daardoor dezelfde bij dezelfde antwoorden; alleen een gemeten kop voegt echt informatie toe.
+- **Extractie per klik:** kleinste kwadraten van EY tegen de klik, vanaf 4 metingen met minstens twee standen van elk 2, en alleen bij een effect groter dan 2× de standaardfout.
+- **In het advies:** het paneel toont de gemeten TDS en extractie van de kop.
+
+### 8.2 Karakter: de scherp-zuur-tip met je eigen getal
+De tip "één klik fijner en iets minder koffie" rekende met een aangenomen +1 %-punt extractie per klik. Is je eigen extractie per klik bekend (§8.1), dan rekent hij daarmee, en zegt hij dat erbij. De dosiscorrectie houdt de TDS gelijk:
+
+```
+D₂ = W / ratio(TDS_nu, R_abs, EY + ΔEY_klik)
+```
+
+De karakter-as blijft een proef, geen automatische stap.
+
+### 8.3 Tips als proef
+Elke proeftip uit de hendeltabel (§5) heeft een knop **Probeer bij je volgende kop**.
+- **Wat er klaarstaat:** één proef tegelijk (localStorage `brewconsole_e2_trial`): de sterkte (−4 % of +4 %) en bij scherp zuur ook één klik fijner dan de kop van de tip.
+- **Receptscherm:** de proef staat een keer per sessie ingesteld, alleen op dezelfde brewer, met een eigen melding en **Toch niet** (zet sterkte en maling terug). De maaltegel zegt "proef".
+- **Bij Start:** gaat de proef mee in `plan.inputs.e2.trial` en is hij op. Verander je zelf de sterkte, dan is het geen proef meer en gaat hij niet mee.
+- **Uitkomst:** het antwoord op "Vergeleken met je vorige kop" (`tasting.vsLast`).
+- **Wat de proef niet doet:** de sterkte van de proefkop telt gewoon mee in de posterior, net als een handmatige afwijking. Leren van de uitkomst gebeurt nog niet automatisch; de meetlat telt.
+
+### 8.4 Meetlat (Statistieken)
+Onder **Jouw metingen** staat **Engine 2 · meetlat** (`e2Meetlat()`):
+- over de laatste 10 geproefde koppen: hoe vaak Engine 2 je sterkte veranderde, tegen hoe vaak de oude engine een stap voorstelde;
+- hoe vaak de sterkte goed was;
+- de zekerheid (±%), rust of zoeken, en het aantal blinde paren;
+- per proeftip: geprobeerd, beter, gelijk, slechter;
+- per brewer de gemeten extractie.
+
+Doel: minder wijzigingen bij evenveel goede koppen.
+
+### 8.5 Home
+De kaart **Je volgende kop** heeft een regel "Engine 2 · jouw sterkte 1:x · je zit goed / zoekt nog", plus een klaargezette proef voor die brewer.
+
+## 9. Nog niet in deze versie
+- **Leren van proefuitkomsten.** De meetlat telt ze; een regel die tips na een paar keer "slechter" weglaat, komt pas als er genoeg uitkomsten zijn.
+- **De karakter-as als automatische stap.** Ook met een refractometer blijft het een tip: de smaakkant (scherp zuur) is per persoon.
 - **Chemex-templates met een eigen bron.**
