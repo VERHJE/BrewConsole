@@ -43,7 +43,7 @@ describe('R-13: één smaakvraag (profiel + doel samen), gietstijl als optie', (
     const [bright, balanced, rich] = api.TASTE_CHOICES;
     assert.equal(api.tasteDetail(balanced, 'v60'), 'Kasuya 4:6');
     assert.match(api.tasteDetail(bright, 'v60'), /^Kasuya 4:6 · iets minder koffie · grotere eerste giet/);
-    assert.match(api.tasteDetail(rich, 'v60'), /^Kasuya 4:6 · kleinere eerste giet/);
+    assert.match(api.tasteDetail(rich, 'v60'), /^Kasuya 4:6 · iets meer koffie · kleinere eerste giet/); // V1: Rond & vol zet op 1:15
     // Op de Chemex bestaat Kasuya niet: geen claim over de eerste giet.
     assert.doesNotMatch(api.tasteDetail(bright, 'chemex'), /eerste giet/);
   });

@@ -819,3 +819,115 @@ Deze ronde verandert niets aan recepten, advies of de rekenkern (de engine-bunde
 **Testresultaten:**
 - Nieuw blok "Gieten op doorlopen (Kasuya)" in `tests/brewconsole.pure-logic.test.mjs`: gates, schema zonder tik, vroege en late tik, wachten, tikken uit gebeurtenissen met terugdraaien, doorlooptijden, verwachte eindtijd.
 - Nieuwe schermtest in `tests/kernflow.smoke.test.mjs`: standaard uit, aanzetten, Erdoor, ongedaan maken, wachten na de klok, herladen met herstel, samenvatting en record.
+
+## Audit Fase B: V1, V2, V3, V5, V6, V7, V8, V9, V10, V11 (keuze Jelle, okt 2026)
+
+**Aanleiding:** het auditrapport `onderzoek_audit_engine_recepten.md`. Jelle koos deze tien punten, met de opdracht om bij twijfel eerst verder te onderzoeken. De rekenkern is ongewijzigd (hash 1b13e449…).
+
+### V6 · Omschrijving van Perger
+"in 2,5 min klaar" klopte niet met het schema (1:40). Nu: "bloom en één lange giet". Een test controleert dat de omschrijving geen tijd noemt.
+
+### V7 · Herkomst van de rekenkern
+- `docs/rekenkern.md` legt vast:
+  - wat de bundel is;
+  - dat de TypeScript-bron niet in deze repository staat;
+  - de volledige sha256;
+  - hoe je hem ooit verantwoord wijzigt.
+- `tests/engine-integrity.test.mjs` faalt bij elke onbedoelde wijziging.
+- Open: als je het oorspronkelijke TypeScript-project hebt, hoort de bron onder `engine/`.
+
+### V11 · Wisselvallige R-02-test
+- De test liep zelden vast ("Zet opnieuw" na herladen); los en bij zes parallelle runs nooit. De oorzaak is niet gevonden.
+- Wat er nu gebeurt: de test wacht eerst op Home. Mislukt het toch, dan meldt hij wat er na het herladen in de opslag stond: aantal koppen, `lastBrew` per boon, opgeslagen records en of de kaart verborgen was.
+- Er is geen test overgeslagen.
+
+### V1 · Sterkte per smaak en techniek (MODEL_POLICY 4.0)
+**Probleem:** de twee TDS/EY-vensters gaven 1:17,4 tegen 1:17,6. Daardoor zetten "Rond & vol" en "Helder & fris" even sterk. Sterkte (TDS) is in het onderzoek van UC Davis de grootste smaakdrijver.
+
+**Wat er nu is:** `PROFILE_RATIO`, met eigen verhoudingen op de V60.
+
+| Smaak of techniek | Verhouding | Herkomst |
+|---|---|---|
+| Rond & vol | 1:15 | Kasuya 20 g / 300 ml |
+| Gebalanceerd | 1:16 | eigen stap |
+| Helder & fris | 1:17 | eigen stap |
+| Hoffmann (ook op de Chemex) | 1:16,7 | 30 g / 500 g |
+| April | 1:15 | 20 g / 300 g |
+| Rao | 1:16,5 | 20 g / 330 ml |
+
+**Onderzoek bij twijfel:**
+- De gepubliceerde recepten zetten allemaal sterker dan de oude ±1:17,4.
+- Dat zoet en fruitig bij lagere TDS horen en bitter en vol bij hogere, komt uit Frost e.a. 2020 en Guinard e.a. 2023 (volgens samenvattingen).
+- De stappen 1:16 en 1:17 zijn eigen keuzes in die richting en staan zo gelabeld.
+
+**Regels:**
+- Profielen zonder eigen bron (Basisrecept, Bloemig, Sirooprig, Perger) en de Chemex-recepten behalve Hoffmann houden het venster.
+- De dosis blijft binnen 15–22 g. Op de grens zegt de verhoudingstegel dat de verhouding daardoor afwijkt; elders staat de herkomst eronder ("volgens Kasuya 20 g op 300 ml" of "eigen stap: …").
+- De sterktestappen (±8 %/±4 %) werken erbovenop.
+- `MODEL_POLICY.version` gaat naar 4.0, dus oude koppen houden hun versie.
+- De gouden recepten zijn opnieuw gegenereerd. Alleen de acht bedoelde profielen veranderen: zeven op de V60 en Hoffmann op de Chemex.
+- **Toetsen:** proef E1 (blind, A/B) uit het rapport.
+
+### V3 · Rao volgens zijn eigen recept
+**Onderzoek:**
+- Twee onafhankelijke samenvattingen van het Hario-interview geven dezelfde structuur: bloom van 60 ml (3× de dosis) met stevig draaien; na 40 s gieten tot 200 ml en zacht draaien; gieten tot 330 ml zodra ±70 % is doorgelopen, met een zachte draai; klaar op 4:00–4:30.
+- Een Home-Barista-citaat van Rao's blog bevestigt de bloom van 3:1.
+- De volledige tekst was niet bereikbaar (hario.co.uk en scottrao.com zijn geblokkeerd in deze sessie).
+
+**Gebouwd:**
+- Een eigen tak in `buildPourSchedule` (`RAO_*`): bloom 3× de dosis (maximaal 25 % van het water), giet 1 op 0:40 tot 60 %, giet 2 rond 1:45 tot 100 %, klaar op 4:15. Het moment 1:45 is een eigen schatting, en dat staat erbij.
+- De draai-instructies staan bij elke giet.
+- De naam is "Rao". Rao is geen tweeling meer van Bloemig, want het oude schema was het algemene schema.
+- Rao maalt fijn. De notitie zegt "loopt het veel sneller dan 4:00 en smaakt het dun, een klik fijner". De start-klik zelf is niet veranderd: dat is een apart receptbesluit.
+
+### V5 · Hoffmann op de Chemex
+**Onderzoek:** geen eigen Chemex-schema van Hoffmann gevonden; alleen een derde partij noemt "aangepast van zijn V60-recept, ±4:15".
+
+**Gebouwd:** de naam is nu "Hoffmann (V60-techniek)". De notitie zegt dat het zijn V60-techniek is en dat het dikkere filter trager doorloopt. Het schema is ongewijzigd.
+
+### V2 · Zuur en sterkte (diag-2026.4)
+**Onderzoek:** zuurheid stijgt met de sterkte (titreerbare zuurgraad ∝ TDS) en daalt met de extractie: het zuurst bij hoge TDS en lage extractie (Batali e.a. 2021; SCA-samenvatting). Fijner malen verhoogt in een filter allebei.
+
+**Gebouwd:**
+- Bij "scherp zuur" met een goede sterkte, zonder "leeg", blijft de stap één klik fijner (de klassieke regel, zekerheid "mogelijk").
+- Er komt een tip bij: "Blijft hij zuur na deze stap, probeer dan iets minder koffie."
+- Te sterk + zuur gaf al minder koffie.
+
+**Toetsen:** V8 telt per soort stap hoe vaak het beter of slechter werd.
+
+### V9 · Eigen doorloop-exponent
+- `personalDoseTimeExponent()`: kleinste kwadraten op ln(bed droog) tegen ln(dosis).
+- Alleen Kasuya-koppen zonder bypass, met een Bed droog-tik.
+- Minstens 8 koppen, over minstens 15 % dosisbereik, begrensd op 0–1.
+- Zodra die er zijn, vervangt het eigen getal de 0,4 bij het verwachte einde (optie B). De tegel zegt dat erbij.
+
+### V10 · Gemeten vasthouden
+- Instellingen › Zetten › "Gebruik mijn gemeten vasthouden" (standaard uit).
+- Met ≥ 5 bruikbare metingen (`measuredRetention`) vervangt jouw getal de aanname 2,0 g/g.
+- Alleen voor recepten uit het venster (niet bij een eigen verhouding: die is het gegoten water) en niet bij bypass.
+- De verhoudingstegel zegt het erbij ("met jouw gemeten vasthouden (2,25 g/g, n=…)").
+
+### V8 · Jouw metingen
+In Statistiek staat een nieuw blok, alleen-lezen:
+- bed droog per techniek en per 50 ml (mediaan en spreiding, met het verwachte einde);
+- per giet de Erdoor-tijd tegenover de klok;
+- geteste stappen per soort (fijner, grover, meer of minder koffie: beter, gelijk of slechter);
+- de status van de eigen doorloop-exponent.
+
+### Testresultaten
+- **Nieuwe blokken:**
+  - "Audit: sterkte per smaak en techniek (V1)";
+  - "Rao volgens zijn eigen recept (V3)";
+  - "Hoffmann op de Chemex (V5) en Perger (V6)";
+  - "eigen doorloop-exponent (V9)";
+  - "metingen op een rij (V8)";
+  - "zuur en sterkte (V2)";
+  - `tests/engine-integrity.test.mjs` (V7).
+- **Bijgewerkt, bewust en met reden in de test:**
+  - de venster-tests gebruiken nu de profielen zonder eigen verhouding;
+  - de tweelingtests (Rao is geen tweeling meer);
+  - A-4 (Rao nu met bron);
+  - de sterktestap-tests met de nieuwe doses;
+  - `MODEL_POLICY` naar 4.0 en `diag-2026.4`;
+  - de UI-tekst over wat een profiel stuurt;
+  - de gouden recepten.

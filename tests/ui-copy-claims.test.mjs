@@ -27,10 +27,11 @@ describe('BC-02: UI-teksten beloven geen effecten die de engine niet heeft', () 
   test('de vervangende teksten staan in de UI', () => {
     assert.match(html, /Natural\/anaerobic\? Dat weegt mee in de methodekeuze \(V60 of Chemex\) en het voorgestelde profiel; dosis, maling en temperatuur veranderen er niet door\./);
     assert.match(html, /m\.a\.s\.l\. — ter info, verandert het recept niet/);
-    assert.match(html, /Bepaalt het gietschema en wat de proefkaart straks vraagt\. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding \(een heel kort schema start één klik fijner\)\./);
+    // V1: de tekst noemt sinds MODEL_POLICY 4.0 de sterkte per smaak.
+    assert.match(html, /Bepaalt het gietschema, de sterkte en wat de proefkaart straks vraagt\. Op de V60 zet Rond &amp; vol op 1:15, Gebalanceerd op 1:16 en Helder &amp; fris op 1:17/);
   });
 
-  test('profieltekst klopt met de engine: temperatuur en maling gelijk over profielen, dosis binnen 0,5 g', () => {
+  test('profieltekst klopt met de engine: temperatuur en maling gelijk over profielen; dosis volgt de eigen verhouding of blijft binnen 0,5 g', () => {
     for (const m of ['v60', 'chemex']){
       for (const roast of ['light', 'medium', 'dark']){
         const recs = Object.keys(api.ENGINE_PROFILE_MAP)
@@ -43,9 +44,13 @@ describe('BC-02: UI-teksten beloven geen effecten die de engine niet heeft', () 
         for (const r of recs.filter(r => r.totalTime <= 120 && r.grindStartingPoint != null)){
           assert.equal(r.grindStartingPoint, normal[0].grindStartingPoint - 1, `${m}/${roast}: kort schema hoort precies één klik fijner te starten`);
         }
-        const doses = recs.map(r => r.dose);
+        // V1 (MODEL_POLICY 4.0): profielen met een eigen verhouding zetten precies die verhouding
+        // (zoals de tekst zegt); de andere profielen liggen binnen een paar tiende gram van elkaar.
+        const vol = m === 'v60' ? 300 : 600;
+        for (const r of recs.filter(r => r.profileRatio)) assert.ok(Math.abs(r.dose - vol / r.profileRatio.ratio) <= 0.05 + 1e-9, `${m}/${roast}: ${r.technique} volgt 1:${r.profileRatio.ratio}`);
+        const doses = recs.filter(r => !r.profileRatio).map(r => r.dose);
         const spread = Math.max(...doses) - Math.min(...doses);
-        assert.ok(spread <= 0.5 + 1e-9, `${m}/${roast}: dosisverschil ${spread.toFixed(2)} g is meer dan "een paar tiende gram"`);
+        assert.ok(spread <= 0.5 + 1e-9, `${m}/${roast}: dosisverschil ${spread.toFixed(2)} g tussen profielen zonder eigen verhouding`);
       }
     }
   });

@@ -348,3 +348,18 @@ Sensorisch is subjectief. Een refractometer zou TDS meten, maar meer TDS of extr
    - het toestaan van hario.co.uk, pmc.ncbi.nlm.nih.gov en pages.uoregon.edu in de netwerkinstellingen, om de volledige teksten te lezen;
    - eventueel een refractometer, als objectieve aanvulling en niet als doel.
 6. **Veiligste en meest waardevolle volgende stap:** V6 plus V1a (tekst, geen getallen), en daarna **E1** zetten met de blinde proef. De uitkomst van E1 bepaalt of de grotere wijziging (V1b) de moeite waard is.
+
+---
+
+## Fase B — uitgevoerd (28 okt 2026)
+
+Jelle koos V6, V1, V3, V2, V5, V7, V8, V11, V9 en V10, met de opdracht om bij twijfel eerst verder te onderzoeken. Wat er gebouwd is en waarom staat in `bouwbesluiten_v4.md`, sectie "Audit Fase B".
+
+**Afwijkingen van het plan:**
+- **V1 (sterkte per smaak):** direct doorgevoerd, dus niet eerst proef E1. De onderbouwing: de gepubliceerde recepten zetten zelf al op 1:15–1:16,7.
+  - Rond & vol, Hoffmann, April en Rao volgen hun bron.
+  - Gebalanceerd (1:16) en Helder & fris (1:17) zijn gelabelde eigen stappen.
+  - E1 blijft de manier om dit te toetsen.
+- **V3 (Rao):** gebouwd op twee samenvattingen van het interview, want de volledige tekst was niet bereikbaar. Het moment van de tweede giet (±1:45) is een eigen schatting.
+- **V2 (zuur-diagnose):** alleen een tip naast de klassieke stap, geen omgedraaide regel. Het bewijs komt uit druppelfilters, en V8 laat in je eigen koppen zien wat werkt.
+- **V11 (wisselvallige test):** de oorzaak is niet gevonden. De test wacht nu op Home en geeft bij een mislukking de toestand mee.

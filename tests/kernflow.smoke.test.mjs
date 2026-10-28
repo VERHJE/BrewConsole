@@ -2188,7 +2188,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       const p = await pending(page);
       assert.deepEqual([p.lever, p.delta, p.fromValue, p.toValue], ['dose', 0.5, -1, -0.5]);
       const s = await store(page);
-      assert.deepEqual([s[1].recommendation.reasonKey, s[1].recommendation.rulesetVersion], ['halfway', 'diag-2026.3']);
+      assert.deepEqual([s[1].recommendation.reasonKey, s[1].recommendation.rulesetVersion], ['halfway', 'diag-2026.4']);
 
       await toPrep(page);
       assert.equal(await page.evaluate(() => state.strengthAdjust), -0.5);
@@ -3604,6 +3604,20 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.deepEqual([stand.grindClick, stand.strengthStep, stand.liking], [base.grind - 1, -0.5, 5]);
 
       await page.reload({ waitUntil: 'load' });
+      // V11: deze stap liep zelden vast (geen "Zet opnieuw" na herladen; los nooit te herhalen).
+      // Eerst wachten op Home, en bij een mislukking zeggen wat er na het herladen in de opslag stond.
+      await assertBecomesActive(page, '#screen-home');
+      const goVisible = await page.locator('[data-next-cup-go]').waitFor({ state: 'visible', timeout: 15000 }).then(() => true, () => false);
+      if (!goVisible){
+        const diag = await page.evaluate(() => ({
+          brewLog: brewLog.length,
+          beans: beanLibrary.map(b => ({ id: b.id, lastBrew: b.lastBrew || null })),
+          stored: (JSON.parse(localStorage.getItem('brewconsole_brews') || '[]')).map(r => ({ id: r.id, lifecycle: r.lifecycle, beanId: r.beanId })),
+          nextCupHidden: document.getElementById('home-next-cup').hidden,
+          now: Date.now()
+        }));
+        assert.fail(`Geen "Zet opnieuw" na herladen. Toestand: ${JSON.stringify(diag)}`);
+      }
       await page.click('[data-next-cup-go]');
       await assertBecomesActive(page, '#screen-prep');
       assert.equal(await page.evaluate(() => state.strengthAdjust), -0.5, 'sterkte van je vorige kop');
