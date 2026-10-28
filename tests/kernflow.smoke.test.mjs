@@ -92,8 +92,14 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     if (browser) await browser.close();
   });
 
+  // Engine 2 staat in de app standaard aan. Deze smoketests beschrijven de oude engine (advies per
+  // kop, stappen per zak), die met Engine 2 uit ongewijzigd bestaat; de Engine 2-flow staat in
+  // tests/engine2.smoke.test.mjs. Een test die zelf de sleutel zet (Instellingen), houdt zijn eigen waarde.
   async function newTrackedPage(opts){
     const page = await browser.newPage(opts);
+    // Alleen een standaard op window, niets in de opslag: een schrijfactie bij elke navigatie maakte
+    // tests die de opslag vullen en meteen herladen wankel (Fase 6 faalde 2 van de 6 keer).
+    await page.addInitScript(() => { window.__brewconsoleEngine2Default = false; });
     page.on('console', msg => {
       if (msg.type() === 'error') consoleErrors.push(msg.text());
     });
@@ -573,7 +579,8 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     const engineMin = await page.evaluate(() => engineValidVolumeRange('v60', 'klassiek').min);
     assert.equal(engineMin, 240);
     assert.equal(finalMl, engineMin, `De schuifregelaar moet precies op het engine-geldige minimum stoppen, kreeg "${current}"`);
-    assert.match(await page.locator('#stats-grid .stat-block').first().innerText(), /15,0 g[\s\S]*ondergrens van dit toestel/);
+    // V1: Gebalanceerd zet op 1:16, dus 240 ml geeft precies 15,0 g (op de grens, niet erbuiten).
+    assert.match(await page.locator('#stats-grid .stat-block').first().innerText(), /15,0 g/);
 
     // Het getoonde recept moet exact dit (geklemde) volume tonen — geen mismatch tussen
     // de schuifregelaar en het daadwerkelijk berekende recept.
@@ -2188,7 +2195,7 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       const p = await pending(page);
       assert.deepEqual([p.lever, p.delta, p.fromValue, p.toValue], ['dose', 0.5, -1, -0.5]);
       const s = await store(page);
-      assert.deepEqual([s[1].recommendation.reasonKey, s[1].recommendation.rulesetVersion], ['halfway', 'diag-2026.3']);
+      assert.deepEqual([s[1].recommendation.reasonKey, s[1].recommendation.rulesetVersion], ['halfway', 'diag-2026.4']);
 
       await toPrep(page);
       assert.equal(await page.evaluate(() => state.strengthAdjust), -0.5);
@@ -2443,7 +2450,9 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
   test('D2-1/D4-2: V60 250 ml op de ondergrens met label; hints bij kleine V60 en kleine/grote Chemex', async () => {
     const page = await newTrackedPage();
     await page.goto(FILE_URL, { waitUntil: 'load' });
-    await page.evaluate(() => { selectMethod('v60'); selectRoast('medium'); selectProfile('klassiek'); state.waterMl = 250; renderPrep(); });
+    // V1: de Kasuya-smaken hebben sinds MODEL_POLICY 4.0 een eigen verhouding; het venster (en dus
+    // het label "ondergrens" bij 250 ml) geldt voor het Basisrecept.
+    await page.evaluate(() => { selectMethod('v60'); selectRoast('medium'); selectProfile('evenwichtig_flex'); state.waterMl = 250; renderPrep(); });
     const grid = page.locator('#stats-grid');
     let txt = await grid.innerText();
     assert.match(txt, /15,0 g/);
@@ -3604,6 +3613,20 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       assert.deepEqual([stand.grindClick, stand.strengthStep, stand.liking], [base.grind - 1, -0.5, 5]);
 
       await page.reload({ waitUntil: 'load' });
+      // V11: deze stap liep zelden vast (geen "Zet opnieuw" na herladen; los nooit te herhalen).
+      // Eerst wachten op Home, en bij een mislukking zeggen wat er na het herladen in de opslag stond.
+      await assertBecomesActive(page, '#screen-home');
+      const goVisible = await page.locator('[data-next-cup-go]').waitFor({ state: 'visible', timeout: 15000 }).then(() => true, () => false);
+      if (!goVisible){
+        const diag = await page.evaluate(() => ({
+          brewLog: brewLog.length,
+          beans: beanLibrary.map(b => ({ id: b.id, lastBrew: b.lastBrew || null })),
+          stored: (JSON.parse(localStorage.getItem('brewconsole_brews') || '[]')).map(r => ({ id: r.id, lifecycle: r.lifecycle, beanId: r.beanId })),
+          nextCupHidden: document.getElementById('home-next-cup').hidden,
+          now: Date.now()
+        }));
+        assert.fail(`Geen "Zet opnieuw" na herladen. Toestand: ${JSON.stringify(diag)}`);
+      }
       await page.click('[data-next-cup-go]');
       await assertBecomesActive(page, '#screen-prep');
       assert.equal(await page.evaluate(() => state.strengthAdjust), -0.5, 'sterkte van je vorige kop');
@@ -5297,6 +5320,90 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
       await page.click('#home-btn');
       await page.emulateMedia({ media: 'print' });
       assert.equal(await page.locator('.navbar').isVisible(), false);
+      await page.close();
+    });
+  });
+
+  // NIEUW (optie B): Kasuya op 400 ml (22 g) verwacht 3:40; tegel, timer en Klaar-scherm volgen.
+  describe('Optie B: verwachte eindtijd groeit mee met de dosis', () => {
+    test('Kasuya 400 ml: 3:40 in tegel en timer, Klaar-scherm meet tegen 3:40 en de normale tijd bij 22 g', async () => {
+      const page = await newTrackedPage();
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.evaluate(() => { selectMethod('v60'); selectRoast('light'); selectProfile('klassiek'); state.waterMl = 300; renderPrep(); });
+      assert.equal(await page.locator('#dose-time-note').count(), 0, '300 ml: geen notitie');
+      assert.match(await page.locator('#start-btn').textContent(), /3:30/);
+      await page.evaluate(() => { state.waterMl = 400; renderPrep(); });
+      assert.match(await page.locator('#dose-time-note').innerText(), /\+0:10: bij 22,0 g loopt het bed trager door \(Kasuya: 3:30 bij 20 g\)/);
+      assert.match(await page.locator('#start-btn').textContent(), /Naar de timer · 3:40/);
+
+      await startBrewing(page);
+      await assertBecomesActive(page, '#screen-brew');
+      assert.match(await page.locator('#dial-total').textContent(), /van 3:40/);
+      await page.clock.fastForward('03:10');
+      assert.match(await page.locator('#next-info').textContent(), /(klaar|bed droog) rond 3:40 \(schatting\)/);
+      await page.clock.fastForward('00:27'); // 3:37
+      await page.click('#bed-dry-btn');
+      assert.match(await page.locator('#brew-action-sub').textContent(), /zoals het schema \(3:40\)/);
+      await page.click('#brewlog-open-btn');
+      await assertBecomesActive(page, '#screen-brewlog');
+      const summary = await page.locator('#brewlog-honest-summary').textContent();
+      assert.match(summary, /rond de schatting van het schema \(3:40\)/);
+      assert.match(summary, /valt binnen de normale tijd voor dit toestel bij 22,0 g \(2:05–3:40\)/);
+      await page.close();
+    });
+  });
+
+  // NIEUW (gieten op doorlopen): Erdoor-tik, wachten na de klok, ongedaan maken, herladen, samenvatting.
+  describe('Gieten op doorlopen (Kasuya)', () => {
+    test('standaard uit; aan: Erdoor start de volgende giet, wacht na de klok, ongedaan, herstel en doorlooptijden', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.evaluate(() => { selectMethod('v60'); selectRoast('light'); selectProfile('klassiek'); state.waterMl = 300; renderPrep(); });
+      assert.equal(await page.locator('#drain-note').count(), 0, 'standaard uit');
+      await navTo(page, 'settings');
+      await page.click('#drain-toggle');
+      assert.equal(await page.locator('#drain-toggle').getAttribute('aria-checked'), 'true');
+      await page.evaluate(() => { selectMethod('v60'); selectRoast('light'); selectProfile('klassiek'); state.waterMl = 300; renderPrep(); showScreen('prep'); });
+      assert.match(await page.locator('#drain-note').innerText(), /vanaf giet 3 tik je Erdoor/);
+
+      await startBrewing(page);
+      await assertBecomesActive(page, '#screen-brew');
+      const main = async () => (await page.locator('#brew-action-main').textContent()).trim();
+      await page.clock.fastForward('00:30');
+      assert.equal(await page.locator('#drain-btn').isVisible(), false, 'na de bloom gewoon de klok');
+      await page.clock.fastForward('00:35'); // 1:05
+      assert.equal(await page.locator('#drain-btn').isVisible(), true);
+      assert.match(await page.locator('#next-info').textContent(), /giet tot 180 g · rond 1:30, of zodra het erdoor is/);
+      await page.clock.fastForward('00:15'); // 1:20
+      await page.click('#drain-btn');
+      assert.equal(await main(), 'Giet tot 180 g', 'Erdoor start meteen de volgende giet');
+      await page.click('#undo-bar-btn');
+      assert.match(await main(), /^Wacht · 0:/, 'ongedaan: weer wachten');
+      await page.clock.fastForward('00:20'); // 1:40, kloktijd 1:30 voorbij
+      assert.equal(await main(), 'Wacht tot het erdoor is');
+      assert.match(await page.locator('#brew-action-sub').textContent(), /\+0:1\d na de klok/);
+      await page.click('#drain-btn');
+      assert.equal(await main(), 'Giet tot 180 g');
+
+      // Herladen: de tik blijft staan.
+      await page.reload({ waitUntil: 'load' });
+      await page.evaluate(() => openActiveBrew());
+      await page.click('#recovery-continue-btn');
+      assert.match(await page.locator('#next-info').textContent(), /giet tot 240 g · rond 2:2\d/);
+      await page.clock.fastForward('00:30');
+      await page.click('#drain-btn');
+      await page.clock.fastForward('00:40');
+      await page.click('#drain-btn');
+      await page.clock.fastForward('00:40');
+      await page.click('#bed-dry-btn');
+      await page.click('#brewlog-open-btn');
+      await assertBecomesActive(page, '#screen-brewlog');
+      const summary = await page.locator('#brewlog-honest-summary').textContent();
+      assert.match(summary, /Erdoor getikt: na giet 2 in 0:5\d, na giet 3 in 0:[34]\d, na giet 4 in 0:[34]\d — de klok rekent 0:45 per giet\./);
+      assert.match(summary, /schatting na je laatste Erdoor/);
+      const rec = await page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_brews'))[0]);
+      assert.equal(rec.plan.drainMode, true);
+      assert.equal(rec.actual.events.filter(e => e.type === 'drained').length, 4, 'drie tikken plus de teruggedraaide');
       await page.close();
     });
   });

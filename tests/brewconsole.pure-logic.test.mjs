@@ -30,9 +30,11 @@ describe('ENGINE_PROFILE_MAP — schijnkeuze-detectie (Kritiek bevinding #1)', (
   test('B-4/C-1: de tweelinggroepen op v60 zijn precies de gemeten drie', () => {
     const groepen = [
       ['klassiek','vol_rond'],                  // C-1: zoet is eruit, andere fase-1-verdeling
-      ['fruitig_clean','bloemig_delicaat'],      // B-4: beide vallen terug op Core-only
       ['sirooprig_vol','evenwichtig_flex']       // B-4: Hedrick is nooit generatable
     ];
+    // V3: Rao heeft nu zijn eigen gepubliceerde schema, dus geen tweeling meer van Bloemig.
+    assert.equal(api.findProfileTwins('fruitig_clean','v60').length, 0);
+    assert.equal(api.findProfileTwins('bloemig_delicaat','v60').length, 0);
     for (const groep of groepen){
       for (const lid of groep){
         const anderen = groep.filter(x => x !== lid);
@@ -68,7 +70,7 @@ describe('ENGINE_PROFILE_MAP — schijnkeuze-detectie (Kritiek bevinding #1)', (
 
   test('B-4: elke tweelinggroep is bekend EN elke samengevoegde knop is aantoonbaar een echte tweeling', () => {
     const BEKENDE_GROEPEN = {
-      v60:    [['klassiek','vol_rond'], ['fruitig_clean','bloemig_delicaat'], ['sirooprig_vol','evenwichtig_flex']],
+      v60:    [['klassiek','vol_rond'], ['sirooprig_vol','evenwichtig_flex']],
       chemex: [['klassiek','vol_rond','zoet','robuust','evenwichtig_flex'], ['heel_fruitig','fruitig_clean']]
     };
     for (const methodKey of ['v60','chemex']){
@@ -312,8 +314,10 @@ describe('computeRecipe() — retentieterm en volumeklem (Implementatieplan Zeta
   });
 
   test('ratio per cluster bij 300 ml valt in de orde van grootte die het plan noemt (§3, Fase 1a: LOWER ~1:17,5-17,6, FULLER ~1:17,3-17,4)', () => {
-    const lower = api.computeRecipe('v60', 'medium', 'heel_fruitig', 300, null, false, null, null, false, null, null, 0);
-    const fuller = api.computeRecipe('v60', 'medium', 'klassiek', 300, null, false, null, null, false, null, null, 0);
+    // V1: de Kasuya-smaken volgen sinds MODEL_POLICY 4.0 een eigen verhouding; de vensters gelden
+    // nog voor de profielen zonder eigen bron (Bloemig = LOWER, Basisrecept = FULLER).
+    const lower = api.computeRecipe('v60', 'medium', 'bloemig_delicaat', 300, null, false, null, null, false, null, null, 0);
+    const fuller = api.computeRecipe('v60', 'medium', 'evenwichtig_flex', 300, null, false, null, null, false, null, null, 0);
     // BIJGEWERKT (Reparatieplan v4.0, A-6 / bevinding E-17): ratioText gebruikt sinds A-6
     // altijd een Nederlandse komma (nlRatio()) i.p.v. de punt die core.ratio.value gaf. De
     // regex hier bewaakte per ongeluk ook het scheidingsteken i.p.v. alleen de orde van
@@ -339,7 +343,7 @@ describe('computeRecipe() — retentieterm en volumeklem (Implementatieplan Zeta
       { ml: 430, expectValid: false }
     ];
     for (const { ml, expectValid } of cases){
-      const rec = api.computeRecipe('v60', 'medium', 'heel_fruitig', ml, null, false, null, null, false, null, null, 0);
+      const rec = api.computeRecipe('v60', 'medium', 'bloemig_delicaat', ml, null, false, null, null, false, null, null, 0);
       if (expectValid){
         assert.ok(rec.dose > 0, `${ml} ml zou een geldig recept moeten geven, kreeg dose=0`);
         assert.equal(rec.water, ml, `${ml} ml: het recept moet exact het gevraagde volume tonen (geen stille substitutie naar een ander volume)`);
@@ -354,7 +358,7 @@ describe('computeRecipe() — retentieterm en volumeklem (Implementatieplan Zeta
   // BIJGEWERKT (D2-1): 250 ml was geblokkeerd omdat de app altijd het venstermidden nam;
   // 15 g op 250 ml (1:16,7 — Hoffmanns 1-kopsrecept) ligt binnen het doelvenster.
   test('250 ml geeft 15 g op 1:16,7 (dosis op de ondergrens, ratio binnen het doelvenster) — en nog steeds exact 250 ml', () => {
-    const rec = api.computeRecipe('v60', 'medium', 'klassiek', 250, null, false, null, null, false, null, null, 0);
+    const rec = api.computeRecipe('v60', 'medium', 'evenwichtig_flex', 250, null, false, null, null, false, null, null, 0);
     assert.equal(rec.dose, 15);
     assert.equal(rec.water, 250, 'Geen stille substitutie naar een ander volume');
     assert.equal(rec.ratioText, '1:16,7');
@@ -363,20 +367,20 @@ describe('computeRecipe() — retentieterm en volumeklem (Implementatieplan Zeta
     assert.equal(sum, 250, 'het gietschema giet precies het gevraagde water');
   });
   test('onder de rand van het doelvenster blijft het eerlijk "geen recept" (230 ml), met uitleg over de dosisgrens', () => {
-    const rec = api.computeRecipe('v60', 'medium', 'klassiek', 230, null, false, null, null, false, null, null, 0);
+    const rec = api.computeRecipe('v60', 'medium', 'evenwichtig_flex', 230, null, false, null, null, false, null, null, 0);
     assert.equal(rec.dose, 0);
     assert.equal(rec.water, 230);
     assert.match(rec.notes, /dosis|15|22/i);
   });
   test('D2-1 raakt geen bestaand recept: 265–380 ml houdt de ratio uit het venstermidden (doseEdge null)', () => {
     for (const ml of [265, 300, 350, 380]){
-      const rec = api.computeRecipe('v60', 'medium', 'klassiek', ml, null, false, null, null, false, null, null, 0);
+      const rec = api.computeRecipe('v60', 'medium', 'evenwichtig_flex', ml, null, false, null, null, false, null, null, 0);
       assert.equal(rec.doseEdge, null, `${ml} ml`);
       assert.equal(rec.ratioText, '1:17,4', `${ml} ml`);
     }
   });
   test('bovenrand: 400 ml geeft 22 g op een lichtere ratio binnen het venster', () => {
-    const rec = api.computeRecipe('v60', 'medium', 'klassiek', 400, null, false, null, null, false, null, null, 0);
+    const rec = api.computeRecipe('v60', 'medium', 'evenwichtig_flex', 400, null, false, null, null, false, null, null, 0);
     assert.equal(rec.dose, 22);
     assert.equal(rec.water, 400);
     assert.equal(rec.doseEdge.side, 'max');
@@ -888,7 +892,12 @@ describe('Boontype-model — buckets, terugvalladder, vervuilingsregels (Impleme
 
 describe('Reparatieplan v4.0 — Fase A (eerlijkheidsherstel)', () => {
   test('A-4: overlays zonder gecorroboreerd pulseCount melden dat het aantal beurten eigen invulling is', () => {
-    for (const [profile, naam] of [['fruitig_clean','Rao'], ['snel_puur','Perger']]){
+    // V3: Rao op de V60 volgt sinds de audit zijn eigen gepubliceerde schema (eigen tak in
+    // buildPourSchedule); alleen Perger blijft een eigen invulling.
+    const rao = api.computeRecipe('v60','medium','fruitig_clean',300,null,false,null,null,false,null,null,0);
+    assert.equal(rao.pulseCountSourced, true);
+    assert.match(rao.notes, /Rao's eigen recept/);
+    for (const [profile, naam] of [['snel_puur','Perger']]){
       const rec = api.computeRecipe('v60','medium',profile,300,null,false,null,null,false,null,null,0);
       assert.equal(rec.pulseCountSourced, false, `${naam} heeft geen gecorroboreerd pulseCount`);
       assert.match(rec.notes, /geen aantal giet-momenten|eigen invulling van deze app/,
@@ -932,7 +941,7 @@ describe('B-1 — sterktehendel respecteert het harde dosisplafond (bevinding E-
   });
   test('zonder klem blijft de melding ongewijzigd (negatieve controle)', () => {
     const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,1);
-    assert.equal(rec.dose, 18.7);
+    assert.equal(rec.dose, 20.3); // V1: Gebalanceerd 1:16 → 18,8 g, +8 %
     assert.ok(!rec.strengthNote.includes('Begrensd'));
   });
 });
@@ -1351,8 +1360,8 @@ describe('Implementatieplan v3.0 / C3S Pro Technische Deep-Dive — grinder regi
 });
 
 describe('Implementatieplan v3.0 — Model Policy (versioned TDS/EY target windows)', () => {
-  test('MODEL_POLICY.version is "3.0" en elk target window heeft provenance APP_ASSUMED + evidenceStatus RESEARCH_GAP', () => {
-    assert.equal(api.MODEL_POLICY.version, '3.0');
+  test('MODEL_POLICY.version is "4.0" (V1: sterkte per smaak) en elk target window heeft provenance APP_ASSUMED + evidenceStatus RESEARCH_GAP', () => {
+    assert.equal(api.MODEL_POLICY.version, '4.0');
     for (const key of ['LOWER_STRENGTH_MODERATE_EXTRACTION', 'FULLER_BODIED']){
       const w = api.MODEL_POLICY.targetWindows[key];
       assert.equal(w.provenance, 'APP_ASSUMED');
@@ -1382,9 +1391,9 @@ describe('Implementatieplan v3.0 — Model Policy (versioned TDS/EY target windo
     }
   });
 
-  test('computeRecipe() stempelt elk recept met modelPolicyVersion "3.0"', () => {
+  test('computeRecipe() stempelt elk recept met modelPolicyVersion "4.0"', () => {
     const rec = api.computeRecipe('v60','medium','klassiek',300,null,false,null,null,false,null,null,0);
-    assert.equal(rec.modelPolicyVersion, '3.0');
+    assert.equal(rec.modelPolicyVersion, '4.0');
   });
 });
 
@@ -1605,9 +1614,11 @@ describe('Nieuwe Reparaties v2.2 — §2: bewijs dat er maar één winnaarspad i
     for (const cluster of Object.keys(PROFILES_BY_CLUSTER)){
       test(`overlay verandert nooit dose/water/ratio/temp/grind — cluster ${cluster}, methode ${method}`, () => {
         const vol = method === 'v60' ? 300 : 600;
+        // V1 (MODEL_POLICY 4.0): een profiel met een eigen verhouding (PROFILE_RATIO) is een
+        // bewuste profielkeuze, geen overlay-effect; die worden apart getoetst ("V1: sterkte per smaak").
         const profiles = PROFILES_BY_CLUSTER[cluster].filter(p => {
           const only = api.PROFILE_INFO[p].methodOnly;
-          return !only || only === method;
+          return (!only || only === method) && !api.profileRatioFor(p, method);
         });
         assert.ok(profiles.length >= 2, `verwacht minstens 2 vergelijkbare profielen in cluster ${cluster} voor ${method}`);
         const recipes = profiles.map(p => ({ p, r: api.computeRecipe(method, 'medium', p, vol, null, false, null, null, false, null, null, 0) }));
@@ -2036,5 +2047,247 @@ describe('BC-03: defectwaarschuwing per tag', () => {
     for (const t of api.DEFECT_TAGS){
       assert.ok(['groen_plantaardig', 'overig'].includes(api.TAG_TO_CATEGORY[t]), `${t} valt in ${api.TAG_TO_CATEGORY[t]}`);
     }
+  });
+});
+
+// NIEUW (optie B, keuze Jelle okt 2026): bij Kasuya groeit alleen het verwachte einde mee met
+// de dosis (Kasuya's eigen 20 g = 3:30); giet-momenten en andere technieken blijven gelijk.
+describe('Optie B: verwachte eindtijd Kasuya groeit mee met de dosis', () => {
+  const KASUYA = ['klassiek', 'vol_rond', 'zoet', 'heel_fruitig'];
+  const rec = (p, ml, bypass) => api.computeRecipe('v60', 'light', p, ml, null, false, null, null, !!bypass, null, null, 0);
+  const pourTimes = (r) => r.steps.filter(s => s.add > 0).map(s => s.t);
+
+  test('doseTimeFactor: 1 tot en met 20 g, daarboven (dosis/20)^0,4', () => {
+    assert.equal(api.KASUYA_REFERENCE_DOSE_G, 20);
+    assert.equal(api.DOSE_TIME_EXPONENT, 0.4);
+    assert.equal(api.doseTimeFactor(15, 20), 1);
+    assert.equal(api.doseTimeFactor(20, 20), 1);
+    assert.ok(Math.abs(api.doseTimeFactor(22, 20) - Math.pow(1.1, 0.4)) < 1e-12);
+  });
+
+  test('tot en met ±20 g blijft het 3:30, zonder schaal', () => {
+    // V1: de Kasuya-smaken zetten sinds MODEL_POLICY 4.0 op 1:15–1:17; tot 300 ml blijft de dosis ≤ 20 g.
+    for (const p of KASUYA){
+      for (const ml of [250, 300]){
+        const r = rec(p, ml);
+        assert.equal(r.totalTime, 210, `${p} ${ml} ml`);
+        assert.equal(r.doseTimeScale, null, `${p} ${ml} ml`);
+      }
+    }
+  });
+
+  test('400 ml (22 g): einde 3:40, de giet-momenten blijven 0:00/0:45/1:30/2:15/3:00', () => {
+    for (const p of KASUYA){
+      const r = rec(p, 400);
+      assert.equal(r.dose, 22);
+      assert.equal(r.totalTime, 220, p);
+      assert.equal(r.steps[r.steps.length - 1].t, 220, `${p}: de Klaar-stap valt op het nieuwe einde`);
+      assert.deepEqual(j(pourTimes(r)), [0, 45, 90, 135, 180], p);
+      assert.equal(r.doseTimeScale.baseSec, 210);
+      assert.equal(r.doseTimeScale.refDoseG, 20);
+    }
+  });
+
+  test('het einde loopt nooit terug bij meer water, en is altijd een veelvoud van 5 s', () => {
+    for (const p of KASUYA){
+      let prev = 0;
+      for (let ml = 250; ml <= 400; ml += 10){
+        const r = rec(p, ml);
+        assert.ok(r.totalTime >= prev, `${p} ${ml} ml: ${r.totalTime} < ${prev}`);
+        assert.equal(r.totalTime % 5, 0, `${p} ${ml} ml`);
+        prev = r.totalTime;
+      }
+    }
+  });
+
+  test('niet bij de concentraat-methode en niet bij andere technieken', () => {
+    const bp = rec('klassiek', 400, true);
+    assert.equal(bp.totalTime, 210);
+    assert.equal(bp.doseTimeScale, null);
+    const verwacht = { fresh_clean: 210, robuust: 200, fruitig_clean: 255, snel_puur: 100 }; // V3: Rao 4:15
+    for (const [p, t] of Object.entries(verwacht)){
+      const r = rec(p, 400);
+      assert.equal(r.totalTime, t, p);
+      assert.equal(r.doseTimeScale, null, p);
+    }
+  });
+
+  test('de normale tijd schaalt mee, zodat het eigen schema er binnen blijft', () => {
+    const groot = rec('klassiek', 400);
+    assert.deepEqual(j(api.diagnosticBandFor(groot)), { min: 125, max: 220, scaled: true });
+    const band = api.diagnosticBandFor(groot);
+    assert.ok(groot.totalTime >= band.min && groot.totalTime <= band.max);
+    assert.deepEqual(j(api.diagnosticBandFor(rec('klassiek', 300))), { min: 120, max: 210, scaled: false });
+    assert.equal(groot.contactTimeDiagnosticBand.max, 210, 'de apparaatband zelf blijft onveranderd');
+  });
+});
+
+// NIEUW (gieten op doorlopen, keuze Jelle): bij Kasuya wacht de timer vanaf de derde giet op Erdoor.
+describe('Gieten op doorlopen (Kasuya)', () => {
+  const kas = api.computeRecipe('v60', 'light', 'klassiek', 300, null, false, null, null, false, null, null, 0);
+  const ts = (sched) => j(sched.steps.map(s => s.t));
+
+  test('alleen Kasuya heeft gates: giet 3, 4 en 5 (de wachttijd na de bloom blijft op de klok)', () => {
+    assert.deepEqual(j(kas.drainGates), [2, 3, 4]);
+    for (const p of ['fresh_clean', 'robuust', 'fruitig_clean', 'snel_puur', 'sirooprig_vol']){
+      assert.deepEqual(j(api.computeRecipe('v60', 'light', p, 300, null, false, null, null, false, null, null, 0).drainGates), [], p);
+    }
+  });
+
+  test('zonder tik en vóór de kloktijd: het gewone schema', () => {
+    const s = api.drainScheduleAt(kas.steps, kas.totalTime, kas.drainGates, {}, 60);
+    assert.deepEqual(ts(s), [0, 45, 90, 135, 180, 210]);
+    assert.equal(s.awaiting, null);
+    assert.equal(s.totalSec, 210);
+  });
+
+  test('vroege tik: de giet begint op de tik en de rest schuift even ver mee', () => {
+    const s = api.drainScheduleAt(kas.steps, kas.totalTime, kas.drainGates, { 2: 80 }, 85);
+    assert.deepEqual(ts(s), [0, 45, 80, 125, 170, 200]);
+    assert.equal(s.totalSec, 200);
+  });
+
+  test('kloktijd voorbij zonder tik: het schema wacht (de giet staat steeds één seconde vooruit)', () => {
+    const s = api.drainScheduleAt(kas.steps, kas.totalTime, kas.drainGates, {}, 100);
+    assert.deepEqual(j(s.awaiting), { stepIndex: 2, dueSec: 90, overSec: 10 });
+    assert.equal(s.steps[2].t, 101);
+    assert.equal(api.brewPhaseAt(s.steps, s.totalSec, 100).kind, 'wait');
+    // Late tik: alles na de tik schuift 12 s op.
+    const t = api.drainScheduleAt(kas.steps, kas.totalTime, kas.drainGates, { 2: 102 }, 110);
+    assert.deepEqual(ts(t), [0, 45, 102, 147, 192, 222]);
+  });
+
+  test('tikken uit de gebeurtenissen, ook teruggedraaid; doorlooptijd per giet', () => {
+    const taps = api.drainTapsFromEvents([
+      { type: 'drained', tSec: 84, stepIndex: 2 },
+      { type: 'drained', tSec: 120, stepIndex: 3 },
+      { type: 'drained_undo', tSec: 121, stepIndex: 3 },
+      { type: 'drained', tSec: 131, stepIndex: 3 }
+    ]);
+    assert.deepEqual(j(taps), { 2: 84, 3: 131 });
+    const iv = api.drainIntervals(kas.steps, kas.totalTime, kas.drainGates, taps);
+    assert.deepEqual(j(iv), [{ afterPour: 2, sec: 39, clockSec: 45 }, { afterPour: 3, sec: 47, clockSec: 45 }]);
+  });
+
+  test('de verwachte eindtijd van een voltooid brouwsel volgt de laatste tik', () => {
+    const rec = { lifecycle: 'brewing', plan: { expectedDrainEndSec: 210 }, actual: { events: [] }, derived: {} };
+    const r = api.completeWithBedDry(rec, 1000, 205, 'bed_dry', 195);
+    assert.equal(r.rec.derived.drainResidualSec, 10);
+  });
+});
+
+
+// NIEUW (audit V1/V3/V5/V9/V10): sterkte per smaak, Rao's eigen schema, Hoffmann op de Chemex,
+// eigen doorloop-exponent en gemeten vasthouden.
+describe('Audit: sterkte per smaak en techniek (V1)', () => {
+  const rec = (p, ml, m) => api.computeRecipe(m || 'v60', 'light', p, ml, null, false, null, null, false, null, null, 0);
+  test('Rond & vol 1:15, Gebalanceerd 1:16, Helder & fris 1:17 (V60, 300 ml)', () => {
+    assert.equal(rec('zoet', 300).dose, 20);
+    assert.equal(rec('klassiek', 300).dose, 18.8);
+    assert.equal(rec('heel_fruitig', 300).dose, 17.6);
+    assert.ok(rec('zoet', 300).dose > rec('klassiek', 300).dose && rec('klassiek', 300).dose > rec('heel_fruitig', 300).dose, 'de drie smaken verschillen echt in sterkte');
+  });
+  test('technieken volgen hun eigen gepubliceerde verhouding', () => {
+    assert.equal(rec('fresh_clean', 300).dose, 18);   // Hoffmann 1:16,7
+    assert.equal(rec('robuust', 300).dose, 20);       // April 1:15
+    assert.equal(rec('fruitig_clean', 330).dose, 20); // Rao 20 g / 330 ml
+    assert.equal(rec('fresh_clean', 500, 'chemex').dose, 30);
+  });
+  test('profielen zonder eigen bron houden het venster; op de Chemex alleen Hoffmann een eigen verhouding', () => {
+    for (const p of ['snel_puur', 'bloemig_delicaat', 'sirooprig_vol', 'evenwichtig_flex']) assert.equal(rec(p, 300).profileRatio, null, p);
+    for (const p of ['klassiek', 'zoet', 'heel_fruitig', 'robuust', 'fruitig_clean']) assert.equal(rec(p, 600, 'chemex').profileRatio, null, p);
+  });
+  test('buiten de V60-grens: dosis op de grens en een eerlijke afwijking', () => {
+    const r = rec('zoet', 400);
+    assert.equal(r.dose, 22);
+    assert.equal(r.doseEdge.side, 'max');
+    assert.equal(r.doseEdge.targetRatio, 15);
+    assert.equal(r.ratioText, '1:18,2');
+    const sum = r.steps.reduce((a, s) => a + s.add, 0);
+    assert.equal(sum, 400);
+  });
+});
+
+describe('Audit: Rao volgens zijn eigen recept (V3)', () => {
+  test('20 g / 330 ml: bloom 60, tot 200 op 0:40, tot 330 rond 1:45, klaar 4:15', () => {
+    const r = api.computeRecipe('v60', 'light', 'fruitig_clean', 330, null, false, null, null, false, null, null, 0);
+    assert.equal(r.technique, 'Rao');
+    assert.deepEqual(j(r.steps.map(s => [s.t, s.add, s.to])), [[0, 60, 60], [40, 140, 200], [105, 130, 330], [255, 0, 330]]);
+    assert.equal(r.totalTime, api.RAO_TOTAL_SEC);
+    assert.match(r.notes, /eigen schatting/);
+  });
+});
+
+describe('Audit: Hoffmann op de Chemex (V5) en Perger (V6)', () => {
+  test('Hoffmann op de Chemex heet zo en zegt het', () => {
+    const r = api.computeRecipe('chemex', 'light', 'fresh_clean', 500, null, false, null, null, false, null, null, 0);
+    assert.equal(r.technique, 'Hoffmann (V60-techniek)');
+    assert.match(r.notes, /geen eigen Chemex-schema/);
+    assert.equal(api.computeRecipe('v60', 'light', 'fresh_clean', 300, null, false, null, null, false, null, null, 0).technique, 'Hoffmann Ultimate');
+  });
+  test('de omschrijving van Perger noemt geen tijd die niet klopt', () => {
+    assert.doesNotMatch(api.PROFILE_INFO.snel_puur.desc, /\d+(,\d+)?\s*min/);
+  });
+});
+
+describe('Audit: eigen doorloop-exponent (V9)', () => {
+  const mk = (dose, sec, extra) => Object.assign({ id: 'r' + dose + sec, lifecycle: 'logged', plan: { technique: 'Kasuya 4:6', doseG: dose, bypass: null }, actual: { bedDrySec: sec } }, extra || {});
+  test('te weinig koppen of te weinig spreiding: geen eigen getal', () => {
+    assert.equal(api.personalDoseTimeExponent([mk(20, 210), mk(22, 220)]), null);
+    const same = Array.from({ length: 9 }, (_, i) => mk(20, 200 + i));
+    assert.equal(api.personalDoseTimeExponent(same), null);
+  });
+  test('kleinste kwadraten op ln(tijd)–ln(dosis), begrensd op 0–1', () => {
+    const doses = [15, 16, 17, 18, 19, 20, 21, 22];
+    const exact = doses.map(d => mk(d, Math.round(210 * Math.pow(d / 20, 0.6))));
+    const e = api.personalDoseTimeExponent(exact);
+    assert.equal(e.n, 8);
+    assert.ok(Math.abs(e.exponent - 0.6) <= 0.02, String(e.exponent));
+    const steep = doses.map(d => mk(d, Math.round(210 * Math.pow(d / 20, 3))));
+    assert.equal(api.personalDoseTimeExponent(steep).exponent, 1);
+    const bypass = doses.map(d => mk(d, 200, { plan: { technique: 'Kasuya 4:6', doseG: d, bypass: { pct: 30 } } }));
+    assert.equal(api.personalDoseTimeExponent(bypass), null, 'bypass telt niet mee');
+  });
+});
+
+describe('Audit: metingen op een rij (V8)', () => {
+  test('bed droog per techniek en per 50 ml, met mediaan en verwacht einde', () => {
+    const recs = [210, 220, 230].map((t, i) => ({ id: 'a' + i, lifecycle: 'logged', plan: { methodId: 'v60', technique: 'Kasuya 4:6', waterMl: 300, expectedTotalSec: 210 }, actual: { bedDrySec: t } }));
+    recs.push({ id: 'x', lifecycle: 'logged', plan: { methodId: 'v60', technique: 'Kasuya 4:6', waterMl: 300, bypass: { pct: 30 } }, actual: { bedDrySec: 999 } });
+    const rows = j(api.drainTimeSummary(recs));
+    assert.deepEqual(rows, [{ method: 'v60', technique: 'Kasuya 4:6', volumeMl: 300, n: 3, medianBedDry: 220, minBedDry: 210, maxBedDry: 230, medianExpected: 210 }]);
+  });
+  test('stappen per soort tellen beter, gelijk en slechter', () => {
+    const recs = [
+      { id: 'a', recommendation: { type: 'ADJUST', lever: 'grind', delta: -1, status: 'tested', outcome: 'better' } },
+      { id: 'b', recommendation: { type: 'ADJUST', lever: 'grind', delta: -1, status: 'tested', outcome: 'worse' } },
+      { id: 'c', recommendation: { type: 'ADJUST', lever: 'dose', delta: -0.5, status: 'tested', outcome: 'same' } },
+      { id: 'd', recommendation: { type: 'ADJUST', lever: 'dose', delta: 1, status: 'proposed' } }
+    ];
+    assert.deepEqual(j(api.adviceByLever(recs)), { fijner: { tested: 2, better: 1, same: 0, worse: 1 }, 'minder koffie': { tested: 1, better: 0, same: 1, worse: 0 } });
+  });
+});
+
+describe('Audit: zuur en sterkte (V2, diag-2026.4)', () => {
+  const ctx = { actualsConfirmed: true, roastId: 'light', grind: { current: 16, min: 13, max: 18 }, strength: { current: 0 } };
+  test('scherp zuur bij een goede sterkte: fijner blijft, met de tip over sterkte', () => {
+    const t = { strength: 'just_right', acidity: 'sharp', finish: ['bitter'], liking: '3', goalHit: 'no' };
+    const r = api.recommendNext({ tasting: t, ctx });
+    assert.equal(r.type, 'ADJUST');
+    assert.deepEqual([r.lever, r.delta], ['grind', -1]);
+    assert.ok(r.notes.includes('sour_strength'), JSON.stringify(r));
+    assert.match(api.recommendationTexts(r, api.diagnoseTasting(t, ctx), {}).notes.join(' '), /iets minder koffie/);
+  });
+  test('met "leeg bij goede sterkte" erbij (sterkere aanwijzing voor onderextractie): geen tip', () => {
+    const t = { strength: 'just_right', acidity: 'sharp', finish: ['hollow'], liking: '3', goalHit: 'no' };
+    const r = api.recommendNext({ tasting: t, ctx });
+    assert.equal(r.lever, 'grind');
+    assert.ok(!r.notes.includes('sour_strength'));
+  });
+  test('zuur bij te sterk: minder koffie, zonder die tip', () => {
+    const t = { strength: 'too_strong', acidity: 'sharp', finish: ['bitter'], liking: '3', goalHit: 'no' };
+    const r = api.recommendNext({ tasting: t, ctx });
+    assert.equal(r.lever, 'dose');
+    assert.ok(!r.notes.includes('sour_strength'));
   });
 });

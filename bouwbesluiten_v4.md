@@ -778,3 +778,197 @@ Deze ronde verandert niets aan recepten, advies of de rekenkern (de engine-bunde
 - De SW-test voor een nieuwe deploy is herschreven voor K22.
 - De BC-23-test en drie tests die een gietstijl kiezen, openen eerst het uitklapblok (K13).
 - De gelijkspeltest volgt de nieuwe zin.
+
+## Zettijd en hoeveelheid: optie B voor Kasuya (keuze Jelle, okt 2026)
+
+**Aanleiding:** de app gaf bij Kasuya altijd 3:30, of je nu 250 of 400 ml zette. Een groter bed loopt trager door (Darcy: beddiepte is de lengteterm; Gagné, Rao, Barista Hustle). Daardoor viel een gewone grote zet steeds "buiten de normale tijd" en "later dan de schatting". Het onderzoek en de opties A–F staan in het gesprek van 27–28 okt; Jelle koos B, met Kasuya's eigen 20 g als uitgangspunt en alleen voor de Kasuya-recepten.
+
+**Wat er is gebouwd:**
+- **Verwacht einde:** bij Kasuya (klassiek, vol & rond, zoet, heel fruitig) wordt het einde boven 20 g `3:30 × (dosis/20)^0,4`, afgerond op 5 s. Bij 22 g (±380–415 ml) is dat 3:40; tot ±350 ml blijft het 3:30.
+- **Waarom 0,4:** dat ligt tussen de kegeltheorie (1/3) en gepubliceerde recepten waarin de maling is bijgesteld (±0,2–0,5). Het is een voorzichtige middenwaarde, geen gemeten getal.
+- **Alleen omhoog:** de giet-klok ligt vast (laatste giet op 3:00). Een kleiner bed kan dus niet eerder klaar zijn dan die giet plus zijn eigen korte doorloop; dat scheelt hooguit een paar seconden.
+- **Ongewijzigd:** de giet-momenten en grammen blijven gelijk, net als de maalstand en het advies. Alleen de "Klaar"-stap en `totalTime` schuiven op.
+- **Wat meeschuift:** de timer ("van 3:40", "verwacht klaar rond"), het klaar-moment (K10), de vergelijking op het Klaar-scherm (±15 s) en de normale tijd van het toestel (`diagnosticBandFor()`, bij 22 g 2:05–3:40, met "bij 22,0 g" erbij).
+- **Uitzonderingen:** niet bij de concentraat-methode, omdat er dan minder water door het bed gaat dan bij de referentie (20 g / 300 ml). Ook niet bij andere technieken; daarover beslist Jelle apart.
+- **Zichtbaar:** de brouwtijd-tegel zegt het erbij: "+0:10: bij 22,0 g loopt het bed trager door (Kasuya: 3:30 bij 20 g)".
+- **Verhouding tot D-4:** dit vervangt voor Kasuya's verwachte einde de eerdere lijn "richting onderbouwd, getal niet" (`onderzoek_D2_D4.md` §3). De hints van D4-2 en de oordeelregel van D4-1 blijven.
+
+**Testresultaten:**
+- Nieuw blok "Optie B" in `tests/brewconsole.pure-logic.test.mjs` (factor, grenzen, giet-momenten, concentraat-methode, andere technieken, normale tijd).
+- Nieuwe schermtest in `tests/kernflow.smoke.test.mjs`: 400 ml geeft 3:40 in de tegel en de timer, bed droog op 3:37 geeft "zoals het schema", en de normale tijd is 2:05–3:40 bij 22,0 g.
+- De gouden recepten (300 ml) veranderen niet.
+
+## Gieten op doorlopen bij Kasuya (keuze Jelle, okt 2026)
+
+**Aanleiding:** Kasuya giet pas als het water van de vorige keer erdoor is; de 45 s in het schema is een richtpunt. Op de vaste klok kan een kleine zet niet eerder klaar zijn en een grote loopt steeds achter. Jelle wilde de Erdoor-tik als proef, zo mooi en goed mogelijk.
+
+**Wat er is gebouwd:**
+- **Instelling:** Instellingen › Zetten › "Gieten op doorlopen bij Kasuya (proef)", standaard uit (`brewconsole_drain_pour`). Geldt voor Gebalanceerd, Rond & vol en Helder & fris. Per brouwsel vast vanaf de start (`plan.drainMode`), ook na herladen.
+- **Welke gieten:** vanaf de derde giet (`rec.drainGates`). De wachttijd na de bloom blijft op de klok, zoals Jelle aangaf.
+- **Op de timer:** na elke giet die op Erdoor wacht, verschijnt een grote knop **Erdoor · volgende giet** (zelfde vorm als Bed droog, ook in de teltafelmodus).
+  - Vóór de kloktijd: "Wacht · 0:18", met "Volgende: giet tot 180 g · rond 1:30, of zodra het erdoor is". Eerder tikken mag.
+  - Na de kloktijd zonder tik: "Wacht tot het erdoor is", "+0:12 na de klok", één zacht seintje en (met stem aan) "Is het water erdoor? Tik dan Erdoor." De knop pulseert zacht (niet bij minder beweging).
+  - Een tik start meteen de volgende giet (belletje, stem "Giet tot … gram"); de rest van het schema, de streepjes op de ring en het verwachte einde schuiven mee.
+  - "Ongedaan maken" (8 s) zet een per ongeluk getikte Erdoor terug.
+  - De eerste drie keer staat er uitleg onder de knop.
+- **Elders:** het schema toont "na Erdoor (±1:30)" voor gieten die nog wachten; de live balk zegt "tot 180 g zodra het erdoor is"; de klaar-check en de brouwtijd-tegel noemen het.
+- **Na afloop:** het Klaar-scherm meet bed droog tegen de verwachting na je laatste Erdoor, en zet per giet de gemeten doorlooptijd naast de klok ("Erdoor getikt: na giet 2 in 0:41, na giet 3 in 0:38 … — de klok rekent 0:45 per giet"). Elke tik staat als gebeurtenis `drained` in het record (terugdraaien: `drained_undo`), zodat de app later jouw eigen doorlooptijd per hoeveelheid kan leren (optie F).
+- **Veiligheid:** een vergeten brouwsel stopt nog steeds na 15 min; bij wachten telt dat vanaf de gemiste kloktijd.
+- **Ongewijzigd:** recepten, grammen, maling, advies en de rekenkern (zelfde hash).
+
+**Testresultaten:**
+- Nieuw blok "Gieten op doorlopen (Kasuya)" in `tests/brewconsole.pure-logic.test.mjs`: gates, schema zonder tik, vroege en late tik, wachten, tikken uit gebeurtenissen met terugdraaien, doorlooptijden, verwachte eindtijd.
+- Nieuwe schermtest in `tests/kernflow.smoke.test.mjs`: standaard uit, aanzetten, Erdoor, ongedaan maken, wachten na de klok, herladen met herstel, samenvatting en record.
+
+## Audit Fase B: V1, V2, V3, V5, V6, V7, V8, V9, V10, V11 (keuze Jelle, okt 2026)
+
+**Aanleiding:** het auditrapport `onderzoek_audit_engine_recepten.md`. Jelle koos deze tien punten, met de opdracht om bij twijfel eerst verder te onderzoeken. De rekenkern is ongewijzigd (hash 1b13e449…).
+
+### V6 · Omschrijving van Perger
+"in 2,5 min klaar" klopte niet met het schema (1:40). Nu: "bloom en één lange giet". Een test controleert dat de omschrijving geen tijd noemt.
+
+### V7 · Herkomst van de rekenkern
+- `docs/rekenkern.md` legt vast:
+  - wat de bundel is;
+  - dat de TypeScript-bron niet in deze repository staat;
+  - de volledige sha256;
+  - hoe je hem ooit verantwoord wijzigt.
+- `tests/engine-integrity.test.mjs` faalt bij elke onbedoelde wijziging.
+- Open: als je het oorspronkelijke TypeScript-project hebt, hoort de bron onder `engine/`.
+
+### V11 · Wisselvallige R-02-test
+- De test liep zelden vast ("Zet opnieuw" na herladen); los en bij zes parallelle runs nooit. De oorzaak is niet gevonden.
+- Wat er nu gebeurt: de test wacht eerst op Home. Mislukt het toch, dan meldt hij wat er na het herladen in de opslag stond: aantal koppen, `lastBrew` per boon, opgeslagen records en of de kaart verborgen was.
+- Er is geen test overgeslagen.
+
+### V1 · Sterkte per smaak en techniek (MODEL_POLICY 4.0)
+**Probleem:** de twee TDS/EY-vensters gaven 1:17,4 tegen 1:17,6. Daardoor zetten "Rond & vol" en "Helder & fris" even sterk. Sterkte (TDS) is in het onderzoek van UC Davis de grootste smaakdrijver.
+
+**Wat er nu is:** `PROFILE_RATIO`, met eigen verhoudingen op de V60.
+
+| Smaak of techniek | Verhouding | Herkomst |
+|---|---|---|
+| Rond & vol | 1:15 | Kasuya 20 g / 300 ml |
+| Gebalanceerd | 1:16 | eigen stap |
+| Helder & fris | 1:17 | eigen stap |
+| Hoffmann (ook op de Chemex) | 1:16,7 | 30 g / 500 g |
+| April | 1:15 | 20 g / 300 g |
+| Rao | 1:16,5 | 20 g / 330 ml |
+
+**Onderzoek bij twijfel:**
+- De gepubliceerde recepten zetten allemaal sterker dan de oude ±1:17,4.
+- Dat zoet en fruitig bij lagere TDS horen en bitter en vol bij hogere, komt uit Frost e.a. 2020 en Guinard e.a. 2023 (volgens samenvattingen).
+- De stappen 1:16 en 1:17 zijn eigen keuzes in die richting en staan zo gelabeld.
+
+**Regels:**
+- Profielen zonder eigen bron (Basisrecept, Bloemig, Sirooprig, Perger) en de Chemex-recepten behalve Hoffmann houden het venster.
+- De dosis blijft binnen 15–22 g. Op de grens zegt de verhoudingstegel dat de verhouding daardoor afwijkt; elders staat de herkomst eronder ("volgens Kasuya, 20 g op 300 ml" of "eigen stap, tussen 1:15 en 1:17").
+- De sterktestappen (±8 %/±4 %) werken erbovenop.
+- `MODEL_POLICY.version` gaat naar 4.0, dus oude koppen houden hun versie.
+- De gouden recepten zijn opnieuw gegenereerd. Alleen de acht bedoelde profielen veranderen: zeven op de V60 en Hoffmann op de Chemex.
+- **Toetsen:** proef E1 (blind, A/B) uit het rapport.
+
+### V3 · Rao volgens zijn eigen recept
+**Onderzoek:**
+- Twee onafhankelijke samenvattingen van het Hario-interview geven dezelfde structuur: bloom van 60 ml (3× de dosis) met stevig draaien; na 40 s gieten tot 200 ml en zacht draaien; gieten tot 330 ml zodra ±70 % is doorgelopen, met een zachte draai; klaar op 4:00–4:30.
+- Een Home-Barista-citaat van Rao's blog bevestigt de bloom van 3:1.
+- De volledige tekst was niet bereikbaar (hario.co.uk en scottrao.com zijn geblokkeerd in deze sessie).
+
+**Gebouwd:**
+- Een eigen tak in `buildPourSchedule` (`RAO_*`): bloom 3× de dosis (maximaal 25 % van het water), giet 1 op 0:40 tot 60 %, giet 2 rond 1:45 tot 100 %, klaar op 4:15. Het moment 1:45 is een eigen schatting, en dat staat erbij.
+- De draai-instructies staan bij elke giet.
+- De naam is "Rao". Rao is geen tweeling meer van Bloemig, want het oude schema was het algemene schema.
+- Rao maalt fijn. De notitie zegt "loopt het veel sneller dan 4:00 en smaakt het dun, een klik fijner". De start-klik zelf is niet veranderd: dat is een apart receptbesluit.
+
+### V5 · Hoffmann op de Chemex
+**Onderzoek:** geen eigen Chemex-schema van Hoffmann gevonden; alleen een derde partij noemt "aangepast van zijn V60-recept, ±4:15".
+
+**Gebouwd:** de naam is nu "Hoffmann (V60-techniek)". De notitie zegt dat het zijn V60-techniek is en dat het dikkere filter trager doorloopt. Het schema is ongewijzigd.
+
+### V2 · Zuur en sterkte (diag-2026.4)
+**Onderzoek:** zuurheid stijgt met de sterkte (titreerbare zuurgraad ∝ TDS) en daalt met de extractie: het zuurst bij hoge TDS en lage extractie (Batali e.a. 2021; SCA-samenvatting). Fijner malen verhoogt in een filter allebei.
+
+**Gebouwd:**
+- Bij "scherp zuur" met een goede sterkte, zonder "leeg", blijft de stap één klik fijner (de klassieke regel, zekerheid "mogelijk").
+- Er komt een tip bij: "Blijft hij zuur na deze stap, probeer dan iets minder koffie."
+- Te sterk + zuur gaf al minder koffie.
+
+**Toetsen:** V8 telt per soort stap hoe vaak het beter of slechter werd.
+
+### V9 · Eigen doorloop-exponent
+- `personalDoseTimeExponent()`: kleinste kwadraten op ln(bed droog) tegen ln(dosis).
+- Alleen Kasuya-koppen zonder bypass, met een Bed droog-tik.
+- Minstens 8 koppen, over minstens 15 % dosisbereik, begrensd op 0–1.
+- Zodra die er zijn, vervangt het eigen getal de 0,4 bij het verwachte einde (optie B). De tegel zegt dat erbij.
+
+### V10 · Gemeten vasthouden
+- Instellingen › Zetten › "Gebruik mijn gemeten vasthouden" (standaard uit).
+- Met ≥ 5 bruikbare metingen (`measuredRetention`) vervangt jouw getal de aanname 2,0 g/g.
+- Alleen voor recepten uit het venster (niet bij een eigen verhouding: die is het gegoten water) en niet bij bypass.
+- De verhoudingstegel zegt het erbij ("met jouw gemeten vasthouden (2,25 g/g, n=…)").
+
+### V8 · Jouw metingen
+In Statistiek staat een nieuw blok, alleen-lezen:
+- bed droog per techniek en per 50 ml (mediaan en spreiding, met het verwachte einde);
+- per giet de Erdoor-tijd tegenover de klok;
+- geteste stappen per soort (fijner, grover, meer of minder koffie: beter, gelijk of slechter);
+- de status van de eigen doorloop-exponent.
+
+### Testresultaten
+- **Nieuwe blokken:**
+  - "Audit: sterkte per smaak en techniek (V1)";
+  - "Rao volgens zijn eigen recept (V3)";
+  - "Hoffmann op de Chemex (V5) en Perger (V6)";
+  - "eigen doorloop-exponent (V9)";
+  - "metingen op een rij (V8)";
+  - "zuur en sterkte (V2)";
+  - `tests/engine-integrity.test.mjs` (V7).
+- **Bijgewerkt, bewust en met reden in de test:**
+  - de venster-tests gebruiken nu de profielen zonder eigen verhouding;
+  - de tweelingtests (Rao is geen tweeling meer);
+  - A-4 (Rao nu met bron);
+  - de sterktestap-tests met de nieuwe doses;
+  - `MODEL_POLICY` naar 4.0 en `diag-2026.4`;
+  - de UI-tekst over wat een profiel stuurt;
+  - de gouden recepten.
+
+## Engine 2 (e2-2026.1): persoonlijke sterkte, tijdmodel en hendeltabel (keuze Jelle, okt 2026)
+
+**Waarom:** het onderzoek in `onderzoek_audit_engine_recepten.md` en het ontwerp (Engine 2) laten vier dingen zien.
+1. Sterkte (TDS) is de hoofdas van smaak (R01, R03, UC Davis-dataset).
+2. Een los kop-oordeel is een zwak signaal. Een stap op elk antwoord zet het recept bijna elke tweede kop om.
+3. De voorkeur is persoonlijk.
+4. Je eigen doorloop wijkt structureel af van het schema.
+
+Jelle koos ervoor Engine 2 te bouwen en te gebruiken: "Engine 2 is belangrijker dan de bestaande app, deze kan aangepast worden".
+
+**Wat het doet** (volledig: `docs/engine2.md`):
+- **Sterkte:** Engine 2 zet je sterkte uit al je geproefde koppen samen, met een rooster-posterior. Hoe scherp je proeft, leert hij zelf.
+- **Bijsturen:** de sterkte verandert pas bij voldoende bewijs: drempel 0,70 zolang je zoekt, 0,85 in rust.
+- **Verwacht einde:** dat volgt je eigen Bed droog, zodra er 3 koppen zijn.
+- **Advies na het proeven:** dat komt uit een hendeltabel uit de data:
+  - bitter en zoetheid gemist → eerst lichter, niet anders malen;
+  - scherp zuur bij een goede sterkte → fijner én iets minder koffie;
+  - droog → controle.
+
+**Aansluiting op de app:**
+- **Standaard aan.** Uit te zetten in Instellingen → Rekenkern; dan werkt alles als voorheen.
+- **Bestaande engine:** levert de techniek. Zijn recept zonder Engine 2-argument is ongewijzigd, dus de gouden recepten blijven gelijk en de rekenkern-hash ook.
+- **Onder Engine 2:**
+  - de sterkte per zak ("Zet opnieuw") en klaargezette dosisstappen van de oude engine gelden niet; maalstappen wel;
+  - het Engine 2-paneel vervangt het oude advies, dat ter vergelijking zichtbaar blijft.
+- **Record:** elke kop bewaart `plan.inputs.e2`, zodat het recept na herladen exact terug te rekenen is.
+
+**Getoetst:**
+- `tests/engine2.test.mjs`:
+  - de massabalans en de omgekeerde formule;
+  - de antwoordkansen;
+  - de beslisregel: drempel, rust, eerste koppen, half meetellen, deterministisch;
+  - het tijdmodel;
+  - het recept: dosis, grens, eindtijd, handmatige afwijking;
+  - de hendeltabel;
+  - de schakelaar.
+- Een proefrit op de eigen back-up (alleen lokaal, niet in de repo) gaf:
+  - doel 1:18,9 (band 1:17,8–1:21,7);
+  - 2 wijzigingen in 9 koppen, tegen 6 bij de oude engine;
+  - verwacht einde 4:20 in plaats van 3:30.

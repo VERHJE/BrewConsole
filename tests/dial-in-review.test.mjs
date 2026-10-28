@@ -39,7 +39,7 @@ describe('R-03: droog/wrang en overextractie (diag-2026.3)', () => {
     assert.deepEqual(pick(reco({ strength: 'just_right', acidity: 'flat', finish: ['bitter', 'drying'], liking: 2 }, null, { alkalinityCaCO3: 140 })), ['CHECK', null, null, 'water_buffering']);
   });
   test('ruleset-versie', () => {
-    assert.equal(api.DIAGNOSIS_RULESET_VERSION, 'diag-2026.3');
+    assert.equal(api.DIAGNOSIS_RULESET_VERSION, 'diag-2026.4');
   });
 });
 

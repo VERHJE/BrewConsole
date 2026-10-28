@@ -613,6 +613,11 @@
   .brew-action-sub{font-size:var(--fs-small); color:var(--on-photo-dim); margin-top:6px;}
   .bed-dry-btn{width:100%; min-height:64px; margin:6px 0 8px;} /* VA-20: uiterlijk = .btn-primary */
   .bed-dry-hint{font-size:var(--fs-label); color:var(--on-photo-faint); text-align:center; margin:0 0 10px;}
+  .drain-btn{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;}
+  .drain-btn-sub{font-size:var(--fs-label); font-weight:500; opacity:.8;}
+  .drain-btn[data-due]{animation:drainDue 1.6s ease-in-out infinite;}
+  @keyframes drainDue{50%{box-shadow:0 0 0 6px var(--copper-dim);}}
+  @media (prefers-reduced-motion: reduce){ .drain-btn[data-due]{animation:none;} }
   .brew-ready{margin:0 0 12px;}
   .brew-ready-list{margin:0 auto 12px; max-width:34em; padding-left:1.3em; text-align:left; font-size:var(--fs-body); line-height:1.45; color:var(--on-photo); text-shadow:0 1px 3px var(--ink-a75);}
   .brew-ready-list li{margin:4px 0;}
@@ -2364,6 +2369,8 @@
   .m-0-0-14{margin:0 0 14px !important;}
   .m-0-0-20{margin:0 0 20px !important;}
   .m-0-0-6{margin:0 0 6px !important;}
+  .m-0-0-4{margin:0 0 4px !important;}
+  .m-10-0-6{margin:10px 0 6px !important;}
   .m-0-0-8{margin:0 0 8px !important;}
   .m-10-0-0{margin:10px 0 0 !important;}
   .m-10-0-4{margin:10px 0 4px !important;}
@@ -3076,7 +3083,7 @@
       <button class="back-btn" data-back="roast">← Roast</button>
       <h1 class="title">Wat wil je proeven?</h1>
       <p class="subtitle">Kies wat je wilt proeven, of hieronder een bekende gietstijl.</p>
-      <details class="more-info"><summary>Wat verandert je keuze?</summary><p>Bepaalt het gietschema en wat de proefkaart straks vraagt. Dosis verschuift hooguit een paar tiende gram; temperatuur en maling volgen uit de branding (een heel kort schema start één klik fijner).</p></details>
+      <details class="more-info"><summary>Wat verandert je keuze?</summary><p>Bepaalt het gietschema, de sterkte en wat de proefkaart straks vraagt. Op de V60 zet Rond &amp; vol op 1:15, Gebalanceerd op 1:16 en Helder &amp; fris op 1:17; Hoffmann, April en Rao volgen hun eigen recept. Temperatuur en maling volgen uit de branding (een heel kort schema start één klik fijner).</p></details>
       <p class="advice-tie-note" id="profile-tie-note" data-pending="true" hidden></p>
       <div class="choice-grid choice-grid--1" id="profile-grid"></div>
     </section>
@@ -3096,6 +3103,8 @@
       <div class="stats-grid" id="stats-grid"></div>
       <p class="technique-line" id="technique-line"></p>
       <p class="technique-tasting" id="technique-tasting"></p>
+      <!-- Engine 2: één regel waar je sterkte vandaan komt; de uitleg staat achter "Waarom dit recept?". -->
+      <p class="technique-tasting e2-line" id="e2-line" hidden></p>
       <!-- VA-04: hoogstens één melding, de belangrijkste (arrangePrepNotes()); de rest staat achter
            "Waarom dit recept?". -->
       <section class="prep-notes" id="prep-notes" aria-labelledby="prep-notes-title" hidden>
@@ -3112,6 +3121,7 @@
           <span class="flavor-category-arrow">+</span>
         </summary>
         <div class="flavor-category-body">
+          <div class="prep-next-adjust e2-card" id="e2-card" hidden></div>
           <div id="evidence-badge-row" class="badge-row"></div>
           <p class="style-note" id="style-note"></p>
           <div class="prep-notes-more" id="prep-notes-more" hidden>
@@ -3354,6 +3364,9 @@
             <p class="brew-ready-note">Tik op het moment dat je de eerste keer giet.</p>
           </div>
           <button type="button" class="bed-dry-btn btn-primary" id="bed-dry-btn" hidden>Bed droog</button>
+          <!-- Gieten op doorlopen (Kasuya): de volgende giet begint op deze tik. -->
+          <button type="button" class="bed-dry-btn drain-btn btn-primary" id="drain-btn" hidden>Erdoor<span class="drain-btn-sub">volgende giet</span></button>
+          <p class="bed-dry-hint" id="drain-hint" hidden>Erdoor = er staat geen water meer óp het bed; het oppervlak wordt net zichtbaar. Kasuya giet pas dan de volgende keer — de klok is alleen een richtpunt. Tik je per ongeluk, dan zet "Ongedaan maken" het terug.</p>
           <p class="bed-dry-hint" id="bed-dry-hint" hidden>Bed droog = het moment dat er geen water meer óp het koffiebed staat: het oppervlak wordt mat en het druppelen wordt dun. Tik dan — elke keer op hetzelfde moment, zodat de tijden vergelijkbaar zijn.</p>
           <div class="brew-pour-badge" id="brew-pour-badge"></div>
           <p class="brew-cumulative" id="brew-cumulative"></p>
@@ -3518,12 +3531,24 @@
         <p class="empty-hint m-8-0-0">Systeem volgt de instelling van je toestel. Het timerscherm blijft in beide thema's donker: het staat op een donkere foto.</p>
       </div>
 
+      <!-- Engine 2 (e2-2026.1): standaard aan; uit = de oude engine met sterkte en stappen per zak. -->
+      <div class="bean-detail-section" id="engine2-section">
+        <h2 class="bean-detail-section-label">Rekenkern</h2>
+        <button type="button" class="counter-toggle settings-switch" id="engine2-toggle" role="switch" aria-checked="true"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span class="switch-label">Engine 2</span></button>
+        <p class="empty-hint m-8-0-0">Engine 2 leert je sterkte uit al je geproefde koppen samen, over al je zakken heen, en past hem alleen aan als je antwoorden er duidelijk om vragen. Het verwachte einde volgt je eigen doorloop. Staat hij uit, dan werkt de oude engine, met een sterkte en stappen per zak.</p>
+        <p class="freshness-readout" id="engine2-status"></p>
+      </div>
+
       <!-- K8: gesproken aanwijzingen tijdens het zetten (proef, standaard uit). -->
       <div class="bean-detail-section">
         <h2 class="bean-detail-section-label">Zetten</h2>
         <button type="button" class="counter-toggle settings-switch" id="voice-toggle" role="switch" aria-checked="false"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span class="switch-label">Gesproken aanwijzingen (proef)</span></button>
         <p class="empty-hint m-8-0-0">De telefoon zegt bij elke giet hoeveel gram ("Giet tot 210 gram"), vijf seconden vooraf "Zo meteen: tot 210 gram", en "Laten doorlopen" na de laatste giet. Werkt offline, met de stem van je toestel. Het belletje blijft.</p>
         <button type="button" class="link-secondary" id="voice-test-btn">Test de stem</button>
+        <button type="button" class="counter-toggle settings-switch" id="drain-toggle" role="switch" aria-checked="false"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span class="switch-label">Gieten op doorlopen bij Kasuya (proef)</span></button>
+        <p class="empty-hint m-8-0-0" id="drain-toggle-hint">Kasuya giet pas als het water van de vorige keer erdoor is. Staat dit aan, dan wacht de timer vanaf de derde giet op jouw tik op "Erdoor", in plaats van op de klok. Een kleine zet is zo vanzelf eerder klaar, een grote later. Na afloop zie je per giet hoe lang het water erover deed. Geldt voor Gebalanceerd, Rond &amp; vol en Helder &amp; fris.</p>
+        <button type="button" class="counter-toggle settings-switch" id="retention-toggle" role="switch" aria-checked="false"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span class="switch-label">Gebruik mijn gemeten vasthouden</span></button>
+        <p class="empty-hint m-8-0-0" id="retention-toggle-hint">Het filterbed houdt water vast. De app rekent met 2,0 g per gram koffie. Weeg je na het zetten je kop (bij "Anders…"), dan meet de app dat zelf; na 5 bruikbare metingen kan je eigen getal de 2,0 vervangen. Geldt voor de recepten zonder eigen verhouding (Basisrecept, Bloemig, Sirooprig, Snel en de Chemex-recepten), niet bij bypass.</p>
       </div>
 
       <!-- Audit BC-24: waterprofiel hoort bij je keuken, niet bij één recept. -->
@@ -4897,7 +4922,7 @@ const PROFILE_INFO = {
   klassiek:      { name:'Gebalanceerd',    desc:'Vijf gelijke beurten — evenwichtig, geen uitschieter', color:'#A69684', icon:'target' },
   vol_rond:      { name:'Gebalanceerd',    desc:'Chocolade, noten, body',                    color:'#8A5A2E', icon:'sphere'  },
   zoet:          { name:'Rond & vol',      desc:'Karamel, bruine suiker, zachte afdronk',   color:'#C9A233', icon:'crystal' },
-  snel_puur:     { name:'Snel (Perger 80/20)', desc:'Simpele basismethode, altijd heet — in 2,5 min klaar', color:'#5B8AA6', icon:'bolt' },
+  snel_puur:     { name:'Snel (Perger 80/20)', desc:'Simpele basismethode, altijd heet — bloom en één lange giet', color:'#5B8AA6', icon:'bolt' },
   bloemig_delicaat: { name:'Bloemig & delicaat', desc:'Jasmijn, thee, Geisha — helderheid en scheiding', color:'#B98FC7', icon:'flower', methodOnly:'v60' },
   sirooprig_vol: { name:'Sirooprig & rond', desc:'Kissaten-stijl, minimale agitatie — zwaarste body', color:'#6B4A2E', icon:'drip', methodOnly:'v60' },
   robuust:       { name:'April',           desc:'April-stijl — stevig roeren bij elke beurt, vol uitgesponnen', color:'#A6543C', icon:'spiral' },
@@ -5141,7 +5166,7 @@ function rawKeyForVisibleSelection(canonicalKey, scores){
    policy-wijziging oude loggings niet herinterpreteert (computeRecipe(), saveBrewLogEntry()).
    Provenance staat altijd op APP_ASSUMED, nooit op extern STATED. */
 const MODEL_POLICY = Object.freeze({
-  version: "3.0",
+  version: "4.0", // 4.0: sterkte per smaak/techniek (PROFILE_RATIO), audit V1
   name: "Brew Engine target-window model policy",
   targetWindows: Object.freeze({
     LOWER_STRENGTH_MODERATE_EXTRACTION: Object.freeze({
@@ -5358,7 +5383,7 @@ const INTENDED_USE_INFO = {
   espresso: { name:'Espresso', desc:'Ontworpen voor druk-extractie — kan via filter vlakker/minder helder proeven' },
   omni:     { name:'Omni',     desc:'Bewust ontworpen voor zowel filter als espresso' }
 };
-const timer = { elapsed:0, running:false, intervalId:null, lastStepIndex:-1, preAlertedFor:-1, startTs:0, finished:false, armed:false }; // armed = R-15 klaar-check, klok nog niet gestart
+const timer = { elapsed:0, running:false, intervalId:null, lastStepIndex:-1, preAlertedFor:-1, startTs:0, finished:false, armed:false, drainMode:false, drainTaps:{}, awaitAlertedFor:-1, tickKey:'' }; // armed = R-15 klaar-check, klok nog niet gestart
 
 /* ============================================================
    HELPERS
@@ -5572,6 +5597,45 @@ var KASUYA_POUR_CYCLE_SEC = 45;
 var KASUYA_BLOOM_SEC = 45;
 var KASUYA_DRAWDOWN_SEC = 30;
 
+/* Optie B (keuze Jelle, okt 2026): bij Kasuya groeit de verwachte eindtijd mee met de dosis; de
+   giet-tijden blijven gelijk. Referentie: Kasuya's eigen 20 g → 3:30 (Hario-interview). Een dikker
+   bed loopt trager door (Darcy: beddiepte is de lengteterm; Gagné, Rao, Barista Hustle).
+   Exponent 0,4: tussen de kegeltheorie (1/3) en gepubliceerde recepten met bijgestelde maling
+   (±0,2–0,5) — een voorzichtige middenwaarde, geen gemeten getal. Alleen omhoog: de giet-klok
+   ligt vast (laatste giet op 3:00), dus een kleiner bed is niet eerder klaar dan die giet plus zijn
+   eigen korte doorloop; dat scheelt hooguit een paar seconden. Afgerond op 5 s (een schatting).
+   Niet bij de concentraat-methode: dan gaat er minder water door het bed dan de referentie. */
+var KASUYA_REFERENCE_DOSE_G = 20;
+var DOSE_TIME_EXPONENT = 0.4;
+function doseTimeFactor(dose, refDose, exponent){
+  const e = typeof exponent === 'number' ? exponent : DOSE_TIME_EXPONENT;
+  return dose > refDose ? Math.pow(dose / refDose, e) : 1;
+}
+/* V9 (audit): zodra er genoeg eigen bed-droog-tijden zijn, vervangt een eigen exponent de 0,4.
+   Kleinste kwadraten op ln(tijd) = a + e·ln(dosis), alleen Kasuya-koppen zonder bypass, met een
+   gemeten bed-droog-tik; minstens PERSONAL_EXPONENT_MIN_N koppen over een dosisbereik van
+   minstens 15 %. Begrensd op 0–1 (kegeltheorie 1/3, vlakke bodem 1). Verschillende maalstanden
+   zitten erin als ruis; daarom de drempel en de grenzen. */
+const PERSONAL_EXPONENT_MIN_N = 8;
+function personalDoseTimeExponent(store){
+  const pts = (store || []).filter(r => r && !r.deletedAt && r.plan && !r.plan.bypass
+      && typeof r.plan.technique === 'string' && r.plan.technique.indexOf('Kasuya') === 0
+      && r.actual && typeof r.actual.bedDrySec === 'number' && r.actual.bedDrySec > 0
+      && typeof r.plan.doseG === 'number' && r.plan.doseG > 0)
+    .map(r => ({ x: Math.log(r.plan.doseG), y: Math.log(r.actual.bedDrySec), dose: r.plan.doseG }));
+  if (pts.length < PERSONAL_EXPONENT_MIN_N) return null;
+  const doses = pts.map(p => p.dose);
+  if (Math.max(...doses) / Math.min(...doses) < 1.15) return null;
+  const mx = pts.reduce((a, p) => a + p.x, 0) / pts.length;
+  const my = pts.reduce((a, p) => a + p.y, 0) / pts.length;
+  const sxx = pts.reduce((a, p) => a + (p.x - mx) * (p.x - mx), 0);
+  if (!(sxx > 0)) return null;
+  const sxy = pts.reduce((a, p) => a + (p.x - mx) * (p.y - my), 0);
+  const e = Math.max(0, Math.min(1, sxy / sxx));
+  return { exponent: Math.round(e * 100) / 100, n: pts.length };
+}
+function roundToFiveSec(sec){ return Math.round(sec / 5) * 5; }
+
 /* April Coffee Roasters' eigen V60-huisrecept (aprilcoffeeroasters.com, dezelfde bron als
    APRIL_HOUSE_METHOD.attribution): zes pours van 50 g op 0:00, 0:40, 1:10, 1:40, 2:10, 2:40
    (20 g, 300 g water), totaal 3:20-3:30; twee keer onafhankelijk bevestigd. Het eerste interval
@@ -5588,6 +5652,18 @@ var HOFFMANN_BLOOM_SEC = 45;
 var HOFFMANN_POUR_WINDOW_SEC = 30; // duur van elke doorlopende hoofdpour (0:45-1:15, 1:15-1:45)
 var HOFFMANN_MAIN_POUR_CUMULATIVE_FRACTION = 0.6; // cumulatief aandeel van het totale water bij einde pour 1 (1:15)
 var HOFFMANN_TOTAL_SEC = 210; // 3:30, expliciet gepubliceerde totale zettijd
+
+/* V3 (audit okt 2026): Rao's eigen V60-recept uit zijn Hario-interview (20 g, 330 ml, 97 °C,
+   klaar 4:00–4:30): bloom met 3× de dosis en stevig ronddraaien, ±40 s wachten, gieten tot
+   ±200 ml (60 %), zacht draaien, opnieuw gieten tot 330 ml zodra ±70 % is doorgelopen, zacht
+   draaien. Geverifieerd via twee onafhankelijke samenvattingen van dat interview (de volledige
+   tekst was niet bereikbaar). Het moment van de tweede giet hangt aan het doorlopen; 1:45 is een
+   eigen schatting als richtpunt. Het einde (4:15) is het midden van Rao's 4:00–4:30. */
+var RAO_BLOOM_SEC = 40;
+var RAO_BLOOM_DOSE_FACTOR = 3;
+var RAO_POUR1_FRACTION = 0.6;
+var RAO_POUR2_EST_SEC = 105;
+var RAO_TOTAL_SEC = 255;
 
 /* Per-toestel cyclusduur (bouwbesluit BB-1, akkoord): POUR_CYCLE_SEC/FINAL_DRAWDOWN_SEC zijn de
    V60-referentie; voor een andere brewer schaalt cycleSec (tijd tussen twee giet-momenten) mee met
@@ -5638,6 +5714,7 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
   const isKasuya = overlayId === 'KASUYA_4_6';
   const isApril = overlayId === 'APRIL_HOUSE_METHOD';
   const isHoffmann = overlayId === 'HOFFMANN_ULTIMATE';
+  const isRao = overlayId === 'RAO_V60_MINIMAL_POUR';
   const cycleSec = isKasuya ? KASUYA_POUR_CYCLE_SEC : (cycleSecArg != null ? cycleSecArg : POUR_CYCLE_SEC);
   const drawdownSec = isKasuya ? KASUYA_DRAWDOWN_SEC : (drawdownSecArg != null ? drawdownSecArg : FINAL_DRAWDOWN_SEC);
   const overlayResolvedPulseCount = overlayMeta.pulseCount != null ? overlayMeta.pulseCount : null;
@@ -5671,12 +5748,24 @@ function buildPourSchedule(dose, water, overlayId, overlayMeta, bloomExtraSec, c
   // gedeelde formule te verbuigen.
   const totalTime = isHoffmann
     ? HOFFMANN_TOTAL_SEC
+    : isRao ? RAO_TOTAL_SEC + (bloomExtraSec || 0)
     : Math.round((hasBloomStep ? bloomTime : 0) + effectivePulseCount * cycleSec + drawdownSec + firstPourExtraSec);
 
   const steps = [];
   let runningTo = 0;
 
-  if (isHoffmann){
+  if (isRao){
+    const bloomWater = Math.max(0, Math.min(Math.round(dose * RAO_BLOOM_DOSE_FACTOR / 5) * 5, Math.round(water * 0.25 / 5) * 5));
+    runningTo = bloomWater;
+    steps.push({ label:'Bloom', t:0, add:bloomWater, to:runningTo, note:'', flow:'Draai de dripper stevig rond, zodat alles nat is' });
+    const pour1To = Math.max(bloomWater, Math.round((water * RAO_POUR1_FRACTION) / 5) * 5);
+    const extra = bloomExtraSec || 0;
+    steps.push({ label:'Giet 1', t:RAO_BLOOM_SEC + extra, add:pour1To - bloomWater, to:pour1To, note:'', flow:'Daarna kort en zacht ronddraaien' });
+    runningTo = pour1To;
+    const pour2Add = Math.max(0, Math.round(water) - runningTo);
+    runningTo += pour2Add;
+    steps.push({ label:'Giet 2', t:RAO_POUR2_EST_SEC + extra, add:pour2Add, to:runningTo, note:'zodra ±70 % is doorgelopen', flow:'Giet zodra ±70 % is doorgelopen; daarna zacht ronddraaien (de Rao Spin)' });
+  } else if (isHoffmann){
     // Bloomwater zoals het generieke pad (±2× dosis, max 20% van het water); dat klopt al met
     // Hoffmanns eigen 60 g/500 g-voorbeeld. Alleen de tijden en het aandeel bij pour 1 (60%) zijn
     // Hoffmann-specifiek. Geen endT op de bloom: de 45 s is de wachttijd tot pour 1; het ingieten
@@ -5792,7 +5881,7 @@ function buildFallbackRecipe(reason, waterMl){
     technique:'Geen geldig recept bij dit watervolume', author:'—',
     notes:`${reason} Pas de waterhoeveelheid aan (stel bijv. terug naar het midden van het bereik) of kies de andere zettermethode.`,
     ratioText:'—', processNote:'', freshnessNote:'', altitudeNote:'', hardnessNote:'', bypassNote:'', strengthNote:'', doseEdge:null,
-    bypassAdv:{ pct:0, factor:1 }, contactTimeDiagnosticBand:null, pulseCountSourced:false,
+    bypassAdv:{ pct:0, factor:1 }, contactTimeDiagnosticBand:null, doseTimeScale:null, drainGates:[], profileRatio:null, retentionApplied:null, pulseCountSourced:false,
     authorUnverified:false,
     modelPolicyVersion: MODEL_POLICY.version
   };
@@ -5883,7 +5972,41 @@ function doseEdgeFor(provisionalDose, waterMl, ceiling, ratioRange){
   return { side, dose, ratio };
 }
 
-function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, experimentalFlag, roastDays, altitudeMasl, bypassEnabled, flavorFermentEvidence, waterHardnessMgLArg, strengthAdjust, bypassPctArg){
+/* V1 (audit okt 2026, keuze Jelle): sterkte expliciet per smaak en per techniek. De twee
+   TDS/EY-vensters gaven 1:17,4 tegen 1:17,6, dus "Rond & vol" en "Helder & fris" zetten even
+   sterk, terwijl sterkte (TDS) de grootste smaakdrijver is (Batali e.a. 2020; Frost e.a. 2020;
+   Guinard e.a. 2023: zoet en fruitig bij lagere, bitter en vol bij hogere TDS).
+   - Technieken met een eigen gepubliceerde verhouding volgen die: Hoffmann 30 g/500 g en
+     15 g/250 g (1:16,7), April 20 g/300 g (1:15), Rao 20 g/330 ml (1:16,5).
+   - De drie Kasuya-smaken: Kasuya's eigen 20 g/300 ml (1:15) voor Rond & vol; Gebalanceerd
+     1:16 en Helder & fris 1:17 zijn eigen stappen in de richting van het onderzoek (lagere
+     sterkte = helderder, minder bitter), geen gemeten getallen. Toetsen met de blinde proef.
+   - Profielen zonder eigen bron (Kernrecept, Perger) houden het venster van MODEL_POLICY; op de
+     Chemex geldt alleen Hoffmann (de andere technieken zijn daar het Kernrecept).
+   De dosis blijft binnen de grens van het toestel (V60 15–22 g); valt hij erbuiten, dan staat
+   hij op de grens en zegt de app dat de verhouding daardoor afwijkt. */
+const PROFILE_RATIO = {
+  zoet:          { ratio: 15,   basis: 'Kasuya, 20 g op 300 ml', sourced: true, methodOnly: 'v60' },
+  klassiek:      { ratio: 16,   basis: 'tussen 1:15 en 1:17', sourced: false, methodOnly: 'v60' },
+  vol_rond:      { ratio: 16,   basis: 'tussen 1:15 en 1:17', sourced: false, methodOnly: 'v60' },
+  heel_fruitig:  { ratio: 17,   basis: 'lichter, voor helderheid', sourced: false, methodOnly: 'v60' },
+  fresh_clean:   { ratio: 50/3, basis: 'Hoffmann, 30 g op 500 g', sourced: true },
+  robuust:       { ratio: 15,   basis: 'April, 20 g op 300 g', sourced: true, methodOnly: 'v60' },
+  fruitig_clean: { ratio: 16.5, basis: 'Rao, 20 g op 330 ml', sourced: true, methodOnly: 'v60' }
+};
+/* V10 (audit): de vaste aanname van 2,0 g vastgehouden water per gram koffie (kern,
+   LIQUID_RETAINED_RATIO) kan worden vervangen door je eigen meting (measuredRetention(), n ≥ 5).
+   Alleen voor recepten die uit het TDS/EY-venster komen (niet voor PROFILE_RATIO: daar is de
+   verhouding het gegoten water, zonder vasthouden) en niet bij bypass. Standaard uit. */
+const USE_MEASURED_RETENTION_KEY = 'brewconsole_use_measured_retention';
+function useMeasuredRetentionOn(){ try { return localStorage.getItem(USE_MEASURED_RETENTION_KEY) === '1'; } catch(e){ return false; } }
+function profileRatioFor(profileKey, methodKey){
+  const r = PROFILE_RATIO[profileKey];
+  if (!r || (r.methodOnly && r.methodOnly !== methodKey)) return null;
+  return r;
+}
+
+function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, experimentalFlag, roastDays, altitudeMasl, bypassEnabled, flavorFermentEvidence, waterHardnessMgLArg, strengthAdjust, bypassPctArg, e2Arg){
   const B = window.BrewEngineBundle;
 
   // Veiligheidsnet, zelfde geest als de oude terugval-op-'klassiek': een onverwachte
@@ -5967,16 +6090,58 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   const overlay = entry.styleOverlay.state === 'RESOLVED' ? entry.styleOverlay.value : null;
   const overlayId = overlay ? overlay.id.split('::')[0] : null;
 
-  const baseDose = core.dose.state === 'RESOLVED' ? core.dose.value : 0;
+  let baseDose = core.dose.state === 'RESOLVED' ? core.dose.value : 0;
+  // V1: een eigen verhouding per smaak/techniek (PROFILE_RATIO) vervangt het venstermidden.
+  const profileRatio = profileRatioFor(profileKey, methodKey);
+  let profileDoseEdge = null;
+  if (profileRatio && baseDose > 0 && waterMl > 0){
+    const ceiling = (brewer && brewer.doseCeiling && brewer.doseCeiling.state === 'RESOLVED') ? brewer.doseCeiling.value : null;
+    const wanted = waterMl / profileRatio.ratio;
+    const d = ceiling ? clamp(wanted, ceiling.min, ceiling.max) : wanted;
+    baseDose = Math.round(d * 10) / 10;
+    if (ceiling && Math.abs(d - wanted) > 0.05){
+      profileDoseEdge = { side: wanted < ceiling.min ? 'min' : 'max', dose: baseDose, ratio: waterMl / baseDose, targetRatio: profileRatio.ratio };
+    }
+    doseEdge = profileDoseEdge;
+  }
+  // V10: eigen gemeten vasthouden i.p.v. 2,0 (alleen venster-recepten, zonder bypass).
+  let retentionApplied = null;
+  if (!profileRatio && !(bypassEnabled && methodKey === 'v60') && baseDose > 0 && waterMl > 0 && targetWindow.state === 'RESOLVED' && useMeasuredRetentionOn()){
+    const m = measuredRetention(methodKey);
+    if (m && m.gemiddelde != null){
+      const rr = B.ratioFromWindow(targetWindow.value);
+      const ratio = (rr.min + rr.max) / 2 - B.LIQUID_RETAINED_RATIO + m.gemiddelde;
+      const ceiling = (brewer && brewer.doseCeiling && brewer.doseCeiling.state === 'RESOLVED') ? brewer.doseCeiling.value : null;
+      const wanted = waterMl / ratio;
+      const d = ceiling ? clamp(wanted, ceiling.min, ceiling.max) : wanted;
+      baseDose = Math.round(d * 10) / 10;
+      doseEdge = (ceiling && Math.abs(d - wanted) > 0.05) ? { side: wanted < ceiling.min ? 'min' : 'max', dose: baseDose, ratio: waterMl / baseDose, targetRatio: ratio } : null;
+      retentionApplied = { value: m.gemiddelde, n: m.n, assumed: B.LIQUID_RETAINED_RATIO };
+    }
+  }
+  // Engine 2: jouw sterkte vervangt de dosis van het basisrecept (binnen de toestelgrens); het water
+  // blijft het gevraagde volume. Zie engine2PlanFor().
+  let e2Applied = null;
+  if (e2Arg && typeof e2Arg.doseG === 'number' && e2Arg.doseG > 0 && baseDose > 0 && waterMl > 0){
+    const ceiling = (brewer && brewer.doseCeiling && brewer.doseCeiling.state === 'RESOLVED') ? brewer.doseCeiling.value : null;
+    const d = ceiling ? clamp(e2Arg.doseG, ceiling.min, ceiling.max) : e2Arg.doseG;
+    baseDose = Math.round(d * 10) / 10;
+    const clampedE2 = !!(ceiling && Math.abs(d - e2Arg.doseG) > 0.05);
+    doseEdge = clampedE2 ? { side: e2Arg.doseG < ceiling.min ? 'min' : 'max', dose: baseDose, ratio: waterMl / baseDose, targetRatio: waterMl / e2Arg.doseG } : null;
+    retentionApplied = null;
+    e2Applied = { version: e2Arg.version || ENGINE2_VERSION, doseG: baseDose, wantedDoseG: e2Arg.doseG, clamped: clampedE2,
+      targetTds: e2Arg.targetTds != null ? e2Arg.targetTds : null, totalTimeSec: null, baseTotalSec: null };
+  }
   // D2-1: bij een dosis op de grens is het water het gevraagde volume (de engine rekende het
   // water bij het venstermidden uit); de ratio hieronder volgt daaruit.
-  const water = doseEdge ? waterMl : (core.water.state === 'RESOLVED' ? core.water.value : waterMl);
+  const water = (doseEdge || profileRatio || retentionApplied || e2Applied) ? waterMl : (core.water.state === 'RESOLVED' ? core.water.value : waterMl);
 
   // Sterkte-hendel: pure, expliciet-handmatige gebruikersvoorkeur, geen evidence-claim
   // (zelfde geest als voorheen) — verschuift alleen de dosis, water blijft gelijk.
   const strengthStep = clamp(Math.round((strengthAdjust || 0) * 2) / 2, -1, 1);
   let dose = baseDose;
   let ratioText = doseEdge ? nlRatio(`1:${fmt(doseEdge.ratio, 1)}`)
+    : (profileRatio || retentionApplied || e2Applied) ? nlRatio(`1:${fmt(water / baseDose, 1)}`)
     : (core.ratio.state === 'RESOLVED' ? nlRatio(core.ratio.value) : '—');
   let strengthNote = '';
   // De sterktehendel werkt ná de constraint-check van generateCandidates(): deze klem houdt
@@ -6061,7 +6226,40 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   };
   // B-2b: cyclus-/doorloopconstanten per brewer (V60 blijft exact de referentie, 30/40s).
   const pourCycleConstants = brewerPourCycleConstants(brewerScopeKey);
-  const { steps, totalTime } = buildPourSchedule(dose, pourWaterMl, overlayId, overlayMeta, freshTier ? freshTier.bloomExtraSec : 0, pourCycleConstants.cycleSec, pourCycleConstants.drawdownSec);
+  const schedule = buildPourSchedule(dose, pourWaterMl, overlayId, overlayMeta, freshTier ? freshTier.bloomExtraSec : 0, pourCycleConstants.cycleSec, pourCycleConstants.drawdownSec);
+  const steps = schedule.steps;
+  let totalTime = schedule.totalTime;
+  // Optie B (KASUYA_REFERENCE_DOSE_G): boven 20 g schuift alleen het verwachte einde op — de
+  // "Klaar"-stap en totalTime; de giet-momenten blijven staan.
+  let doseTimeScale = null;
+  if (overlayId === 'KASUYA_4_6' && !bypassActuallyApplied){
+    const personal = typeof brewStore !== 'undefined' ? personalDoseTimeExponent(brewStore) : null;
+    const exponent = personal ? personal.exponent : DOSE_TIME_EXPONENT;
+    const factor = doseTimeFactor(dose, KASUYA_REFERENCE_DOSE_G, exponent);
+    const scaled = roundToFiveSec(totalTime * factor);
+    if (scaled > totalTime){
+      doseTimeScale = { factor, refDoseG: KASUYA_REFERENCE_DOSE_G, baseSec: totalTime, exponent, personalN: personal ? personal.n : 0 };
+      totalTime = scaled;
+      steps[steps.length - 1].t = totalTime;
+    }
+  }
+  // Engine 2: het verwachte einde volgens je eigen doorloop (e2TimeModel()), alleen zonder bypass en
+  // alleen als het na de laatste giet valt. De giet-momenten blijven staan.
+  if (e2Applied){
+    e2Applied.baseTotalSec = totalTime;
+    const lastPour = steps.filter(s => s.add > 0).reduce((m, s) => Math.max(m, s.t), 0);
+    const tail = steps[steps.length - 1];
+    if (typeof e2Arg.totalTimeSec === 'number' && !bypassActuallyApplied && tail && tail.add === 0 && e2Arg.totalTimeSec >= lastPour + 15){
+      totalTime = e2Arg.totalTimeSec;
+      tail.t = totalTime;
+      e2Applied.totalTimeSec = totalTime;
+    }
+  }
+  // Gieten op doorlopen (keuze Jelle): bij Kasuya wacht de app vanaf de derde giet op "Erdoor" —
+  // Kasuya giet pas als het vorige water erdoor is. De wachttijd na de bloom blijft op de klok.
+  const drainGates = overlayId === 'KASUYA_4_6'
+    ? steps.map((s, i) => s.add > 0 ? i : -1).filter(i => i >= 0).slice(2)
+    : [];
   // BC-11 (akkoord): de klikrange past bij contacttijden van ±2:30-3:30. Een schema van hooguit
   // SHORT_CONTACT_MAX_SEC extraheert bij dezelfde maling minder, dus één klik fijner (nooit buiten
   // de praktische range). Vertrekpunt; proefkaart en advies corrigeren het.
@@ -6106,6 +6304,17 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     notes = (overlay.phaseSplit
       ? `${structureNote} Giet-tijden hieronder volgen het hierboven beschreven fase-mechanisme van deze bron; de exacte grammen BINNEN elke fase zijn een eigen, gelijke verdeling (de bronnen spreken elkaar tegen over de precieze split) — geen letterlijk gepubliceerd stappenschema van ${att ? att.practitioner : 'deze bron'}.${biasUitleg}`
       : `${structureNote} Giet-tijden hieronder zijn een eigen, gelijkmatige verdeling over een schema-lengte die uit het aantal giet-momenten volgt — geen letterlijk gepubliceerd stappenschema van ${att ? att.practitioner : 'deze bron'}.`) + pulseDisclaimer;
+    // V3: Rao op de V60 volgt nu zijn eigen gepubliceerde structuur (buildPourSchedule, RAO_*).
+    if (overlayId === 'RAO_V60_MINIMAL_POUR'){
+      technique = 'Rao';
+      pulseCountSourced = true;
+      notes = `${structureNote} Schema volgens Rao's eigen recept (Hario-interview, 20 g op 330 ml, klaar 4:00–4:30): bloom met drie keer de dosis en stevig ronddraaien, na ±40 s gieten tot 60 %, zacht draaien, en de rest gieten zodra ±70 % is doorgelopen, met een laatste zachte draai. De tijd van de tweede giet (±1:45) is een eigen schatting: giet op het doorlopen, niet op de klok. Rao maalt fijn; loopt het veel sneller dan 4:00 en smaakt het dun, ga dan een klik fijner.`;
+    }
+    // V5: Hoffmann publiceert geen eigen Chemex-schema; dit is zijn V60-techniek op de Chemex.
+    if (overlayId === 'HOFFMANN_ULTIMATE' && methodKey === 'chemex'){
+      technique = 'Hoffmann (V60-techniek)';
+      notes = `Hoffmann publiceert geen eigen Chemex-schema: dit is zijn V60-techniek (Ultimate V60) op de Chemex. Het dikkere Chemex-filter loopt trager door dan een V60, dus verwacht een langere zettijd dan de 3:30 van het schema. ` + notes;
+    }
   } else {
     technique = 'Kernrecept';
     author = 'Brew Console (geen naam-gebonden schema)';
@@ -6148,7 +6357,11 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     totalTime, steps,
     technique, author,
     notes, ratioText, processNote, freshnessNote, altitudeNote, hardnessNote, bypassNote, strengthNote,
-    doseEdge, // D2-1: null, of { side:'min'|'max', dose, ratio } als de dosis op de toestelgrens staat
+    doseEdge, // D2-1: null, of { side:'min'|'max', dose, ratio[, targetRatio] } als de dosis op de toestelgrens staat
+    // V1: { ratio, basis, sourced } als deze smaak/techniek een eigen verhouding heeft, anders null.
+    profileRatio: profileRatio ? { ratio: profileRatio.ratio, basis: profileRatio.basis, sourced: !!profileRatio.sourced } : null,
+    // V10: null, of { value, n, assumed } als je gemeten vasthouden de 2,0 vervangt.
+    retentionApplied,
     // VERWIJDERD (Reparatieplan v4.0, A-5 / bevinding E-16): sizeConsistencyWarning kon per
     // constructie nooit vuren — computeRecipe() rekent batchSize juist TERUG uit waterMl,
     // dus de afwijking is altijd ~0. Geverifieerd over het hele geldige volumebereik. Een
@@ -6166,6 +6379,12 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     authorUnverified,
     // Voor de controle achteraf (renderBrewLogHonestSummary()); stuurt totalTime/steps niet.
     contactTimeDiagnosticBand,
+    // Optie B: null, of { factor, refDoseG, baseSec } als het verwachte einde met de dosis meegroeit.
+    doseTimeScale,
+    // Stapindexen die bij "gieten op doorlopen" op een Erdoor-tik wachten (alleen Kasuya).
+    drainGates,
+    // Engine 2: null, of { version, doseG, wantedDoseG, clamped, targetTds, totalTimeSec, baseTotalSec }.
+    engine2: e2Applied,
     // De Model Policy-versie van dit recept; gaat mee op elke logging zodat een latere policy oude
     // loggings niet herinterpreteert.
     modelPolicyVersion: MODEL_POLICY.version
@@ -6710,11 +6929,11 @@ function brewAgain(id, override){
   // proefkaart verandert daarna precies één ding (applyPendingAdjustToState()).
   const stand = override ? null : beanStandFor(bean, state.method);
   if (override){
-    state.strengthAdjust = typeof override.strengthStep === 'number' ? override.strengthStep : 0;
+    state.strengthAdjust = (!engine2On() && typeof override.strengthStep === 'number') ? override.strengthStep : 0;
     state.grindStand = typeof override.grindClick === 'number' ? override.grindClick : null;
     state.standApplied = null;
   } else if (stand){
-    state.strengthAdjust = typeof stand.strengthStep === 'number' ? stand.strengthStep : 0;
+    state.strengthAdjust = (!engine2On() && typeof stand.strengthStep === 'number') ? stand.strengthStep : 0;
     state.grindStand = typeof stand.grindClick === 'number' ? stand.grindClick : null;
     state.standApplied = stand;
   } else {
@@ -8375,7 +8594,7 @@ function renderHomeInsights(){
    gezet = geen kaart (leeg-eerst, niets verzonnen). */
 function nextCupTarget(){
   const withAdjust = beanLibrary
-    .filter(b => b.pendingAdjust && b.lastBrew && b.pendingAdjust.method === b.lastBrew.method)
+    .filter(b => effectivePendingAdjust(b) && b.lastBrew && b.pendingAdjust.method === b.lastBrew.method)
     .sort((a, b) => (b.pendingAdjust.createdAt || 0) - (a.pendingAdjust.createdAt || 0))[0];
   if (withAdjust) return { bean: withAdjust, adjust: withAdjust.pendingAdjust };
   const recent = brewLog.slice().sort((a, b) => b.timestamp - a.timestamp)
@@ -8554,6 +8773,7 @@ function renderInsightsScreen(targetId){
   </div>`;
 
   html += renderAdviceOutcomeSection(adviceOutcomeStats(brewStore));
+  html += renderMeasurementsSection(brewStore); // V8
   html += renderRoasterOverview();
 
   if (brewLog.length < MIN_TREND_N){
@@ -9446,6 +9666,8 @@ function createBrewRecord(input){
       // Fase 2: de verwachte eindtijd van het uitlopen volgens de engine (E = geschat) —
       // de maatlat voor derived.drainResidualSec zodra er een echte bed-droog-tik is.
       expectedDrainEndSec: typeof rec.totalTime === 'number' ? rec.totalTime : null,
+      // Gieten op doorlopen stond aan bij de start (vast voor dit brouwsel, ook na herladen).
+      drainMode: !!input.drainMode,
       // Fase 2: de exacte computeRecipe()-invoer bij Start, zodat het recept na herladen
       // of een crash precies zo terug te rekenen is (recomputeRecipeForRecord()).
       inputs: input.inputs ? cloneJson(input.inputs) : null,
@@ -9675,6 +9897,47 @@ function brewPhaseAt(steps, totalSec, tSec){
   return { kind: 'drawdown', finalG, overPlanSec: Math.max(0, tSec - (totalSec || 0)), stepIndex: idx };
 }
 
+/* Gieten op doorlopen: het schema zoals het nu werkelijk loopt. Een gate-stap (drainGates) begint
+   op het moment van de Erdoor-tik (taps[stapindex] = tSec); alles daarna schuift even ver mee. Is
+   de kloktijd van een gate voorbij zonder tik, dan wacht het schema (awaiting): die stap en alles
+   erna staan dan voorlopig één seconde vooruit. tSec = -Infinity geeft het schema zonder wachten. */
+function drainScheduleAt(steps, totalSec, gates, taps, tSec){
+  const gateSet = new Set(gates || []);
+  const out = [];
+  let offset = 0, awaiting = null;
+  for (let i = 0; i < steps.length; i++){
+    const s = steps[i];
+    let t = s.t + offset;
+    if (gateSet.has(i) && !awaiting){
+      if (taps && taps[i] != null) t = taps[i];
+      else if (tSec >= t){ awaiting = { stepIndex: i, dueSec: t, overSec: tSec - t }; t = tSec + 1; }
+      offset = t - s.t;
+    }
+    const c = Object.assign({}, s, { t });
+    if (s.endT != null) c.endT = s.endT + (t - s.t);
+    out.push(c);
+  }
+  return { steps: out, totalSec: totalSec + offset, awaiting };
+}
+// De Erdoor-tikken van een record ("drained", eventueel teruggedraaid met "drained_undo").
+function drainTapsFromEvents(events){
+  const taps = {};
+  for (const ev of (events || [])){
+    if (ev.type === 'drained' && ev.stepIndex != null) taps[ev.stepIndex] = ev.tSec;
+    else if (ev.type === 'drained_undo' && ev.stepIndex != null) delete taps[ev.stepIndex];
+  }
+  return taps;
+}
+// Per Erdoor-tik: hoe lang het water van de vorige giet erover deed, naast wat de klok rekent.
+function drainIntervals(steps, totalSec, gates, taps){
+  const eff = drainScheduleAt(steps, totalSec, gates, taps, -Infinity).steps;
+  const pours = steps.map((s, i) => s.add > 0 ? i : -1).filter(i => i >= 0);
+  return (gates || []).filter(g => taps && taps[g] != null).map(g => {
+    const prev = pours[pours.indexOf(g) - 1];
+    return { afterPour: pours.indexOf(prev) + 1, sec: eff[g].t - eff[prev].t, clockSec: steps[g].t - steps[prev].t };
+  });
+}
+
 // Einde-knop: vóór het uitlopen is het een afgebroken brouwsel; tijdens het uitlopen is het
 // voltooid, alleen zonder bed-droog-tijd (die blijft null — nooit ingevuld vanuit het schema).
 function endBrewDecision(phaseKind){
@@ -9682,7 +9945,7 @@ function endBrewDecision(phaseKind){
 }
 
 // Pure: voltooi een brewing-record met een gemeten bed-droog-tik (tSec) of zonder (null).
-function completeWithBedDry(rec, nowMs, bedDrySec, how){
+function completeWithBedDry(rec, nowMs, bedDrySec, how, expectedEndSec){
   const withTap = bedDrySec != null
     ? applyBrewEvent(rec, 'bed_dry', nowMs, { tSec: bedDrySec })
     : { ok: true, rec };
@@ -9691,7 +9954,8 @@ function completeWithBedDry(rec, nowMs, bedDrySec, how){
   if (!done.ok) return done;
   const next = done.rec;
   next.actual.bedDrySec = bedDrySec != null ? bedDrySec : null;
-  const expected = next.plan && next.plan.expectedDrainEndSec;
+  // Gieten op doorlopen: de verwachting na je laatste Erdoor-tik, niet de vaste kloktijd.
+  const expected = typeof expectedEndSec === 'number' ? expectedEndSec : (next.plan && next.plan.expectedDrainEndSec);
   next.derived = Object.assign({}, next.derived, {
     drainResidualSec: (bedDrySec != null && typeof expected === 'number') ? bedDrySec - expected : null
   });
@@ -9717,7 +9981,313 @@ function recipeInputsFromRecord(rec){
 }
 function recomputeRecipeForRecord(rec){
   const i = recipeInputsFromRecord(rec);
-  return computeRecipe(i.method, i.roast, i.profile, i.waterMl, i.process, i.experimental, i.roastDays, i.altitude, i.bypass, i.fermentEvidence, i.waterHardnessMgL, i.strengthAdjust, i.bypassPct);
+  return computeRecipe(i.method, i.roast, i.profile, i.waterMl, i.process, i.experimental, i.roastDays, i.altitude, i.bypass, i.fermentEvidence, i.waterHardnessMgL, i.strengthAdjust, i.bypassPct, i.e2 || null);
+}
+
+/* ============================================================
+   ENGINE 2 (e2-2026.1) — zie docs/engine2.md.
+   Engine 2 zet je sterkte (de dosis) uit al je geproefde koppen samen, over alle zakken en
+   brewers heen, en verandert die alleen bij voldoende bewijs. Daarnaast kalibreert hij het
+   verwachte einde op je eigen doorloop en geeft hij na het proeven advies volgens een
+   hendeltabel die uit de UC Davis-data is afgeleid. De techniek (gietschema, temperatuur,
+   maling) komt uit de bestaande engine; die blijft ongewijzigd en rekent mee ter vergelijking.
+   Alles hieronder is puur: geen DOM, alleen opslag via engine2On()/setEngine2().
+   ============================================================ */
+const ENGINE2_VERSION = 'e2-2026.1';
+const ENGINE2_KEY = 'brewconsole_engine2';
+// Massabalans (Guinard e.a. 2023, J. Food Sci.): EY = TDS/(1−TDS) · (W/D − R_abs), R_abs ≈ 2,1 bij filter.
+const E2_R_ABS = 2.1;
+// Nominale extractie: Engine 2 rekent sterkte heen (kop → TDS) en terug (doel → dosis) met dezelfde
+// waarde, dus die valt weg; alleen de getoonde TDS-procenten hangen ervan af.
+const E2_EY_NOMINAL = 0.20;
+// Ruis van het sterkte-antwoord binnen een persoon (UC Davis-dataset, 3.186 proeverijen) en de
+// hellingen waarover Engine 2 middelt: hoe scherp jij proeft, leert hij uit je eigen antwoorden.
+const E2_NOISE_SD = 0.70;
+const E2_SLOPES = [1.61, 3, 5, 8, 12];
+const E2_PRIOR_SD = 0.25;
+const E2_HALF_STEP = Math.log(1.04);
+// Beslisdrempels (simulatie met het ruismodel): 0,70 zolang je zoekt, 0,85 zodra je goed zit.
+const E2_THRESHOLD_SEARCH = 0.70;
+const E2_THRESHOLD_REST = 0.85;
+// Rust: je laatste drie koppen op het doel waren "goed" en de onzekerheid is kleiner dan ±12 %.
+const E2_REST_SD = 0.12;
+const E2_MAX_STEPS = 2;
+// Laat geproefd of met bypass gezet: telt half mee (smaak en extractie zijn dan minder zeker).
+const E2_SOFT_WEIGHT = 0.5;
+// Vergeten: een kop van 30 koppen geleden telt half.
+const E2_FORGET = Math.pow(0.5, 1 / 30);
+const E2_TIME_MIN_N = 3;
+const E2_TIME_WINDOW = 10;
+const E2_STRENGTH_ORDINAL = { much_too_weak: -2, too_weak: -1, just_right: 0, too_strong: 1, much_too_strong: 2 };
+const E2_GRID = (function(){
+  const g = [];
+  for (let x = Math.log(0.80); x <= Math.log(1.90) + 1e-9; x += 0.005) g.push(x);
+  return g;
+})();
+
+// Een eigen keuze (Instellingen) wint altijd. Zonder keuze is Engine 2 aan, tenzij de pagina een
+// andere standaard meekreeg (window.__brewconsoleEngine2Default = false; de smoketests van de oude
+// engine gebruiken dat, zodat ze niets in de opslag hoeven te schrijven).
+function engine2On(){
+  let v = null;
+  try { v = localStorage.getItem(ENGINE2_KEY); } catch(e){ v = null; }
+  if (v === '1') return true;
+  if (v === '0') return false;
+  return !(typeof window !== 'undefined' && window.__brewconsoleEngine2Default === false);
+}
+function setEngine2(on){
+  try { localStorage.setItem(ENGINE2_KEY, on ? '1' : '0'); } catch(e){ /* alleen deze sessie */ }
+}
+
+function e2Tds(doseG, waterG, rAbs, ey){
+  const e = ey == null ? E2_EY_NOMINAL : ey;
+  const r = rAbs == null ? E2_R_ABS : rAbs;
+  if (!(doseG > 0) || !(waterG > 0) || waterG / doseG <= r) return null;
+  const x = e / (waterG / doseG - r);
+  return 100 * x / (1 + x);
+}
+function e2RatioForTds(tdsPct, rAbs, ey){
+  const e = ey == null ? E2_EY_NOMINAL : ey;
+  const r = rAbs == null ? E2_R_ABS : rAbs;
+  const t = tdsPct / 100;
+  return e * (1 - t) / t + r;
+}
+// Je gemeten vasthouden (V10, n ≥ 5) vervangt de aanname. measuredRetention() meet (water − kop)/dosis;
+// de kop bevat ook de opgeloste koffie, dus het vastgehouden water is dat plus de extractie.
+function e2RetentionFor(method){
+  const m = measuredRetention(method);
+  if (m && m.gemiddelde != null) return { value: Math.round((m.gemiddelde + E2_EY_NOMINAL) * 100) / 100, n: m.n, measured: true };
+  return { value: E2_R_ABS, n: 0, measured: false };
+}
+
+// Normale verdelingsfunctie (Abramowitz & Stegun 7.1.26, fout < 1,5e-7).
+function e2Phi(z){
+  const s = z < 0 ? -1 : 1;
+  const x = Math.abs(z) / Math.SQRT2;
+  const t = 1 / (1 + 0.3275911 * x);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return 0.5 * (1 + s * y);
+}
+// Kans op een sterkte-antwoord bij kop-TDS T en doel g (ln TDS): latente afwijking B·ln(T/doel) + ruis.
+function e2AnswerProb(ord, lnT, g, slope){
+  const mu = slope * (lnT - g);
+  const sd = E2_NOISE_SD;
+  const cut = { '-2': [-Infinity, -1.5], '-1': [-1.5, -0.5], '0': [-0.5, 0.5], '1': [0.5, 1.5], '2': [1.5, Infinity] }[String(ord)];
+  const hi = cut[1] === Infinity ? 1 : e2Phi((cut[1] - mu) / sd);
+  const lo = cut[0] === -Infinity ? 0 : e2Phi((cut[0] - mu) / sd);
+  return Math.max(1e-12, hi - lo);
+}
+
+// Alle geproefde koppen met een sterkte-antwoord, oud → nieuw, over alle zakken en brewers.
+function e2Observations(store, rAbsFor){
+  const out = [];
+  const memo = {};
+  const rOf = (m) => {
+    if (typeof rAbsFor !== 'function') return rAbsFor || E2_R_ABS;
+    if (!(m in memo)) memo[m] = rAbsFor(m);
+    return memo[m];
+  };
+  (store || []).forEach(r => {
+    if (!r || r.deletedAt || !r.tasting || !r.plan) return;
+    const ord = E2_STRENGTH_ORDINAL[r.tasting.strength];
+    if (ord === undefined) return;
+    const dose = r.actual && typeof r.actual.doseG === 'number' && r.actual.doseG > 0 ? r.actual.doseG : r.plan.doseG;
+    const water = r.plan.waterMl;
+    const tds = e2Tds(dose, water, rOf(r.plan.methodId));
+    if (tds == null) return;
+    const soft = !!r.tasting.late || !!r.plan.bypass;
+    out.push({ id: r.id, at: r.createdAt || 0, lnT: Math.log(tds), tds, ord, weight: soft ? E2_SOFT_WEIGHT : 1,
+      method: r.plan.methodId, beanId: r.beanId || null, doseG: dose, waterG: water, late: !!r.tasting.late, bypass: !!r.plan.bypass });
+  });
+  return out.sort((a, b) => a.at - b.at);
+}
+
+// Rooster-posterior over je doel (ln TDS), gemiddeld over de hellingen. Incrementeel met vergeten:
+// elke nieuwe kop dempt de eerdere bewijskracht met E2_FORGET.
+function e2NewPosterior(priorCenterLn){
+  const logPrior = E2_GRID.map(g => -0.5 * Math.pow((g - priorCenterLn) / E2_PRIOR_SD, 2));
+  return { priorCenterLn, logPrior, ll: E2_SLOPES.map(() => E2_GRID.map(() => 0)), n: 0 };
+}
+function e2AddObservation(post, o){
+  post.ll = post.ll.map((row, bi) => row.map((v, gi) =>
+    v * E2_FORGET + o.weight * Math.log(e2AnswerProb(o.ord, o.lnT, E2_GRID[gi], E2_SLOPES[bi]))));
+  post.n += 1;
+  return post;
+}
+function e2Summary(post){
+  const rows = post.ll.map(row => row.map((v, gi) => v + post.logPrior[gi]));
+  let max = -Infinity;
+  rows.forEach(row => row.forEach(v => { if (v > max) max = v; }));
+  const w = E2_GRID.map(() => 0);
+  const slopeMass = rows.map(row => {
+    let s = 0;
+    row.forEach((v, gi) => { const e = Math.exp(v - max); w[gi] += e; s += e; });
+    return s;
+  });
+  const tot = w.reduce((a, b) => a + b, 0);
+  const p = w.map(x => x / tot);
+  const q = (frac) => { let c = 0; for (let i = 0; i < p.length; i++){ c += p[i]; if (c >= frac) return E2_GRID[i]; } return E2_GRID[E2_GRID.length - 1]; };
+  const mean = p.reduce((a, x, i) => a + x * E2_GRID[i], 0);
+  const sd = Math.sqrt(p.reduce((a, x, i) => a + x * Math.pow(E2_GRID[i] - mean, 2), 0));
+  const sm = slopeMass.reduce((a, b) => a + b, 0);
+  const slopeShare = slopeMass.map(x => x / sm);
+  const slopeMean = slopeShare.reduce((a, x, i) => a + x * E2_SLOPES[i], 0);
+  return { p, medianLn: q(0.5), q10Ln: q(0.1), q90Ln: q(0.9), meanLn: mean, sdLn: sd, slopeMean, slopeShare, n: post.n };
+}
+function e2ProbBeyond(sum, refLn){
+  let up = 0, dn = 0;
+  sum.p.forEach((x, i) => {
+    if (E2_GRID[i] > refLn + E2_HALF_STEP / 2) up += x;
+    else if (E2_GRID[i] < refLn - E2_HALF_STEP / 2) dn += x;
+  });
+  return { up, dn };
+}
+
+/* De beslisregel, afgespeeld over al je koppen: het doel begint bij je eerste geproefde kop en
+   verschuift alleen als de kans dat een andere sterkte beter past de drempel haalt (0,70 tijdens
+   zoeken, 0,85 in rust), met hooguit twee halve stappen per keer (bij de eerste twee koppen één). Deterministisch: dezelfde
+   geschiedenis geeft altijd hetzelfde doel. Zonder koppen: het doel is het recept zelf. */
+function e2Decide(obs, baselineLn){
+  if (!obs.length) return { targetLn: baselineLn, mode: 'start', n: 0, trail: [], summary: null };
+  let post = e2NewPosterior(obs[0].lnT);
+  let target = obs[0].lnT;
+  let mode = 'zoeken';
+  const trail = [];
+  obs.forEach((o, idx) => {
+    e2AddObservation(post, o);
+    const sum = e2Summary(post);
+    const before = target;
+    const thr = mode === 'rust' ? E2_THRESHOLD_REST : E2_THRESHOLD_SEARCH;
+    const pr = e2ProbBeyond(sum, target);
+    let k = 0;
+    if (pr.up > thr || pr.dn > thr){
+      k = Math.round((sum.medianLn - target) / E2_HALF_STEP);
+      const maxSteps = idx < 2 ? 1 : E2_MAX_STEPS; // de eerste twee koppen: hooguit een halve stap
+      k = Math.max(-maxSteps, Math.min(maxSteps, k));
+      if (k === 0) k = pr.up > pr.dn ? 1 : -1;
+      target += k * E2_HALF_STEP;
+    }
+    const recent = obs.slice(Math.max(0, idx - 2), idx + 1);
+    const atTarget = recent.length === 3 && recent.every(r => r.ord === 0 && Math.abs(r.lnT - before) < E2_HALF_STEP);
+    if (k !== 0) mode = 'zoeken';
+    else if (sum.sdLn < E2_REST_SD && atTarget) mode = 'rust';
+    trail.push({ id: o.id, beforeLn: before, afterLn: target, steps: k, up: pr.up, dn: pr.dn, mode, threshold: thr });
+  });
+  return { targetLn: target, mode, n: obs.length, trail, summary: e2Summary(post) };
+}
+
+// Tijdmodel: Bed droog tegen het verwachte einde van de bestaande engine, per brewer en techniek
+// (zonder bypass). De mediaan van je laatste 10 verhoudingen schaalt het verwachte einde.
+function e2TimeModel(store, method, technique){
+  const ratios = [];
+  (store || []).filter(r => r && !r.deletedAt && r.plan && r.actual &&
+      (r.lifecycle === 'completed' || r.lifecycle === 'logged') &&
+      r.plan.methodId === method && r.plan.technique === technique && !r.plan.bypass &&
+      typeof r.actual.bedDrySec === 'number' && r.actual.bedDrySec > 0)
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+    .forEach(r => {
+      const base = r.plan.inputs && r.plan.inputs.e2 && typeof r.plan.inputs.e2.baseTotalSec === 'number'
+        ? r.plan.inputs.e2.baseTotalSec : r.plan.expectedDrainEndSec;
+      if (typeof base === 'number' && base > 0) ratios.push(r.actual.bedDrySec / base);
+    });
+  const recent = ratios.slice(-E2_TIME_WINDOW);
+  if (recent.length < E2_TIME_MIN_N) return { n: recent.length, factor: null };
+  const factor = medianOf(recent);
+  const dev = medianOf(recent.map(x => Math.abs(x - factor)));
+  if (!(factor >= 0.7 && factor <= 1.5)) return { n: recent.length, factor: null, outOfRange: factor };
+  return { n: recent.length, factor, spread: dev };
+}
+
+/* Het Engine 2-plan bij een basisrecept van de bestaande engine (sterkte 0). Geeft de dosis en het
+   verwachte einde dat computeRecipe() als e2Arg overneemt, plus alles wat de kaart en het advies
+   tonen. */
+function engine2PlanFor(baseRec, method, store){
+  if (!baseRec || !(baseRec.dose > 0) || !(baseRec.water > 0)) return null;
+  const retention = e2RetentionFor(method);
+  const rFor = (m) => e2RetentionFor(m).value;
+  const obs = e2Observations(store, rFor);
+  // De bedoelde sterkte van het basisrecept: lag de dosis op de toestelgrens, dan telt de verhouding
+  // die het recept eigenlijk wilde (doseEdge.targetRatio), zodat de grensmelding gewoon blijft.
+  const baseWantedDose = baseRec.doseEdge && baseRec.doseEdge.targetRatio > 0 ? baseRec.water / baseRec.doseEdge.targetRatio : baseRec.dose;
+  const baseTds = e2Tds(baseWantedDose, baseRec.water, retention.value);
+  if (baseTds == null) return null;
+  const dec = e2Decide(obs, Math.log(baseTds));
+  const targetTds = Math.exp(dec.targetLn);
+  const ratio = e2RatioForTds(targetTds, retention.value);
+  const doseG = Math.round(baseRec.water / ratio * 10) / 10;
+  const band = dec.summary ? { lowRatio: e2RatioForTds(Math.exp(dec.summary.q90Ln), retention.value), highRatio: e2RatioForTds(Math.exp(dec.summary.q10Ln), retention.value) } : null;
+  const time = baseRec.technique ? e2TimeModel(store, method, baseRec.technique) : { n: 0, factor: null };
+  const bypass = !!(baseRec.bypassMl > 0);
+  const totalTimeSec = (time.factor != null && !bypass) ? Math.round(baseRec.totalTime * time.factor / 5) * 5 : null;
+  const last = dec.trail.length ? dec.trail[dec.trail.length - 1] : null;
+  return {
+    version: ENGINE2_VERSION, doseG, targetTds, ratio, band, mode: dec.mode, n: dec.n,
+    sdLn: dec.summary ? dec.summary.sdLn : null, slopeMean: dec.summary ? dec.summary.slopeMean : null,
+    retention, baseDoseG: baseRec.dose, baseRatio: baseRec.water / baseRec.dose, baseTds,
+    baseTotalSec: baseRec.totalTime, totalTimeSec, time, last, trail: dec.trail
+  };
+}
+// Wat er bewaard wordt bij de start van een kop (record plan.inputs.e2): genoeg om het recept na
+// herladen exact terug te rekenen en het tijdmodel eerlijk te houden.
+function e2InputsOf(plan){
+  if (!plan) return null;
+  return { version: plan.version, doseG: plan.doseG, totalTimeSec: plan.totalTimeSec, baseTotalSec: plan.baseTotalSec,
+    targetTds: Math.round(plan.targetTds * 1000) / 1000, mode: plan.mode, n: plan.n };
+}
+
+/* Hendeltabel van Engine 2 voor alles behalve de sterkte zelf (die regelt de posterior). Afgeleid
+   uit de UC Davis-data (binnen persoon): bitter en zoet volgen de sterkte; zuur volgt de sterkte en
+   daalt met de extractie, maar bij een vaste verhouding stijgt de sterkte mee met fijner malen.
+   Labels: 'proef' = hypothese die je zelf toetst (E7–E9), 'controle' = geen receptstap. */
+function e2TipsFor(tasting, ctx){
+  const t = tasting || {};
+  const c = ctx || {};
+  const finish = Array.isArray(t.finish) ? t.finish : [];
+  const tips = [];
+  if (finish.includes('drying')){
+    tips.push({ key: 'drying', kind: 'controle', text: 'Droog of wrang komt eerder van ongelijk doorlopen dan van het recept. Giet rustig en in het midden, spoel het filter goed, en kijk of het terugkomt.' });
+  }
+  if (t.strength !== 'just_right') return tips;
+  if (finish.includes('bitter') || t.missed === 'less_bitter'){
+    tips.push({ key: 'bitter', kind: 'proef', text: 'Bitter terwijl de sterkte goed is: bitter volgt vooral de sterkte, minder de maling. Zet één keer de sterkte op −4 % in plaats van grover te malen, en vergelijk.' });
+  }
+  if (t.acidity === 'sharp'){
+    let doseBit = '';
+    if (c.doseG > 0 && c.waterG > 0){
+      const r = c.rAbs || E2_R_ABS;
+      const tds = e2Tds(c.doseG, c.waterG, r);
+      if (tds != null){
+        const d2 = c.waterG / e2RatioForTds(tds, r, E2_EY_NOMINAL + 0.01);
+        const delta = Math.round((c.doseG - d2) * 10) / 10;
+        if (delta > 0) doseBit = ` en ${fmt(delta, 1)} g minder koffie`;
+      }
+    }
+    tips.push({ key: 'sharp', kind: 'proef', text: `Scherp zuur bij een goede sterkte: één klik fijner${doseBit}. Alleen fijner maakt de kop ook sterker, en sterker is weer zuurder; met iets minder koffie blijft de sterkte gelijk.` });
+  }
+  if (t.missed === 'sweet'){
+    tips.push({ key: 'sweet', kind: 'proef', text: 'Zoetheid gemist: zoet hoort bij een iets lichtere kop, met weinig bitter en zuur, niet bij fijner malen. Zet één keer de sterkte op −4 %.' });
+  }
+  if (t.missed === 'fruit'){
+    tips.push({ key: 'fruit', kind: 'proef', text: 'Meer fruit of helderheid: probeer één keer de sterkte op −4 %.' });
+  }
+  if (t.missed === 'body'){
+    tips.push({ key: 'body', kind: 'proef', text: 'Meer body: mondgevoel volgt de sterkte. Probeer één keer de sterkte op +4 %.' });
+  }
+  return tips;
+}
+function e2RatioText(ratio){ return nlRatio(`1:${fmt(ratio, 1)}`); }
+// De beslissing van Engine 2 over één geproefde kop, in woorden.
+function e2DecisionText(entry){
+  if (!entry) return null;
+  if (!entry.steps) return { title: 'Sterkte houden', body: entry.mode === 'rust'
+    ? 'Je zit goed. Engine 2 verandert pas iets als je antwoorden er duidelijk om vragen (85 % kans).'
+    : 'Eén kop is een zwak signaal. Engine 2 verandert de sterkte pas als de kans dat een andere sterkte beter past 70 % haalt.' };
+  const n = Math.abs(entry.steps);
+  const pct = Math.round((Math.exp(n * E2_HALF_STEP) - 1) * 100);
+  const dir = entry.steps < 0 ? 'lichter' : 'sterker';
+  const prob = Math.round(100 * (entry.steps < 0 ? entry.dn : entry.up));
+  return { title: `${n === 1 ? 'Een halve stap' : 'Een stap'} ${dir} (±${pct} %)`,
+    body: `Je antwoorden samen wijzen met ${prob} % kans op een ${dir}e kop. Je volgende recept staat al zo klaar.` };
 }
 
 /* ---- Fase 3: proefkaart (pure functies) ----
@@ -9923,7 +10493,7 @@ function findPreviousComparableBrew(store, rec){
    standaard ("te slap" / "te sterk", of "slechter dan de vorige"), dan zijn beide uiteinden
    geproefd en adviseert de app eerst het midden (±4%). Bij "veel te …" blijft het een hele stap
    terug; een halve stap wordt nooit direct weer teruggedraaid (geen heen-en-weer). */
-const DIAGNOSIS_RULESET_VERSION = 'diag-2026.3';
+const DIAGNOSIS_RULESET_VERSION = 'diag-2026.4';
 const KH_HIGH_CACO3 = 70; // bovengrens SCA-richtwaarde alkaliniteit (mg/L CaCO3)
 const CONFIDENCE_LABELS = { likely: 'Waarschijnlijk', possible: 'Mogelijk', uncertain: 'Onzeker' };
 
@@ -10137,6 +10707,14 @@ function recommendNext(input){
   const agrees = cand.lever === 'grind' && d.strength.much &&
     ((cand.dir < 0 && d.strength.state === 'weak' && d.extraction.state === 'under') ||
      (cand.dir > 0 && d.strength.state === 'strong' && d.extraction.state === 'over'));
+  // diag-2026.4 (audit V2): in onderzoek naar filterkoffie stijgt zuurheid met de sterkte (TDS) en
+  // daalt ze met de extractie (Batali e.a. 2021; SCA-samenvatting van de nieuwe Brewing Control
+  // Chart). Fijner malen verhoogt in een filter allebei, dus bij "scherp zuur" met een goede sterkte
+  // is fijner malen niet zeker de beste stap. De stap blijft (klassieke regel, "mogelijk"); de
+  // alternatieve stap staat erbij, zodat jouw eigen koppen kunnen laten zien wat werkt.
+  if (cand.lever === 'grind' && cand.dir < 0 && d.strength.state === 'ok' && d.evidence.includes('sour') && !d.evidence.includes('hollow_right_strength')){
+    notes.push('sour_strength');
+  }
   return feasibleAdjust(cand.lever, cand.dir * (agrees ? 2 : 1), 'matrix', confidence);
 }
 
@@ -10233,7 +10811,8 @@ function recommendationTexts(reco, diag, extra){
     actuals_unconfirmed: 'Dosis en maling waren niet bevestigd — dit advies gaat uit van het plan.',
     uneven_tip: 'Je proefde ook droog/wrang: giet rustig en houd het bed vlak, dat kan ongelijkmatige extractie zijn.',
     water_unknown_fruit: 'Tip: je water heeft veel invloed op fruit en helderheid. Vul je water in bij Instellingen.',
-    old_fruit: 'Je bonen zijn meer dan 3 weken geleden gebrand: frisse fruitnoten nemen dan af. Deze stap helpt, maar verwacht minder fruit dan bij een verse zak.'
+    old_fruit: 'Je bonen zijn meer dan 3 weken geleden gebrand: frisse fruitnoten nemen dan af. Deze stap helpt, maar verwacht minder fruit dan bij een verse zak.',
+    sour_strength: 'Zuur hangt in onderzoek naar filterkoffie ook aan de sterkte: een sterkere kop proeft zuurder. Fijner malen maakt de kop ook iets sterker. Blijft hij zuur na deze stap, probeer dan iets minder koffie.'
   })[k]).filter(Boolean);
   // VA-41: korte titel voor waar de tegels "Nu → Volgende" de klikken al tonen.
   const titleShort = (r.type === 'ADJUST' && r.lever === 'grind' && r.fromValue != null && r.toValue != null)
@@ -10293,6 +10872,99 @@ function adviceOutcomeStats(store){
   const gate = s.tested < ADVICE_GATE_MIN_TESTED ? 'insufficient'
     : (successRate >= ADVICE_GATE_SUCCESS_MIN && harmRate <= ADVICE_GATE_HARM_MAX) ? 'passed' : 'failed';
   return Object.assign({ byType, successRate, harmRate, gate, needed: Math.max(0, ADVICE_GATE_MIN_TESTED - s.tested), apart, keep }, s);
+}
+
+/* V8 (audit): je eigen metingen op een rij, alleen-lezen. Om de aannames (doorlooptijd per
+   hoeveelheid, de 45-s-klok van Kasuya, de adviesregels) aan jouw koppen te toetsen. */
+function medianOf(arr){
+  const a = arr.slice().sort((x, y) => x - y);
+  if (!a.length) return null;
+  const m = Math.floor(a.length / 2);
+  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+}
+function measuredRecords(store){
+  return (store || []).filter(r => r && !r.deletedAt && r.plan && (r.lifecycle === 'completed' || r.lifecycle === 'logged'));
+}
+// Bed droog tegen het verwachte einde, per techniek en per 50 ml.
+function drainTimeSummary(store){
+  const groups = new Map();
+  for (const r of measuredRecords(store)){
+    const bd = r.actual && r.actual.bedDrySec;
+    if (typeof bd !== 'number' || r.plan.bypass || typeof r.plan.waterMl !== 'number') continue;
+    const vol = Math.round(r.plan.waterMl / 50) * 50;
+    const key = `${r.plan.methodId}|${r.plan.technique || '—'}|${vol}`;
+    if (!groups.has(key)) groups.set(key, { method: r.plan.methodId, technique: r.plan.technique || '—', volumeMl: vol, bedDry: [], expected: [] });
+    const g = groups.get(key);
+    g.bedDry.push(bd);
+    if (typeof r.plan.expectedTotalSec === 'number') g.expected.push(r.plan.expectedTotalSec);
+  }
+  return [...groups.values()].map(g => ({
+    method: g.method, technique: g.technique, volumeMl: g.volumeMl, n: g.bedDry.length,
+    medianBedDry: medianOf(g.bedDry), minBedDry: Math.min(...g.bedDry), maxBedDry: Math.max(...g.bedDry),
+    medianExpected: medianOf(g.expected)
+  })).sort((a, b) => (a.technique < b.technique ? -1 : a.technique > b.technique ? 1 : a.volumeMl - b.volumeMl));
+}
+// Gieten op doorlopen: per giet de gemeten doorlooptijd (mediaan) naast de klok.
+function drainTapSummary(store){
+  const byPour = new Map();
+  let brews = 0;
+  for (const r of measuredRecords(store)){
+    if (!r.plan.drainMode || !Array.isArray(r.plan.steps)) continue;
+    const steps = r.plan.steps;
+    const pours = steps.map((st, i) => st.add > 0 ? i : -1).filter(i => i >= 0);
+    const gates = pours.slice(2);
+    const taps = drainTapsFromEvents(r.actual && r.actual.events);
+    const total = typeof r.plan.expectedTotalSec === 'number' ? r.plan.expectedTotalSec : (steps.length ? steps[steps.length - 1].t : 0);
+    const iv = drainIntervals(steps, total, gates, taps);
+    if (iv.length) brews++;
+    for (const x of iv){
+      if (!byPour.has(x.afterPour)) byPour.set(x.afterPour, { afterPour: x.afterPour, secs: [], clockSec: x.clockSec });
+      byPour.get(x.afterPour).secs.push(x.sec);
+    }
+  }
+  return { brews, rows: [...byPour.values()].sort((a, b) => a.afterPour - b.afterPour).map(p => ({ afterPour: p.afterPour, n: p.secs.length, medianSec: medianOf(p.secs), clockSec: p.clockSec })) };
+}
+// Geteste stappen per soort: hoe vaak beter, gelijk of slechter.
+function adviceByLever(store){
+  const out = {};
+  for (const r of (store || [])){
+    const reco = r && !r.deletedAt && r.recommendation;
+    if (!reco || reco.type !== 'ADJUST' || reco.status !== 'tested' || reco.setupMismatch || (r.plan && r.plan.bypass)) continue;
+    const kind = reco.lever === 'grind' ? (reco.delta < 0 ? 'fijner' : 'grover') : (reco.delta > 0 ? 'meer koffie' : 'minder koffie');
+    const o = out[kind] || (out[kind] = { tested: 0, better: 0, same: 0, worse: 0 });
+    o.tested++;
+    if (reco.outcome === 'better') o.better++; else if (reco.outcome === 'same') o.same++; else if (reco.outcome === 'worse') o.worse++;
+  }
+  return out;
+}
+function renderMeasurementsSection(store){
+  const rows = drainTimeSummary(store);
+  const taps = drainTapSummary(store);
+  const levers = adviceByLever(store);
+  const exp = personalDoseTimeExponent(store);
+  const kasuyaN = (store || []).filter(r => r && !r.deletedAt && r.plan && !r.plan.bypass && typeof r.plan.technique === 'string' && r.plan.technique.indexOf('Kasuya') === 0 && r.actual && typeof r.actual.bedDrySec === 'number').length;
+  const parts = [];
+  if (rows.length){
+    parts.push(`<p class="insights-note m-0-0-6"><strong class="c-text">Bed droog per hoeveelheid</strong> (mediaan, met het verwachte einde ernaast)</p>` +
+      rows.map(x => `<p class="insights-note m-0-0-4" data-drain-row>${escapeHtml(`${x.technique} · ${x.volumeMl} ml: ${fmtTime(x.medianBedDry)}${x.n > 1 ? ` (${fmtTime(x.minBedDry)}–${fmtTime(x.maxBedDry)})` : ''}${x.medianExpected != null ? ` · verwacht ${fmtTime(x.medianExpected)}` : ''} · n=${x.n}`)}</p>`).join(''));
+  }
+  if (taps.rows.length){
+    parts.push(`<p class="insights-note m-10-0-6"><strong class="c-text">Gieten op doorlopen</strong> (${taps.brews} ${taps.brews === 1 ? 'kop' : 'koppen'})</p>` +
+      taps.rows.map(x => `<p class="insights-note m-0-0-4" data-tap-row>${escapeHtml(`Na giet ${x.afterPour}: erdoor in ${fmtTime(x.medianSec)} (mediaan, n=${x.n}); de klok rekent ${fmtTime(x.clockSec)}`)}</p>`).join(''));
+  }
+  const leverKeys = Object.keys(levers);
+  if (leverKeys.length){
+    parts.push(`<p class="insights-note m-10-0-6"><strong class="c-text">Geteste stappen per soort</strong></p>` +
+      leverKeys.map(k => { const o = levers[k]; return `<p class="insights-note m-0-0-4" data-lever-row>${escapeHtml(`${k[0].toUpperCase() + k.slice(1)}: ${o.tested}× getest · ${o.better} beter · ${o.same} gelijk · ${o.worse} slechter`)}</p>`; }).join(''));
+  }
+  parts.push(`<p class="insights-note m-10-0-0" id="dose-time-exponent-note">${escapeHtml(exp
+    ? `Doorloop bij meer koffie: jouw eigen schatting is exponent ${fmt(exp.exponent, 2)} (uit ${exp.n} Kasuya-koppen). Die vervangt de aanname 0,4 bij het verwachte einde.`
+    : `Doorloop bij meer koffie: de app rekent met de aanname 0,4. Na ${PERSONAL_EXPONENT_MIN_N} Kasuya-koppen met Bed droog (nu ${kasuyaN}), over verschillende hoeveelheden, rekent hij met jouw eigen getal.`)}</p>`);
+  return `<div class="bean-detail-section" id="measurements">
+      <h2 class="bean-detail-section-label">Jouw metingen</h2>
+      ${parts.join('')}
+      <p class="insights-note m-8-0-0">Alleen uit je eigen koppen, om de aannames van de app te toetsen. Zonder Bed droog-tik telt een kop hier niet mee.</p>
+    </div>`;
 }
 
 let brewStore = [];
@@ -10510,6 +11182,7 @@ function beginBrewRecord(){
     recipe: state.recipe, strengthAdjust: state.strengthAdjust,
     bypass: state.bypass, bypassPct: state.bypassPct, bypassMoment: state.bypassMoment,
     goal: state.goal,
+    drainMode: !!timer.drainMode,
     appliedAdjust: pendingAdjustForState(), // Fase 4: de stap die deze kop test
     grindStand: typeof state.grindStand === 'number' ? state.grindStand : null, // R-02
     water: currentWaterSnapshot(),
@@ -10519,7 +11192,8 @@ function beginBrewRecord(){
       altitude: state.altitude, bypass: !!state.bypass, fermentEvidence: !!state.fermentEvidence,
       waterHardnessMgL: waterHardnessMgL, strengthAdjust: state.strengthAdjust || 0,
       bypassPct: state.bypassPct, bypassMoment: state.bypassMoment,
-      roastDate: state.roastDate || null, openedDate: state.openedDate || null, intendedUse: state.intendedUse || null
+      roastDate: state.roastDate || null, openedDate: state.openedDate || null, intendedUse: state.intendedUse || null,
+      e2: state.e2Plan ? e2InputsOf(state.e2Plan) : null
     }
   });
   upsertBrewRecord(rec);
@@ -10545,7 +11219,7 @@ function isActiveBrewBrewing(){
 // veiligheidslimiet (schema + 15 min). Nooit een tijd invullen die niet gemeten is.
 function completeActiveBrewWithBedDry(bedDrySec, how){
   if (!isActiveBrewBrewing()) return null;
-  const r = completeWithBedDry(activeBrewRecord(), Date.now(), bedDrySec, how);
+  const r = completeWithBedDry(activeBrewRecord(), Date.now(), bedDrySec, how, timer.drainMode ? brewSchedule().totalSec : undefined);
   if (!r.ok) return null;
   upsertBrewRecord(r.rec);
   persistBrewStore();
@@ -10865,12 +11539,33 @@ function activeBedDrySec(){
   const rec = activeBrewRecord();
   return rec && rec.actual && rec.actual.bedDrySec != null ? rec.actual.bedDrySec : null;
 }
+// Optie B: groeit het verwachte einde mee met de dosis (rec.doseTimeScale), dan ook de normale
+// tijd van het toestel — anders valt een gewone grotere zet steeds "buiten de normale tijd".
+function diagnosticBandFor(rec){
+  const band = rec && rec.contactTimeDiagnosticBand;
+  if (!band) return null;
+  const f = rec.doseTimeScale ? rec.doseTimeScale.factor : 1;
+  return f > 1
+    ? { min: roundToFiveSec(band.min * f), max: roundToFiveSec(band.max * f), scaled: true }
+    : { min: band.min, max: band.max, scaled: false };
+}
 function renderBrewLogHonestSummary(){
   const el = document.getElementById('brewlog-honest-summary');
   if (!el) return;
   const rec = state.recipe;
   if (!rec){ el.innerHTML = ''; return; }
-  const targetTime = rec.totalTime;
+  // Gieten op doorlopen: de verwachting volgt je Erdoor-tikken; per giet de gemeten doorlooptijd.
+  const brewRec = activeBrewRecord();
+  const drainOn = !!(brewRec && brewRec.plan && brewRec.plan.drainMode && (rec.drainGates || []).length);
+  const drainTaps = drainOn ? drainTapsFromEvents(brewRec.actual.events) : null;
+  const targetTime = drainOn ? drainScheduleAt(rec.steps, rec.totalTime, rec.drainGates, drainTaps, -Infinity).totalSec : rec.totalTime;
+  let drainLine = '';
+  if (drainOn){
+    const iv = drainIntervals(rec.steps, rec.totalTime, rec.drainGates, drainTaps);
+    drainLine = iv.length
+      ? `Erdoor getikt: ${iv.map(x => `na giet ${x.afterPour} in ${fmtTime(x.sec)}`).join(', ')} — de klok rekent ${fmtTime(iv[0].clockSec)} per giet.`
+      : 'Gieten op doorlopen stond aan, maar er is geen Erdoor-tik vastgelegd.';
+  }
   // Fase 2: alleen de bed-droog-tik is een gemeten tijd. Zonder tik geen tijdsoordeel —
   // de klok op het schema-einde zou hier anders weer als "brouwtijd" gaan tellen.
   const actualTime = activeBedDrySec();
@@ -10880,9 +11575,9 @@ function renderBrewLogHonestSummary(){
   } else {
     const diff = actualTime - targetTime;
     if (Math.abs(diff) <= 15){
-      timeLine = `Bed droog na ${fmtTime(actualTime)} — rond de schatting van het schema (${fmtTime(targetTime)}).`;
+      timeLine = `Bed droog na ${fmtTime(actualTime)} — rond de schatting ${drainOn ? 'na je laatste Erdoor' : 'van het schema'} (${fmtTime(targetTime)}).`;
     } else {
-      timeLine = `Bed droog na ${fmtTime(actualTime)} — ${Math.round(Math.abs(diff))}s ${diff > 0 ? 'later dan' : 'eerder dan'} de schatting van het schema (${fmtTime(targetTime)}).`;
+      timeLine = `Bed droog na ${fmtTime(actualTime)} — ${Math.round(Math.abs(diff))}s ${diff > 0 ? 'later dan' : 'eerder dan'} de schatting ${drainOn ? 'na je laatste Erdoor' : 'van het schema'} (${fmtTime(targetTime)}).`;
     }
   }
   const ratioLine = `Basisrecept-ratio ${rec.ratioText} (${fmt(rec.dose,1)} g op ${state.waterMl} ml).`;
@@ -10904,7 +11599,8 @@ function renderBrewLogHonestSummary(){
   } else if (rec.contactTimeDiagnosticBand){
     // Fase 2: het oordeel over het SCHEMA kan altijd; het oordeel over jouw uitvoering
     // alleen met een gemeten bed-droog-tijd.
-    const { min, max } = rec.contactTimeDiagnosticBand;
+    const { min, max, scaled } = diagnosticBandFor(rec);
+    const atDose = scaled ? ` bij ${fmt(rec.dose, 1)} g` : '';
     const scheduleWithinBand = rec.totalTime >= min && rec.totalTime <= max;
     const scale = batchScaleFor(state.method, rec.dose);
     if (!scheduleWithinBand){
@@ -10916,12 +11612,12 @@ function renderBrewLogHonestSummary(){
     } else if (actualTime != null){
       const within = actualTime >= min && actualTime <= max;
       diagnosticLine = within
-        ? `Totale tijd ${fmtTime(actualTime)} valt binnen de normale tijd voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — alleen ter controle achteraf, geen doel.`
-        : `Totale tijd ${fmtTime(actualTime)} valt buiten de normale tijd voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — geen fout, wel iets om op te letten; alleen ter controle achteraf, geen doel.`;
+        ? `Totale tijd ${fmtTime(actualTime)} valt binnen de normale tijd voor dit toestel${atDose} (${fmtTime(min)}–${fmtTime(max)}) — alleen ter controle achteraf, geen doel.`
+        : `Totale tijd ${fmtTime(actualTime)} valt buiten de normale tijd voor dit toestel${atDose} (${fmtTime(min)}–${fmtTime(max)}) — geen fout, wel iets om op te letten; alleen ter controle achteraf, geen doel.`;
     }
   }
   el.innerHTML = `<strong>Wat we écht weten</strong>` +
-    [timeLine, ratioLine, bypassRatioLine, tempLine, diagnosticLine].filter(Boolean).map(l => `<div>${escapeHtml(l)}</div>`).join('');
+    [timeLine, drainLine, ratioLine, bypassRatioLine, tempLine, diagnosticLine].filter(Boolean).map(l => `<div>${escapeHtml(l)}</div>`).join('');
 }
 // Een optioneel getal, of null als het leeg/ongeldig is — nooit 0: ontbrekende velden mogen
 // nergens als nul meetellen (bv. in de retentieberekening).
@@ -11705,8 +12401,8 @@ function personalCalibrationText(cal){
    - retentie buiten 1,0-3,5 g/g: plausibiliteitsfilter (vrijwel zeker verkeerd gewogen);
      uitgesloten metingen worden geteld en gemeld, nooit stil weggelaten;
    - minder dan 5 bruikbare metingen: te gevoelig voor één meetfout.
-   Vervangt LIQUID_RETAINED_RATIO NIET (dat zou elk receptgetal stil wijzigen, non-negotiable
-   N-1): alleen weergave. Een schakelaar om de aanname te vervangen is een aparte beslissing. */
+   Vervangt LIQUID_RETAINED_RATIO alleen als je dat aanzet (V10, useMeasuredRetentionOn()); nooit stil (non-negotiable
+   N-1). Standaard is dit alleen weergave. */
 const RETENTION_MIN_N = 5;
 const RETENTION_PLAUSIBLE = { min: 1.0, max: 3.5 };
 function measuredRetention(method){
@@ -11738,7 +12434,7 @@ function measuredRetentionText(res, aanname){
   const afwijking = res.gemiddelde - aanname;
   const richting = Math.abs(afwijking) < 0.05 ? 'praktisch gelijk aan'
     : (afwijking > 0 ? 'hoger dan' : 'lager dan');
-  return `Jouw gemeten retentie op deze opstelling: gemiddeld ${fmt(res.gemiddelde,2)} g water per g koffie (n=${res.n}, spreiding ${fmt(res.min,2)}–${fmt(res.max,2)})${res.uitgesloten ? `, ${res.uitgesloten} meting${res.uitgesloten===1?'':'en'} uitgesloten als onwaarschijnlijk` : ''} — ${richting} de aanname van ${fmt(aanname,1)} g/g die de ratio hierboven gebruikt. Dit getal wordt NIET automatisch toegepast; het staat hier zodat je zelf ziet of de aanname voor jouw opstelling klopt.`;
+  return `Jouw gemeten retentie op deze opstelling: gemiddeld ${fmt(res.gemiddelde,2)} g water per g koffie (n=${res.n}, spreiding ${fmt(res.min,2)}–${fmt(res.max,2)})${res.uitgesloten ? `, ${res.uitgesloten} meting${res.uitgesloten===1?'':'en'} uitgesloten als onwaarschijnlijk` : ''} — ${richting} de aanname van ${fmt(aanname,1)} g/g die de ratio hierboven gebruikt. ${useMeasuredRetentionOn() ? 'Je hebt "Gebruik mijn gemeten vasthouden" aan: recepten zonder eigen verhouding rekenen met dit getal.' : 'Dit getal wordt NIET automatisch toegepast; zet het aan onder Instellingen › Zetten › Gebruik mijn gemeten vasthouden.'}`;
 }
 
 /* ============================================================
@@ -12512,10 +13208,10 @@ function renderStrengthToggle(){
       // in computeRecipe() blijft de garantie.
       const probe = computeRecipe(state.method, state.roast, state.profile, state.waterMl,
         state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude,
-        state.bypass, state.fermentEvidence, waterHardnessMgL, o.v);
+        state.bypass, state.fermentEvidence, waterHardnessMgL, o.v, state.bypassPct, state.e2Plan || null);
       const neutraal = computeRecipe(state.method, state.roast, state.profile, state.waterMl,
         state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude,
-        state.bypass, state.fermentEvidence, waterHardnessMgL, 0);
+        state.bypass, state.fermentEvidence, waterHardnessMgL, 0, state.bypassPct, state.e2Plan || null);
       const zinloos = o.v !== 0 && probe.dose > 0 && Math.abs(probe.dose - neutraal.dose) < 0.15;
       return `<button type="button" class="chip" data-strength="${o.v}" aria-label="${o.aria}" data-selected="${(state.strengthAdjust||0)===o.v}"${zinloos ? ' disabled title="Bij dit watervolume zit de dosis al aan de rand van het gevalideerde bereik — deze stap zou niets veranderen."' : ''}>${o.label}</button>`;
     })()
@@ -12525,7 +13221,11 @@ function renderStrengthToggle(){
     renderPrep();
   }));
   const noteEl = document.getElementById('strength-note');
-  if (noteEl){
+  if (noteEl && state.e2Plan){
+    noteEl.textContent = state.strengthAdjust
+      ? `Handmatig ${state.strengthAdjust > 0 ? '+' : ''}${Math.round(state.strengthAdjust*STRENGTH_DOSE_STEP*100)}% ten opzichte van Engine 2, voor deze kop. Ook deze kop telt mee voor je sterkte.`
+      : 'Engine 2 zet je sterkte. Deze knoppen zijn een handmatige afwijking voor één kop, bijvoorbeeld om een tip uit je proefkaart te proberen.';
+  } else if (noteEl){
     noteEl.textContent = state.strengthAdjust
       ? `Dosis ${state.strengthAdjust > 0 ? '+' : ''}${Math.round(state.strengthAdjust*STRENGTH_DOSE_STEP*100)}% t.o.v. het standaardrecept${Math.abs(state.strengthAdjust) === 0.5 ? ' (een halve stap)' : ''} — watervolume blijft gelijk. Kan gecombineerd worden met de concentraat/bypass-methode hieronder.`
       : 'Staat op standaard — verandert de dosis/ratio niet. Voor een concentraat-methode (andere aanpak, zie hieronder) gebruik je Concentraat + bypass.';
@@ -12911,6 +13611,7 @@ function setAbLighter(on){ try { if (on) localStorage.setItem(AB_LIGHTER_KEY, '1
 // keuze (daarna kun je gewoon zelf een andere stand kiezen). Een ander doel draait de automatisch
 // gezette stap terug.
 function applyGoalStrengthPreference(){
+  if (engine2On()){ if (state.goalLighterApplied && state.strengthAdjust === AB_LIGHTER_STEP) state.strengthAdjust = 0; state.goalLighterApplied = false; return; }
   if (state.goal === 'bright' && abLighterEnabled()){
     if (!state.goalLighterApplied && (state.strengthAdjust || 0) === 0){ state.strengthAdjust = AB_LIGHTER_STEP; state.goalLighterApplied = true; }
   } else if (state.goalLighterApplied){
@@ -12920,8 +13621,8 @@ function applyGoalStrengthPreference(){
 }
 function abDosesForState(){
   const args = [state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL];
-  const control = computeRecipe(...args, 0, state.bypassPct);
-  const variant = computeRecipe(...args, AB_LIGHTER_STEP, state.bypassPct);
+  const control = computeRecipe(...args, 0, state.bypassPct, state.e2Plan || null);
+  const variant = computeRecipe(...args, AB_LIGHTER_STEP, state.bypassPct, state.e2Plan || null);
   return { control, variant };
 }
 function renderAbTrial(){
@@ -12998,8 +13699,16 @@ function handleAbTrialClick(e){
 // De stap die klaarstaat voor de volgende kop met deze boon (+ methode).
 function pendingAdjustForState(){
   const bean = state.beanId ? beanLibrary.find(b => b.id === state.beanId) : null;
-  const p = bean && bean.pendingAdjust;
+  const p = effectivePendingAdjust(bean);
   return p && p.method === state.method ? p : null;
+}
+// Engine 2 regelt de sterkte zelf, over al je zakken samen: een klaargezette dosisstap van de oude
+// engine geldt dan niet. Een maalstap wel (dat is proces, geen sterkte).
+function effectivePendingAdjust(bean){
+  const p = bean && bean.pendingAdjust;
+  if (!p) return null;
+  if (engine2On() && p.lever === 'dose') return null;
+  return p;
 }
 // Een klaargezette dosisstap wordt meteen ingesteld (bewust gekozen door de gebruiker);
 // een maalstap is iets wat je zelf aan de molen doet — die toont het receptscherm.
@@ -13059,7 +13768,7 @@ function diagnosisContextForRecord(rec){
 function doseForRecordAt(rec, strengthStep){
   try {
     const i = recipeInputsFromRecord(rec);
-    return computeRecipe(i.method, i.roast, i.profile, i.waterMl, i.process, i.experimental, i.roastDays, i.altitude, i.bypass, i.fermentEvidence, i.waterHardnessMgL, strengthStep, i.bypassPct).dose;
+    return computeRecipe(i.method, i.roast, i.profile, i.waterMl, i.process, i.experimental, i.roastDays, i.altitude, i.bypass, i.fermentEvidence, i.waterHardnessMgL, strengthStep, i.bypassPct, i.e2 || null).dose;
   } catch(e){ return null; }
 }
 function recommendationExtraForRecord(rec){
@@ -13152,6 +13861,7 @@ function pendingCheckTexts(bean){
 function renderRecommendationPanel(rec){
   const el = document.getElementById('reco-card');
   if (!el) return;
+  if (rec && rec.tasting && engine2On()){ renderEngine2Panel(rec, el); return; }
   if (!rec || !rec.recommendation){ el.hidden = true; el.innerHTML = ''; return; }
   const r = rec.recommendation;
   const tx = recommendationTexts(r, rec.diagnosis, recommendationExtraForRecord(rec));
@@ -13254,10 +13964,10 @@ function renderPrepStandNote(){
   const st = state.standApplied;
   const base = state.recipe && state.recipe.grindStartingPoint;
   const grindDiffers = st && typeof st.grindClick === 'number' && st.grindClick !== base;
-  const strengthDiffers = st && (st.strengthStep || 0) !== 0;
+  const strengthDiffers = !engine2On() && st && (st.strengthStep || 0) !== 0;
   if (!st || st.method !== state.method || !(grindDiffers || strengthDiffers)){ el.hidden = true; el.innerHTML = ''; return; }
   const when = st.brewCreatedAt ? new Date(st.brewCreatedAt).toLocaleDateString('nl-NL', { day:'numeric', month:'short' }) : '';
-  const bits = [typeof st.grindClick === 'number' ? `klik ${st.grindClick}` : null, strengthWords(st.strengthStep || 0)].filter(Boolean).join(' · ');
+  const bits = [typeof st.grindClick === 'number' ? `klik ${st.grindClick}` : null, engine2On() ? null : strengthWords(st.strengthStep || 0)].filter(Boolean).join(' · ');
   const meta = [when, st.liking ? `${st.liking}/5` : null].filter(Boolean).join(', ');
   const doubt = (st.liking != null && st.liking <= 2) || st.check;
   el.innerHTML = `<p class="prep-next-adjust-title">Jouw stand voor deze boon</p>
@@ -13367,11 +14077,110 @@ function arrangePrepNotes(){
   const countEl = document.getElementById('why-recipe-count');
   if (countEl) countEl.textContent = rest ? `+${rest} ${rest === 1 ? 'melding' : 'meldingen'}` : '';
 }
+// Engine 2 bij de huidige keuze: het basisrecept (sterkte 0) van de bestaande engine, met daarop
+// jouw sterkte uit al je koppen. Een fout in Engine 2 valt terug op de bestaande engine.
+function engine2PlanForState(){
+  if (!engine2On()) return null;
+  try {
+    const base = computeRecipe(state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL, 0, state.bypassPct, null);
+    return engine2PlanFor(base, state.method, brewStore);
+  } catch(e){ console.warn('Engine 2 viel terug op de bestaande engine:', e); return null; }
+}
+// De Engine 2-kaart boven de sterkteknoppen: jouw sterkte, hoe zeker, en het verwachte einde.
+function renderEngine2Card(){
+  const el = document.getElementById('e2-card');
+  if (!el) return;
+  const pl = state.e2Plan;
+  const rec = state.recipe;
+  const lineEl = document.getElementById('e2-line');
+  if (!pl || !rec || !rec.engine2){
+    el.hidden = true; el.innerHTML = '';
+    if (lineEl){ lineEl.hidden = true; lineEl.textContent = ''; }
+    return;
+  }
+  if (lineEl){
+    lineEl.textContent = pl.n
+      ? `Engine 2 · jouw sterkte uit ${pl.n} geproefde ${pl.n === 1 ? 'kop' : 'koppen'} · ${pl.mode === 'rust' ? 'je zit goed' : 'zoekt nog'}`
+      : 'Engine 2 · startpunt: proef en beantwoord de sterktevraag, dan leert hij je sterkte';
+    lineEl.hidden = false;
+  }
+  const e = rec.engine2;
+  const ratioNow = rec.water / e.doseG;
+  const lines = [];
+  if (pl.n){
+    lines.push(`Uit ${pl.n} geproefde ${pl.n === 1 ? 'kop' : 'koppen'}, over al je zakken samen.${pl.band ? ` Waarschijnlijk tussen ${e2RatioText(pl.band.lowRatio)} en ${e2RatioText(pl.band.highRatio)}.` : ''}`);
+    lines.push(pl.mode === 'rust'
+      ? 'Je zit goed: Engine 2 verandert je sterkte pas bij sterk bewijs.'
+      : 'Engine 2 zoekt nog: hij verandert je sterkte pas als je antwoorden er duidelijk om vragen.');
+  } else {
+    lines.push('Nog geen geproefde koppen: Engine 2 begint bij dit recept en leert van je antwoord op de sterktevraag in de proefkaart.');
+  }
+  if (e.clamped) lines.push(e.wantedDoseG < e.doseG
+    ? `Lichter kan bij ${rec.water} g water niet binnen de dosisgrens van deze brewer. Kies meer water voor een lichtere kop.`
+    : `Sterker kan bij ${rec.water} g water niet binnen de dosisgrens van deze brewer. Kies minder water voor een sterkere kop.`);
+  if (Math.abs(e.doseG - pl.baseDoseG) >= 0.1) lines.push(`De oude engine zou ${fmt(pl.baseDoseG, 1)} g zetten (${e2RatioText(pl.baseRatio)}).`);
+  if (e.totalTimeSec) lines.push(`Verwacht klaar rond ${fmtTime(e.totalTimeSec)}: jouw eigen doorloop over ${pl.time.n} koppen. Het schema zelf zegt ${fmtTime(e.baseTotalSec)}.`);
+  if (pl.retention.measured) lines.push(`Met je gemeten vasthouden (${fmt(pl.retention.value, 2)} g per gram).`);
+  el.innerHTML = `<p class="prep-next-adjust-title">Engine 2 · ${pl.n ? 'jouw sterkte' : 'startpunt'}</p>
+    <p class="prep-next-adjust-text">${escapeHtml(e2RatioText(ratioNow))} · ${escapeHtml(fmt(e.doseG, 1))} g op ${escapeHtml(String(rec.water))} g</p>
+    ${lines.map(l => `<p class="prep-next-adjust-note">${escapeHtml(l)}</p>`).join('')}`;
+  el.hidden = false;
+}
+// Status in Instellingen.
+function renderEngine2Status(){
+  const el = document.getElementById('engine2-status');
+  if (!el) return;
+  if (!engine2On()){ el.textContent = 'Uit: de oude engine is actief.'; return; }
+  try {
+    const obs = e2Observations(brewStore, m => e2RetentionFor(m).value);
+    if (!obs.length){ el.textContent = `Aan (${ENGINE2_VERSION}). Nog geen geproefde koppen met een sterkte-antwoord.`; return; }
+    const dec = e2Decide(obs, 0);
+    const tds = Math.exp(dec.targetLn);
+    el.textContent = `Aan (${ENGINE2_VERSION}). Jouw sterkte op de V60: ${e2RatioText(e2RatioForTds(tds, e2RetentionFor('v60').value))}, uit ${dec.n} geproefde ${dec.n === 1 ? 'kop' : 'koppen'}${dec.mode === 'rust' ? '. Je zit goed.' : '. Engine 2 zoekt nog.'}`;
+  } catch(e){ el.textContent = `Aan (${ENGINE2_VERSION}).`; }
+}
+// Het advies na het proeven, als Engine 2 aan staat: de sterktebeslissing, de tips uit de
+// hendeltabel, en ter vergelijking wat de oude engine had gezegd. Geen knop: de sterkte voor je
+// volgende kop staat al klaar op het receptscherm.
+function renderEngine2Panel(rec, el){
+  const rFor = (m) => e2RetentionFor(m).value;
+  const obs = e2Observations(brewStore, rFor);
+  const dec = e2Decide(obs, 0);
+  const entry = dec.trail.find(x => x.id === rec.id) || null;
+  const tx = entry ? e2DecisionText(entry)
+    : { title: 'Geen sterkte-antwoord', body: 'Zonder antwoord op de sterktevraag leert Engine 2 niets van deze kop.' };
+  const water = rec.plan && rec.plan.waterMl;
+  const dose = rec.actual && typeof rec.actual.doseG === 'number' && rec.actual.doseG > 0 ? rec.actual.doseG : (rec.plan && rec.plan.doseG);
+  const rAbs = rFor(rec.plan && rec.plan.methodId);
+  const tips = e2TipsFor(rec.tasting, { doseG: dose, waterG: water, rAbs });
+  const nextRatio = entry ? e2RatioForTds(Math.exp(entry.afterLn), rAbs) : null;
+  const nextLine = nextRatio && water ? `Je sterkte voor de volgende kop: ${e2RatioText(nextRatio)}, dat is ${fmt(water / nextRatio, 1)} g op ${water} g.` : '';
+  let oldLine = '';
+  try {
+    if (rec.recommendation){
+      const old = recommendationTexts(rec.recommendation, rec.diagnosis, recommendationExtraForRecord(rec));
+      if (old && old.titleShort) oldLine = `Ter vergelijking, de oude engine: ${old.titleShort}`;
+    }
+  } catch(e){ oldLine = ''; }
+  const bean = rec.beanId ? beanLibrary.find(b => b.id === rec.beanId) : null;
+  el.dataset.type = entry && entry.steps ? 'ADJUST' : 'REPEAT';
+  el.innerHTML =
+    `<p class="reco-kicker">Engine 2 · advies voor je volgende kop</p>` +
+    `<p class="reco-title">${escapeHtml(tx.title)}</p>` +
+    `<p class="reco-body">${escapeHtml(tx.body)}</p>` +
+    (nextLine ? `<p class="reco-body">${escapeHtml(nextLine)}</p>` : '') +
+    tips.map(t => `<p class="reco-note"><strong>${t.kind === 'controle' ? 'Controle' : 'Probeer'}:</strong> ${escapeHtml(t.text)}</p>`).join('') +
+    (oldLine ? `<p class="reco-note">${escapeHtml(oldLine)}</p>` : '') +
+    (!bean ? `<p class="reco-status">Koppel een boon om deze kop bij de boon te bewaren en "Zet opnieuw" te kunnen gebruiken.</p><button type="button" class="link-secondary" id="reco-link-bean-btn">Koppel een boon</button>` : '');
+  el.hidden = false;
+}
 function renderPrep(){
   const m = METHOD_INFO[state.method], r = ROAST_INFO[state.roast], p = PROFILE_INFO[state.profile];
   applyGoalStrengthPreference(); // BC-10: alleen als je dat zelf aanzette na je blinde proeven
-  state.recipe = computeRecipe(state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL, state.strengthAdjust, state.bypassPct);
+  state.e2Plan = engine2PlanForState(); // Engine 2: jouw sterkte en verwachte einde (null als hij uit staat)
+  state.recipe = computeRecipe(state.method, state.roast, state.profile, state.waterMl, state.process, state.experimental, daysSinceRoast(state.roastDate), state.altitude, state.bypass, state.fermentEvidence, waterHardnessMgL, state.strengthAdjust, state.bypassPct, state.e2Plan);
   const rec = state.recipe;
+  renderEngine2Card();
 
   renderRoastDateInput();
   renderOpenedDateInput();
@@ -13544,7 +14353,16 @@ function renderPrep(){
   // naar de rand van het doel schuift maar erbinnen blijft.
   const doseEdgeSub = rec.doseEdge ? (rec.doseEdge.side === 'min' ? ' · ondergrens van dit toestel' : ' · bovengrens van dit toestel') : '';
   const ratioEdgeSub = rec.doseEdge && !state.strengthAdjust
-    ? `<div class="stat-sub">${rec.doseEdge.side === 'min' ? 'iets sterker' : 'iets lichter'} dan het midden van je doel (nog binnen het doel)</div>` : '';
+    ? (rec.doseEdge.targetRatio
+        ? `<div class="stat-sub">${rec.doseEdge.side === 'min' ? 'sterker' : 'lichter'} dan 1:${fmt(rec.doseEdge.targetRatio, 1)} van deze smaak: de dosis staat op de ${rec.doseEdge.side === 'min' ? 'ondergrens' : 'bovengrens'} van dit toestel</div>`
+        : `<div class="stat-sub">${rec.doseEdge.side === 'min' ? 'iets sterker' : 'iets lichter'} dan het midden van je doel (nog binnen het doel)</div>`)
+    : '';
+  // V1: waar de verhouding vandaan komt.
+  const ratioBasisSub = (rec.engine2 && state.e2Plan && state.e2Plan.n > 0 && !rec.doseEdge)
+    ? `<div class="stat-sub" id="ratio-basis">Engine 2: jouw sterkte uit ${state.e2Plan.n} ${state.e2Plan.n === 1 ? 'kop' : 'koppen'}</div>`
+    : rec.profileRatio && !rec.doseEdge
+    ? `<div class="stat-sub" id="ratio-basis">${rec.profileRatio.sourced ? 'volgens' : 'eigen stap,'} ${escapeHtml(rec.profileRatio.basis)}</div>`
+    : rec.retentionApplied ? `<div class="stat-sub" id="ratio-basis">met jouw gemeten vasthouden (${fmt(rec.retentionApplied.value, 2)} g/g, n=${rec.retentionApplied.n})</div>` : '';
   // D4-2: richting-hint bij duidelijk kleine/grote brouwsels — tekst, geen receptgetal.
   const batchScale = batchScaleFor(state.method, rec.dose);
   let batchHint = '';
@@ -13614,12 +14432,15 @@ function renderPrep(){
       <div class="stat-label">Ratio</div>
       <div class="stat-value">${rec.ratioText}</div>
       <div class="stat-sub">gram water per gram koffie</div>
+      ${ratioBasisSub}
       ${ratioEdgeSub}
     </div>
     <div class="stat-block stat-block--secondary">
       <div class="stat-label">Brouwtijd</div>
       <div class="stat-value">${fmtTime(rec.totalTime)}</div>
-      <div class="stat-sub">schema · tik "Bed droog" voor je echte tijd</div>
+      <div class="stat-sub">${rec.engine2 && rec.engine2.totalTimeSec ? `jouw doorloop · schema ${fmtTime(rec.engine2.baseTotalSec)} · tik "Bed droog"` : 'schema · tik "Bed droog" voor je echte tijd'}</div>
+      ${drainActiveFor(rec) ? `<div class="stat-sub" id="drain-note">gieten op doorlopen: vanaf giet 3 tik je Erdoor, dus de tijd volgt jouw bed</div>` : ''}
+      ${rec.doseTimeScale ? `<div class="stat-sub" id="dose-time-note">+${fmtTime(rec.totalTime - rec.doseTimeScale.baseSec)}: bij ${fmt(rec.dose, 1)} g loopt het bed trager door (Kasuya: ${fmtTime(rec.doseTimeScale.baseSec)} bij ${rec.doseTimeScale.refDoseG} g${rec.doseTimeScale.personalN ? `; gerekend met jouw eigen doorloop uit ${rec.doseTimeScale.personalN} koppen` : ''})</div>` : ''}
     </div>
   `;
   // Sprint 3: de knop noemt de schemalengte. R-15: hij start de klok nog niet — dat doe je op de
@@ -13660,7 +14481,7 @@ function renderPrep(){
   const profileScopeEl = document.getElementById('profile-scope-note');
   if (profileScopeEl){
     // TIJDELIJK (Reparatieplan v4.0, A-3) — vervalt zodra Fase D-1 de vensters herdefinieert.
-    profileScopeEl.textContent = 'Wat het gekozen profiel vandaag wél en niet stuurt: het bepaalt het gietschema (aantal beurten, verdeling, timing). Het bepaalt de dosis, ratio, temperatuur en maalstand praktisch niet — de twee onderliggende sterkte-/extractievensters liggen zo dicht bij elkaar dat het verschil in dosis onder een tiende gram per 100 ml blijft. Dat is een bekende beperking, geen weergavefout.';
+    profileScopeEl.textContent = 'Wat het gekozen profiel stuurt: het gietschema (aantal beurten, verdeling, timing) en de sterkte. Op de V60 heeft elke smaak een eigen verhouding (Rond & vol 1:15, Gebalanceerd 1:16, Helder & fris 1:17) en volgen Hoffmann, April en Rao hun eigen recept; de andere profielen gebruiken het basisvenster. Temperatuur en maalstand volgen uit de branding, niet uit het profiel.';
     profileScopeEl.hidden = false;
   }
 
@@ -14249,8 +15070,10 @@ document.getElementById('dial-fill').style.strokeDashoffset = CIRC.toFixed(2);
 
 function renderDialTicks(){
   const g = document.getElementById('dial-ticks');
-  const total = state.recipe.totalTime;
-  g.innerHTML = state.recipe.steps.map(s=>{
+  const sched = brewSchedule();
+  const total = sched.totalSec;
+  timer.tickKey = sched.steps.map(s => s.t).join(',');
+  g.innerHTML = sched.steps.map(s=>{
     const angle = (s.t/total)*360;
     return `<line class="dial-tick" x1="100" y1="12" x2="100" y2="20" transform="rotate(${angle} 100 100)"/>`;
   }).join('');
@@ -14259,11 +15082,14 @@ function renderDialTicks(){
 function renderBrewStepsList(){
   const el = document.getElementById('brew-steps');
   const rec = state.recipe;
-  const mainStepsHtml = rec.steps.map((s,i)=>`
+  // Gieten op doorlopen: getikte stappen op hun echte tijd, de rest "na Erdoor" met de kloktijd.
+  const drain = timer.drainMode && (rec.drainGates || []).length > 0;
+  const shown = drain ? drainScheduleAt(rec.steps, rec.totalTime, rec.drainGates, timer.drainTaps, -Infinity).steps : rec.steps;
+  const mainStepsHtml = shown.map((s,i)=>`
     <div class="brew-step" data-idx="${i}">
       <div class="brew-step-main">
         <span>${s.label}</span>
-        <span class="brew-step-time mono">${fmtStepTime(s)} · ${s.add > 0 ? '+'+s.add+' g → ' : ''}${s.to} g</span>
+        <span class="brew-step-time mono">${drain && rec.drainGates.includes(i) && timer.drainTaps[i] == null ? `na Erdoor (±${fmtTime(s.t)})` : fmtStepTime(s)} · ${s.add > 0 ? '+'+s.add+' g → ' : ''}${s.to} g</span>
       </div>
       ${s.flow ? `<span class="brew-step-flow">${s.flow}</span>` : ''}
     </div>
@@ -14367,6 +15193,7 @@ function startBrew(){
   if (!state.recipe){ renderMethodGrid(); showScreen('method'); return; }
   clearInterval(timer.intervalId); // Fase 2: een vorig brouwsel kan nog op de achtergrond lopen (Home stopt het niet meer)
   timer.elapsed = 0; timer.running = false; timer.lastStepIndex = -1; timer.preAlertedFor = -1; timer.startTs = 0; timer.finished = false;
+  timer.drainMode = drainActiveFor(state.recipe); timer.drainTaps = {}; timer.awaitAlertedFor = -1;
   hideBrewRecovery();
   abandonActiveBrew('superseded'); // zoals vroeger bij Start: een vergeten brouwsel loopt niet door naast dit nieuwe
   timer.recordId = null;
@@ -14420,7 +15247,7 @@ function brewReadyItems(rec, method){
     `${fmt(rec.dose, 1)} g koffie${grindTxt}, in het filter. Schud het bed vlak.`,
     `Zet de ${mName} op de weegschaal en zet hem op 0.`,
     `Water op ${rec.temp}°C.`
-  ];
+  ].concat(drainActiveFor(rec) ? [`Gieten op doorlopen: vanaf de derde giet tik je "Erdoor" zodra het water erdoor is.`] : []);
 }
 function renderBrewReady(){
   const el = document.getElementById('brew-ready');
@@ -14489,6 +15316,7 @@ function resetTimer(){
   abandonActiveBrew('reset'); // Fase 1: reset = dit brouwsel afgebroken; opnieuw starten maakt een nieuw record
   clearInterval(timer.intervalId);
   timer.elapsed = 0; timer.running = false; timer.lastStepIndex = -1; timer.preAlertedFor = -1; timer.startTs = 0; timer.finished = false;
+  timer.drainTaps = {}; timer.awaitAlertedFor = -1;
   timer.armed = !!state.recipe; // R-15: opnieuw beginnen = opnieuw klaarzetten
   setPauseBtnEnabled(true);
   // Na reset staat de timer stil: de knop toont ▶ (opnieuw starten), geen ⏸.
@@ -14497,7 +15325,8 @@ function resetTimer(){
   document.getElementById('finish-note').style.display = 'none';
   const logBtnReset = document.getElementById('brewlog-open-btn');
   if (logBtnReset) logBtnReset.style.display = 'none';
-  document.querySelectorAll('.brew-step').forEach(el=>{ el.removeAttribute('data-active'); el.removeAttribute('data-done'); });
+  renderBrewStepsList();
+  renderDialTicks();
   updateDial();
   releaseWakeLock();
 }
@@ -14515,7 +15344,9 @@ function tick(){
      een schatting, geen meting, en daardoor was elke "werkelijke tijd" in feite het schema.
      Hij loopt door ("+0:12 na schema") tot je Bed droog tikt of Einde kiest. Alleen een
      vergeten brouwsel stopt vanzelf, na schema + 15 min — dan voltooid zonder bed-droog-tijd. */
-  if (timer.running && timer.elapsed >= state.recipe.totalTime + STALE_BREWING_GRACE_SEC){
+  const capSched = brewSchedule();
+  const overdue = capSched.awaiting ? capSched.awaiting.overSec >= STALE_BREWING_GRACE_SEC : timer.elapsed >= capSched.totalSec + STALE_BREWING_GRACE_SEC;
+  if (timer.running && overdue){
     finishBrew(null, 'cap');
     return;
   }
@@ -14560,9 +15391,68 @@ function syncBrewFinishedUi(){
   if (screen) screen.toggleAttribute('data-finished', !!timer.finished);
   if (screen && timer.finished) screen.removeAttribute('data-paused'); // VA-17
 }
-function currentBrewPhase(){
-  return brewPhaseAt(state.recipe.steps, state.recipe.totalTime, timer.elapsed);
+/* Gieten op doorlopen (keuze Jelle, proef): instelling, standaard uit. Alleen voor recepten met
+   drainGates (Kasuya); vast per brouwsel vanaf de start. */
+const DRAIN_KEY = 'brewconsole_drain_pour';
+function drainPrefOn(){ try { return localStorage.getItem(DRAIN_KEY) === '1'; } catch(e){ return false; } }
+function setDrainPref(on){
+  try { if (on) localStorage.setItem(DRAIN_KEY, '1'); else localStorage.removeItem(DRAIN_KEY); } catch(e){ /* alleen deze sessie */ }
+  const t = document.getElementById('drain-toggle');
+  if (t) t.setAttribute('aria-checked', String(!!on));
 }
+function drainActiveFor(rec){ return !!(rec && (rec.drainGates || []).length && drainPrefOn()); }
+// Het schema zoals het nu loopt (met Erdoor-tikken), of gewoon het recept.
+function brewSchedule(){
+  const rec = state.recipe;
+  if (!timer.drainMode || !rec || !(rec.drainGates || []).length) return { steps: rec.steps, totalSec: rec.totalTime, awaiting: null };
+  return drainScheduleAt(rec.steps, rec.totalTime, rec.drainGates, timer.drainTaps || {}, timer.elapsed);
+}
+function isOpenDrainGate(stepIndex){
+  return !!(timer.drainMode && state.recipe && (state.recipe.drainGates || []).includes(stepIndex) && (timer.drainTaps || {})[stepIndex] == null);
+}
+function currentBrewPhase(){
+  const sched = brewSchedule();
+  const phase = brewPhaseAt(sched.steps, sched.totalSec, timer.elapsed);
+  if (phase.kind === 'wait'){
+    const nextIdx = sched.steps.findIndex((s, i) => i > phase.stepIndex && s.add > 0);
+    if (nextIdx >= 0 && isOpenDrainGate(nextIdx)){
+      phase.drainGate = nextIdx;
+      phase.awaitingDrain = !!sched.awaiting;
+      phase.overSec = sched.awaiting ? sched.awaiting.overSec : 0;
+      phase.dueSec = sched.awaiting ? sched.awaiting.dueSec : sched.steps[nextIdx].t;
+    }
+  }
+  return phase;
+}
+// Erdoor: het water van de vorige giet is door — de volgende giet begint nu.
+function tapDrained(){
+  if (!timer.drainMode || !timer.running || timer.finished || !isActiveBrewBrewing()) return;
+  timer.elapsed = Math.floor((Date.now() - timer.startTs) / 1000);
+  const phase = currentBrewPhase();
+  if (phase.drainGate == null) return;
+  const g = phase.drainGate;
+  timer.drainTaps[g] = timer.elapsed;
+  recordActiveBrewEvent('drained', { tSec: timer.elapsed, data: { stepIndex: g } });
+  bumpDrainHintCount();
+  renderBrewStepsList();
+  renderDialTicks();
+  tick();
+  showUndoBar('Volgende giet gestart.', () => undoDrained(g));
+}
+function undoDrained(g){
+  if (!timer.drainMode || timer.finished || (timer.drainTaps || {})[g] == null) return;
+  delete timer.drainTaps[g];
+  recordActiveBrewEvent('drained_undo', { tSec: timer.elapsed, data: { stepIndex: g } });
+  timer.awaitAlertedFor = g; // geen tweede "Is het erdoor?"
+  renderBrewStepsList();
+  renderDialTicks();
+  timer.lastStepIndex = -2; // stappenlijst opnieuw markeren
+  markBrewSteps(currentStepIndex());
+  updateDial();
+}
+const DRAIN_HINT_KEY = 'brewconsole_drain_hint_count';
+function drainHintCount(){ try{ return Number(localStorage.getItem(DRAIN_HINT_KEY)) || 0; } catch(e){ return 0; } }
+function bumpDrainHintCount(){ try{ localStorage.setItem(DRAIN_HINT_KEY, String(drainHintCount() + 1)); } catch(e){ /* alleen deze sessie */ } }
 function tapBedDry(){
   if (!isActiveBrewBrewing() || timer.finished) return;
   if (timer.running) timer.elapsed = Math.floor((Date.now() - timer.startTs) / 1000);
@@ -14623,8 +15513,11 @@ function showBrewRecovery(rec){
   timer.running = false; timer.finished = false; timer.recordId = rec.id; timer.armed = false;
   timer.elapsed = el.elapsedSec;
   timer.startTs = nowMs - timer.elapsed * 1000;
+  timer.drainMode = !!(rec.plan && rec.plan.drainMode) && (state.recipe.drainGates || []).length > 0;
+  timer.drainTaps = drainTapsFromEvents(rec.actual.events);
   timer.lastStepIndex = currentStepIndex(); // geen piepjes-inhaalslag voor gemiste stappen
   timer.preAlertedFor = timer.lastStepIndex;
+  timer.awaitAlertedFor = timer.lastStepIndex + 1;
   timer.recoveryPaused = el.paused;
   prepareBrewScreen();
   setPauseBtnEnabled(true);
@@ -14658,6 +15551,7 @@ function recoveryContinue(){
   if (rec) timer.elapsed = elapsedFromEvents(rec.actual.events, Date.now()).elapsedSec;
   timer.lastStepIndex = currentStepIndex();
   timer.preAlertedFor = timer.lastStepIndex;
+  timer.awaitAlertedFor = timer.lastStepIndex + 1;
   startTimerLoop();
 }
 function recoveryBedWasDry(){
@@ -14724,6 +15618,8 @@ function openTastingForActiveBrew(){
     timer.recordId = rec.id;
     timer.finished = true;
     timer.running = false;
+    timer.drainMode = !!(rec.plan && rec.plan.drainMode) && (state.recipe.drainGates || []).length > 0;
+    timer.drainTaps = drainTapsFromEvents(rec.actual.events);
     timer.elapsed = rec.actual.bedDrySec != null ? rec.actual.bedDrySec : 0;
     syncBrewFinishedUi();
   }
@@ -14731,7 +15627,7 @@ function openTastingForActiveBrew(){
 }
 
 function currentStepIndex(){
-  const steps = state.recipe.steps;
+  const steps = brewSchedule().steps;
   let idx = 0;
   for (let i=0; i<steps.length; i++){ if (timer.elapsed >= steps[i].t) idx = i; }
   return idx;
@@ -14740,7 +15636,10 @@ function currentStepIndex(){
 function updateDial(){
   syncBrewFinishedUi();
   renderBrewReady();
-  const total = state.recipe.totalTime;
+  const sched = brewSchedule();
+  const total = sched.totalSec;
+  // Gieten op doorlopen: een tik of het wachten verschuift de streepjes op de ring mee.
+  if (timer.drainMode && sched.steps.map(s => s.t).join(',') !== timer.tickKey) renderDialTicks();
   const fraction = clamp(timer.elapsed/total, 0, 1);
   setDialFill(fraction); // VA-38
   document.getElementById('dial-time').textContent = fmtTime(timer.elapsed);
@@ -14749,9 +15648,10 @@ function updateDial(){
   if (totalEl) totalEl.textContent = timer.elapsed <= total ? `van ${fmtTime(total)}` : `+${fmtTime(timer.elapsed - total)} na schema`;
 
   const idx = currentStepIndex();
-  const steps = state.recipe.steps;
+  const steps = sched.steps;
   const current = steps[idx];
   const phase = currentBrewPhase();
+  const drainWait = phase.kind === 'wait' && phase.drainGate != null && !timer.armed && !timer.finished;
   const finishedRec = timer.finished ? activeBrewRecord() : null;
 
   // Screenreader-aankondiging (aria-live) — alleen bij een fasewissel, niet elke seconde.
@@ -14759,6 +15659,7 @@ function updateDial(){
     : timer.armed ? 'Klaar om te starten — tik Start de klok zodra je begint te gieten'
     : (!timer.running && isActiveBrewBrewing()) ? 'Gepauzeerd' // VA-17
     : phase.kind === 'pour' ? `Giet tot ${phase.targetG} gram`
+    : drainWait ? (phase.awaitingDrain ? 'Wacht tot het water erdoor is, tik dan Erdoor' : `Wacht, tik Erdoor zodra het water erdoor is; daarna giet tot ${phase.nextTargetG} gram`)
     : phase.kind === 'wait' ? `Wacht, daarna giet tot ${phase.nextTargetG} gram`
     : 'Laten doorlopen — tik Bed droog zodra het bed droog is';
   const stepEl = document.getElementById('dial-step');
@@ -14794,6 +15695,16 @@ function updateDial(){
       kind = 'pour';
       main = `Giet tot ${phase.targetG} g`;
       sub = `+${phase.addG} g in ~${phase.pourSec} s · ${current.label}`;
+    } else if (drainWait){
+      // Kasuya: de volgende giet pas als het water erdoor is. De klok is alleen een richtpunt.
+      kind = 'wait';
+      if (phase.awaitingDrain){
+        main = 'Wacht tot het erdoor is';
+        sub = `+${fmtTime(phase.overSec)} na de klok · tik Erdoor zodra er geen water meer op het bed staat`;
+      } else {
+        main = `Wacht · ${fmtTime(phase.remainingSec)}`;
+        sub = `${current.label} — tik Erdoor zodra het water erdoor is, ook eerder`;
+      }
     } else if (phase.kind === 'wait'){
       kind = 'wait';
       main = `Wacht · ${fmtTime(phase.remainingSec)}`;
@@ -14815,6 +15726,14 @@ function updateDial(){
   if (bedDryBtn) bedDryBtn.hidden = !showBedDry;
   const hintEl = document.getElementById('bed-dry-hint');
   if (hintEl) hintEl.hidden = !(showBedDry && bedDryHintCount() < BED_DRY_HINT_MAX);
+  const showDrain = drainWait && timer.running && isActiveBrewBrewing();
+  const drainBtn = document.getElementById('drain-btn');
+  if (drainBtn){
+    drainBtn.hidden = !showDrain;
+    drainBtn.toggleAttribute('data-due', !!(showDrain && phase.awaitingDrain));
+  }
+  const drainHint = document.getElementById('drain-hint');
+  if (drainHint) drainHint.hidden = !(showDrain && drainHintCount() < BED_DRY_HINT_MAX);
 
   // Giet-badge + voortgang per giet (discreet: begonnen gieten / totaal), geen grammen-schatting.
   const pourSteps = steps.filter(s=>s.add>0);
@@ -14835,8 +15754,14 @@ function updateDial(){
     nextText = '';
   } else if (!timer.finished){
     const nextPour = steps.slice(idx + 1).find(s => s.add > 0 && s.t > timer.elapsed);
-    if (phase.kind !== 'drawdown' && nextPour){
-      nextText = `Volgende: giet tot ${nextPour.to} g om ${fmtTime(nextPour.t)}`;
+    if (drainWait){
+      nextText = phase.awaitingDrain
+        ? `Daarna: giet tot ${phase.nextTargetG} g`
+        : `Volgende: giet tot ${phase.nextTargetG} g · rond ${fmtTime(phase.dueSec)}, of zodra het erdoor is`;
+    } else if (phase.kind !== 'drawdown' && nextPour){
+      nextText = isOpenDrainGate(steps.indexOf(nextPour))
+        ? `Volgende: giet tot ${nextPour.to} g · rond ${fmtTime(nextPour.t)}, of zodra het erdoor is`
+        : `Volgende: giet tot ${nextPour.to} g om ${fmtTime(nextPour.t)}`;
     } else if (phase.kind !== 'drawdown'){
       nextText = `Daarna laten doorlopen — verwacht klaar rond ${fmtTime(total)} (schatting)`;
     } else if (timer.elapsed < total){
@@ -14862,18 +15787,22 @@ function flashDial(){
   w.classList.add('flash');
 }
 
+function markBrewSteps(idx){
+  document.querySelectorAll('.brew-step').forEach(el=>{
+    const i = parseInt(el.getAttribute('data-idx'), 10);
+    el.toggleAttribute('data-active', i===idx);
+    el.toggleAttribute('data-done', i<idx);
+  });
+}
 function checkStepChange(){
   const idx = currentStepIndex();
   if (idx !== timer.lastStepIndex){
+    const backwards = idx < timer.lastStepIndex; // Erdoor ongedaan: geen belletje
     timer.lastStepIndex = idx;
-    document.querySelectorAll('.brew-step').forEach(el=>{
-      const i = parseInt(el.getAttribute('data-idx'), 10);
-      el.toggleAttribute('data-active', i===idx);
-      el.toggleAttribute('data-done', i<idx);
-    });
-    if (idx > 0 || timer.elapsed > 0){
+    markBrewSteps(idx);
+    if ((idx > 0 || timer.elapsed > 0) && !backwards){
       beep(); vibrate(120); flashDial();
-      const steps = state.recipe.steps;
+      const steps = brewSchedule().steps;
       speak(spokenForStep(steps[idx], idx === steps.length - 1)); // K8
     }
   }
@@ -14886,9 +15815,22 @@ function checkStepChange(){
    de audio-tik hier de eigenlijke, betrouwbare feedback. */
 function checkPreAlert(){
   const idx = currentStepIndex();
-  const steps = state.recipe.steps;
+  const sched = brewSchedule();
+  const steps = sched.steps;
   const next = steps[idx+1];
   if (!next) return;
+  // Gieten op doorlopen: geen "zo meteen" — de giet komt pas na Erdoor. Wel één seintje als de
+  // kloktijd voorbij is en het water er nog niet door is.
+  if (isOpenDrainGate(idx + 1)){
+    if (sched.awaiting && sched.awaiting.stepIndex === idx + 1 && timer.awaitAlertedFor !== idx + 1 && timer.running){
+      timer.awaitAlertedFor = idx + 1;
+      preAlertBeep();
+      speak('Is het water erdoor? Tik dan Erdoor.');
+      const el = document.getElementById('next-info');
+      el.classList.remove('pre-alert'); void el.offsetWidth; el.classList.add('pre-alert');
+    }
+    return;
+  }
   const remaining = next.t - timer.elapsed;
   if (remaining <= 5 && remaining > 0 && timer.preAlertedFor !== idx){
     timer.preAlertedFor = idx;
@@ -15042,6 +15984,7 @@ function renderLiveBrewBar(){
   const paused = !timer.running;
   const next = paused ? 'gepauzeerd'
     : phase.kind === 'pour' ? `nu: giet tot ${phase.targetG} g`
+    : phase.kind === 'wait' && phase.drainGate != null ? (phase.awaitingDrain ? 'wacht tot het erdoor is · tik Erdoor op de timer' : `tot ${phase.nextTargetG} g zodra het erdoor is`)
     : phase.kind === 'wait' ? `tot ${phase.nextTargetG} g over ${fmtTime(phase.remainingSec)}`
     : 'laten doorlopen · tik Bed droog';
   document.getElementById('live-brew-time').textContent = fmtTime(timer.elapsed);
@@ -15183,6 +16126,30 @@ async function confirmResetTimer(){
 }
 document.getElementById('reset-btn').addEventListener('click', confirmResetTimer);
 document.getElementById('bed-dry-btn').addEventListener('click', tapBedDry);
+document.getElementById('drain-btn').addEventListener('click', tapDrained);
+document.getElementById('drain-toggle').addEventListener('click', () => {
+  setDrainPref(!drainPrefOn());
+  if (document.getElementById('screen-prep').classList.contains('active') && state.recipe) renderPrep();
+});
+setDrainPref(drainPrefOn());
+function setRetentionPref(on){
+  try { if (on) localStorage.setItem(USE_MEASURED_RETENTION_KEY, '1'); else localStorage.removeItem(USE_MEASURED_RETENTION_KEY); } catch(e){ /* alleen deze sessie */ }
+  const t = document.getElementById('retention-toggle');
+  if (t) t.setAttribute('aria-checked', String(!!on));
+}
+document.getElementById('retention-toggle').addEventListener('click', () => setRetentionPref(!useMeasuredRetentionOn()));
+setRetentionPref(useMeasuredRetentionOn());
+function syncEngine2Toggle(){
+  const t = document.getElementById('engine2-toggle');
+  if (t) t.setAttribute('aria-checked', String(engine2On()));
+  renderEngine2Status();
+}
+document.getElementById('engine2-toggle').addEventListener('click', () => {
+  setEngine2(!engine2On());
+  syncEngine2Toggle();
+  if (document.getElementById('screen-prep').classList.contains('active') && state.recipe) renderPrep();
+});
+syncEngine2Toggle();
 document.getElementById('brew-ready-start').addEventListener('click', startBrewClock); // R-15
 // Fase 3: proefkaart + doel op het receptscherm (event-delegatie: de inhoud wordt opnieuw opgebouwd).
 document.getElementById('tasting-card').addEventListener('click', handleTastingCardClick);

@@ -600,7 +600,7 @@ describe('Halve stap — tussen standaard en een hele sterktestap (diag-2026.2)'
   test('op −8% en "te slap" → de halve stap (−4%), niet "herhaal" en niet helemaal terug', () => {
     const r = api.recommendNext({ tasting: weak, ctx: ctxAt(-1), lastApplied: full(-1, 0, -1) });
     assert.deepEqual(pick(r), ['ADJUST', 'dose', 0.5, -1, -0.5, 'halfway']);
-    assert.equal(r.rulesetVersion, 'diag-2026.3');
+    assert.equal(r.rulesetVersion, 'diag-2026.4');
   });
   test('zonder geregistreerde vorige stap (eigen keuze of voorkeur) geldt hetzelfde', () => {
     assert.deepEqual(pick(api.recommendNext({ tasting: weak, ctx: ctxAt(-1) })), ['ADJUST', 'dose', 0.5, -1, -0.5, 'halfway']);
@@ -664,11 +664,12 @@ describe('Halve stap — tussen standaard en een hele sterktestap (diag-2026.2)'
     assert.equal(api.recommendationTexts(f, api.diagnoseTasting(weak, ctxAt(0)), { doseFrom: 19.9, doseTo: 21.5 }).title, 'Een stap sterker: ~8% meer koffie (19,9 → 21,5 g)');
   });
   test('de dosis: halve stap is ~4% (op 0,1 g), ligt tussen standaard en een hele stap, en een halve stap telt mee in de meting', () => {
-    const dose = (st) => api.computeRecipe('v60', 'light', 'heel_fruitig', 350, null, false, 10, null, false, false, null, st).dose;
-    assert.deepEqual([-1, -0.5, 0, 0.5, 1].map(dose), [18.3, 19.1, 19.9, 20.7, 21.5]);
+    // V1: Helder & fris zet op 1:17 (300 ml → 17,6 g); de sterktestappen werken daarbovenop.
+    const dose = (st) => api.computeRecipe('v60', 'light', 'heel_fruitig', 300, null, false, 10, null, false, false, null, st).dose;
+    assert.deepEqual([-1, -0.5, 0, 0.5, 1].map(dose), [16.2, 16.9, 17.6, 18.3, 19]);
     assert.equal(dose(-0.5), Math.round(dose(0) * 0.96 * 10) / 10);
-    assert.deepEqual([0.3, 0.2, -0.3, -0.2, 0.74, 5].map(dose), [20.7, 19.9, 19.1, 19.9, 20.7, 21.5], 'afgerond op het halve-stappenraster en begrensd op ±1');
-    assert.match(api.computeRecipe('v60', 'light', 'heel_fruitig', 350, null, false, 10, null, false, false, null, -0.5).strengthNote, /met een halve stap \(dosis -4%/);
+    assert.deepEqual([0.3, 0.2, -0.3, -0.2, 0.74, 5].map(dose), [18.3, 17.6, 16.9, 17.6, 18.3, 19], 'afgerond op het halve-stappenraster en begrensd op ±1');
+    assert.match(api.computeRecipe('v60', 'light', 'heel_fruitig', 300, null, false, 10, null, false, false, null, -0.5).strengthNote, /met een halve stap \(dosis -4%/);
     const s = j(api.adviceOutcomeStats([{ id: 'h', recommendation: { type: 'ADJUST', lever: 'dose', delta: 0.5, status: 'tested', outcome: 'better' } }]));
     assert.deepEqual([s.tested, s.better, s.success], [1, 1, 1]);
   });
