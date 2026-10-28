@@ -124,3 +124,60 @@ describe('Engine 2 in de app', () => {
     await page.close();
   });
 });
+
+describe('Engine 2 in de app · e2-2026.2', () => {
+  let browser;
+  before(async () => { browser = await chromium.launch({ executablePath, args: ['--no-sandbox'] }); });
+  after(async () => { if (browser) await browser.close(); });
+
+  async function openPrep(seed){
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    const errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await page.addInitScript((s) => {
+      if (sessionStorage.getItem('e2seed')) return;
+      sessionStorage.setItem('e2seed', '1');
+      localStorage.setItem('brewconsole_brews', JSON.stringify(s));
+    }, seed);
+    await page.goto(FILE_URL, { waitUntil: 'load' });
+    await page.evaluate(() => document.querySelector('.navbar [data-nav="method"]').click());
+    await page.click('[data-method="v60"]');
+    await page.click('#roast-grid [data-roast="medium"]');
+    await page.click('#profile-styles > summary');
+    await page.click('#profile-grid [data-profile="klassiek"]');
+    await page.waitForSelector('#screen-prep.active');
+    return { page, errors };
+  }
+
+  test('onzeker → kalibratiepaar; de uitslag telt mee in je sterkte', async () => {
+    const { page, errors } = await openPrep([cup(1, 18.8, 300, 'too_strong'), cup(2, 17.3, 300, 'too_weak')]);
+    const before = await page.evaluate(() => ({ cal: state.e2Plan.calibration, pairs: state.e2Plan.pairs }));
+    assert.ok(before.cal, 'Engine 2 stelt een vergelijking voor');
+    assert.equal(before.pairs, 0);
+    assert.match(await page.locator('#ab-trial').textContent(), /Blinde vergelijking voor je sterkte/);
+    assert.match(await page.locator('#e2-card').textContent(), /blinde vergelijking/i);
+    await page.evaluate(() => document.getElementById('ab-start-btn').click());
+    await page.evaluate(() => document.querySelector('[data-ab-q="preferredCup"][data-ab-a="1"]').click());
+    await page.evaluate(() => document.getElementById('ab-reveal-btn').click());
+    const after = await page.evaluate(() => ({ pairs: state.e2Plan.pairs, trial: abTrials[abTrials.length - 1], stored: JSON.parse(localStorage.getItem('brewconsole_ab_trials') || '[]').length }));
+    assert.equal(after.pairs, 1);
+    assert.equal(after.stored, 1);
+    assert.equal(after.trial.kind, 'e2');
+    assert.ok(['control', 'variant'].includes(after.trial.preferred));
+    assert.deepEqual(errors, []);
+    await page.close();
+  });
+
+  test('lichter dan de dosisgrens: op de grens zetten en heet water toevoegen', async () => {
+    const seed = [1, 2, 3, 4, 5, 6].map(i => cup(i, 15, 300, 'too_strong'));
+    const { page, errors } = await openPrep(seed);
+    const r = await page.evaluate(() => ({ dose: state.recipe.dose, dil: state.recipe.engine2.dilutionG, planDil: state.e2Plan.dilutionG }));
+    assert.equal(r.dose, 15);
+    assert.ok(r.dil >= 10, String(r.dil));
+    assert.equal(r.planDil, r.dil, 'gaat mee in het record (plan.inputs.e2)');
+    assert.match(await page.locator('#e2-dilution-tile').innerText(), new RegExp(`\\+${r.dil}\\s*g`));
+    assert.match(await page.locator('#e2-card').textContent(), /heet water toe/);
+    assert.deepEqual(errors, []);
+    await page.close();
+  });
+});

@@ -972,3 +972,26 @@ Jelle koos ervoor Engine 2 te bouwen en te gebruiken: "Engine 2 is belangrijker 
   - doel 1:18,9 (band 1:17,8–1:21,7);
   - 2 wijzigingen in 9 koppen, tegen 6 bij de oude engine;
   - verwacht einde 4:20 in plaats van 3:30.
+
+## Engine 2 · e2-2026.2: blinde paren, per zak, verdunnen, maling (keuze Jelle, okt 2026)
+
+Jelle: "bouw de volgende stappen van Engine 2". Details staan in `docs/engine2.md` §7.
+
+- **Blinde paren:**
+  - Elke A/B-proef met twee doses telt nu mee in de sterkte. Ook de oudere "helder"-proeven.
+  - Het model is Thurstone met asymmetrisch nut; te sterk kost meer.
+  - Zolang Engine 2 onzeker is (meer dan ±10 %), stelt hij zelf een kalibratiepaar voor: ±15 %, later ±8 %. Dat vervangt onder Engine 2 de "helder"-proef.
+- **Rust:**
+  - Engine 2 komt pas in rust als het doel ook het midden van de schatting is.
+  - Wijkt de schatting later af, dan zoekt hij weer.
+  - Dit volgde uit een test: na één paar kon hij anders in rust blijven naast de schatting.
+- **Per zak:** een kleine afwijking, alleen bij duidelijk bewijs (3+ koppen, 70 %). Bij Jelle's eigen data: geen afwijking voor Halo of Kenya.
+- **Onder de dosisgrens:** Engine 2 zet op de grens en vult na het zetten aan met heet water. Er komt een eigen tegel; de hoeveelheid gaat het record in.
+- **Maling:**
+  - Engine 2 leert wat één klik met je doorloop doet.
+  - Is dat bekend, dan zegt hij hoeveel klikken je naar de schematijd brengen. Anders stelt hij een kleine proef voor.
+  - Bij Jelle's data is het effect nog onbekend: 2 standen, te weinig koppen.
+- **Toetsing:**
+  - `tests/engine2.test.mjs`: 18 nieuwe tests, 50 in totaal;
+  - `tests/engine2.smoke.test.mjs`: 2 nieuwe browsertests, 6 in totaal.
+- **Jouw recept:** blijft zonder paren gelijk (1:18,9 bij 350 ml).

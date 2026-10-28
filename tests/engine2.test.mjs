@@ -221,3 +221,136 @@ describe('Engine 2 · schakelaar en oude stappen', () => {
     api.setEngine2(true);
   });
 });
+
+describe('Engine 2 · e2-2026.2: blinde paren', () => {
+  const pair = (i, cDose, vDose, preferred, extra = {}) => ({ id: `p_${i}`, createdAt: 1_790_000_000_000 + i * 3_600_000, method: 'v60', waterMl: 300,
+    controlDose: cDose, variantDose: vDose, preferred, ...extra });
+  test('uitkomstkansen tellen op tot 1 en volgen het doel', () => {
+    const a = Math.log(api.e2Tds(18, 300)), b = Math.log(api.e2Tds(16, 300));
+    const sum = ['A', 'B', 'none'].reduce((s, o) => s + api.e2PairProb(o, a, b, a), 0);
+    assert.ok(Math.abs(sum - 1) < 1e-9);
+    assert.ok(api.e2PairProb('A', a, b, a) > api.e2PairProb('B', a, b, a), 'doel op kop A: A wint vaker');
+    assert.ok(api.e2PairProb('B', a, b, b) > api.e2PairProb('A', a, b, b), 'doel op kop B: B wint vaker');
+  });
+  test('te sterk kost meer dan te slap (asymmetrie)', () => {
+    const g = 0;
+    assert.ok(api.e2Utility(0.1, g) < api.e2Utility(-0.1, g));
+  });
+  test('paren uit de A/B-opslag worden waarnemingen, ook de oudere "helder"-proeven', () => {
+    const obs = api.e2PairObservations([pair(1, 18, 17.3, 'variant', { variantStep: -0.5 }), pair(2, 18, 20.7, 'control', { kind: 'e2' }), pair(3, 18, 18, 'control'), { id: 'x', preferred: null }], 2.1);
+    assert.equal(obs.length, 2, 'gelijke doses en onbeantwoorde proeven tellen niet');
+    assert.equal(JSON.stringify(obs.map(o => o.outcome)), '["B","A"]');
+  });
+  test('herhaald de lichtere kop gekozen → het doel schuift lichter', () => {
+    const trials = [1, 2, 3, 4].map(i => pair(i, 18.8, 16.3, 'variant'));
+    const dec = api.e2Decide(api.e2AllObservations([], trials, 2.1), 0);
+    assert.ok(ratioOf(dec.targetLn) > 17.0, `doel 1:${ratioOf(dec.targetLn).toFixed(2)}`);
+  });
+  test('herhaald het eigen recept gekozen, tegen lichter én sterker → de schatting ligt op dat recept', () => {
+    const trials = Array.from({ length: 8 }, (_, i) => pair(i + 1, 17, i % 2 ? 15.5 : 18.6, 'control'));
+    const dec = api.e2Decide(api.e2AllObservations([], trials, 2.1), 0);
+    const a = Math.log(api.e2Tds(17, 300));
+    assert.ok(Math.abs(dec.summary.medianLn - a) < api.E2_HALF_STEP / 2, 'mediaan op kop A');
+    assert.ok(Math.abs(dec.targetLn - a) <= api.E2_HALF_STEP + 1e-9, 'doel binnen een halve stap (de rustzone)');
+    assert.ok(dec.trail.filter(e => e.steps !== 0).length <= 1, 'hooguit één verschuiving');
+  });
+  test('rust alleen als doel en schatting overeenkomen', () => {
+    const trials = Array.from({ length: 8 }, (_, i) => pair(i + 1, 17, i % 2 ? 15.5 : 18.6, 'control'));
+    const dec = api.e2Decide(api.e2AllObservations([], trials, 2.1), 0);
+    if (dec.mode === 'rust') assert.ok(Math.abs(dec.summary.medianLn - dec.targetLn) < api.E2_HALF_STEP / 2);
+  });
+  test('paren en sterkte-antwoorden lopen samen, op tijd gesorteerd', () => {
+    const all = api.e2AllObservations([cup({ dose: 17, strength: 'too_strong' })], [pair(0, 18, 17, 'variant')], 2.1);
+    assert.equal(JSON.stringify(all.map(o => o.type)), '["pair","jar"]');
+  });
+});
+
+describe('Engine 2 · e2-2026.2: afwijking per zak', () => {
+  test('pas vanaf 3 koppen van die zak', () => {
+    const store = [cup({ dose: 17, strength: 'too_strong', beanId: 'z' }), cup({ dose: 17, strength: 'too_strong', beanId: 'z' })];
+    const obs = api.e2Observations(store, 2.1);
+    assert.equal(api.e2BeanOffset(obs, 'z', Math.log(api.e2Tds(17, 300)), 5).applies, false);
+  });
+  test('een zak die consequent "te sterk" is op je doel → iets lichter voor die zak', () => {
+    const g = Math.log(api.e2Tds(17, 300));
+    const store = [1, 2, 3, 4, 5].map(() => cup({ dose: 17, strength: 'too_strong', beanId: 'z' }));
+    const off = api.e2BeanOffset(api.e2Observations(store, 2.1), 'z', g, 8);
+    assert.equal(off.applies, true);
+    assert.ok(off.offsetLn < 0);
+  });
+  test('gemengde antwoorden → geen afwijking (terughoudend)', () => {
+    const g = Math.log(api.e2Tds(17, 300));
+    const store = ['too_strong', 'just_right', 'too_weak', 'just_right'].map(s => cup({ dose: 17, strength: s, beanId: 'z' }));
+    assert.equal(api.e2BeanOffset(api.e2Observations(store, 2.1), 'z', g, 5).applies, false);
+  });
+});
+
+describe('Engine 2 · e2-2026.2: kalibratiepaar', () => {
+  test('alleen bij genoeg onzekerheid en minstens 2 koppen', () => {
+    assert.equal(api.e2CalibrationFor({ sdLn: 0.2, p: api.E2_GRID.map(() => 1 / api.E2_GRID.length) }, Math.log(1.3), 1), null);
+    assert.equal(api.e2CalibrationFor({ sdLn: 0.05, p: api.E2_GRID.map(() => 1 / api.E2_GRID.length) }, Math.log(1.3), 5), null);
+    const c = api.e2CalibrationFor({ sdLn: 0.15, p: api.E2_GRID.map(() => 1 / api.E2_GRID.length) }, Math.log(1.3), 3);
+    assert.ok(c && c.pct === 15);
+  });
+  test('het plan geeft de dosis van kop B', () => {
+    const store = [cup({ dose: 18.8, strength: 'too_strong' }), cup({ dose: 17.5, strength: 'too_weak' })];
+    const base = api.computeRecipe('v60', 'medium', 'klassiek', 300, 'washed', false, 10, null, false, false, null, 0, 30);
+    const plan = api.engine2PlanFor(base, 'v60', store, { trials: [] });
+    if (plan.calibration){
+      assert.ok(plan.calibration.variantDoseG > 0 && Math.abs(plan.calibration.variantDoseG - plan.doseG) > 0.5);
+    } else {
+      assert.ok(plan.sdLn <= api.E2_CAL_SD);
+    }
+  });
+});
+
+describe('Engine 2 · e2-2026.2: lichter dan de dosisgrens', () => {
+  const args = ['v60', 'medium', 'klassiek', 300, 'washed', false, 10, null, false, false, null, 0, 30];
+  test('op de grens zetten en aanvullen tot je sterkte', () => {
+    const r = api.computeRecipe(...args, { doseG: 13, targetTds: 1.0, rAbs: 2.1 });
+    assert.equal(r.dose, 15);
+    assert.ok(r.engine2.dilutionG >= 10, String(r.engine2.dilutionG));
+    // narekenen: na aanvullen ligt de kop op ±1,0 %
+    const mb = 300 - 2.1 * 15 + 0.2 * 15;
+    const tNow = api.e2Tds(15, 300);
+    const after = tNow * mb / (mb + r.engine2.dilutionG);
+    assert.ok(Math.abs(after - 1.0) < 0.03, after.toFixed(3));
+  });
+  test('niet bij bypass en niet als de dosis binnen de grens past', () => {
+    assert.equal(api.computeRecipe(...args, { doseG: 17, targetTds: 1.3, rAbs: 2.1 }).engine2.dilutionG, 0);
+    const bp = api.computeRecipe('v60', 'medium', 'klassiek', 300, 'washed', false, 10, null, true, false, null, 0, 30, { doseG: 13, targetTds: 1.0 });
+    assert.equal(bp.engine2.dilutionG, 0);
+  });
+  test('een aangevulde kop telt lichter mee', () => {
+    const plain = cup({ dose: 15, strength: 'just_right' });
+    const diluted = cup({ dose: 15, strength: 'just_right' });
+    diluted.plan.inputs = { e2: { dilutionG: 60 } };
+    const [a, b] = api.e2Observations([plain, diluted], 2.1);
+    assert.ok(b.tds < a.tds);
+  });
+});
+
+describe('Engine 2 · e2-2026.2: maling en doorloop', () => {
+  test('te weinig standen → onbekend', () => {
+    const pts = [1, 2, 3, 4, 5, 6].map(i => ({ ratio: 1.2, click: 16 }));
+    assert.equal(api.e2GrindEffect(pts).perClick, null);
+  });
+  test('grover malen → kortere doorloop wordt herkend', () => {
+    const pts = [];
+    for (const c of [15, 16, 17]) for (let i = 0; i < 3; i++) pts.push({ ratio: Math.exp(0.2 - 0.06 * (c - 15)) * (1 + 0.01 * (i - 1)), click: c });
+    const g = api.e2GrindEffect(pts);
+    assert.ok(g.perClick != null && g.perClick < 0, JSON.stringify(g));
+  });
+  test('het plan zegt hoeveel klikken naar de schematijd', () => {
+    const store = [];
+    for (const c of [15, 16, 17]) for (let i = 0; i < 3; i++){
+      const r = cup({ dose: 18.8, bedDry: Math.round(210 * Math.exp(0.35 - 0.07 * (c - 15)) + (i - 1)) });
+      r.actual.grindClick = c;
+      store.push(r);
+    }
+    const base = api.computeRecipe('v60', 'medium', 'klassiek', 300, 'washed', false, 10, null, false, false, null, 0, 30);
+    const plan = api.engine2PlanFor(base, 'v60', store, {});
+    assert.ok(plan.time.grind.perClick < 0);
+    assert.ok(plan.grindToSchedule && plan.grindToSchedule.clicks > 0, JSON.stringify(plan.grindToSchedule));
+  });
+});
