@@ -132,6 +132,7 @@ export function loadApp(){
       abTrialVerdict, abArmForAnswer, AB_MIN_TRIALS, AB_WIN_SHARE, AB_LIGHTER_STEP, abTrialsForStep,
       legacyBrewSuspects, beanSnapshotOf, legacyStockMove, legacyStockBeanId,
       doseEdgeFor, batchScaleFor, BATCH_REFERENCE, isComparableSetup, bypassKeyOfPlan,
+      doseTimeFactor, diagnosticBandFor, KASUYA_REFERENCE_DOSE_G, DOSE_TIME_EXPONENT,
       bestCupOf, adviceChainOf, cupSetupOf, BEST_CUP_MIN_LIKING,
       profileLabel, profileDirectionLabel, keepUnitsTogether, prepNoteOrder
     };`,

@@ -5301,6 +5301,35 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     });
   });
 
+  // NIEUW (optie B): Kasuya op 400 ml (22 g) verwacht 3:40; tegel, timer en Klaar-scherm volgen.
+  describe('Optie B: verwachte eindtijd groeit mee met de dosis', () => {
+    test('Kasuya 400 ml: 3:40 in tegel en timer, Klaar-scherm meet tegen 3:40 en de normale tijd bij 22 g', async () => {
+      const page = await newTrackedPage();
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.evaluate(() => { selectMethod('v60'); selectRoast('light'); selectProfile('klassiek'); state.waterMl = 300; renderPrep(); });
+      assert.equal(await page.locator('#dose-time-note').count(), 0, '300 ml: geen notitie');
+      assert.match(await page.locator('#start-btn').textContent(), /3:30/);
+      await page.evaluate(() => { state.waterMl = 400; renderPrep(); });
+      assert.match(await page.locator('#dose-time-note').innerText(), /\+0:10: bij 22,0 g loopt het bed trager door \(Kasuya: 3:30 bij 20 g\)/);
+      assert.match(await page.locator('#start-btn').textContent(), /Naar de timer · 3:40/);
+
+      await startBrewing(page);
+      await assertBecomesActive(page, '#screen-brew');
+      assert.match(await page.locator('#dial-total').textContent(), /van 3:40/);
+      await page.clock.fastForward('03:10');
+      assert.match(await page.locator('#next-info').textContent(), /(klaar|bed droog) rond 3:40 \(schatting\)/);
+      await page.clock.fastForward('00:27'); // 3:37
+      await page.click('#bed-dry-btn');
+      assert.match(await page.locator('#brew-action-sub').textContent(), /zoals het schema \(3:40\)/);
+      await page.click('#brewlog-open-btn');
+      await assertBecomesActive(page, '#screen-brewlog');
+      const summary = await page.locator('#brewlog-honest-summary').textContent();
+      assert.match(summary, /rond de schatting van het schema \(3:40\)/);
+      assert.match(summary, /valt binnen de normale tijd voor dit toestel bij 22,0 g \(2:05–3:40\)/);
+      await page.close();
+    });
+  });
+
   test('Geen console- of pageerrors opgetreden tijdens de hele kernflow', () => {
     assert.deepEqual(consoleErrors, [], 'Onverwachte console.error()-aanroepen tijdens de kernflow');
     assert.deepEqual(pageErrors, [], 'Onverwachte onafgevangen JS-fouten tijdens de kernflow');

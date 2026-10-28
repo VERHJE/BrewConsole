@@ -5572,6 +5572,21 @@ var KASUYA_POUR_CYCLE_SEC = 45;
 var KASUYA_BLOOM_SEC = 45;
 var KASUYA_DRAWDOWN_SEC = 30;
 
+/* Optie B (keuze Jelle, okt 2026): bij Kasuya groeit de verwachte eindtijd mee met de dosis; de
+   giet-tijden blijven gelijk. Referentie: Kasuya's eigen 20 g → 3:30 (Hario-interview). Een dikker
+   bed loopt trager door (Darcy: beddiepte is de lengteterm; Gagné, Rao, Barista Hustle).
+   Exponent 0,4: tussen de kegeltheorie (1/3) en gepubliceerde recepten met bijgestelde maling
+   (±0,2–0,5) — een voorzichtige middenwaarde, geen gemeten getal. Alleen omhoog: de giet-klok
+   ligt vast (laatste giet op 3:00), dus een kleiner bed is niet eerder klaar dan die giet plus zijn
+   eigen korte doorloop; dat scheelt hooguit een paar seconden. Afgerond op 5 s (een schatting).
+   Niet bij de concentraat-methode: dan gaat er minder water door het bed dan de referentie. */
+var KASUYA_REFERENCE_DOSE_G = 20;
+var DOSE_TIME_EXPONENT = 0.4;
+function doseTimeFactor(dose, refDose){
+  return dose > refDose ? Math.pow(dose / refDose, DOSE_TIME_EXPONENT) : 1;
+}
+function roundToFiveSec(sec){ return Math.round(sec / 5) * 5; }
+
 /* April Coffee Roasters' eigen V60-huisrecept (aprilcoffeeroasters.com, dezelfde bron als
    APRIL_HOUSE_METHOD.attribution): zes pours van 50 g op 0:00, 0:40, 1:10, 1:40, 2:10, 2:40
    (20 g, 300 g water), totaal 3:20-3:30; twee keer onafhankelijk bevestigd. Het eerste interval
@@ -5792,7 +5807,7 @@ function buildFallbackRecipe(reason, waterMl){
     technique:'Geen geldig recept bij dit watervolume', author:'—',
     notes:`${reason} Pas de waterhoeveelheid aan (stel bijv. terug naar het midden van het bereik) of kies de andere zettermethode.`,
     ratioText:'—', processNote:'', freshnessNote:'', altitudeNote:'', hardnessNote:'', bypassNote:'', strengthNote:'', doseEdge:null,
-    bypassAdv:{ pct:0, factor:1 }, contactTimeDiagnosticBand:null, pulseCountSourced:false,
+    bypassAdv:{ pct:0, factor:1 }, contactTimeDiagnosticBand:null, doseTimeScale:null, pulseCountSourced:false,
     authorUnverified:false,
     modelPolicyVersion: MODEL_POLICY.version
   };
@@ -6061,7 +6076,21 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
   };
   // B-2b: cyclus-/doorloopconstanten per brewer (V60 blijft exact de referentie, 30/40s).
   const pourCycleConstants = brewerPourCycleConstants(brewerScopeKey);
-  const { steps, totalTime } = buildPourSchedule(dose, pourWaterMl, overlayId, overlayMeta, freshTier ? freshTier.bloomExtraSec : 0, pourCycleConstants.cycleSec, pourCycleConstants.drawdownSec);
+  const schedule = buildPourSchedule(dose, pourWaterMl, overlayId, overlayMeta, freshTier ? freshTier.bloomExtraSec : 0, pourCycleConstants.cycleSec, pourCycleConstants.drawdownSec);
+  const steps = schedule.steps;
+  let totalTime = schedule.totalTime;
+  // Optie B (KASUYA_REFERENCE_DOSE_G): boven 20 g schuift alleen het verwachte einde op — de
+  // "Klaar"-stap en totalTime; de giet-momenten blijven staan.
+  let doseTimeScale = null;
+  if (overlayId === 'KASUYA_4_6' && !bypassActuallyApplied){
+    const factor = doseTimeFactor(dose, KASUYA_REFERENCE_DOSE_G);
+    const scaled = roundToFiveSec(totalTime * factor);
+    if (scaled > totalTime){
+      doseTimeScale = { factor, refDoseG: KASUYA_REFERENCE_DOSE_G, baseSec: totalTime };
+      totalTime = scaled;
+      steps[steps.length - 1].t = totalTime;
+    }
+  }
   // BC-11 (akkoord): de klikrange past bij contacttijden van ±2:30-3:30. Een schema van hooguit
   // SHORT_CONTACT_MAX_SEC extraheert bij dezelfde maling minder, dus één klik fijner (nooit buiten
   // de praktische range). Vertrekpunt; proefkaart en advies corrigeren het.
@@ -6166,6 +6195,8 @@ function computeRecipe(methodKey, roastKey, profileKey, waterMl, processKey, exp
     authorUnverified,
     // Voor de controle achteraf (renderBrewLogHonestSummary()); stuurt totalTime/steps niet.
     contactTimeDiagnosticBand,
+    // Optie B: null, of { factor, refDoseG, baseSec } als het verwachte einde met de dosis meegroeit.
+    doseTimeScale,
     // De Model Policy-versie van dit recept; gaat mee op elke logging zodat een latere policy oude
     // loggings niet herinterpreteert.
     modelPolicyVersion: MODEL_POLICY.version
@@ -10865,6 +10896,16 @@ function activeBedDrySec(){
   const rec = activeBrewRecord();
   return rec && rec.actual && rec.actual.bedDrySec != null ? rec.actual.bedDrySec : null;
 }
+// Optie B: groeit het verwachte einde mee met de dosis (rec.doseTimeScale), dan ook de normale
+// tijd van het toestel — anders valt een gewone grotere zet steeds "buiten de normale tijd".
+function diagnosticBandFor(rec){
+  const band = rec && rec.contactTimeDiagnosticBand;
+  if (!band) return null;
+  const f = rec.doseTimeScale ? rec.doseTimeScale.factor : 1;
+  return f > 1
+    ? { min: roundToFiveSec(band.min * f), max: roundToFiveSec(band.max * f), scaled: true }
+    : { min: band.min, max: band.max, scaled: false };
+}
 function renderBrewLogHonestSummary(){
   const el = document.getElementById('brewlog-honest-summary');
   if (!el) return;
@@ -10904,7 +10945,8 @@ function renderBrewLogHonestSummary(){
   } else if (rec.contactTimeDiagnosticBand){
     // Fase 2: het oordeel over het SCHEMA kan altijd; het oordeel over jouw uitvoering
     // alleen met een gemeten bed-droog-tijd.
-    const { min, max } = rec.contactTimeDiagnosticBand;
+    const { min, max, scaled } = diagnosticBandFor(rec);
+    const atDose = scaled ? ` bij ${fmt(rec.dose, 1)} g` : '';
     const scheduleWithinBand = rec.totalTime >= min && rec.totalTime <= max;
     const scale = batchScaleFor(state.method, rec.dose);
     if (!scheduleWithinBand){
@@ -10916,8 +10958,8 @@ function renderBrewLogHonestSummary(){
     } else if (actualTime != null){
       const within = actualTime >= min && actualTime <= max;
       diagnosticLine = within
-        ? `Totale tijd ${fmtTime(actualTime)} valt binnen de normale tijd voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — alleen ter controle achteraf, geen doel.`
-        : `Totale tijd ${fmtTime(actualTime)} valt buiten de normale tijd voor dit toestel (${fmtTime(min)}–${fmtTime(max)}) — geen fout, wel iets om op te letten; alleen ter controle achteraf, geen doel.`;
+        ? `Totale tijd ${fmtTime(actualTime)} valt binnen de normale tijd voor dit toestel${atDose} (${fmtTime(min)}–${fmtTime(max)}) — alleen ter controle achteraf, geen doel.`
+        : `Totale tijd ${fmtTime(actualTime)} valt buiten de normale tijd voor dit toestel${atDose} (${fmtTime(min)}–${fmtTime(max)}) — geen fout, wel iets om op te letten; alleen ter controle achteraf, geen doel.`;
     }
   }
   el.innerHTML = `<strong>Wat we écht weten</strong>` +
@@ -13620,6 +13662,7 @@ function renderPrep(){
       <div class="stat-label">Brouwtijd</div>
       <div class="stat-value">${fmtTime(rec.totalTime)}</div>
       <div class="stat-sub">schema · tik "Bed droog" voor je echte tijd</div>
+      ${rec.doseTimeScale ? `<div class="stat-sub" id="dose-time-note">+${fmtTime(rec.totalTime - rec.doseTimeScale.baseSec)}: bij ${fmt(rec.dose, 1)} g loopt het bed trager door (Kasuya: ${fmtTime(rec.doseTimeScale.baseSec)} bij ${rec.doseTimeScale.refDoseG} g)</div>` : ''}
     </div>
   `;
   // Sprint 3: de knop noemt de schemalengte. R-15: hij start de klok nog niet — dat doe je op de

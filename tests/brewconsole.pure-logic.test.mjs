@@ -2038,3 +2038,74 @@ describe('BC-03: defectwaarschuwing per tag', () => {
     }
   });
 });
+
+// NIEUW (optie B, keuze Jelle okt 2026): bij Kasuya groeit alleen het verwachte einde mee met
+// de dosis (Kasuya's eigen 20 g = 3:30); giet-momenten en andere technieken blijven gelijk.
+describe('Optie B: verwachte eindtijd Kasuya groeit mee met de dosis', () => {
+  const KASUYA = ['klassiek', 'vol_rond', 'zoet', 'heel_fruitig'];
+  const rec = (p, ml, bypass) => api.computeRecipe('v60', 'light', p, ml, null, false, null, null, !!bypass, null, null, 0);
+  const pourTimes = (r) => r.steps.filter(s => s.add > 0).map(s => s.t);
+
+  test('doseTimeFactor: 1 tot en met 20 g, daarboven (dosis/20)^0,4', () => {
+    assert.equal(api.KASUYA_REFERENCE_DOSE_G, 20);
+    assert.equal(api.DOSE_TIME_EXPONENT, 0.4);
+    assert.equal(api.doseTimeFactor(15, 20), 1);
+    assert.equal(api.doseTimeFactor(20, 20), 1);
+    assert.ok(Math.abs(api.doseTimeFactor(22, 20) - Math.pow(1.1, 0.4)) < 1e-12);
+  });
+
+  test('tot en met ±20 g blijft het 3:30, zonder schaal', () => {
+    for (const p of KASUYA){
+      for (const ml of [250, 300, 350]){
+        const r = rec(p, ml);
+        assert.equal(r.totalTime, 210, `${p} ${ml} ml`);
+        assert.equal(r.doseTimeScale, null, `${p} ${ml} ml`);
+      }
+    }
+  });
+
+  test('400 ml (22 g): einde 3:40, de giet-momenten blijven 0:00/0:45/1:30/2:15/3:00', () => {
+    for (const p of KASUYA){
+      const r = rec(p, 400);
+      assert.equal(r.dose, 22);
+      assert.equal(r.totalTime, 220, p);
+      assert.equal(r.steps[r.steps.length - 1].t, 220, `${p}: de Klaar-stap valt op het nieuwe einde`);
+      assert.deepEqual(j(pourTimes(r)), [0, 45, 90, 135, 180], p);
+      assert.equal(r.doseTimeScale.baseSec, 210);
+      assert.equal(r.doseTimeScale.refDoseG, 20);
+    }
+  });
+
+  test('het einde loopt nooit terug bij meer water, en is altijd een veelvoud van 5 s', () => {
+    for (const p of KASUYA){
+      let prev = 0;
+      for (let ml = 250; ml <= 400; ml += 10){
+        const r = rec(p, ml);
+        assert.ok(r.totalTime >= prev, `${p} ${ml} ml: ${r.totalTime} < ${prev}`);
+        assert.equal(r.totalTime % 5, 0, `${p} ${ml} ml`);
+        prev = r.totalTime;
+      }
+    }
+  });
+
+  test('niet bij de concentraat-methode en niet bij andere technieken', () => {
+    const bp = rec('klassiek', 400, true);
+    assert.equal(bp.totalTime, 210);
+    assert.equal(bp.doseTimeScale, null);
+    const verwacht = { fresh_clean: 210, robuust: 200, fruitig_clean: 130, snel_puur: 100 };
+    for (const [p, t] of Object.entries(verwacht)){
+      const r = rec(p, 400);
+      assert.equal(r.totalTime, t, p);
+      assert.equal(r.doseTimeScale, null, p);
+    }
+  });
+
+  test('de normale tijd schaalt mee, zodat het eigen schema er binnen blijft', () => {
+    const groot = rec('klassiek', 400);
+    assert.deepEqual(j(api.diagnosticBandFor(groot)), { min: 125, max: 220, scaled: true });
+    const band = api.diagnosticBandFor(groot);
+    assert.ok(groot.totalTime >= band.min && groot.totalTime <= band.max);
+    assert.deepEqual(j(api.diagnosticBandFor(rec('klassiek', 300))), { min: 120, max: 210, scaled: false });
+    assert.equal(groot.contactTimeDiagnosticBand.max, 210, 'de apparaatband zelf blijft onveranderd');
+  });
+});

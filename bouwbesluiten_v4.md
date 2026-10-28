@@ -778,3 +778,22 @@ Deze ronde verandert niets aan recepten, advies of de rekenkern (de engine-bunde
 - De SW-test voor een nieuwe deploy is herschreven voor K22.
 - De BC-23-test en drie tests die een gietstijl kiezen, openen eerst het uitklapblok (K13).
 - De gelijkspeltest volgt de nieuwe zin.
+
+## Zettijd en hoeveelheid: optie B voor Kasuya (keuze Jelle, okt 2026)
+
+**Aanleiding:** de app gaf bij Kasuya altijd 3:30, of je nu 250 of 400 ml zette. Een groter bed loopt trager door (Darcy: beddiepte is de lengteterm; Gagné, Rao, Barista Hustle). Daardoor viel een gewone grote zet steeds "buiten de normale tijd" en "later dan de schatting". Het onderzoek en de opties A–F staan in het gesprek van 27–28 okt; Jelle koos B, met Kasuya's eigen 20 g als uitgangspunt en alleen voor de Kasuya-recepten.
+
+**Wat er is gebouwd:**
+- **Verwacht einde:** bij Kasuya (klassiek, vol & rond, zoet, heel fruitig) wordt het einde boven 20 g `3:30 × (dosis/20)^0,4`, afgerond op 5 s. Bij 22 g (±380–415 ml) is dat 3:40; tot ±350 ml blijft het 3:30.
+- **Waarom 0,4:** dat ligt tussen de kegeltheorie (1/3) en gepubliceerde recepten waarin de maling is bijgesteld (±0,2–0,5). Het is een voorzichtige middenwaarde, geen gemeten getal.
+- **Alleen omhoog:** de giet-klok ligt vast (laatste giet op 3:00). Een kleiner bed kan dus niet eerder klaar zijn dan die giet plus zijn eigen korte doorloop; dat scheelt hooguit een paar seconden.
+- **Ongewijzigd:** de giet-momenten en grammen blijven gelijk, net als de maalstand en het advies. Alleen de "Klaar"-stap en `totalTime` schuiven op.
+- **Wat meeschuift:** de timer ("van 3:40", "verwacht klaar rond"), het klaar-moment (K10), de vergelijking op het Klaar-scherm (±15 s) en de normale tijd van het toestel (`diagnosticBandFor()`, bij 22 g 2:05–3:40, met "bij 22,0 g" erbij).
+- **Uitzonderingen:** niet bij de concentraat-methode, omdat er dan minder water door het bed gaat dan bij de referentie (20 g / 300 ml). Ook niet bij andere technieken; daarover beslist Jelle apart.
+- **Zichtbaar:** de brouwtijd-tegel zegt het erbij: "+0:10: bij 22,0 g loopt het bed trager door (Kasuya: 3:30 bij 20 g)".
+- **Verhouding tot D-4:** dit vervangt voor Kasuya's verwachte einde de eerdere lijn "richting onderbouwd, getal niet" (`onderzoek_D2_D4.md` §3). De hints van D4-2 en de oordeelregel van D4-1 blijven.
+
+**Testresultaten:**
+- Nieuw blok "Optie B" in `tests/brewconsole.pure-logic.test.mjs` (factor, grenzen, giet-momenten, concentraat-methode, andere technieken, normale tijd).
+- Nieuwe schermtest in `tests/kernflow.smoke.test.mjs`: 400 ml geeft 3:40 in de tegel en de timer, bed droog op 3:37 geeft "zoals het schema", en de normale tijd is 2:05–3:40 bij 22,0 g.
+- De gouden recepten (300 ml) veranderen niet.
