@@ -797,3 +797,25 @@ Deze ronde verandert niets aan recepten, advies of de rekenkern (de engine-bunde
 - Nieuw blok "Optie B" in `tests/brewconsole.pure-logic.test.mjs` (factor, grenzen, giet-momenten, concentraat-methode, andere technieken, normale tijd).
 - Nieuwe schermtest in `tests/kernflow.smoke.test.mjs`: 400 ml geeft 3:40 in de tegel en de timer, bed droog op 3:37 geeft "zoals het schema", en de normale tijd is 2:05–3:40 bij 22,0 g.
 - De gouden recepten (300 ml) veranderen niet.
+
+## Gieten op doorlopen bij Kasuya (keuze Jelle, okt 2026)
+
+**Aanleiding:** Kasuya giet pas als het water van de vorige keer erdoor is; de 45 s in het schema is een richtpunt. Op de vaste klok kan een kleine zet niet eerder klaar zijn en een grote loopt steeds achter. Jelle wilde de Erdoor-tik als proef, zo mooi en goed mogelijk.
+
+**Wat er is gebouwd:**
+- **Instelling:** Instellingen › Zetten › "Gieten op doorlopen bij Kasuya (proef)", standaard uit (`brewconsole_drain_pour`). Geldt voor Gebalanceerd, Rond & vol en Helder & fris. Per brouwsel vast vanaf de start (`plan.drainMode`), ook na herladen.
+- **Welke gieten:** vanaf de derde giet (`rec.drainGates`). De wachttijd na de bloom blijft op de klok, zoals Jelle aangaf.
+- **Op de timer:** na elke giet die op Erdoor wacht, verschijnt een grote knop **Erdoor · volgende giet** (zelfde vorm als Bed droog, ook in de teltafelmodus).
+  - Vóór de kloktijd: "Wacht · 0:18", met "Volgende: giet tot 180 g · rond 1:30, of zodra het erdoor is". Eerder tikken mag.
+  - Na de kloktijd zonder tik: "Wacht tot het erdoor is", "+0:12 na de klok", één zacht seintje en (met stem aan) "Is het water erdoor? Tik dan Erdoor." De knop pulseert zacht (niet bij minder beweging).
+  - Een tik start meteen de volgende giet (belletje, stem "Giet tot … gram"); de rest van het schema, de streepjes op de ring en het verwachte einde schuiven mee.
+  - "Ongedaan maken" (8 s) zet een per ongeluk getikte Erdoor terug.
+  - De eerste drie keer staat er uitleg onder de knop.
+- **Elders:** het schema toont "na Erdoor (±1:30)" voor gieten die nog wachten; de live balk zegt "tot 180 g zodra het erdoor is"; de klaar-check en de brouwtijd-tegel noemen het.
+- **Na afloop:** het Klaar-scherm meet bed droog tegen de verwachting na je laatste Erdoor, en zet per giet de gemeten doorlooptijd naast de klok ("Erdoor getikt: na giet 2 in 0:41, na giet 3 in 0:38 … — de klok rekent 0:45 per giet"). Elke tik staat als gebeurtenis `drained` in het record (terugdraaien: `drained_undo`), zodat de app later jouw eigen doorlooptijd per hoeveelheid kan leren (optie F).
+- **Veiligheid:** een vergeten brouwsel stopt nog steeds na 15 min; bij wachten telt dat vanaf de gemiste kloktijd.
+- **Ongewijzigd:** recepten, grammen, maling, advies en de rekenkern (zelfde hash).
+
+**Testresultaten:**
+- Nieuw blok "Gieten op doorlopen (Kasuya)" in `tests/brewconsole.pure-logic.test.mjs`: gates, schema zonder tik, vroege en late tik, wachten, tikken uit gebeurtenissen met terugdraaien, doorlooptijden, verwachte eindtijd.
+- Nieuwe schermtest in `tests/kernflow.smoke.test.mjs`: standaard uit, aanzetten, Erdoor, ongedaan maken, wachten na de klok, herladen met herstel, samenvatting en record.

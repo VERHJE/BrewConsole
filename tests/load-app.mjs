@@ -133,6 +133,7 @@ export function loadApp(){
       legacyBrewSuspects, beanSnapshotOf, legacyStockMove, legacyStockBeanId,
       doseEdgeFor, batchScaleFor, BATCH_REFERENCE, isComparableSetup, bypassKeyOfPlan,
       doseTimeFactor, diagnosticBandFor, KASUYA_REFERENCE_DOSE_G, DOSE_TIME_EXPONENT,
+      drainScheduleAt, drainTapsFromEvents, drainIntervals,
       bestCupOf, adviceChainOf, cupSetupOf, BEST_CUP_MIN_LIKING,
       profileLabel, profileDirectionLabel, keepUnitsTogether, prepNoteOrder
     };`,

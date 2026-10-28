@@ -2109,3 +2109,57 @@ describe('Optie B: verwachte eindtijd Kasuya groeit mee met de dosis', () => {
     assert.equal(groot.contactTimeDiagnosticBand.max, 210, 'de apparaatband zelf blijft onveranderd');
   });
 });
+
+// NIEUW (gieten op doorlopen, keuze Jelle): bij Kasuya wacht de timer vanaf de derde giet op Erdoor.
+describe('Gieten op doorlopen (Kasuya)', () => {
+  const kas = api.computeRecipe('v60', 'light', 'klassiek', 300, null, false, null, null, false, null, null, 0);
+  const ts = (sched) => j(sched.steps.map(s => s.t));
+
+  test('alleen Kasuya heeft gates: giet 3, 4 en 5 (de wachttijd na de bloom blijft op de klok)', () => {
+    assert.deepEqual(j(kas.drainGates), [2, 3, 4]);
+    for (const p of ['fresh_clean', 'robuust', 'fruitig_clean', 'snel_puur', 'sirooprig_vol']){
+      assert.deepEqual(j(api.computeRecipe('v60', 'light', p, 300, null, false, null, null, false, null, null, 0).drainGates), [], p);
+    }
+  });
+
+  test('zonder tik en vóór de kloktijd: het gewone schema', () => {
+    const s = api.drainScheduleAt(kas.steps, kas.totalTime, kas.drainGates, {}, 60);
+    assert.deepEqual(ts(s), [0, 45, 90, 135, 180, 210]);
+    assert.equal(s.awaiting, null);
+    assert.equal(s.totalSec, 210);
+  });
+
+  test('vroege tik: de giet begint op de tik en de rest schuift even ver mee', () => {
+    const s = api.drainScheduleAt(kas.steps, kas.totalTime, kas.drainGates, { 2: 80 }, 85);
+    assert.deepEqual(ts(s), [0, 45, 80, 125, 170, 200]);
+    assert.equal(s.totalSec, 200);
+  });
+
+  test('kloktijd voorbij zonder tik: het schema wacht (de giet staat steeds één seconde vooruit)', () => {
+    const s = api.drainScheduleAt(kas.steps, kas.totalTime, kas.drainGates, {}, 100);
+    assert.deepEqual(j(s.awaiting), { stepIndex: 2, dueSec: 90, overSec: 10 });
+    assert.equal(s.steps[2].t, 101);
+    assert.equal(api.brewPhaseAt(s.steps, s.totalSec, 100).kind, 'wait');
+    // Late tik: alles na de tik schuift 12 s op.
+    const t = api.drainScheduleAt(kas.steps, kas.totalTime, kas.drainGates, { 2: 102 }, 110);
+    assert.deepEqual(ts(t), [0, 45, 102, 147, 192, 222]);
+  });
+
+  test('tikken uit de gebeurtenissen, ook teruggedraaid; doorlooptijd per giet', () => {
+    const taps = api.drainTapsFromEvents([
+      { type: 'drained', tSec: 84, stepIndex: 2 },
+      { type: 'drained', tSec: 120, stepIndex: 3 },
+      { type: 'drained_undo', tSec: 121, stepIndex: 3 },
+      { type: 'drained', tSec: 131, stepIndex: 3 }
+    ]);
+    assert.deepEqual(j(taps), { 2: 84, 3: 131 });
+    const iv = api.drainIntervals(kas.steps, kas.totalTime, kas.drainGates, taps);
+    assert.deepEqual(j(iv), [{ afterPour: 2, sec: 39, clockSec: 45 }, { afterPour: 3, sec: 47, clockSec: 45 }]);
+  });
+
+  test('de verwachte eindtijd van een voltooid brouwsel volgt de laatste tik', () => {
+    const rec = { lifecycle: 'brewing', plan: { expectedDrainEndSec: 210 }, actual: { events: [] }, derived: {} };
+    const r = api.completeWithBedDry(rec, 1000, 205, 'bed_dry', 195);
+    assert.equal(r.rec.derived.drainResidualSec, 10);
+  });
+});

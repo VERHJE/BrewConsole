@@ -5330,6 +5330,61 @@ describe('Kernflow smoke test (Bonen → Aanbeveling → Recept → Brouwen → 
     });
   });
 
+  // NIEUW (gieten op doorlopen): Erdoor-tik, wachten na de klok, ongedaan maken, herladen, samenvatting.
+  describe('Gieten op doorlopen (Kasuya)', () => {
+    test('standaard uit; aan: Erdoor start de volgende giet, wacht na de klok, ongedaan, herstel en doorlooptijden', async () => {
+      const page = await newTrackedPage({ viewport: { width: 390, height: 844 } });
+      await page.goto(FILE_URL, { waitUntil: 'load' });
+      await page.evaluate(() => { selectMethod('v60'); selectRoast('light'); selectProfile('klassiek'); state.waterMl = 300; renderPrep(); });
+      assert.equal(await page.locator('#drain-note').count(), 0, 'standaard uit');
+      await navTo(page, 'settings');
+      await page.click('#drain-toggle');
+      assert.equal(await page.locator('#drain-toggle').getAttribute('aria-checked'), 'true');
+      await page.evaluate(() => { selectMethod('v60'); selectRoast('light'); selectProfile('klassiek'); state.waterMl = 300; renderPrep(); showScreen('prep'); });
+      assert.match(await page.locator('#drain-note').innerText(), /vanaf giet 3 tik je Erdoor/);
+
+      await startBrewing(page);
+      await assertBecomesActive(page, '#screen-brew');
+      const main = async () => (await page.locator('#brew-action-main').textContent()).trim();
+      await page.clock.fastForward('00:30');
+      assert.equal(await page.locator('#drain-btn').isVisible(), false, 'na de bloom gewoon de klok');
+      await page.clock.fastForward('00:35'); // 1:05
+      assert.equal(await page.locator('#drain-btn').isVisible(), true);
+      assert.match(await page.locator('#next-info').textContent(), /giet tot 180 g · rond 1:30, of zodra het erdoor is/);
+      await page.clock.fastForward('00:15'); // 1:20
+      await page.click('#drain-btn');
+      assert.equal(await main(), 'Giet tot 180 g', 'Erdoor start meteen de volgende giet');
+      await page.click('#undo-bar-btn');
+      assert.match(await main(), /^Wacht · 0:/, 'ongedaan: weer wachten');
+      await page.clock.fastForward('00:20'); // 1:40, kloktijd 1:30 voorbij
+      assert.equal(await main(), 'Wacht tot het erdoor is');
+      assert.match(await page.locator('#brew-action-sub').textContent(), /\+0:1\d na de klok/);
+      await page.click('#drain-btn');
+      assert.equal(await main(), 'Giet tot 180 g');
+
+      // Herladen: de tik blijft staan.
+      await page.reload({ waitUntil: 'load' });
+      await page.evaluate(() => openActiveBrew());
+      await page.click('#recovery-continue-btn');
+      assert.match(await page.locator('#next-info').textContent(), /giet tot 240 g · rond 2:2\d/);
+      await page.clock.fastForward('00:30');
+      await page.click('#drain-btn');
+      await page.clock.fastForward('00:40');
+      await page.click('#drain-btn');
+      await page.clock.fastForward('00:40');
+      await page.click('#bed-dry-btn');
+      await page.click('#brewlog-open-btn');
+      await assertBecomesActive(page, '#screen-brewlog');
+      const summary = await page.locator('#brewlog-honest-summary').textContent();
+      assert.match(summary, /Erdoor getikt: na giet 2 in 0:5\d, na giet 3 in 0:[34]\d, na giet 4 in 0:[34]\d — de klok rekent 0:45 per giet\./);
+      assert.match(summary, /schatting na je laatste Erdoor/);
+      const rec = await page.evaluate(() => JSON.parse(localStorage.getItem('brewconsole_brews'))[0]);
+      assert.equal(rec.plan.drainMode, true);
+      assert.equal(rec.actual.events.filter(e => e.type === 'drained').length, 4, 'drie tikken plus de teruggedraaide');
+      await page.close();
+    });
+  });
+
   test('Geen console- of pageerrors opgetreden tijdens de hele kernflow', () => {
     assert.deepEqual(consoleErrors, [], 'Onverwachte console.error()-aanroepen tijdens de kernflow');
     assert.deepEqual(pageErrors, [], 'Onverwachte onafgevangen JS-fouten tijdens de kernflow');
