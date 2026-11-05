@@ -47,23 +47,32 @@ Routes: `POST /scan` (foto-herkenning, alleen met `ANTHROPIC_API_KEY`, zie 16), 
 | KV-schrijfacties | 1.000 per dag | enkele per zetsel |
 | Opslag | 1 GB (KV) / 10 GB (R2) | minder dan 10 MB per jaar |
 
-## Wat Jelle moet doen (stap 0d)
+## Wat Jelle moet doen (stap 0d) — via GitHub
 
-1. Een gratis Cloudflare-account aanmaken.
-2. Op een computer met Node: in de map `engine3/sync/`
-   - `npx wrangler login`
-   - `npx wrangler kv namespace create BLOCKS` en het getoonde id in `wrangler.toml` zetten;
-   - `ALLOW_ORIGIN` in `wrangler.toml` op het adres van de app zetten;
-   - `node make-token.mjs` voor elk toestel; het token gaat naar het toestel, de hash gaat naar de Worker met `npx wrangler secret put TOKEN_HASHES` (meerdere hashes gescheiden door komma's);
-   - `npx wrangler deploy`.
-3. In de app een wachtwoordzin kiezen en ergens veilig bewaren. Zonder die zin zijn de blokken ook voor Jelle onleesbaar; de back-up in iCloud Drive is dan de terugweg.
+Cloudflare is gekoppeld aan GitHub, dus de Worker wordt door Cloudflare zelf gebouwd en uitgerold zodra de code op de productiebranch staat (Workers Builds). Een terminal of `wrangler` op een computer is niet nodig.
 
-Een toestel kwijt of gestolen? Haal zijn hash uit `TOKEN_HASHES` en zet het secret opnieuw. Het toestel kan dan niets meer ophalen of sturen.
+1. **Worker koppelen.** In het Cloudflare-dashboard: *Workers & Pages* → *Create* → *Import a repository* → `VERHJE/BrewConsole`. Instellingen:
+   - naam `brewconsole-sync`;
+   - productiebranch `main` (de Worker staat pas op `main` als de PR is gemerged);
+   - *Root directory* `engine3/sync`;
+   - *Build command* leeg;
+   - *Deploy command* `npx wrangler deploy` (de standaard). De wranglerversie komt uit `engine3/sync/package.json`.
+2. **Opslag.** In `wrangler.toml` staat een KV-opslag zonder id; Cloudflare maakt hem bij de eerste uitrol zelf aan (automatische provisioning). Faalt de eerste build daarop, maak dan in het dashboard een KV-namespace en zet het id onder `[[kv_namespaces]]`.
+3. **Adres van de app.** Staat de app niet op `https://verhje.github.io`, pas dan `ALLOW_ORIGIN` in `engine3/sync/wrangler.toml` aan (alleen de herkomst, zonder pad).
+4. **Toegangstoken per toestel.** Open `tokengenerator.html` op het adres van de app (dus ook op de iPhone), tik op *Nieuw token maken*. Het token bewaar je op dat toestel; de hash gaat naar Cloudflare. Alles gebeurt lokaal in de browser.
+5. **Geheimen.** In het dashboard bij de Worker: *Settings* → *Variables & Secrets* → een geheim `TOKEN_HASHES` met de hash (meerdere toestellen: hashes achter elkaar, gescheiden door komma's). Alleen voor foto-herkenning: ook `ANTHROPIC_API_KEY`.
+6. **Controle.** `https://brewconsole-sync.<jouw-subdomein>.workers.dev/meta` in de browser geeft `401` (de Worker leeft en wil een token). Een echte rondgang kan pas met een app die synchroniseert (de frontend).
+7. **Wachtwoordzin.** Kies in de app een wachtwoordzin en bewaar die veilig. Zonder die zin zijn de blokken ook voor jou onleesbaar; de back-up in iCloud Drive is dan de terugweg.
+
+Een toestel kwijt of gestolen? Haal zijn hash uit `TOKEN_HASHES`. Het toestel kan dan niets meer ophalen of sturen.
+
+Handmatig kan het ook: `node engine3/sync/make-token.mjs` in plaats van de tokengenerator, en `npx wrangler deploy` in `engine3/sync/`.
 
 ## Gebouwd (stap 0a–0c, 5 nov 2026)
 
 - `engine3/sync/crypto.ts`, `blocks.ts`: PBKDF2 (600.000 rondes) + AES-GCM, blok-id als gebonden gegeven.
 - `engine3/sync/server.ts`, `kv-store.ts`, `worker.ts`: routes, token (alleen de hash staat op de server, vergelijking zonder vroege exit), CORS, onveranderlijke blokken, geheugen- en KV-opslag.
 - `engine3/sync/client.ts`: push, pull, `syncOnce` en opruimen met een momentopname. Een toestel dat zijn toestand kwijt is telt het volgnummer door en kan dus geen bestaand blok raken.
+- Gecontroleerd in de echte Workers-runtime: de Worker is lokaal gestart met `wrangler dev` (workerd en een KV) en doorlopen met curl: zonder token 401; meta zetten 201; blok zetten 201; hetzelfde blok met andere inhoud 409; lijst en ophalen; `/scan` zonder sleutel 404. `wrangler deploy --dry-run` bundelt de Worker (31 KiB).
 - Tests: `engine3/test/sync-blocks.test.ts` en `sync-server.test.ts`. Client en server draaien daarin in één proces, zonder Cloudflare.
 - Bekend en bewust: een verkeerde wachtwoordzin geeft `unreadable` blokken in plaats van een fout, en het logboek blijft dan ongemoeid.

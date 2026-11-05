@@ -1,13 +1,17 @@
 # Synchronisatie-Worker voor Brew Console. Uitrollen: zie docs/engine3/08-synchronisatie.md.
+# Cloudflare bouwt dit via GitHub (Workers Builds) met root directory engine3/sync.
 name = "brewconsole-sync"
 main = "worker.ts"
 compatibility_date = "2026-10-01"
 
 [vars]
+# Het adres waar de app draait (alleen de herkomst, zonder pad). Zet hier jouw adres.
 ALLOW_ORIGIN = "https://verhje.github.io"
 
+# Geen id: Cloudflare maakt de KV-opslag zelf aan bij de eerste uitrol (automatische provisioning).
 [[kv_namespaces]]
 binding = "BLOCKS"
-id = "VERVANG-DOOR-HET-ID-UIT-wrangler-kv-namespace-create"
 
-# Het geheim zet je met: wrangler secret put TOKEN_HASHES
+# Geheimen zet je in het Cloudflare-dashboard (Settings → Variables & Secrets), niet hier:
+#   TOKEN_HASHES       de SHA-256 van elk toestel-token, gescheiden door komma's (maak ze met tokengenerator.html)
+#   ANTHROPIC_API_KEY  alleen als je foto-herkenning wilt

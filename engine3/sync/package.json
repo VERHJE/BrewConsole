@@ -1,0 +1,12 @@
+{
+  "name": "brewconsole-sync",
+  "private": true,
+  "type": "module",
+  "description": "Synchronisatie-Worker van Brew Console. Staat apart zodat Cloudflare (Workers Builds, via GitHub) met root directory engine3/sync alleen wrangler installeert.",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.158.0"
+  }
+}
