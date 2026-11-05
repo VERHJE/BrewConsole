@@ -196,6 +196,8 @@ export interface GrindAdvice {
   readonly code: Exclude<GrindCode, 'ok'>;
   readonly pInBandNow: number;
   readonly pInBandAfter: number;
+  /** Verwacht einde (bed droog) bij de geadviseerde klik. */
+  readonly predictedEnd: Band<number>;
 }
 
 export interface GrindPlan {
@@ -256,18 +258,23 @@ export function grindPlan(facts: FactState, req: GrindRequest): GrindPlan {
   if (pNow < KEEP_P_IN_BAND || Math.abs(endMid - req.targetEnd.mid) > KEEP_NEAR_TARGET_SEC) {
     code = endMid > req.targetEnd.mid ? 'too_slow' : 'too_fast';
     const win = GRINDER_C3S_PRO.adviceWindow;
-    let best: { click: number; p: number; dist: number } | null = null;
-    for (let c = Math.max(win.lo, cur - MAX_CLICK_STEP); c <= Math.min(win.hi, cur + MAX_CLICK_STEP); c++) {
+    let best: { click: number; p: number; dist: number; band: Band<number> } | null = null;
+    // Zolang er voor deze techniek weinig doorlooptijden zijn, zetten we kleinere stappen: 1 klik bij de eerste kop,
+    // daarna 2, 3 en hooguit 4. De natuurkundige verwachting is een beginpunt, geen bewijs.
+    const nTechNow = obs.filter(o => o.method === req.method && o.technique === req.technique).length;
+    const maxStep = Math.min(MAX_CLICK_STEP, 1 + nTechNow);
+    for (let c = Math.max(win.lo, cur - maxStep); c <= Math.min(win.hi, cur + maxStep); c++) {
       const pr = at(c);
       const p = pInBand(pr, req.lastPourAtSec, req.targetEnd.lo, req.targetEnd.hi);
       const dist = Math.abs(req.lastPourAtSec + pr.median - req.targetEnd.mid);
       // Beter = dichter bij het doel; kans in de band beslist alleen bij (bijna) gelijke afstand.
-      if (!best || dist < best.dist - 1e-9 || (Math.abs(dist - best.dist) <= 1e-9 && p > best.p)) best = { click: c, p, dist };
+      if (!best || dist < best.dist - 1e-9 || (Math.abs(dist - best.dist) <= 1e-9 && p > best.p)) best = { click: c, p, dist, band: pr.band };
     }
     const devNow = Math.abs(endMid - req.targetEnd.mid);
     const better = best !== null && best.click !== cur && (best.dist <= devNow - MIN_CLOSER_SEC || best.p >= pNow + MIN_GAIN - 1e-12);
     if (best && better) {
-      advice = { click: best.click, delta: best.click - cur, code: code === 'too_slow' ? 'too_slow' : 'too_fast', pInBandNow: pNow, pInBandAfter: best.p };
+      advice = { click: best.click, delta: best.click - cur, code: code === 'too_slow' ? 'too_slow' : 'too_fast', pInBandNow: pNow, pInBandAfter: best.p,
+        predictedEnd: { lo: req.lastPourAtSec + best.band.lo, mid: req.lastPourAtSec + best.band.mid, hi: req.lastPourAtSec + best.band.hi } };
     } else warnings.push('Het einde wijkt af van het doel, maar binnen het bereik van de molen is geen duidelijk betere klik.');
   }
   const nTech = obs.filter(o => o.method === req.method && o.technique === req.technique).length;

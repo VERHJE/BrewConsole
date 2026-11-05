@@ -16,7 +16,7 @@ import { TAG_CATEGORY } from './data/flavor-wheel.ts';
 import { TECHNIQUE_BY_ID } from './data/techniques.ts';
 import { buildRecipe } from './recipe.ts';
 import type { CupFacts, FactState, TrialFacts } from './state.ts';
-import type { Method, Reason, Recipe, RoastLevel, TechniqueId, TechniqueRef, TrialProposal, WheelCategory } from './types.ts';
+import type { FeedbackSignal, Method, Reason, Recipe, RoastLevel, TechniqueId, TechniqueRef, TrialProposal, WheelCategory } from './types.ts';
 
 export const TECHNIQUE_MODEL_VERSION = 'e3-technique-0.1';
 
@@ -28,7 +28,7 @@ export const SIMILAR_NET_WINS_DEFAULT = 2;
 /** Een klacht telt als terugkerend bij minstens dit aantal van de laatste vier koppen van de zak. */
 export const RECURRING_MIN = 2;
 
-export type Feedback = 'sour_or_hollow' | 'drying' | 'uneven_drain';
+export type Feedback = FeedbackSignal;
 
 export interface TechniqueRequest {
   readonly beanId: string | null;

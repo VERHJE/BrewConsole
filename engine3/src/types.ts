@@ -302,6 +302,9 @@ export interface TrialProposal {
   readonly variant: Recipe;
 }
 
+/** Klachten die de engine niet zelf uit het logboek kan afleiden; de frontend geeft ze mee. */
+export type FeedbackSignal = 'sour_or_hollow' | 'drying' | 'uneven_drain';
+
 export interface PlanRequest {
   readonly at: EpochMs;
   readonly beanId: string | null;
@@ -311,6 +314,8 @@ export interface PlanRequest {
   readonly goal: Goal | null;
   /** De gebruiker kiest zelf een techniek; anders kiest de engine. */
   readonly technique: TechniqueId | null;
+  /** Optioneel: extra klachten, bijvoorbeeld 'uneven_drain' (ongelijk doorlopen). */
+  readonly feedback?: readonly FeedbackSignal[];
 }
 
 export interface Advice {

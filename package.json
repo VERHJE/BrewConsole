@@ -12,7 +12,7 @@
     "e3:test": "node --test engine3/test/*.test.ts",
     "e3:build": "esbuild engine3/src/index.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=engine3/dist/engine3.mjs && esbuild engine3/sync/index.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=engine3/dist/sync-client.mjs && esbuild engine3/sync/worker.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=engine3/dist/sync-worker.mjs",
     "e3:eval": "node engine3/eval/run.ts",
-    "e3:check": "npm run e3:typecheck && npm run e3:test && npm run e3:build"
+    "e3:check": "npm run e3:typecheck && npm run e3:test && npm run e3:build && node engine3/scripts/smoke-bundle.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.5",

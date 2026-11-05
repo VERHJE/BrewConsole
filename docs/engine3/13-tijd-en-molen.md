@@ -29,6 +29,7 @@ Engine 2 leert het effect van een klik pas na 6 zetsels met minstens twee stande
 ## Advies
 
 - **Doel:** het midden van de gewenste band (Kasuya: 3:30, band 2:50–4:10 volgens Gota).
+- **Stapgrootte:** 1 klik zolang er voor deze techniek nog geen doorlooptijd is gelogd, daarna 2, 3 en hooguit 4 klikken. De natuurkundige verwachting is een beginpunt, geen bewijs.
 - **Laat de klik met rust** zolang de kans op 'in de band' minstens 80 % is én het verwachte einde binnen 20 s van het doel ligt.
 - **Anders** de klik (±4) waarvan het verwachte einde het dichtst bij het doel ligt, mits dat het einde minstens 8 s dichter brengt of de kans met minstens 10 punten verhoogt.
 - **Huidige klik:** de geplande, anders de laatste van deze zak, van deze techniek, de laatste van alle, en zonder gegevens 16.
@@ -57,40 +58,40 @@ Acht werelden (200 herhalingen, 8 zakken × 10 koppen, Kasuya: laatste giet op 1
 |---|---|---|---|---|---|---|
 | basis | vaste klik 16 | 77 % | 29 % | 1.4 | 77 % | 0.00 |
 | basis | één klik bijsturen (zelf doen) | 96 % | 75 % | 1.1 | 97 % | 0.04 |
-| basis | Engine 3 (tijd en molen) | 100 % | 96 % | 1.0 | 100 % | 0.00 |
+| basis | Engine 3 (tijd en molen) | 99 % | 91 % | 1.0 | 100 % | 0.04 |
 | basis | orakel (kent de molen) | 100 % | 98 % | 1.0 | 100 % | 0.00 |
 | trager dan gedacht | vaste klik 16 | 15 % | 1 % | 6.4 | 15 % | 0.00 |
 | trager dan gedacht | één klik bijsturen (zelf doen) | 93 % | 71 % | 1.3 | 96 % | 0.08 |
-| trager dan gedacht | Engine 3 (tijd en molen) | 99 % | 91 % | 1.0 | 99 % | 0.05 |
+| trager dan gedacht | Engine 3 (tijd en molen) | 98 % | 90 % | 1.1 | 100 % | 0.08 |
 | trager dan gedacht | orakel (kent de molen) | 100 % | 98 % | 1.0 | 100 % | 0.00 |
 | sneller dan gedacht | vaste klik 16 | 99 % | 89 % | 1.0 | 99 % | 0.00 |
 | sneller dan gedacht | één klik bijsturen (zelf doen) | 99 % | 91 % | 1.0 | 99 % | 0.01 |
-| sneller dan gedacht | Engine 3 (tijd en molen) | 100 % | 85 % | 1.0 | 100 % | 0.04 |
+| sneller dan gedacht | Engine 3 (tijd en molen) | 100 % | 96 % | 1.0 | 100 % | 0.00 |
 | sneller dan gedacht | orakel (kent de molen) | 100 % | 98 % | 1.0 | 100 % | 0.00 |
 | flauw klikeffect (−7 %) | vaste klik 16 | 77 % | 29 % | 1.4 | 77 % | 0.00 |
 | flauw klikeffect (−7 %) | één klik bijsturen (zelf doen) | 95 % | 68 % | 1.1 | 96 % | 0.05 |
-| flauw klikeffect (−7 %) | Engine 3 (tijd en molen) | 99 % | 88 % | 1.0 | 99 % | 0.02 |
+| flauw klikeffect (−7 %) | Engine 3 (tijd en molen) | 99 % | 86 % | 1.0 | 99 % | 0.07 |
 | flauw klikeffect (−7 %) | orakel (kent de molen) | 100 % | 98 % | 1.0 | 100 % | 0.00 |
 | steil klikeffect (−16 %) | vaste klik 16 | 77 % | 29 % | 1.4 | 77 % | 0.00 |
 | steil klikeffect (−16 %) | één klik bijsturen (zelf doen) | 97 % | 80 % | 1.1 | 98 % | 0.03 |
-| steil klikeffect (−16 %) | Engine 3 (tijd en molen) | 100 % | 91 % | 1.0 | 100 % | 0.01 |
+| steil klikeffect (−16 %) | Engine 3 (tijd en molen) | 99 % | 90 % | 1.0 | 99 % | 0.04 |
 | steil klikeffect (−16 %) | orakel (kent de molen) | 100 % | 97 % | 1.0 | 100 % | 0.00 |
 | zakken verschillen veel | vaste klik 16 | 68 % | 36 % | 2.3 | 68 % | 0.00 |
 | zakken verschillen veel | één klik bijsturen (zelf doen) | 95 % | 73 % | 1.2 | 97 % | 0.06 |
-| zakken verschillen veel | Engine 3 (tijd en molen) | 99 % | 85 % | 1.0 | 99 % | 0.05 |
+| zakken verschillen veel | Engine 3 (tijd en molen) | 98 % | 83 % | 1.1 | 99 % | 0.09 |
 | zakken verschillen veel | orakel (kent de molen) | 100 % | 97 % | 1.0 | 100 % | 0.00 |
 | veel ruis | vaste klik 16 | 70 % | 34 % | 1.5 | 70 % | 0.00 |
 | veel ruis | één klik bijsturen (zelf doen) | 95 % | 78 % | 1.1 | 96 % | 0.05 |
-| veel ruis | Engine 3 (tijd en molen) | 99 % | 88 % | 1.0 | 99 % | 0.01 |
+| veel ruis | Engine 3 (tijd en molen) | 98 % | 82 % | 1.0 | 98 % | 0.05 |
 | veel ruis | orakel (kent de molen) | 99 % | 89 % | 1.0 | 99 % | 0.00 |
 | drift (−0,4 % per kop) | vaste klik 16 | 92 % | 59 % | 1.1 | 92 % | 0.00 |
 | drift (−0,4 % per kop) | één klik bijsturen (zelf doen) | 98 % | 83 % | 1.1 | 98 % | 0.03 |
-| drift (−0,4 % per kop) | Engine 3 (tijd en molen) | 100 % | 92 % | 1.0 | 100 % | 0.00 |
+| drift (−0,4 % per kop) | Engine 3 (tijd en molen) | 100 % | 90 % | 1.0 | 100 % | 0.04 |
 | drift (−0,4 % per kop) | orakel (kent de molen) | 100 % | 98 % | 1.0 | 100 % | 0.03 |
 
 ## Poort
 
-- **Op tijd:** Engine 3 haalt in alle werelden minstens 99 % (de eis in de test is 95 %) en is nergens slechter dan een vaste klik.
+- **Op tijd:** Engine 3 haalt in alle werelden minstens 97 % (de eis in de test is 95 %) en is nergens slechter dan een vaste klik.
 - **Rust:** de klik verandert gemiddeld minder dan 0,1 klik tussen twee koppen van dezelfde zak.
-- **Eerlijke kanttekening:** 'dichtbij het doel' is in de wereld 'sneller dan gedacht' lager dan bij de vaste klik, omdat die vaste klik daar toevallig precies goed zit. Op tijd is Engine 3 daar wel 100 %.
+- **Eerlijke kanttekening:** 'dichtbij het doel' ligt bij Engine 3 tussen 83 en 96 %, tegen 98 % voor het orakel. Door de kleine eerste stappen duurt het iets langer voordat een afwijkende molen is bijgesteld.
 - **Aandachtspunt:** deze werelden volgen het molenmodel uit punt 4; dat is nog niet met jouw tikken getoetst. De proeven uit het meetplan moeten dat doen.

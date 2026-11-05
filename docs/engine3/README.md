@@ -21,6 +21,7 @@ Engine 3 is de nieuwe rekenkern van Brew Console. Hij wordt vanaf nul gebouwd en
 | Sterkte (stap 3) | [12-sterkte.md](12-sterkte.md) | klaar |
 | Tijd en molen (stap 4) | [13-tijd-en-molen.md](13-tijd-en-molen.md) | klaar, nog niet getoetst op eigen tikken |
 | Techniekkeuze (stap 5) | [14-techniekkeuze.md](14-techniekkeuze.md) | klaar |
+| Samenstellen (stap 8) | [15-samenstellen.md](15-samenstellen.md) | klaar, contract 1.0 |
 
 ## Draaien
 

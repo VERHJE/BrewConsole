@@ -8,6 +8,11 @@
 // Uitvoer: alleen tellingen, geen namen of notities.
 
 import { readFileSync } from 'node:fs';
+import { migrateBackupV3 } from '../src/migrate/v3.ts';
+import { learnFacts } from '../src/state.ts';
+import { strengthPlan } from '../src/strength.ts';
+import { createEngine } from '../src/engine.ts';
+import type { EpochMs, Grams } from '../src/units.ts';
 
 type Rec = { id: string; createdAt: number; lifecycle: string; beanId: string | null; deletedAt: unknown; plan?: { methodId?: string; waterMl?: number; doseG?: number }; actual?: { doseG?: number | null }; tasting?: { strength?: string; late?: boolean } | null };
 type Api = {
@@ -24,6 +29,18 @@ async function main(): Promise<void> {
   const { loadApp } = await import('../../tests/load-app.mjs');
   const api = loadApp().api as unknown as Api;
   const brews = (backup.brews ?? []).filter(r => !r.deletedAt && r.lifecycle !== 'abandoned').sort((a, b) => a.createdAt - b.createdAt);
+  const events = migrateBackupV3(backup as never).events;
+  const engine = createEngine();
+  const tally = { judged: 0, right: 0, wrong: 0, neutral: 0, absDiff: 0 };
+  const e3 = { ...tally }, e3full = { ...tally };
+  const count = (t: typeof tally, ord: number, dose: number, advised: number): void => {
+    t.judged++;
+    const diff = advised - dose;
+    t.absDiff += Math.abs(diff);
+    if (ord === 0 || Math.abs(diff) < 0.2) t.neutral++;
+    else if ((ord > 0 && diff < 0) || (ord < 0 && diff > 0)) t.right++;
+    else t.wrong++;
+  };
   let judged = 0, right = 0, wrong = 0, neutral = 0, absDiff = 0;
   for (let i = 0; i < brews.length; i++) {
     const r = brews[i]!;
@@ -33,6 +50,13 @@ async function main(): Promise<void> {
     const base = api.computeRecipe(method, 'medium', 'klassiek', water, 'washed', false, 10, null, false, false, null, 0, 30);
     const advised = api.engine2PlanFor(base, method, brews.slice(0, i), { beanId: r.beanId })?.doseG;
     if (!(advised && advised > 0)) continue;
+    // Engine 3 met alleen de koppen vóór deze kop: sterktemodule met hetzelfde basisrecept, en het volledige plan() bij dezelfde kopgrootte.
+    const before = events.filter(e => e.at < (r.createdAt as number));
+    const facts = learnFacts(before);
+    const sp = strengthPlan(facts, { method: method as 'v60' | 'chemex', waterG: water, beanId: r.beanId, baselineDoseG: base.dose });
+    if (sp) count(e3, ord, dose, sp.doseG);
+    const ad = engine.plan(engine.learn(before), { at: r.createdAt as EpochMs, beanId: r.beanId, method: method as 'v60' | 'chemex', cupG: Math.max(1, water - 38) as Grams, goal: null, technique: null });
+    count(e3full, ord, dose, ad.recipe.waterG === water ? ad.recipe.doseG : ad.recipe.doseG * (water / ad.recipe.waterG));
     judged++;
     const diff = advised - dose;
     absDiff += Math.abs(diff);
@@ -43,6 +67,11 @@ async function main(): Promise<void> {
   console.log(`Engine 2 op eigen koppen: ${judged} geproefde koppen met een sterkte-oordeel`);
   console.log(`  advies wees de goede kant op: ${right}, de verkeerde kant: ${wrong}, geen richting (goed of < 0,2 g verschil): ${neutral}`);
   console.log(`  gemiddeld verschil tussen advies en gezette dosis: ${judged ? (absDiff / judged).toFixed(2) : '–'} g`);
+  const show = (name: string, t: typeof tally): void => {
+    console.log(`${name}: ${t.judged} koppen · goede kant ${t.right} · verkeerde kant ${t.wrong} · geen richting ${t.neutral} · gemiddeld verschil ${t.judged ? (t.absDiff / t.judged).toFixed(2) : '–'} g`);
+  };
+  show('Engine 3 sterkte (zelfde basisrecept)', e3);
+  show('Engine 3 volledig plan (dosis omgerekend naar dezelfde waterhoeveelheid)', e3full);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

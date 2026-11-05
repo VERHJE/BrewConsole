@@ -82,3 +82,7 @@ De doorloopmaatstaf staat er nu: `node engine3/eval/grind-sim.ts 200`, met acht 
 ## Engine 3, stap 5 (techniekkeuze)
 
 De simulator met een verborgen beste techniek per zak staat er nu: `node engine3/eval/technique-sim.ts 200`. Zie [14-techniekkeuze.md](14-techniekkeuze.md).
+
+## Engine 3, stap 8 (samenstellen)
+
+Op de eigen koppen (lokaal) doet het volledige `plan()` hetzelfde als Engine 2: 3 keer de goede kant op, 1 keer de verkeerde, 5 keer geen richting. Zie [15-samenstellen.md](15-samenstellen.md).

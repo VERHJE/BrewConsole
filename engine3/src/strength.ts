@@ -395,6 +395,8 @@ export interface StrengthPlan {
   readonly targetTds: number;
   readonly ratio: number;
   readonly band: { readonly lowRatio: number; readonly highRatio: number } | null;
+  /** Onzekerheid van het doel in % TDS (10e–90e percentiel van de schatting), of null zonder koppen. */
+  readonly tdsBand: { readonly lo: number; readonly mid: number; readonly hi: number } | null;
   readonly mode: StrengthMode;
   readonly n: number;
   readonly pairs: number;
@@ -403,6 +405,8 @@ export interface StrengthPlan {
   readonly retention: { value: number; n: number; measured: boolean };
   readonly ey: number;
   readonly baseDoseG: number;
+  /** Verhouding water/dosis van de startdosis. */
+  readonly baseRatio: number;
   readonly baseTds: number;
   readonly bean: BeanOffset;
   readonly calibration: (CalibrationPair & { variantDoseG: number }) | null;
@@ -434,9 +438,10 @@ export function strengthPlan(facts: FactState, req: StrengthRequest): StrengthPl
   const cal = calibrationFor(dec.summary, targetLn, dec.n);
   const calibration = cal ? { ...cal, variantDoseG: Math.round(req.waterG / ratioForTdsPct(Math.exp(cal.variantLn), retention.value, ey) * 10) / 10 } : null;
   return {
-    version: STRENGTH_MODEL_VERSION, doseG, targetTds, ratio, band, mode: dec.mode, n: dec.n, pairs: obs.filter(x => x.type === 'pair').length,
+    version: STRENGTH_MODEL_VERSION, doseG, targetTds, ratio, band,
+    tdsBand: dec.summary ? { lo: Math.exp(dec.summary.q10Ln), mid: targetTds, hi: Math.exp(dec.summary.q90Ln) } : null, mode: dec.mode, n: dec.n, pairs: obs.filter(x => x.type === 'pair').length,
     sdLn: dec.summary ? dec.summary.sdLn : null, slopeMean: dec.summary ? dec.summary.slopeMean : null,
-    retention, ey, baseDoseG: req.baselineDoseG, baseTds, bean: beanUsed, calibration,
+    retention, ey, baseDoseG: req.baselineDoseG, baseRatio: req.waterG / req.baselineDoseG, baseTds, bean: beanUsed, calibration,
     last: dec.trail.length ? dec.trail[dec.trail.length - 1]! : null, trail: dec.trail
   };
 }

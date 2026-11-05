@@ -1191,7 +1191,7 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 
 - **`grindPlan()`** (`engine3/src/grind.ts`, uitleg in `docs/engine3/13-tijd-en-molen.md`): Bayesiaanse regressie van ln(doorloop na de laatste giet) op techniek, klik, hoeveelheid en zak, met de natuurkundige verwachting (−11 % per klik) als prior. Geeft het verwachte einde met band, de kans dat het in de band valt, en zo nodig een klikadvies (hooguit 4 klikken, binnen klik 8–25).
 - **Molen:** BrewTuner en Beean bevestigen de C3S Pro, maar noemen geen micron per klik; andere bronnen geven 83 en 20 micron. Daarom rekent de engine niet met microns; het effect van een klik leert hij uit jouw zetsels (`engine3/src/data/grinder.ts`).
-- **Meetopstelling:** acht werelden, in alle werelden minstens 99 % op tijd (vaste klik 16: 15–99 %), met een gemiddelde klikstap onder 0,1.
+- **Meetopstelling:** acht werelden, in alle werelden minstens 97 % op tijd (vaste klik 16: 15–99 %), met een gemiddelde klikstap onder 0,1.
 - **Eén afwijking van Engine 2 in stap 3:** de afwijking per zak gaat nooit tegen het laatste antwoord in. Daardoor 0 % in plaats van 0,05–0,23 % stappen tegen het oordeel in, tegen maximaal 0,24 punt 'precies goed'.
 - **Nog niet getoetst op eigen tikken:** de back-up bevat geen 'erdoor'-tikken en maar twee naburige klikstanden (16 en 17); het meetplan in 07 moet het klikeffect zichtbaar maken.
 
@@ -1202,3 +1202,11 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Vergelijkbare zakken:** zelfde proces, brandingklasse en minstens één gedeelde smaakcategorie; twee netto gewonnen proeven maken een techniek de standaard.
 - **Meetopstelling** (`engine3/eval/technique-sim.ts`): nergens meer spijt dan altijd Kasuya, minder dan twee proeven per zak; bij 80 % juiste regels daalt de spijt van 0,74 naar 0,37.
 - **Frontend moet:** de proef kunnen aanbieden, blind laten kiezen en vastleggen als `pair.trial` met `kind: 'technique'`, en 'ongelijk doorlopen' meegeven als `feedback`.
+
+### Engine 3 · stap 8 klaar (5 nov 2026)
+
+- **`createEngine()`** (`engine3/src/engine.ts`, uitleg in `docs/engine3/15-samenstellen.md`): `learn()` en `plan()` zetten techniek, water uit de kopgrootte, sterkte, recept, molen en proef achter elkaar en leggen per module uit waarom. Contract `e3-contract-1.0`: `PlanRequest` kreeg het optionele veld `feedback`. Doel (helder, gebalanceerd, rond) zet bij Kasuya de eerste giet.
+- **Dosisgrenzen:** V60 15–22 g (uit de oude app, geschat), Chemex geen grens; daarbuiten wordt begrensd met een waarschuwing.
+- **Molen:** zonder gelogde doorlooptijden voor een techniek zet het advies hooguit 1 klik verschil, daarna 2, 3, 4 (de natuurkundige verwachting is een beginpunt, geen bewijs). Meetopstelling opnieuw gedraaid: minstens 97 % op tijd in alle werelden.
+- **Poort:** op jouw koppen (lokaal) gelijk aan Engine 2: 3 goede kant, 1 verkeerde, 5 geen richting. De vijf vaste regels uit het contract zijn eigenschapstests op `plan()`. `npm run e3:check` bouwt de bundel en draait er een rooktest op.
+- **Niet gedaan:** een schakelaar in de oude app. De frontend wordt later opnieuw gebouwd rond `createEngine()`.

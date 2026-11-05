@@ -1,4 +1,4 @@
-# 02 · Contract (concept 0.1)
+# 02 · Contract (versie 1.0)
 
 Bron van waarheid: `engine3/src/types.ts`. Dit document legt uit waarom het contract zo is.
 
@@ -25,6 +25,7 @@ interface Engine {
 | `cupG` | hoeveel koffie je wilt drinken (g) |
 | `goal` | helder, gebalanceerd, rond, of null |
 | `technique` | zelf gekozen techniek, of null (dan kiest de engine) |
+| `feedback` | optioneel: klachten die de engine niet zelf ziet, bijvoorbeeld `uneven_drain` (sinds 1.0) |
 
 ## Advies
 

@@ -1,6 +1,6 @@
 // Engine 3 · publieke ingang. Nog zonder rekenlogica: dit is het contract waar de bouw aan moet
 // voldoen, plus de onderdelen die al klaar zijn (eenheden, logboek, migratie, techniekdata).
-export const ENGINE3_CONTRACT_VERSION = 'e3-contract-0.1' as const;
+export const ENGINE3_CONTRACT_VERSION = 'e3-contract-1.0' as const;
 
 export type * from './types.ts';
 export { EVENT_SCHEMA_VERSION } from './types.ts';
@@ -25,3 +25,5 @@ export type { GrindPlan, GrindRequest, GrindAdvice, GrindCode, GrindFit, TailObs
 export { GRINDER_C3S_PRO, GRIND_PRIORS } from './data/grinder.ts';
 export { chooseTechnique, trialProposalFor, matchedRulesFor, ruleCandidateFor, recurringFeedback, categoriesOf, roastClassOf, similarBeans, TECHNIQUE_MODEL_VERSION, MIN_CONTROL_CUPS } from './technique.ts';
 export type { TechniqueChoice, TechniqueRequest, TechniqueSource, TechniqueTrialPlan, TrialRecipeInput, Feedback } from './technique.ts';
+export { createEngine, plan, ENGINE3_VERSION } from './engine.ts';
+export { DOSE_LIMITS } from './data/brewer.ts';

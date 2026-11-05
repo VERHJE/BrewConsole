@@ -25,7 +25,7 @@ Vastgesteld 5 nov 2026. Elke stap heeft een opleverpunt, tests en een poort. Een
 | 5 | Techniekkeuze (**klaar**) | `SELECTION_RULES` toepassen; afwijking van Kasuya is altijd een proef; een gewonnen proef wint | simulator met verborgen beste techniek per zak (06): hoe snel de proef die vindt |
 | 6 | Zakherkenning | `parseBeanText` overgezet naar TypeScript, plus QR; AI alleen met toestemming en via de Worker | dezelfde 35 van 45 trefwoorden als de huidige app op de acht voorbeeldzakken |
 | 7 | Smaakprofiel | blinde keuzevakjes en herkende notities over alle zakken; stuurt het recept niet | herleidbaar uit het logboek; geen invloed op `plan()` |
-| 8 | Samenstellen | publieke API vastzetten (`e3-contract-1.0`), bundel, en wisselen tussen Engine 2 en 3 in de bestaande app | schakelaar naar Engine 3 geeft op de eigen koppen geen slechter advies dan Engine 2 |
+| 8 | Samenstellen (**klaar**, zonder schakelaar in de oude app) | publieke API vastzetten (`e3-contract-1.0`), bundel, en wisselen tussen Engine 2 en 3 in de bestaande app | schakelaar naar Engine 3 geeft op de eigen koppen geen slechter advies dan Engine 2 |
 
 ## Volgorde en afhankelijkheden
 
