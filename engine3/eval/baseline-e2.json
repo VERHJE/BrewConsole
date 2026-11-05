@@ -1,0 +1,473 @@
+{
+  "runs": 200,
+  "scenario": {
+    "bags": 8,
+    "cupsPerBag": 10,
+    "waterG": 300,
+    "targetTds": 1.17,
+    "retention": 2.1,
+    "eyMean": 0.2,
+    "eyBeanSd": 0.01,
+    "eyCupSd": 0.005
+  },
+  "worlds": [
+    {
+      "name": "basis",
+      "slope": 5,
+      "noiseSd": 0.7,
+      "asymmetry": 1,
+      "driftPerCup": 0,
+      "beanSd": 0.05
+    },
+    {
+      "name": "veel ruis",
+      "slope": 5,
+      "noiseSd": 1.1,
+      "asymmetry": 1,
+      "driftPerCup": 0,
+      "beanSd": 0.05
+    },
+    {
+      "name": "vlak oordeel",
+      "slope": 3,
+      "noiseSd": 0.7,
+      "asymmetry": 1,
+      "driftPerCup": 0,
+      "beanSd": 0.05
+    },
+    {
+      "name": "scheef (sterk weegt zwaarder)",
+      "slope": 5,
+      "noiseSd": 0.7,
+      "asymmetry": 1.6,
+      "driftPerCup": 0,
+      "beanSd": 0.05
+    },
+    {
+      "name": "voorkeur drift",
+      "slope": 5,
+      "noiseSd": 0.7,
+      "asymmetry": 1,
+      "driftPerCup": 0.003,
+      "beanSd": 0.05
+    },
+    {
+      "name": "zakken verschillen veel",
+      "slope": 5,
+      "noiseSd": 0.7,
+      "asymmetry": 1,
+      "driftPerCup": 0,
+      "beanSd": 0.1
+    }
+  ],
+  "results": {
+    "basis": {
+      "vast recept (geen leren)": {
+        "goodShare": {
+          "mean": 0.24337499999999998,
+          "sd": 0.05963812037623294
+        },
+        "cupsToFirstGood": {
+          "mean": 4.3775,
+          "sd": 1.1251716786929287
+        },
+        "lateErrorPct": {
+          "mean": 21.550892295276427,
+          "sd": 3.0680972939169537
+        },
+        "wrongDirShare": {
+          "mean": 0,
+          "sd": 0
+        },
+        "meanDoseStepG": {
+          "mean": 0,
+          "sd": 0
+        }
+      },
+      "Engine 2 (e2-2026.5)": {
+        "goodShare": {
+          "mean": 0.4628750000000002,
+          "sd": 0.05973020897604166
+        },
+        "cupsToFirstGood": {
+          "mean": 2.385625,
+          "sd": 0.5830490677912635
+        },
+        "lateErrorPct": {
+          "mean": 5.2303843251229365,
+          "sd": 1.1068910861715506
+        },
+        "wrongDirShare": {
+          "mean": 0.0005555555555555556,
+          "sd": 0.007856742013183877
+        },
+        "meanDoseStepG": {
+          "mean": 0.12372222222222223,
+          "sd": 0.04069268289683682
+        }
+      },
+      "orakel (kent de voorkeur)": {
+        "goodShare": {
+          "mean": 0.5194374999999999,
+          "sd": 0.05626147984475354
+        },
+        "cupsToFirstGood": {
+          "mean": 1.966875,
+          "sd": 0.46391074060777726
+        },
+        "lateErrorPct": {
+          "mean": 1.9716473733226496,
+          "sd": 0.20776427127244246
+        },
+        "wrongDirShare": {
+          "mean": 0,
+          "sd": 0
+        },
+        "meanDoseStepG": {
+          "mean": 0,
+          "sd": 0
+        }
+      }
+    },
+    "veel ruis": {
+      "vast recept (geen leren)": {
+        "goodShare": {
+          "mean": 0.23874999999999993,
+          "sd": 0.04906474545160872
+        },
+        "cupsToFirstGood": {
+          "mean": 4.02875,
+          "sd": 0.9961223500057131
+        },
+        "lateErrorPct": {
+          "mean": 21.550892295276427,
+          "sd": 3.0680972939169537
+        },
+        "wrongDirShare": {
+          "mean": 0,
+          "sd": 0
+        },
+        "meanDoseStepG": {
+          "mean": 0,
+          "sd": 0
+        }
+      },
+      "Engine 2 (e2-2026.5)": {
+        "goodShare": {
+          "mean": 0.3256875000000001,
+          "sd": 0.05176224729447973
+        },
+        "cupsToFirstGood": {
+          "mean": 3.13375,
+          "sd": 0.8003915106694715
+        },
+        "lateErrorPct": {
+          "mean": 6.0246108391806725,
+          "sd": 1.3101005117015294
+        },
+        "wrongDirShare": {
+          "mean": 0.002301778752436647,
+          "sd": 0.011590550187124606
+        },
+        "meanDoseStepG": {
+          "mean": 0.17915277777777777,
+          "sd": 0.04941770986903676
+        }
+      },
+      "orakel (kent de voorkeur)": {
+        "goodShare": {
+          "mean": 0.34906250000000005,
+          "sd": 0.048919504631763026
+        },
+        "cupsToFirstGood": {
+          "mean": 2.76625,
+          "sd": 0.7233877846180934
+        },
+        "lateErrorPct": {
+          "mean": 1.9716473733226496,
+          "sd": 0.20776427127244246
+        },
+        "wrongDirShare": {
+          "mean": 0,
+          "sd": 0
+        },
+        "meanDoseStepG": {
+          "mean": 0,
+          "sd": 0
+        }
+      }
+    },
+    "vlak oordeel": {
+      "vast recept (geen leren)": {
+        "goodShare": {
+          "mean": 0.3834999999999998,
+          "sd": 0.05896085065149366
+        },
+        "cupsToFirstGood": {
+          "mean": 2.6425,
+          "sd": 0.7312393966933005
+        },
+        "lateErrorPct": {
+          "mean": 21.550892295276427,
+          "sd": 3.0680972939169537
+        },
+        "wrongDirShare": {
+          "mean": 0,
+          "sd": 0
+        },
+        "meanDoseStepG": {
+          "mean": 0,
+          "sd": 0
+        }
+      },
+      "Engine 2 (e2-2026.5)": {
+        "goodShare": {
+          "mean": 0.4909374999999999,
+          "sd": 0.05889659487772576
+        },
+        "cupsToFirstGood": {
+          "mean": 2.129375,
+          "sd": 0.5127730152816206
+        },
+        "lateErrorPct": {
+          "mean": 6.682694194282232,
+          "sd": 1.6038326730113157
+        },
+        "wrongDirShare": {
+          "mean": 0.0005555555555555556,
+          "sd": 0.007856742013183876
+        },
+        "meanDoseStepG": {
+          "mean": 0.09015972222222214,
+          "sd": 0.03200273778996269
+        }
+      },
+      "orakel (kent de voorkeur)": {
+        "goodShare": {
+          "mean": 0.5223125,
+          "sd": 0.056694952880841205
+        },
+        "cupsToFirstGood": {
+          "mean": 1.95875,
+          "sd": 0.4571991830316676
+        },
+        "lateErrorPct": {
+          "mean": 1.9716473733226496,
+          "sd": 0.20776427127244246
+        },
+        "wrongDirShare": {
+          "mean": 0,
+          "sd": 0
+        },
+        "meanDoseStepG": {
+          "mean": 0,
+          "sd": 0
+        }
+      }
+    },
+    "scheef (sterk weegt zwaarder)": {
+      "vast recept (geen leren)": {
+        "goodShare": {
+          "mean": 0.11612499999999998,
+          "sd": 0.05437212997104252
+        },
+        "cupsToFirstGood": {
+          "mean": 7.344375,
+          "sd": 1.4344173030788008
+        },
+        "lateErrorPct": {
+          "mean": 21.550892295276427,
+          "sd": 3.0680972939169537
+        },
+        "wrongDirShare": {
+          "mean": 0,
+          "sd": 0
+        },
+        "meanDoseStepG": {
+          "mean": 0,
+          "sd": 0
+        }
+      },
+      "Engine 2 (e2-2026.5)": {
+        "goodShare": {
+          "mean": 0.4431875000000002,
+          "sd": 0.05713530703778103
+        },
+        "cupsToFirstGood": {
+          "mean": 2.638125,
+          "sd": 0.6074027079484542
+        },
+        "lateErrorPct": {
+          "mean": 4.604101510781194,
+          "sd": 0.9250568065106514
+        },
+        "wrongDirShare": {
+          "mean": 0.0011025641025641025,
+          "sd": 0.008976696365774642
+        },
+        "meanDoseStepG": {
+          "mean": 0.14587499999999995,
+          "sd": 0.03836133908876772
+        }
+      },
+      "orakel (kent de voorkeur)": {
+        "goodShare": {
+          "mean": 0.5144374999999998,
+          "sd": 0.05437945817223198
+        },
+        "cupsToFirstGood": {
+          "mean": 1.984375,
+          "sd": 0.47585177200426393
+        },
+        "lateErrorPct": {
+          "mean": 1.9716473733226496,
+          "sd": 0.20776427127244246
+        },
+        "wrongDirShare": {
+          "mean": 0,
+          "sd": 0
+        },
+        "meanDoseStepG": {
+          "mean": 0,
+          "sd": 0
+        }
+      }
+    },
+    "voorkeur drift": {
+      "vast recept (geen leren)": {
+        "goodShare": {
+          "mean": 0.4045624999999997,
+          "sd": 0.05703049385985971
+        },
+        "cupsToFirstGood": {
+          "mean": 2.788125,
+          "sd": 0.7838064955634377
+        },
+        "lateErrorPct": {
+          "mean": 10.241250677102306,
+          "sd": 1.9987599117675012
+        },
+        "wrongDirShare": {
+          "mean": 0,
+          "sd": 0
+        },
+        "meanDoseStepG": {
+          "mean": 0,
+          "sd": 0
+        }
+      },
+      "Engine 2 (e2-2026.5)": {
+        "goodShare": {
+          "mean": 0.45331250000000006,
+          "sd": 0.05521596333293406
+        },
+        "cupsToFirstGood": {
+          "mean": 2.51125,
+          "sd": 0.6265921930425797
+        },
+        "lateErrorPct": {
+          "mean": 5.65774975867535,
+          "sd": 1.1857634998195052
+        },
+        "wrongDirShare": {
+          "mean": 0.0005322128851540616,
+          "sd": 0.00533836554775829
+        },
+        "meanDoseStepG": {
+          "mean": 0.1446944444444444,
+          "sd": 0.0455146143874295
+        }
+      },
+      "orakel (kent de voorkeur)": {
+        "goodShare": {
+          "mean": 0.5194374999999999,
+          "sd": 0.05626147984475354
+        },
+        "cupsToFirstGood": {
+          "mean": 1.966875,
+          "sd": 0.46391074060777726
+        },
+        "lateErrorPct": {
+          "mean": 1.968445169853316,
+          "sd": 0.20745665393706245
+        },
+        "wrongDirShare": {
+          "mean": 0.41833507095329836,
+          "sd": 0.2450269356457927
+        },
+        "meanDoseStepG": {
+          "mean": 0.04703506801112946,
+          "sd": 0.000906150480089868
+        }
+      }
+    },
+    "zakken verschillen veel": {
+      "vast recept (geen leren)": {
+        "goodShare": {
+          "mean": 0.2508125,
+          "sd": 0.06735627612492456
+        },
+        "cupsToFirstGood": {
+          "mean": 4.615,
+          "sd": 1.2477592982349033
+        },
+        "lateErrorPct": {
+          "mean": 22.20222469316519,
+          "sd": 4.470128231775559
+        },
+        "wrongDirShare": {
+          "mean": 0,
+          "sd": 0
+        },
+        "meanDoseStepG": {
+          "mean": 0,
+          "sd": 0
+        }
+      },
+      "Engine 2 (e2-2026.5)": {
+        "goodShare": {
+          "mean": 0.4266249999999998,
+          "sd": 0.06198037762917614
+        },
+        "cupsToFirstGood": {
+          "mean": 2.805,
+          "sd": 0.7362261164019935
+        },
+        "lateErrorPct": {
+          "mean": 6.4675640521251525,
+          "sd": 1.4423375234412235
+        },
+        "wrongDirShare": {
+          "mean": 0.0010606060606060605,
+          "sd": 0.009046386075331115
+        },
+        "meanDoseStepG": {
+          "mean": 0.1597777777777778,
+          "sd": 0.04951272426493512
+        }
+      },
+      "orakel (kent de voorkeur)": {
+        "goodShare": {
+          "mean": 0.5194374999999999,
+          "sd": 0.05626147984475354
+        },
+        "cupsToFirstGood": {
+          "mean": 1.966875,
+          "sd": 0.46391074060777726
+        },
+        "lateErrorPct": {
+          "mean": 1.9715072625994032,
+          "sd": 0.2077515823949135
+        },
+        "wrongDirShare": {
+          "mean": 0,
+          "sd": 0
+        },
+        "meanDoseStepG": {
+          "mean": 0,
+          "sd": 0
+        }
+      }
+    }
+  }
+}
