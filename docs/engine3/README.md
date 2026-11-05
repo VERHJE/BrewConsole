@@ -23,6 +23,7 @@ Engine 3 is de nieuwe rekenkern van Brew Console. Hij wordt vanaf nul gebouwd en
 | Techniekkeuze (stap 5) | [14-techniekkeuze.md](14-techniekkeuze.md) | klaar |
 | Samenstellen (stap 8) | [15-samenstellen.md](15-samenstellen.md) | klaar, contract 1.0 |
 | Zakherkenning (stap 6) | [16-zakherkenning.md](16-zakherkenning.md) | klaar |
+| Smaakprofiel (stap 7) | [17-smaakprofiel.md](17-smaakprofiel.md) | klaar |
 
 ## Draaien
 
@@ -53,7 +54,7 @@ Elke stap is pas af als de tests groen zijn en de meetopstelling niet slechter i
 4. **Tijd en molen** (klaar, `engine3/src/grind.ts`, zie 13). Bayesiaans, met de natuurkundige verwachting (−11 % doorloop per klik grover) en een term per hoeveelheid. Hier zit de grootste winst.
 5. **Techniekkeuze** (klaar, `engine3/src/technique.ts`, zie 14). Volgens `SELECTION_RULES`. Een afwijking van Kasuya is altijd een proef; een gewonnen proef wint van elke regel.
 6. **Zakherkenning** (klaar, `engine3/src/bean/`, zie 16). `parseBeanText` uit de huidige app wordt overgezet (die is getoetst op 8 zakken). Daarna komen QR en, alleen met toestemming, AI.
-7. **Smaakprofiel.** Blinde keuzevakjes (CATA) en herkende notities over alle zakken heen. Dit stuurt het recept niet.
+7. **Smaakprofiel** (klaar, `engine3/src/profile.ts`, zie 17). Blinde keuzevakjes (CATA) en herkende notities over alle zakken heen. Dit stuurt het recept niet.
 
 ## Grenzen
 

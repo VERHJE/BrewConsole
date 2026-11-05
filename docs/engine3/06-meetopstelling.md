@@ -90,3 +90,7 @@ Op de eigen koppen (lokaal) doet het volledige `plan()` hetzelfde als Engine 2: 
 ## Engine 3, stap 6 (zakherkenning)
 
 Geen simulatie maar een differentiële toets tegen de app: dezelfde tekst geeft dezelfde uitkomst (alle app-testteksten en 600 willekeurige etiketten). Zie [16-zakherkenning.md](16-zakherkenning.md).
+
+## Engine 3, stap 7 (smaakprofiel)
+
+Geen poort in de simulator: het profiel stuurt niets. Getoetst met een simulatie van een proever met bekende treffers en valse alarmen (de schatting komt binnen 0,12 van de waarheid) en met een test dat `plan()` onveranderd blijft. Zie [17-smaakprofiel.md](17-smaakprofiel.md).

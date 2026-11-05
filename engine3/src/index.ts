@@ -35,3 +35,5 @@ export { readQrPayload } from './bean/qr.ts';
 export type { QrReading, QrKind } from './bean/qr.ts';
 export { validateAiScan, checkAiRequest, AI_TOOL, AI_PROMPT, AI_SCAN_MODEL, AI_DAILY_LIMIT, AI_MAX_IMAGE_BYTES, AI_MEDIA_TYPES } from './bean/ai.ts';
 export type { AiScanRequest, AiValidation, AiMediaType } from './bean/ai.ts';
+export { tasteProfile, beanFit, ALL_CATEGORIES, PROFILE_MODEL_VERSION } from './profile.ts';
+export type { TasteProfile, CategorySensitivity, SensitivityStatus, NoteRecognition, LikingStat, BeanFit } from './profile.ts';

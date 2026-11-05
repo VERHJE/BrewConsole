@@ -1219,3 +1219,10 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **AI:** `POST /scan` op de Worker, alleen met toestemming per scan en een API-sleutel als geheim; vast model, limiet van 30 per dag, geen foto bewaard, antwoord is een voorstel dat eerst `validateAiScan()` doorloopt.
 - **Aangepaste poort:** de meting '35 van 45 trefwoorden' op de foto's is niet te herhalen zonder die foto's; vervangen door de differentiële toets met de app.
 - **Nieuwe devDependencies:** `jsqr` (in de QR-bundel), `qrcode` en `@types/qrcode` (alleen tests), alle drie exact vastgezet.
+
+### Engine 3 · stap 7 klaar (5 nov 2026)
+
+- **`tasteProfile()` en `beanFit()`** (`engine3/src/profile.ts`, uitleg in `docs/engine3/17-smaakprofiel.md`): gevoeligheid per smaakcategorie uit de blinde keuzevakjes (treffers en valse alarmen tegenover de notities van de zak), herkende notities en een woordenschat, waardering per categorie, proces en brandingklasse (kleine aantallen bijgetrokken), tendensen, en hoe goed een zak bij je smaak past.
+- **Stuurt het recept niet:** een test eist hetzelfde `plan()`-advies met en zonder keuzevakjes, herkende notities, waardering en notitie.
+- **Contract:** `tasting` kreeg het optionele veld `cataAsked` (is de keuzevraag gesteld), zodat 'niets aangevinkt' te onderscheiden is van 'niet gevraagd'. Bestaande gebeurtenissen blijven geldig; de frontend schrijft het zodra de vraag getoond is.
+- **Alle stappen van het bouwplan zijn nu af** (0 t/m 8). Open blijft: stap 0d (uitrollen van de Worker), eigen metingen voor het klikeffect, en de frontend.
