@@ -57,8 +57,8 @@ Cloudflare is gekoppeld aan GitHub, dus de Worker wordt door Cloudflare zelf geb
    - *Root directory* `engine3/sync`;
    - *Build command* leeg;
    - *Deploy command* `npx wrangler deploy` (de standaard). De wranglerversie komt uit `engine3/sync/package.json`.
-2. **Opslag.** In `wrangler.toml` staat een KV-opslag zonder id; Cloudflare maakt hem bij de eerste uitrol zelf aan (automatische provisioning). Faalt de eerste build daarop, maak dan in het dashboard een KV-namespace en zet het id onder `[[kv_namespaces]]`.
-3. **Adres van de app.** Staat de app niet op `https://verhje.github.io`, pas dan `ALLOW_ORIGIN` in `engine3/sync/wrangler.toml` aan (alleen de herkomst, zonder pad).
+2. **Opslag.** Gedaan: de KV-opslag `brewconsole-sync-blocks` (id `935776684dbd4127aa8fa6c739112d05`) is op 5 nov 2026 via de Cloudflare-connector in Claude aangemaakt en staat in `wrangler.toml`.
+3. **Adres van de app.** Gedaan: `ALLOW_ORIGIN` staat op `https://dazzling-manatee-606398.netlify.app` (alleen de herkomst, zonder pad). Verhuist de app, pas het dan in `engine3/sync/wrangler.toml` aan.
 4. **Toegangstoken per toestel.** Open `tokengenerator.html` op het adres van de app (dus ook op de iPhone), tik op *Nieuw token maken*. Het token bewaar je op dat toestel; de hash gaat naar Cloudflare. Alles gebeurt lokaal in de browser.
 5. **Geheimen.** In het dashboard bij de Worker: *Settings* → *Variables & Secrets* → een geheim `TOKEN_HASHES` met de hash (meerdere toestellen: hashes achter elkaar, gescheiden door komma's). Alleen voor foto-herkenning: ook `ANTHROPIC_API_KEY`.
 6. **Controle.** `https://brewconsole-sync.<jouw-subdomein>.workers.dev/meta` in de browser geeft `401` (de Worker leeft en wil een token). Een echte rondgang kan pas met een app die synchroniseert (de frontend).

@@ -6,11 +6,12 @@ compatibility_date = "2026-10-01"
 
 [vars]
 # Het adres waar de app draait (alleen de herkomst, zonder pad). Zet hier jouw adres.
-ALLOW_ORIGIN = "https://verhje.github.io"
+ALLOW_ORIGIN = "https://dazzling-manatee-606398.netlify.app"
 
-# Geen id: Cloudflare maakt de KV-opslag zelf aan bij de eerste uitrol (automatische provisioning).
+# KV-opslag 'brewconsole-sync-blocks' (aangemaakt via de Cloudflare-connector, 5 nov 2026).
 [[kv_namespaces]]
 binding = "BLOCKS"
+id = "935776684dbd4127aa8fa6c739112d05"
 
 # Geheimen zet je in het Cloudflare-dashboard (Settings → Variables & Secrets), niet hier:
 #   TOKEN_HASHES       de SHA-256 van elk toestel-token, gescheiden door komma's (maak ze met tokengenerator.html)

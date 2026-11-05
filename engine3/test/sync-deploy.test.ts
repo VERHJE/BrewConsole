@@ -5,13 +5,13 @@ import worker from '../sync/worker.ts';
 
 const read = (f: string): string => readFileSync(new URL(`../sync/${f}`, import.meta.url), 'utf8');
 
-test('wrangler.toml: bestaand ingangsbestand, KV-binding BLOCKS, geen plaatshouder meer', () => {
+test('wrangler.toml: bestaand ingangsbestand, KV-binding BLOCKS met een echt id, geen plaatshouder', () => {
   const toml = read('wrangler.toml');
   const main = /^main\s*=\s*"([^"]+)"/m.exec(toml)?.[1];
   assert.equal(main, 'worker.ts');
   assert.ok(existsSync(new URL(`../sync/${main}`, import.meta.url)));
-  assert.match(toml, /\[\[kv_namespaces\]\]\s*\nbinding = "BLOCKS"/);
-  assert.ok(!/VERVANG|^\s*id\s*=/m.test(toml), 'geen plaatshouder-id: Cloudflare maakt de opslag zelf aan');
+  assert.match(toml, /\[\[kv_namespaces\]\]\s*\n(?:#[^\n]*\n)*binding = "BLOCKS"\s*\nid = "[0-9a-f]{32}"/);
+  assert.ok(!/VERVANG/.test(toml), 'geen plaatshouder-id');
   assert.match(toml, /^ALLOW_ORIGIN\s*=\s*"https:\/\/[^"/]+"/m);
 });
 test('engine3/sync/package.json: alleen wrangler, exact vastgezet, voor Workers Builds met root directory engine3/sync', () => {
