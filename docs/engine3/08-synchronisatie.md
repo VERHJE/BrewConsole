@@ -27,9 +27,11 @@ De engine zelf blijft zuiver (geen netwerk, geen opslag; zie 02). De synchronisa
 
 | Deel | Plaats | Inhoud |
 |---|---|---|
-| Versleuteling en blokken | `engine3/sync/crypto.ts`, `engine3/sync/blocks.ts` | sleutel afleiden, in- en uitpakken, blokken maken en samenvoegen; zuiver, met WebCrypto als parameter |
-| Client | `engine3/sync/client.ts` | push en pull tegen de Worker; opnieuw proberen, offline wachten |
-| Worker | `worker/sync/` (TypeScript, `wrangler.toml`) | `PUT /blocks/:id`, `GET /blocks?since=`, `DELETE /blocks/:id`; opslag in R2 of KV |
+| Versleuteling en blokken | `engine3/sync/crypto.ts`, `engine3/sync/blocks.ts` | sleutel afleiden, in- en uitpakken, blokken maken en samenvoegen; WebCrypto en toeval worden meegegeven |
+| Server | `engine3/sync/server.ts` | `Request` → `Response`, opslag als interface; geheugenopslag voor tests, Cloudflare-opslag in de ingang |
+| Client | `engine3/sync/client.ts` | push en pull; `fetch` en toestand worden meegegeven, dus testbaar zonder netwerk |
+
+Routes: `GET/PUT /meta` (het zout, niet geheim), `PUT/GET/DELETE /blocks/:id`, `GET /blocks?after=`. Een blok is onveranderlijk: hetzelfde id met andere inhoud geeft 409.
 
 ## Tests
 

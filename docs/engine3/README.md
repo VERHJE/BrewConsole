@@ -14,7 +14,8 @@ Engine 3 is de nieuwe rekenkern van Brew Console. Hij wordt vanaf nul gebouwd en
 | Meetopstelling en nulmeting Engine 2 | [06-meetopstelling.md](06-meetopstelling.md), `engine3/eval/` | klaar |
 | Toestelcheck voor de iPhone | `toestelcheck.html` (in de root, naast de app) | gedraaid op de iPhone (5 nov 2026); uitkomst in 07 |
 | Open punten en beslissingen | [07-open-punten.md](07-open-punten.md) | — |
-| Synchronisatie (eerste bouwstap) | [08-synchronisatie.md](08-synchronisatie.md) | ontwerp klaar |
+| Synchronisatie (eerste bouwstap) | [08-synchronisatie.md](08-synchronisatie.md) | ontwerp klaar, wordt gebouwd |
+| Bouwplan | [09-bouwplan.md](09-bouwplan.md) | vastgesteld |
 
 ## Draaien
 
@@ -30,7 +31,9 @@ node engine3/scripts/gen-flavor-wheel.mjs         # smaakwiel opnieuw uit de app
 
 Node 22 draait TypeScript direct (type stripping). Daarom gebruikt de code alleen 'wisbare' TypeScript: geen `enum`, geen `namespace`. `tsc` controleert alleen, en esbuild bouwt.
 
-## Bouwvolgorde (voorstel)
+## Bouwvolgorde
+
+Het uitgewerkte plan met poorten per stap staat in [09-bouwplan.md](09-bouwplan.md). Samengevat:
 
 Elke stap is pas af als de tests groen zijn en de meetopstelling niet slechter is dan Engine 2 (zie de acceptatie in 06).
 
