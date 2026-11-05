@@ -9,7 +9,8 @@ import { kvDailyCounter } from './ai.ts';
 
 interface Env {
   BLOCKS: KvNamespaceLike;
-  TOKEN_HASHES: string;
+  /** Nog niet ingesteld = geen enkel token geldig (alles geeft 401). */
+  TOKEN_HASHES?: string;
   ALLOW_ORIGIN: string;
   /** Optioneel geheim: zet je dit, dan werkt POST /scan (foto-herkenning). */
   ANTHROPIC_API_KEY?: string;
@@ -19,7 +20,7 @@ export default {
   fetch(req: Request, env: Env): Promise<Response> {
     return handleRequest(req, {
       store: new KvStore(env.BLOCKS),
-      tokenHashes: env.TOKEN_HASHES.split(',').map(s => s.trim().toLowerCase()).filter(s => s.length === 64),
+      tokenHashes: (env.TOKEN_HASHES ?? '').split(',').map(s => s.trim().toLowerCase()).filter(s => s.length === 64),
       subtle: crypto.subtle,
       allowOrigin: env.ALLOW_ORIGIN,
       ...(env.ANTHROPIC_API_KEY ? { ai: {

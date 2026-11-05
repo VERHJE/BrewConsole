@@ -29,3 +29,8 @@ test('de Worker-ingang heeft een fetch-handler en geeft 401 zonder token', async
   assert.equal(res.status, 401);
   assert.equal(res.headers.get('access-control-allow-origin'), 'https://app.example');
 });
+test('een Worker zonder ingesteld geheim TOKEN_HASHES geeft 401 in plaats van een crash', async () => {
+  const env = { BLOCKS: { get: async () => null, put: async () => {}, delete: async () => {}, list: async () => ({ keys: [], list_complete: true }) }, ALLOW_ORIGIN: 'https://app.example' };
+  const res = await worker.fetch(new Request('https://x.example/meta', { headers: { authorization: 'Bearer ' + 'x'.repeat(40) } }), env);
+  assert.equal(res.status, 401);
+});
