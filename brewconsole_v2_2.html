@@ -1647,6 +1647,8 @@
   .bean-trend-axis{fill:var(--text-faint); font-size:var(--fs-label); font-family:var(--font-body);}
   .bean-trend-line{fill:none; stroke:var(--copper); stroke-width:2; stroke-linejoin:round; stroke-linecap:round;}
   .bean-trend-dot{fill:var(--copper-light); stroke:var(--surface); stroke-width:2;}
+  .e2-trend-band{fill:var(--copper); opacity:.14; stroke:none;}
+  .e2-trend-mark{fill:var(--text-dim); stroke:var(--surface); stroke-width:1.5;}
   .bean-trend-grind{fill:var(--text-dim); font-size:var(--fs-label); font-family:var(--font-body); font-variant-numeric:tabular-nums;}
   @media (hover:hover){ .bean-card-go:hover{text-decoration:underline; text-underline-offset:3px;} }
   .bean-search-row #bean-search-input{flex:none;}
@@ -10031,7 +10033,7 @@ function recomputeRecipeForRecord(rec){
    maling) komt uit de bestaande engine; die blijft ongewijzigd en rekent mee ter vergelijking.
    Alles hieronder is puur: geen DOM, alleen opslag via engine2On()/setEngine2().
    ============================================================ */
-const ENGINE2_VERSION = 'e2-2026.4';
+const ENGINE2_VERSION = 'e2-2026.5';
 const ENGINE2_KEY = 'brewconsole_engine2';
 // Massabalans (Guinard e.a. 2023, J. Food Sci.): EY = TDS/(1−TDS) · (W/D − R_abs), R_abs ≈ 2,1 bij filter.
 const E2_R_ABS = 2.1;
@@ -10143,10 +10145,12 @@ function e2Phi(z){
   return 0.5 * (1 + s * y);
 }
 // Kans op een sterkte-antwoord bij kop-TDS T en doel g (ln TDS): latente afwijking B·ln(T/doel) + ruis.
+// Drempels van het ordinale antwoord, één keer (e2-2026.5: dit stond per aanroep, ±1100× per kop).
+const E2_CUTS = { '-2': [-Infinity, -1.5], '-1': [-1.5, -0.5], '0': [-0.5, 0.5], '1': [0.5, 1.5], '2': [1.5, Infinity] };
 function e2AnswerProb(ord, lnT, g, slope){
   const mu = slope * (lnT - g);
   const sd = E2_NOISE_SD;
-  const cut = { '-2': [-Infinity, -1.5], '-1': [-1.5, -0.5], '0': [-0.5, 0.5], '1': [0.5, 1.5], '2': [1.5, Infinity] }[String(ord)];
+  const cut = E2_CUTS[ord];
   const hi = cut[1] === Infinity ? 1 : e2Phi((cut[1] - mu) / sd);
   const lo = cut[0] === -Infinity ? 0 : e2Phi((cut[0] - mu) / sd);
   return Math.max(1e-12, hi - lo);
@@ -10288,8 +10292,13 @@ function e2AddObservation(post, o){
     post.n += 1;
     return post;
   }
-  post.ll = post.ll.map((row, bi) => row.map((v, gi) =>
-    v * E2_FORGET + o.weight * Math.log(e2AnswerProb(o.ord, o.lnT, E2_GRID[gi], E2_SLOPES[bi]))));
+  const G = E2_GRID.length;
+  post.ll = post.ll.map((row, bi) => {
+    const next = new Array(G);
+    const slope = E2_SLOPES[bi];
+    for (let gi = 0; gi < G; gi++) next[gi] = row[gi] * E2_FORGET + o.weight * Math.log(e2AnswerProb(o.ord, o.lnT, E2_GRID[gi], slope));
+    return next;
+  });
   post.n += 1;
   return post;
 }
@@ -10326,13 +10335,63 @@ function e2ProbBeyond(sum, refLn){
    verschuift alleen als de kans dat een andere sterkte beter past de drempel haalt (0,70 tijdens
    zoeken, 0,85 in rust), met hooguit twee halve stappen per keer (bij de eerste twee koppen één). Deterministisch: dezelfde
    geschiedenis geeft altijd hetzelfde doel. Zonder koppen: het doel is het recept zelf. */
+/* e2-2026.5 · de beslisregel wordt per weergave meerdere keren afgespeeld over dezelfde koppen
+   (recept, advies, Home, meetlat, Instellingen). Het resultaat hangt alleen af van de waarnemingen,
+   dus de laatste paar uitkomsten worden onthouden. Niet aanpassen: gedeeld tussen aanroepers. */
+const E2_DECIDE_CACHE = [];
+const E2_DECIDE_CACHE_N = 4;
+function e2ObsKeyOf(o){
+  return o.id + ',' + o.type + ',' + o.lnT + ',' + o.weight + ',' + (o.type === 'pair' ? o.outcome + ',' + o.lnA + ',' + o.lnB : o.ord);
+}
+/* Elk cache-item bewaart de toestand na alle koppen én na alle koppen op de laatste na. Een nieuwe kop
+   (of een gewijzigde laatste kop) rekent dan alleen die ene kop door; elke andere wijziging speelt
+   alles opnieuw af. De uitkomst is exact dezelfde als volledig afspelen (vaste volgorde, zelfde
+   rekenkunde). */
 function e2Decide(obs, baselineLn){
   if (!obs.length) return { targetLn: baselineLn, mode: 'start', n: 0, trail: [], summary: null };
-  let post = e2NewPosterior(obs[0].lnT);
-  let target = obs[0].lnT;
-  let mode = 'zoeken';
-  const trail = [];
-  obs.forEach((o, idx) => {
+  const keys = obs.map(e2ObsKeyOf);
+  let best = null;
+  E2_DECIDE_CACHE.forEach(c => {
+    [c.end, c.prev].forEach(cp => {
+      if (!cp || cp.len > keys.length || (best && cp.len <= best.len)) return;
+      for (let i = 0; i < cp.len; i++) if (c.keys[i] !== keys[i]) return;
+      best = cp;
+    });
+  });
+  const full = best && best.len === keys.length ? best : null;
+  if (full) return full.value;
+  const res = e2DecideFrom(obs, best);
+  E2_DECIDE_CACHE.unshift({ keys, end: res.end, prev: res.prev });
+  if (E2_DECIDE_CACHE.length > E2_DECIDE_CACHE_N) E2_DECIDE_CACHE.pop();
+  return res.end.value;
+}
+// De richting die één waarneming vraagt: −1 lichter, +1 sterker, 0 geen (goed, of een paar zonder verschil).
+function e2AnswerDirection(o){
+  if (o.type === 'pair'){
+    if (o.outcome !== 'A' && o.outcome !== 'B') return 0;
+    const win = o.outcome === 'A' ? o.lnA : o.lnB, lose = o.outcome === 'A' ? o.lnB : o.lnA;
+    return Math.sign(win - lose);
+  }
+  return o.ord > 0 ? -1 : o.ord < 0 ? 1 : 0;
+}
+function e2DecideFrom(obs, from){
+  let post, target, mode, trail, startIdx;
+  if (from){
+    post = { priorCenterLn: from.post.priorCenterLn, logPrior: from.post.logPrior, ll: from.post.ll, n: from.post.n };
+    target = from.target; mode = from.mode; trail = from.trail.slice(); startIdx = from.len;
+  } else {
+    post = e2NewPosterior(obs[0].lnT); target = obs[0].lnT; mode = 'zoeken'; trail = []; startIdx = 0;
+  }
+  let prev = null;
+  // De toestand na koppen 0..len-1. e2AddObservation() vervangt post.ll (de rijen zelf worden nooit
+  // aangepast), dus een ondiepe kopie volstaat.
+  const snap = (len, summary) => ({ len, target, mode, trail: trail.slice(),
+    post: { priorCenterLn: post.priorCenterLn, logPrior: post.logPrior, ll: post.ll, n: post.n },
+    value: { targetLn: target, mode, n: len, trail: trail.slice(), summary } });
+  for (let idx = startIdx; idx < obs.length; idx++){
+    if (idx === obs.length - 1 && idx > 0 && idx > startIdx) prev = snap(idx, e2Summary(post));
+    else if (idx === obs.length - 1 && from && from.len === idx) prev = from;
+    const o = obs[idx];
     e2AddObservation(post, o);
     const sum = e2Summary(post);
     const before = target;
@@ -10344,6 +10403,11 @@ function e2Decide(obs, baselineLn){
       const maxSteps = idx < 2 ? 1 : E2_MAX_STEPS; // de eerste twee koppen: hooguit een halve stap
       k = Math.max(-maxSteps, Math.min(maxSteps, k));
       if (k === 0) k = pr.up > pr.dn ? 1 : -1;
+      // e2-2026.5 · nooit tegen het antwoord in dat je net gaf: na "te sterk" (of een gewonnen lichtere
+      // kop) geen stap sterker, en omgekeerd. Met het middelen over hellingen kan een tegenstrijdig
+      // antwoord de schatting anders de verkeerde kant op duwen (gevonden door de invarianten-sweep).
+      const dir = e2AnswerDirection(o);
+      if ((dir < 0 && k > 0) || (dir > 0 && k < 0)) k = 0;
       target += k * E2_HALF_STEP;
     }
     const recent = obs.slice(Math.max(0, idx - 2), idx + 1);
@@ -10357,9 +10421,9 @@ function e2Decide(obs, baselineLn){
     if (k !== 0) mode = 'zoeken';
     else if (sum.sdLn < E2_REST_SD && atTarget && agrees) mode = 'rust';
     else if (mode === 'rust' && !agrees) mode = 'zoeken';
-    trail.push({ id: o.id, beforeLn: before, afterLn: target, steps: k, up: pr.up, dn: pr.dn, mode, threshold: thr });
-  });
-  return { targetLn: target, mode, n: obs.length, trail, summary: e2Summary(post) };
+    trail.push({ id: o.id, beforeLn: before, afterLn: target, steps: k, up: pr.up, dn: pr.dn, mode, threshold: thr, q10Ln: sum.q10Ln, q90Ln: sum.q90Ln });
+  }
+  return { end: snap(obs.length, e2Summary(post)), prev };
 }
 
 // Tijdmodel: Bed droog tegen het verwachte einde van de bestaande engine, per brewer en techniek
@@ -10658,9 +10722,20 @@ function e2Meetlat(store, trials){
     if (i >= 0) toFirst.push(i + 1); else notYet += 1;
   });
   const firstLekker = { beans: toFirst.length + notYet, median: toFirst.length ? medianOf(toFirst) : null, notYet };
+  // e2-2026.5 · herhaalbaarheid (ontwerp E4): bij twee koppen met (bijna) dezelfde sterkte, binnen 2 %,
+  // hoe vaak gaf je hetzelfde antwoord? Alleen gewone koppen (niet laat geproefd, geen bypass), de
+  // laatste 30.
+  const plain = obs.filter(o => o.type === 'jar' && !o.late && !o.bypass).slice(-30);
+  let pairs = 0, same = 0;
+  for (let i = 0; i < plain.length; i++) for (let j = i + 1; j < plain.length; j++){
+    if (Math.abs(plain[i].lnT - plain[j].lnT) > 0.02) continue;
+    pairs += 1;
+    if (plain[i].ord === plain[j].ord) same += 1;
+  }
+  const repeat = { pairs, same };
   return { n: lastObs.length, e2Changes, oldChanges, good, pairs: obs.filter(o => o.type === 'pair').length,
     sdLn: dec.summary ? dec.summary.sdLn : null, mode: dec.mode, outcomes, ey, measured: obs.filter(o => o.measured).length,
-    lekker, firstLekker };
+    lekker, firstLekker, repeat };
 }
 // De beslissing van Engine 2 over één geproefde kop, in woorden.
 function e2DecisionText(entry){
@@ -11352,6 +11427,65 @@ function renderMeasurementsSection(store){
       <p class="insights-note m-8-0-0">Alleen uit je eigen koppen, om de aannames van de app te toetsen. Zonder Bed droog-tik telt een kop hier niet mee.</p>
     </div>`;
 }
+// e2-2026.5 · het verloop van je sterkte: per kop de kop zelf (met je antwoord) en het doel daarna,
+// met de band waarin je doel waarschijnlijk ligt (10–90 %). Hoogstens de laatste 20 waarnemingen.
+function e2TrendData(store, trials){
+  const rFor = (m) => e2RetentionFor(m).value;
+  const eyFor = (m) => e2EyFor(store, m, rFor(m));
+  const obs = e2AllObservations(store, trials, rFor, eyFor);
+  if (obs.length < 2) return null;
+  const dec = e2Decide(obs, 0);
+  const pts = obs.map((o, i) => ({ id: o.id, at: o.at, type: o.type, ord: o.type === 'pair' ? null : o.ord, outcome: o.type === 'pair' ? o.outcome : null,
+    cupLn: o.lnT, targetLn: dec.trail[i].afterLn, q10Ln: dec.trail[i].q10Ln, q90Ln: dec.trail[i].q90Ln, steps: dec.trail[i].steps }));
+  return { pts: pts.slice(-20), rAbs: rFor('v60'), ey: eyFor('v60') };
+}
+const E2_TREND_ANSWER = { '-2': 'veel te slap', '-1': 'te slap', '0': 'goed', '1': 'te sterk', '2': 'veel te sterk' };
+function renderE2Trend(store, trials){
+  const d = e2TrendData(store, trials);
+  if (!d) return '';
+  const pts = d.pts;
+  const W = 300, top = 10, H = 120, left = 34, right = 8;
+  const lns = [];
+  pts.forEach(p => { lns.push(p.cupLn, p.targetLn, p.q10Ln, p.q90Ln); });
+  const lo = Math.min(...lns) - 0.03, hi = Math.max(...lns) + 0.03;
+  const y = (ln) => top + (hi - ln) / (hi - lo) * H; // sterker (hogere TDS) bovenaan
+  const n = pts.length;
+  const x = (i) => left + (n === 1 ? 0 : i * (W - left - right) / (n - 1));
+  const ratioAt = (ln) => e2RatioForTds(Math.exp(ln), d.rAbs, d.ey);
+  // Rasterlijnen op hele verhoudingen binnen het bereik (1:15, 1:16, …), hoogstens vier.
+  const rHi = ratioAt(lo), rLo = ratioAt(hi);
+  const ticks = [];
+  for (let r = Math.ceil(rLo); r <= Math.floor(rHi); r++) ticks.push(r);
+  const every = Math.max(1, Math.ceil(ticks.length / 4));
+  const grid = ticks.filter((_, i) => i % every === 0).map(r => {
+    const t = e2Tds(100, 100 * r, d.rAbs, d.ey); // de TDS die bij 1:r hoort (zelfde massabalans)
+    if (t == null) return '';
+    const yy = y(Math.log(t));
+    return `<line class="bean-trend-grid" x1="${left}" x2="${W}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}"/><text class="bean-trend-axis" x="0" y="${(yy + 3).toFixed(1)}">1:${r}</text>`;
+  }).join('');
+  // Band en doel als trap: het doel geldt vanaf de kop waarna het gezet is.
+  const stepPts = (key) => pts.map((p, i) => i === 0 ? [[x(0), y(p[key])]] : [[x(i), y(pts[i - 1][key])], [x(i), y(p[key])]]).flat();
+  const up = stepPts('q90Ln'), dn = stepPts('q10Ln');
+  const band = `<polygon class="e2-trend-band" points="${up.concat(dn.slice().reverse()).map(q => `${q[0].toFixed(1)},${q[1].toFixed(1)}`).join(' ')}"/>`;
+  const line = `<polyline class="bean-trend-line" points="${stepPts('targetLn').map(q => `${q[0].toFixed(1)},${q[1].toFixed(1)}`).join(' ')}"/>`;
+  const marker = (p, i) => {
+    const cx = x(i), cy = y(p.cupLn);
+    const when = p.at ? new Date(p.at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : '';
+    const what = p.type === 'pair' ? `blind paar, ${p.outcome === 'A' ? 'recept won' : p.outcome === 'B' ? 'variant won' : 'geen verschil'}` : E2_TREND_ANSWER[String(p.ord)];
+    const tip = `<title>${escapeHtml(`${when}: kop ${e2RatioText(ratioAt(p.cupLn))}, ${what}; doel daarna ${e2RatioText(ratioAt(p.targetLn))}`)}</title>`;
+    if (p.type === 'pair') return `<g class="e2-trend-mark">${tip}<rect x="${(cx - 4).toFixed(1)}" y="${(cy - 4).toFixed(1)}" width="8" height="8" rx="1"/></g>`;
+    if (p.ord > 0) return `<g class="e2-trend-mark">${tip}<path d="M${cx.toFixed(1)} ${(cy - 5).toFixed(1)} l5 9 h-10 z"/></g>`;
+    if (p.ord < 0) return `<g class="e2-trend-mark">${tip}<path d="M${cx.toFixed(1)} ${(cy + 5).toFixed(1)} l5 -9 h-10 z"/></g>`;
+    return `<g class="e2-trend-mark">${tip}<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4"/></g>`;
+  };
+  const marks = pts.map(marker).join('');
+  const last = pts[pts.length - 1];
+  const summary = `Verloop over ${n} waarnemingen; je doel nu ${e2RatioText(ratioAt(last.targetLn))}, waarschijnlijk tussen ${e2RatioText(ratioAt(last.q90Ln))} en ${e2RatioText(ratioAt(last.q10Ln))}.`;
+  return `<figure class="bean-trend e2-trend" id="e2-trend">
+      <svg viewBox="0 0 ${W} ${top + H + 8}" role="img" aria-label="${escapeHtml(summary)}">${grid}${band}${line}${marks}</svg>
+      <figcaption>${escapeHtml(summary)} Lijn: je doel · band: waar het waarschijnlijk ligt · ▲ te sterk · ● goed · ▼ te slap · ■ blind paar. Sterker staat boven.</figcaption>
+    </figure>`;
+}
 // e2-2026.3 · de meetlat van Engine 2: hoe rustig hij is, hoe vaak je kop goed was, wat de proeven
 // opleverden. Puur tellen uit je eigen koppen (e2Meetlat()).
 function renderEngine2Meetlat(store){
@@ -11378,6 +11512,11 @@ function renderEngine2Meetlat(store){
       ? `Nieuwe zak tot de eerste lekkere kop: ${fmt(f.median, f.median % 1 ? 1 : 0)} ${f.median === 1 ? 'kop' : 'koppen'} (mediaan over ${f.beans - f.notYet} ${f.beans - f.notYet === 1 ? 'zak' : 'zakken'})${f.notYet ? `; ${f.notYet} ${f.notYet === 1 ? 'zak' : 'zakken'} nog zonder` : ''}.`
       : `Nog geen zak met een lekkere kop (${f.beans} ${f.beans === 1 ? 'zak' : 'zakken'}).`)}</p>`);
   }
+  if (m.repeat){
+    parts.push(`<p class="insights-note m-0-0-4" data-e2-meetlat="repeat">${escapeHtml(m.repeat.pairs >= 3
+      ? `Herhaalbaarheid: bij koppen met (bijna) dezelfde sterkte gaf je ${m.repeat.same} van de ${m.repeat.pairs} keer hetzelfde antwoord (${Math.round(m.repeat.same / m.repeat.pairs * 100)} %). Hoe lager, hoe meer koppen Engine 2 nodig heeft voor een stap; daarom stapt hij niet op één antwoord.`
+      : `Herhaalbaarheid: nog te weinig koppen met dezelfde sterkte. Zet je drie keer hetzelfde recept, dan zie je hier hoe herhaalbaar je proeft.`)}</p>`);
+  }
   const keys = Object.keys(m.outcomes);
   if (keys.length){
     parts.push(`<p class="insights-note m-10-0-6"><strong class="c-text">Proeven uit het advies</strong> (vergeleken met je vorige kop)</p>` +
@@ -11392,6 +11531,7 @@ function renderEngine2Meetlat(store){
   }
   return `<div class="bean-detail-section" id="e2-meetlat">
       <h2 class="bean-detail-section-label">Engine 2 · meetlat</h2>
+      ${renderE2Trend(store, abTrials)}
       ${parts.join('')}
       <p class="insights-note m-8-0-0">Minder wijzigingen bij evenveel goede koppen is beter: elke wijziging op ruis maakt je kop onrustiger.</p>
     </div>`;

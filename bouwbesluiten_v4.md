@@ -1034,3 +1034,22 @@ Jelle: "bouw de volgende stappen van Engine 2". Details staan in `docs/engine2.m
   - `tests/engine2.smoke.test.mjs`: 2 nieuwe browsertests, 11 in totaal.
 - **Jouw data:** dosis gelijk (15,8 g op 300 ml). Halo loopt iets sneller door, dus het verwachte einde wordt 4:15 in plaats van 4:20. Lekker bij 6 van je laatste 9 koppen; een nieuwe zak had mediaan 2,5 koppen nodig tot de eerste lekkere.
 
+## Engine 2 · e2-2026.5: snelheid, invarianten, verloop, herhaalbaarheid (keuze Jelle, okt 2026)
+
+Jelle: "bouw de volgende stappen van Engine 2". Details staan in `docs/engine2.md` §10.
+
+- **Snelheid:**
+  - de beslisregel kostte 126 ms bij 50 koppen en 1,6 s bij 1.000, bij elke tik op het receptscherm;
+  - nu worden de uitkomsten onthouden en gaat het stapsgewijs: 1–5 ms;
+  - exact dezelfde uitkomst als alles opnieuw afspelen (getoetst op de eigen back-up en op vaste voorbeelden);
+  - de eerste berekening na het openen van de app blijft een volledige run.
+- **Invarianten-sweep:** een nieuw testbestand met 11 eigenschappen over willekeurige reeksen.
+- **Gevonden en opgelost:** een stap tegen het net gegeven antwoord in (2,3 % van de stappen bij willekeurige antwoorden, 0 bij Jelle). Engine 2 stapt nu nooit tegen het laatste antwoord in.
+- **Verloop:** een grafiek in de meetlat met je doel (trap), de band, en je koppen met het antwoord als vorm.
+- **Herhaalbaarheid:** hoe vaak je bij dezelfde sterkte hetzelfde antwoordt. Bij Jelle 6 van de 10.
+- **Toetsing:**
+  - `tests/engine2.test.mjs`: 4 nieuwe tests, 72 in totaal;
+  - `tests/engine2.invariants.test.mjs`: 11 nieuwe;
+  - `tests/engine2.smoke.test.mjs`: 1 nieuwe browsertest, 12 in totaal.
+- **Jouw recept:** gelijk (15,8 g op 300 ml, 18,5 g op 350 ml).
+
