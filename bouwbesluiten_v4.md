@@ -1160,3 +1160,10 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Besluit:** de synchronisatie wordt bouwstap 0, vóór de rekenlogica. iOS geeft de app geen blijvende opslag, en rechtstreeks aan iCloud koppelen kan niet zonder betaald Apple-ontwikkelaarsaccount.
 - **Opzet:** een eigen, gratis Cloudflare Worker die alleen versleutelde blokken bewaart (AES-GCM, sleutel uit een wachtwoordzin via PBKDF2). De iCloud Drive-back-up via het deelmenu blijft de reserve.
 - **Ontwerp:** `docs/engine3/08-synchronisatie.md`.
+
+### Engine 3 · bouwplan en stap 0a–0c (5 nov 2026)
+
+- **Bouwplan:** `docs/engine3/09-bouwplan.md`, met poorten per stap (0 synchronisatie, 1 logboek→toestand, 2 recept, 3 sterkte, 4 tijd en molen, 5 techniekkeuze, 6 zakherkenning, 7 smaakprofiel, 8 samenstellen).
+- **Synchronisatie gebouwd** in `engine3/sync/`: versleutelde, onveranderlijke blokken (PBKDF2 600.000 rondes, AES-GCM, blok-id als gebonden gegeven), server als `Request → Response` met geheugen- en Cloudflare-KV-opslag, en een client met push, pull en opruimen. De engine zelf blijft zuiver; de synchronisatie staat ernaast.
+- **Getoetst:** 19 nieuwe tests (totaal 43), onder meer: verkeerde zin, gewijzigd of verwisseld blok worden geweigerd; twee toestellen komen in willekeurige volgorde op hetzelfde logboek uit; een gewiste app herstelt zonder conflict; de server bewaart geen leesbare tekst.
+- **Nog te doen door Jelle (stap 0d):** Cloudflare-account en uitrollen, zie `docs/engine3/08`.

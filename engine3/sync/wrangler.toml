@@ -1,0 +1,13 @@
+# Synchronisatie-Worker voor Brew Console. Uitrollen: zie docs/engine3/08-synchronisatie.md.
+name = "brewconsole-sync"
+main = "worker.ts"
+compatibility_date = "2026-10-01"
+
+[vars]
+ALLOW_ORIGIN = "https://verhje.github.io"
+
+[[kv_namespaces]]
+binding = "BLOCKS"
+id = "VERVANG-DOOR-HET-ID-UIT-wrangler-kv-namespace-create"
+
+# Het geheim zet je met: wrangler secret put TOKEN_HASHES
