@@ -25,3 +25,30 @@ export async function startApp() {
   const browser = await chromium.launch({ executablePath: fs.existsSync(FIXED) ? FIXED : undefined, args: ['--no-sandbox'] });
   return { base, browser, async close() { await browser.close(); server.close(); fs.rmSync(out, { recursive: true, force: true }); } };
 }
+
+/** Maakt een zak, plant een zetsel en tikt het met een nagebootste klok helemaal af. Laat de pagina op 'Proeven' staan. */
+export async function brewToEnd(page, base, beanName) {
+  await page.goto(base + '#/zakken/nieuw');
+  await page.fill('input[name=name]', beanName);
+  await page.fill('textarea[name=paste]', 'Notes: jasmine, peach');
+  await page.click('text=Herken velden');
+  await page.fill('input[name=name]', beanName);
+  await page.click('button:has-text("Opslaan")');
+  await page.waitForSelector(`.item:has-text("${beanName}")`);
+  await page.goto(base + '#/zetten');
+  await page.selectOption('select[name=bean]', { label: beanName });
+  await page.click('button:has-text("Start zetsel")');
+  await page.waitForSelector('.timer .clock');
+  await page.clock.install({ time: new Date('2026-11-05T12:00:00Z') });
+  await page.click('button:has-text("Start")');
+  for (let i = 0; i < 14; i++) {
+    if (await page.locator('a:has-text("Proeven")').count()) break;
+    await page.clock.fastForward(40_000);
+    const finish = page.locator('button:has-text("Alles doorgelopen")');
+    if (await finish.count()) { await finish.click(); break; }
+    const erdoor = page.locator('button:text-is("Erdoor")');
+    if (await erdoor.count()) await erdoor.click();
+  }
+  await page.click('a:has-text("Proeven")');
+  await page.waitForSelector('.progress');
+}

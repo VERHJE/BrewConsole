@@ -89,3 +89,16 @@ table.pours th, table.pours td { padding: 8px 6px; border-bottom: 1px solid var(
 .timer ol.steps li.hold { background: var(--surface-2); color: var(--warn); }
 .timer ol.steps li.past { opacity: .6; }
 @media (max-height: 520px) and (orientation: landscape) { .timer .clock { font-size: 4rem; } }
+
+/* proeven */
+.progress { height: 6px; background: var(--surface-2); border-radius: 99px; overflow: hidden; margin: 4px 0 16px; }
+.progress > i { display: block; height: 100%; background: var(--accent); }
+.choices { display: grid; gap: 8px; margin: 8px 0 16px; }
+.choice { min-height: var(--tap); padding: 10px 14px; text-align: left; border-radius: var(--radius-s); border: 1px solid var(--line); background: var(--surface); cursor: pointer; display: flex; align-items: center; gap: 10px; }
+.choice[aria-pressed="true"], .choice[aria-checked="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
+.choice .box { width: 20px; height: 20px; border: 2px solid var(--text-3); border-radius: 5px; flex: none; }
+.choice[aria-checked="true"] .box { background: var(--accent); border-color: var(--accent); }
+.q { margin: 0 0 4px; font-size: 1.15rem; font-weight: 600; }
+.hint { color: var(--text-2); margin: 0 0 8px; font-size: .9rem; }
+.notehit { margin: 0 0 12px; }
+.notehit .chips { margin-top: 6px; }
