@@ -1194,3 +1194,11 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Meetopstelling:** acht werelden, in alle werelden minstens 99 % op tijd (vaste klik 16: 15–99 %), met een gemiddelde klikstap onder 0,1.
 - **Eén afwijking van Engine 2 in stap 3:** de afwijking per zak gaat nooit tegen het laatste antwoord in. Daardoor 0 % in plaats van 0,05–0,23 % stappen tegen het oordeel in, tegen maximaal 0,24 punt 'precies goed'.
 - **Nog niet getoetst op eigen tikken:** de back-up bevat geen 'erdoor'-tikken en maar twee naburige klikstanden (16 en 17); het meetplan in 07 moet het klikeffect zichtbaar maken.
+
+### Engine 3 · stap 5 klaar (5 nov 2026)
+
+- **`chooseTechnique()`** (`engine3/src/technique.ts`, uitleg in `docs/engine3/14-techniekkeuze.md`): volgorde zelf gekozen → jouw gewonnen proef → vergelijkbare zakken → regeltabel → Kasuya. Een afwijking van Kasuya is altijd een paar-proef met Kasuya als controle; alleen Chemex → Hoffmann is een direct besluit. `trialProposalFor()` maakt de twee recepten.
+- **Bewaking:** pas na 2 geproefde Kasuya-koppen van de zak, nooit twee proeven tegelijk, een afkoelperiode van twee koppen, geen herhaling van een variant die al is geprobeerd, en nooit Osmotic Flow (geen schema).
+- **Vergelijkbare zakken:** zelfde proces, brandingklasse en minstens één gedeelde smaakcategorie; twee netto gewonnen proeven maken een techniek de standaard.
+- **Meetopstelling** (`engine3/eval/technique-sim.ts`): nergens meer spijt dan altijd Kasuya, minder dan twee proeven per zak; bij 80 % juiste regels daalt de spijt van 0,74 naar 0,37.
+- **Frontend moet:** de proef kunnen aanbieden, blind laten kiezen en vastleggen als `pair.trial` met `kind: 'technique'`, en 'ongelijk doorlopen' meegeven als `feedback`.

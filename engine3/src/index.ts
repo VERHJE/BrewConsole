@@ -23,3 +23,5 @@ export type { StrengthPlan, StrengthRequest, StrengthMode, TrailStep, Decision, 
 export { grindPlan, fitGrind, predictTail, perClickEffect, tailObservationsOf, currentClickFor, MAX_CLICK_STEP, GRIND_MODEL_VERSION } from './grind.ts';
 export type { GrindPlan, GrindRequest, GrindAdvice, GrindCode, GrindFit, TailObs, TailPrediction } from './grind.ts';
 export { GRINDER_C3S_PRO, GRIND_PRIORS } from './data/grinder.ts';
+export { chooseTechnique, trialProposalFor, matchedRulesFor, ruleCandidateFor, recurringFeedback, categoriesOf, roastClassOf, similarBeans, TECHNIQUE_MODEL_VERSION, MIN_CONTROL_CUPS } from './technique.ts';
+export type { TechniqueChoice, TechniqueRequest, TechniqueSource, TechniqueTrialPlan, TrialRecipeInput, Feedback } from './technique.ts';

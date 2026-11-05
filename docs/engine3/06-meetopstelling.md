@@ -78,3 +78,7 @@ De sterktemodule van Engine 3 is gemeten met dezelfde opstelling (`node engine3/
 ## Engine 3, stap 4 (tijd en molen)
 
 De doorloopmaatstaf staat er nu: `node engine3/eval/grind-sim.ts 200`, met acht werelden en als vergelijking een vaste klik, 'zelf één klik bijsturen' en een orakel. Zie [13-tijd-en-molen.md](13-tijd-en-molen.md).
+
+## Engine 3, stap 5 (techniekkeuze)
+
+De simulator met een verborgen beste techniek per zak staat er nu: `node engine3/eval/technique-sim.ts 200`. Zie [14-techniekkeuze.md](14-techniekkeuze.md).
