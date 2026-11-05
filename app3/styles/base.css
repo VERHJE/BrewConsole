@@ -55,3 +55,37 @@ a { color: var(--accent); }
 .empty { text-align: center; padding: 32px 12px; color: var(--text-2); }
 .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
 .btn:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* zetten */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { min-height: var(--tap); padding: 0 14px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.stepper { display: flex; align-items: center; gap: 8px; }
+.stepper input { text-align: center; width: 96px; }
+.numbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 0 0 12px; }
+.num { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; }
+.num b { display: block; font-size: 1.6rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.num small { color: var(--text-2); }
+table.pours { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+table.pours th { text-align: left; font-weight: 500; color: var(--text-2); font-size: .8rem; }
+table.pours th, table.pours td { padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.reasons { margin: 0; padding-left: 1.1rem; }
+.reasons li { margin: 0 0 6px; }
+.banner.trial { background: var(--surface-2); }
+
+/* timer */
+.timer { text-align: center; }
+.timer .clock { font-size: clamp(4rem, 22vw, 7rem); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; margin: 8px 0; }
+.timer .now { background: var(--surface); border: 2px solid var(--accent); border-radius: var(--radius); padding: 16px; margin: 12px 0; }
+.timer .now.hold { border-color: var(--warn); }
+.timer .now.done { border-color: var(--ok); }
+.timer .now b { display: block; font-size: 2rem; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.timer .now small { color: var(--text-2); font-size: 1rem; }
+.timer .big { min-height: 72px; font-size: 1.25rem; width: 100%; }
+.timer .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.timer ol.steps { text-align: left; padding-left: 0; list-style: none; margin: 12px 0; }
+.timer ol.steps li { display: flex; gap: 12px; padding: 8px 10px; border-radius: var(--radius-s); color: var(--text-2); font-variant-numeric: tabular-nums; }
+.timer ol.steps li.go { background: var(--accent-soft); color: var(--text); font-weight: 600; }
+.timer ol.steps li.hold { background: var(--surface-2); color: var(--warn); }
+.timer ol.steps li.past { opacity: .6; }
+@media (max-height: 520px) and (orientation: landscape) { .timer .clock { font-size: 4rem; } }
