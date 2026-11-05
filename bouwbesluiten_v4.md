@@ -1143,3 +1143,14 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
   - de temperatuur bij Hoffmann en Wendelboe ontbreekt;
   - Osmotic Flow heeft geen schema;
   - meetplan voor eigen data.
+
+### Engine 3 · besluiten van 5 nov 2026
+
+- **Wendelboe:** houdt de rol voor bloemige en theeachtige koffies, met zijn eigen recept (bloom roeren, doorlopend in rondjes). Geen 'lage agitatie'-variant; 'Serene pulse' en 'Nordic light' vervallen.
+- **Temperatuur:**
+  - Hoffmann: net van de kook (100 °C op de ketel; Hario USA 'the hotter, the better'). Donker 88 °C (klasse C).
+  - Wendelboe: 96 °C als aanname (klasse C). Zijn eigen gids noemt geen getal; zijn café zet AeroPress met 96 °C. Bij donkere branding Philocoffea (88/83 °C).
+- **Toestelcheck op de iPhone** (iOS 18.7, Safari 27.0.1, ook vanaf het beginscherm): alles werkt behalve `persist` (niet toegekend) en `BarcodeDetector` (niet aanwezig).
+  - De back-up blijft dus nodig.
+  - Engine 3 neemt een eigen QR-decoder mee.
+- **Meetplan voor eigen data:** later.

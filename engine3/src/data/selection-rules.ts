@@ -58,7 +58,7 @@ export const SELECTION_RULES: readonly SelectionRule[] = [
   {
     id: 'notes.tea_floral', when: { noteCategoryAny: ['bloemig'] }, suggest: ['wendelboe', 'kasuya_46'],
     kasuyaFirstPourShare: null, evidence: 'E3_practice', priority: 60,
-    why: 'Thee- of bloemige notities: een rustigere techniek. Let op: zie het open punt bij Wendelboe (zijn recept roert de bloom).'
+    why: 'Thee- of bloemige notities: Wendelboe met zijn eigen recept (bloom roeren, doorlopend in rondjes), met Kasuya als proef.'
   },
   {
     id: 'notes.fruity_natural', when: { processBase: ['natural', 'honey'], noteCategoryAny: ['fruitig'] }, suggest: ['kasuya_46', 'osmotic_flow'],

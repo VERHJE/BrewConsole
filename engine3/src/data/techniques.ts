@@ -104,7 +104,7 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
     axes: { agitation: 'medium', structure: 'few_pours', extraction: 'normal' },
     reference: {
       doseG: 30, waterG: 500,
-      tempC: null, tempNote: "'the hotter, the better', vooral bij lichte branding (geen getal)",
+      tempC: 100, tempNote: "Hario USA: 'the hotter, the better (especially with lighter roasts)' en 'water just off the boil' voor het spoelen; secundaire gidsen: net van de kook. Licht en medium: net van de kook (100 °C op de ketel). Donker: 88 °C (alleen secundair, klasse C; aanname).",
       grind: 'medium-fijn',
       pours: [
         { atSec: 0, toG: 60, style: 'spiral', agitationAfter: 'swirl', drainCue: null },
@@ -150,7 +150,7 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
     axes: { agitation: 'medium', structure: 'continuous', extraction: 'normal' },
     reference: {
       doseG: 32.5, waterG: 500,
-      tempC: null, tempNote: 'geen temperatuur in de bron',
+      tempC: 96, tempNote: "Eigen gids zegt alleen 'hot water'. 96 °C is een aanname (klasse C): zijn café zet de AeroPress met 96 °C uit de boiler, en recepten-sites die deze gids overnemen geven 96 °C. Bij donkere branding de Philocoffea-regel (88/83 °C) als terugval.",
       grind: 'filtermaling; kleinere hoeveelheden fijner',
       pours: [
         { atSec: 0, toG: 60, style: 'spiral', agitationAfter: 'stir', drainCue: null },
@@ -161,11 +161,8 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
       notes: ['65 g per liter.', 'Bloom ~60 g en roeren met een theelepel.', 'Gieten 2–2,5 min, dan ~1 min uitlopen; kan aan het eind roeren.', 'Te lang → bitter (grover); veel korter → slap en zuur (fijner).', 'Het moment 60 s voor de derde stap is een aanname: de bron zegt alleen "doorgaan in rondjes".']
     },
     scaling: 'Bron: kleinere hoeveelheden fijner malen; verhouding 65 g/l.',
-    role: "Verslag: 'thee, bloemig, delicaat' met 'lage agitatie, rustige pulsen'.",
-    open: [
-      "De namen 'Serene pulse' en 'Nordic light' komen in geen enkele bron voor.",
-      'Zijn eigen recept roert de bloom en giet doorlopend: dat is geen lage agitatie. De rol in het verslag past daar niet bij — beslissen of Wendelboe die rol houdt of dat Osmotic Flow/Hedrick (geen swirl) de lage-agitatie-optie wordt.'
-    ]
+    role: "Bloemige en theeachtige koffies (lichte Nordic-branding), met zijn eigen recept: bloom roeren, daarna doorlopend in rondjes. Besluit Jelle (5 nov 2026): geen 'lage agitatie'-variant; de verzonnen namen 'Serene pulse' en 'Nordic light' vervallen.",
+    open: ['De temperatuur (96 °C) is een aanname; een eigen proef 96 tegen 100 °C kan dat beslissen.']
   },
   {
     id: 'osmotic_flow',

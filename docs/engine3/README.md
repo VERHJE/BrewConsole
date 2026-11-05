@@ -12,7 +12,7 @@ Engine 3 is de nieuwe rekenkern van Brew Console. Hij wordt vanaf nul gebouwd en
 | Migratie van de huidige back-up | [04-migratie.md](04-migratie.md), `engine3/src/migrate/v3.ts` | klaar, getoetst op Jelles back-up (lokaal) |
 | Technieken en regeltabel als data | [05-technieken.md](05-technieken.md), `engine3/src/data/` | klaar, met open punten |
 | Meetopstelling en nulmeting Engine 2 | [06-meetopstelling.md](06-meetopstelling.md), `engine3/eval/` | klaar |
-| Toestelcheck voor de iPhone | `toestelcheck.html` (in de root, naast de app) | klaar, nog te draaien op het toestel |
+| Toestelcheck voor de iPhone | `toestelcheck.html` (in de root, naast de app) | gedraaid op de iPhone (5 nov 2026); uitkomst in 07 |
 | Open punten en beslissingen | [07-open-punten.md](07-open-punten.md) | — |
 
 ## Draaien

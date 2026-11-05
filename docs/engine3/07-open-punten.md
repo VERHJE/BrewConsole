@@ -1,28 +1,26 @@
 # 07 · Open punten
 
-## Beslissingen voor Jelle
+## Beslissingen
 
-1. **Wendelboe.** Zijn echte recept roert de bloom en giet doorlopend. Daarmee past het niet bij de rol 'lage agitatie voor thee en bloemig'. De keuze:
-   - Wendelboe houdt de rol, met zijn echte recept;
-   - de lage-agitatierol gaat naar Hedrick One and Done (niet swirlen).
-
-   Zie 05.
-2. **Temperatuur bij Hoffmann en Wendelboe.** Hun bronnen geven geen getal. Voorstel: de branding-regel van Philocoffea als terugval, gemarkeerd als aanname.
+1. ~~**Wendelboe.**~~ **Besloten:** Wendelboe met zijn eigen echte recept. Zie 05.
+2. ~~**Temperatuur bij Hoffmann en Wendelboe.**~~ **Opgezocht:** Hoffmann net van de kook (donker 88 °C, klasse C). Wendelboe 96 °C als aanname (klasse C); bij donkere branding Philocoffea. Zie 05, punt 4.
 3. **Osmotic Flow.** Hij komt pas in de regeltabel als er een gietschema is. Tot die tijd blijft Kasuya met een grote eerste giet het voorstel bij fruitige naturals.
 
-## Op het toestel testen
+## Toestelcheck (gedaan, 5 nov 2026)
 
-Open `toestelcheck.html` op de iPhone, vanaf het beginscherm, op hetzelfde adres als de app. Tik daarna op 'Uitkomst kopiëren' en stuur de tekst door. De check test:
+`toestelcheck.html` op Jelles iPhone (iOS 18.7, Safari 27.0.1), in Safari en vanaf het beginscherm. Beide keren dezelfde uitkomst:
 
-- opslag die blijft (`persist`);
-- IndexedDB;
-- versleutelen (PBKDF2 + AES-GCM);
-- WebAssembly (nodig voor een eigen QR-decoder);
-- de ingebouwde QR-lezer;
-- bestanden delen (back-up naar iCloud Drive);
-- Web Worker en OffscreenCanvas.
-
-In headless Chromium werkt alles behalve `persist`, de ingebouwde QR-lezer en bestanden delen. Daar zijn ze niet beschikbaar, maar zeggen ze nog niets over de iPhone.
+| Test | Uitkomst | Gevolg voor Engine 3 |
+|---|---|---|
+| Opslag blijft (`persist`) | niet toegekend, ook niet vanaf het beginscherm | De back-up blijft nodig. De back-upherinnering blijft een vast onderdeel; het logboek mag nooit alleen op het toestel staan. |
+| Opslagruimte | ~39 GB beschikbaar | Ruimte is geen beperking. |
+| IndexedDB | werkt | Opslag van het logboek in IndexedDB. |
+| PBKDF2 + AES-GCM | werkt (3–5 ms) | Versleutelde synchronisatie kan. |
+| WebAssembly | werkt | Een eigen QR-decoder kan. |
+| Ingebouwde QR-lezer (`BarcodeDetector`) | niet aanwezig | Engine 3 neemt een eigen decoder mee (WASM of pure JS). |
+| Bestanden delen | werkt | Back-up via het deelmenu naar iCloud Drive. |
+| Web Worker, OffscreenCanvas, createImageBitmap | werkt | Foto voorbewerken (OCR en QR) buiten de hoofdthread. |
+| Service worker | beschikbaar | Offline werken blijft zoals nu. |
 
 ## Meetplan voor eigen data (vóór de molenmodule)
 
