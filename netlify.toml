@@ -1,0 +1,26 @@
+# Netlify bouwt bij elke push naar main en publiceert dist/ (de oude app op / en de nieuwe app op /app3/).
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Playwright is alleen voor de tests; de browser hoeft op Netlify niet mee.
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
+
+# Service workers en hun lijst van bestanden mogen niet lang in de cache van de browser blijven,
+# anders komt een nieuwe versie te laat aan.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/app3/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/app3/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"

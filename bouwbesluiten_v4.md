@@ -1296,3 +1296,8 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Toegankelijkheid:** axe-core 4.10.3 (exact vastgezet, alleen tests) op alle hoofdschermen in licht en donker, WCAG 2 A/AA en 2.1 A/AA: geen overtredingen (inclusief kleurcontrast).
 - **CI:** de `app3:check`-stap draait na de bestaande stappen; de tijdslimiet van de job is van 15 naar 25 minuten gegaan, omdat de installatie van Playwright eerder (PR #43) al bijna 14 minuten kostte.
 - **Niet gedaan, bewust:** `/` naar de nieuwe app laten wijzen. Dat vraagt een besluit van Jelle (blijft de oude app bestaan?), zie 18. De nieuwe app is bereikbaar op `/app3/`.
+
+### Publicatie via Netlify en GitHub (5 nov 2026)
+
+- `netlify.toml` (repo-root): bouwcommando `npm run build`, publicatiemap `dist` (oude app op `/`, nieuwe app op `/app3/`), Node 22, geen Playwright-browser, en `no-cache` voor beide service workers en `app3/index.html` zodat een nieuwe versie niet blijft hangen.
+- De koppeling Netlify ↔ GitHub zelf wordt in het Netlify-dashboard gelegd (Add new site → Import from Git); dat kan niet vanuit de repo.
