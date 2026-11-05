@@ -1231,3 +1231,8 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 
 - **Probleem:** een gesleepte map naar Netlify wordt gebouwd (`npm run build` → `dist/`), en `dist/` bevatte alleen de app. `tokengenerator.html` en `toestelcheck.html` ontbraken daardoor. Daarnaast liet de service worker élke navigatie op dit adres de app-shell tonen, dus op een toestel waar de app al staat zou elke losse pagina toch de app tonen (aangetoond in een echte browser: `/tokengenerator.html` gaf 'Brew Console 2.0').
 - **Herstel:** `scripts/build.mjs` kopieert beide pagina's naar `dist/`; `sw.js` serveert de app-shell alleen voor de hoofdmap en `index.html`, andere pagina's gaan naar het netwerk. Tests: `tests/sw-navigation.test.mjs` (nieuw) en de bouwtest eist de bestanden. In een echte browser met actieve worker tonen `/tokengenerator.html` en `/toestelcheck.html` nu hun eigen pagina.
+
+### Besluit: geen AI-foto-herkenning voorlopig (5 nov 2026)
+
+- Besluit Jelle: de AI-foto-herkenning (`POST /scan`, Anthropic-API) is het enige onderdeel dat geld kost; dat doen we niet, of in ieder geval nog niet.
+- Gevolg: geen `ANTHROPIC_API_KEY` op de Worker; `/scan` geeft dan 404. Synchronisatie (gratis Cloudflare-plan), tekst, OCR, QR en het smaakprofiel blijven gratis werken. Code en tests blijven staan.

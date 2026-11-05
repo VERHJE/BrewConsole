@@ -35,6 +35,8 @@ De herkenning uit de huidige app (PR #40) is letterlijk overgezet naar strikte T
 
 ## 3. AI: alleen met toestemming, via de Worker
 
+> **Besluit Jelle (5 nov 2026): AI-foto-herkenning staat voorlopig uit.** Het is het enige onderdeel dat geld kost (betaalde Anthropic-API), en dat doen we niet, of in ieder geval nog niet. Er wordt geen sleutel gezet; zonder `ANTHROPIC_API_KEY` geeft `/scan` op de Worker 404 en gaat er niets naar buiten. Tekst, OCR, geplakte tekst en QR blijven werken en kosten niets. De code en de tests blijven staan, zodat het later met één geheim aan te zetten is.
+
 Besluit Jelle: de veiligste optie.
 
 - **Toestemming per scan:** het verzoek moet `consent: true` hebben; zonder dat geeft de Worker 403 en gaat er niets naar buiten.
@@ -46,4 +48,4 @@ Besluit Jelle: de veiligste optie.
 
 ## Wat jij moet doen
 
-Alleen als je foto-herkenning wilt: een Anthropic Console-account met betaling per gebruik, een eigen werkruimte met sleutel en een uitgavenlimiet, en dan `npx wrangler secret put ANTHROPIC_API_KEY`. De limiet van 30 scans per dag zit al in de Worker; de uitgavenlimiet in de Console is de tweede beveiliging.
+Voorlopig niets: AI-foto-herkenning staat uit (zie het besluit hierboven). Alleen als je het later toch wilt: een Anthropic Console-account met betaling per gebruik, een eigen werkruimte met sleutel en een uitgavenlimiet, en dan `npx wrangler secret put ANTHROPIC_API_KEY`. De limiet van 30 scans per dag zit al in de Worker; de uitgavenlimiet in de Console is de tweede beveiliging.
