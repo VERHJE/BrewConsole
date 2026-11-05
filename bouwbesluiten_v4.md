@@ -1282,3 +1282,10 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Meer → Molen:** effect per klik uit `fitGrind`/`perClickEffect`, of dat uit eigen metingen komt of de startwaarde is, en het aantal bruikbare metingen; met de aanwijzing hoe je meer metingen krijgt.
 - **Regel:** geen getal op deze schermen wordt in de frontend berekend wat de engine ook geeft.
 - **Nog niet:** verloopgrafieken en de pasvorm van een zak (`beanFit`) in het zakdetail; beide kunnen later zonder de engine aan te raken.
+
+### Frontend · F6 klaar: Gegevens en synchronisatie (5 nov 2026)
+
+- **Gegevens** (`core/backup.ts`, `Gegevens.tsx`): back-up als één bestand (`brewconsole-log`, deelblad op iPhone, anders download), terugzetten met voorbeeld (wat zit erin, hoeveel nieuw, hoeveel al aanwezig, waarschuwingen) voor zowel een eigen back-up als die van de oude app (`migrateBackupV3`, dezelfde tellingen als de migratietest), en alles wissen na het typen van WISSEN. Herinnering als de laatste back-up 14 dagen of ouder is, of ontbreekt.
+- **Synchronisatie** (`core/sync.ts`, `Sync.tsx`): adres, token en wachtwoordzin → zout ophalen of maken → sleutel afleiden → eerste synchronisatie. Bewaard worden adres, token, voortgang en de **afgeleide, niet-uitleesbare sleutel** (IndexedDB); de wachtwoordzin niet. Foutmeldingen in gewone taal: geen verbinding (alles blijft bewaard), token geweigerd, verkeerde wachtwoordzin (blokken niet te openen). Het adres moet `https://` zijn (localhost mag voor ontwikkeling).
+- **Poort F6:** import van de eigen back-up geeft de verwachte tellingen; twee toestellen komen via de echte servercode (in-process) op hetzelfde logboek uit, ook als elk de helft had; verkeerde wachtwoordzin en verkeerd token worden herkend en laten het logboek ongemoeid; offline laat het logboek ongemoeid.
+- **Nog niet getest:** een echte rondgang naar de Cloudflare-Worker (dat is stap 0d van het bouwplan en ligt bij Jelle: token en `TOKEN_HASHES`); automatisch synchroniseren op de achtergrond (nu handmatig via de knop); rollende automatische back-up.

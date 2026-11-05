@@ -5,6 +5,8 @@ import { href } from '../../core/router.ts';
 import { CATEGORIES } from '../../core/tasting.ts';
 import { STATUS_TEXT, grindView, profileOf } from '../../core/insights.ts';
 import { useSnapshot } from '../store-context.tsx';
+import { Gegevens } from './Gegevens.tsx';
+import { Sync } from './Sync.tsx';
 
 const pct = (n: number | null): string => (n === null ? '–' : `${Math.round(n * 100)} %`);
 const catName = (k: string): string => CATEGORIES.find(c => c.key === k)?.name ?? k;
@@ -78,6 +80,8 @@ export function Meer({ route }: { route: Route }): JSX.Element {
     case 'profiel': return <Profiel />;
     case 'molen': return <Molen />;
     case 'over': return <Over />;
+    case 'gegevens': return <Gegevens />;
+    case 'sync': return <Sync />;
     default:
       return (
         <section>
@@ -85,6 +89,8 @@ export function Meer({ route }: { route: Route }): JSX.Element {
           <ul class="list">
             <li><a class="item" href={href('meer', 'profiel')}><strong>Smaakprofiel</strong><small>Wat je opmerkt en waardeert</small></a></li>
             <li><a class="item" href={href('meer', 'molen')}><strong>Molen</strong><small>Hoe jouw molen reageert</small></a></li>
+            <li><a class="item" href={href('meer', 'gegevens')}><strong>Gegevens</strong><small>Back-up maken en terugzetten</small></a></li>
+            <li><a class="item" href={href('meer', 'sync')}><strong>Synchronisatie</strong><small>Twee toestellen gelijk houden</small></a></li>
             <li><a class="item" href={href('meer', 'over')}><strong>Over</strong><small>Versie en privacy</small></a></li>
           </ul>
         </section>
