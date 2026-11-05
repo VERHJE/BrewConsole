@@ -12,7 +12,7 @@ import { DEFAULT_SCENARIO, WORLDS, makeBags, rng, tasteCup } from './simulator.t
 import type { Scenario, World } from './simulator.ts';
 import { runMetrics, summarize } from './metrics.ts';
 import type { CupRecord, RunMetrics } from './metrics.ts';
-import { engine2Strategy, oracleStrategy, staticStrategy } from './adapters.ts';
+import { engine2Strategy, engine3StrengthStrategy, oracleStrategy, staticStrategy } from './adapters.ts';
 import type { Strategy } from './adapters.ts';
 import { ratioForTds, ey, tdsPct } from '../src/units.ts';
 
@@ -39,7 +39,7 @@ async function main(): Promise<void> {
   const out = process.argv[3] ?? null;
   const target = process.argv[4] ? Number(process.argv[4]) : null;
   const sc = target ? { ...DEFAULT_SCENARIO, targetTds: target } : DEFAULT_SCENARIO;
-  const strategies: Strategy[] = [await staticStrategy(sc.waterG), await engine2Strategy(sc.waterG)];
+  const strategies: Strategy[] = [await staticStrategy(sc.waterG), await engine2Strategy(sc.waterG), await engine3StrengthStrategy(sc.waterG)];
   const results: Record<string, Record<string, Record<string, { mean: number; sd: number }>>> = {};
   for (const w of WORLDS) {
     // Het orakel kent per wereld de ware voorkeur; bags worden met dezelfde seed opnieuw gemaakt.

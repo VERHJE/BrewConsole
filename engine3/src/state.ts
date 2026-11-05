@@ -44,6 +44,8 @@ export interface CupFacts {
   readonly grindClick: Clicks | null;
   readonly cupG: Grams | null;
   readonly tdsPct: TdsPct | null;
+  /** Water dat na het zetten is bijgevuld (uit de oude app: plan.inputs.e2.dilutionG), anders 0. */
+  readonly dilutionG: number;
   readonly actualsGiven: boolean;
   /** Tijden binnen het zetsel. */
   readonly startedAtSec: Seconds | null;
@@ -58,12 +60,18 @@ export interface CupFacts {
   readonly tastedAt: EpochMs | null;
 }
 
+/** Een blinde proef met het moment waarop hij is vastgelegd. */
+export interface TrialFacts {
+  readonly at: EpochMs;
+  readonly data: PairTrialEvent['data'];
+}
+
 export interface FactState extends EngineState {
   readonly beans: ReadonlyMap<string, BeanFacts>;
   readonly cups: ReadonlyMap<string, CupFacts>;
   /** Zetsels op tijd (plan-moment), voor 'de laatste kop' en 'de vorige kop van deze zak'. */
   readonly cupOrder: readonly string[];
-  readonly trials: ReadonlyMap<string, PairTrialEvent['data']>;
+  readonly trials: ReadonlyMap<string, TrialFacts>;
   readonly settings: {
     readonly water: Extract<SettingEvent, { data: { key: 'water' } }>['data']['value'] | null;
     readonly grinder: Extract<SettingEvent, { data: { key: 'grinder' } }>['data']['value'] | null;
@@ -86,7 +94,7 @@ export function learnFacts(events: readonly EngineEvent[]): FactState {
   const timers = new Map<string, BrewTimerEvent[]>();
   const actuals = new Map<string, BrewActualsEvent>();
   const tastings = new Map<string, TastingEvent>();
-  const trials = new Map<string, PairTrialEvent['data']>();
+  const trials = new Map<string, TrialFacts>();
   let water: FactState['settings']['water'] = null;
   let grinder: FactState['settings']['grinder'] = null;
   let brightLighter: boolean | null = null;
@@ -118,7 +126,7 @@ export function learnFacts(events: readonly EngineEvent[]): FactState {
       }
       case 'brew.actuals': actuals.set(ev.data.brewId, ev); break;
       case 'tasting': tastings.set(ev.data.brewId, ev); break;
-      case 'pair.trial': trials.set(ev.data.trialId, ev.data); break;
+      case 'pair.trial': trials.set(ev.data.trialId, { at: ev.at, data: ev.data }); break;
       case 'setting':
         if (ev.data.key === 'water') water = ev.data.value;
         else if (ev.data.key === 'grinder') grinder = ev.data.value;
@@ -157,6 +165,7 @@ export function learnFacts(events: readonly EngineEvent[]): FactState {
       grindClick: a?.grindClick ?? p.recipe.grindClick,
       cupG: a?.cupG ?? null,
       tdsPct: a?.tdsPct ?? null,
+      dilutionG: dilutionOf(p.legacy),
       actualsGiven: a !== null,
       startedAtSec,
       endSec,
@@ -187,6 +196,12 @@ export function learnFacts(events: readonly EngineEvent[]): FactState {
     eventCount: eff.length,
     lastEventAt: eff.length > 0 ? eff[eff.length - 1]!.at : null
   };
+}
+
+function dilutionOf(legacy: Readonly<Record<string, unknown>> | null): number {
+  const inputs = legacy?.['inputs'] as { e2?: { dilutionG?: unknown } } | null | undefined;
+  const d = inputs?.e2?.dilutionG;
+  return typeof d === 'number' && d > 0 ? d : 0;
 }
 
 function foldTimer(list: readonly BrewTimerEvent[]): {

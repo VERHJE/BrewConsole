@@ -18,3 +18,5 @@ export { learnFacts, factsOf, cupsOf, countsBy } from './state.ts';
 export type { FactState, CupFacts, BeanFacts, CupFilter } from './state.ts';
 export { buildRecipe, referenceRatio, RecipeError, KASUYA_DEFAULT_FIRST_SHARE, KASUYA_END_GUARD } from './recipe.ts';
 export type { RecipeInput, RecipeBuild } from './recipe.ts';
+export { strengthPlan, observationsOf, retentionFor, eyModelFor, decide as decideStrength, calibrationFor, beanOffset, tdsOf, ratioForTdsPct, STRENGTH_MODEL_VERSION } from './strength.ts';
+export type { StrengthPlan, StrengthRequest, StrengthMode, TrailStep, Decision, Summary, Obs, JarObs, PairObs, BeanOffset, CalibrationPair } from './strength.ts';

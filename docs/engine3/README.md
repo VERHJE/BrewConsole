@@ -18,6 +18,7 @@ Engine 3 is de nieuwe rekenkern van Brew Console. Hij wordt vanaf nul gebouwd en
 | Bouwplan | [09-bouwplan.md](09-bouwplan.md) | vastgesteld |
 | Toestand (stap 1) | [10-toestand.md](10-toestand.md) | klaar |
 | Recept (stap 2) | [11-recept.md](11-recept.md) | klaar |
+| Sterkte (stap 3) | [12-sterkte.md](12-sterkte.md) | klaar |
 
 ## Draaien
 
@@ -44,7 +45,7 @@ Elke stap is pas af als de tests groen zijn en de meetopstelling niet slechter i
 2. **Recept** (klaar, `engine3/src/recipe.ts`). Techniekdata (`TECHNIQUES`) plus dosis en water geven het gietschema:
    - Kasuya: Hario-momenten, 40/60, en wachten op het doorlopen;
    - temperatuur per branding volgens Philocoffea.
-3. **Sterkte.** Dit module is voorlopig gelijk aan Engine 2, want de nulmeting laat weinig ruimte zien (6 punten tot het orakel). Daarna kan het verbeterd worden.
+3. **Sterkte** (klaar, `engine3/src/strength.ts`). Dit module is voorlopig gelijk aan Engine 2, want de nulmeting laat weinig ruimte zien (6 punten tot het orakel). Daarna kan het verbeterd worden.
 4. **Tijd en molen.** Bayesiaans, met de natuurkundige verwachting (−11 % doorloop per klik grover) en een term per hoeveelheid. Hier zit de grootste winst.
 5. **Techniekkeuze.** Volgens `SELECTION_RULES`. Een afwijking van Kasuya is altijd een proef; een gewonnen proef wint van elke regel.
 6. **Zakherkenning.** `parseBeanText` uit de huidige app wordt overgezet (die is getoetst op 8 zakken). Daarna komen QR en, alleen met toestemming, AI.

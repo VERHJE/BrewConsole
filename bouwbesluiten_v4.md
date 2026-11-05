@@ -1179,3 +1179,10 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Besluiten verwerkt:** Hario-momenten bij elke hoeveelheid, Kasuya 40/60 met instelbare eerste verdeling (50+70, 40+80, 80+40), Kasuya-temperatuur per branding (93/88/83 °C, onbekend 92 °C), Hoffmann net van de kook, Wendelboe 96 °C als aanname.
 - **Gegevens:** `ReferencePour` heeft nu `waitForDrain` (Kasuya vanaf de tweede giet; ook de laatste gieten van Gagné en Rao).
 - **Getoetst:** 12 nieuwe tests (totaal 66), onder meer het exacte brongetal per techniek bij de referentiehoeveelheid en een eigenschapstest over 120–800 g.
+
+### Engine 3 · stap 3 klaar (5 nov 2026)
+
+- **`strengthPlan()`** (`engine3/src/strength.ts`, uitleg in `docs/engine3/12-sterkte.md`): de sterktemodule, voorlopig dezelfde rekenkunde als Engine 2 (e2-2026.5), gelezen uit het logboek. De nulmeting laat weinig ruimte zien (46 van 52 %); verbeteren kan later met de meetopstelling als scheidsrechter.
+- **Poort gehaald:** in alle zes werelden zijn alle vijf maatstaven gelijk aan Engine 2 (200 herhalingen). Een test eist bovendien dezelfde dosis bij elke kop. 'Tegen het oordeel in' blijft 0 %.
+- **Kleine wijzigingen:** `FactState.trials` bewaart nu het moment van elke proef, en `CupFacts` heeft `dilutionG`.
+- **Getoetst:** 14 nieuwe tests (totaal 80), onder meer een eigenschapstest dat de dosis nooit tegen het oordeel in gaat.

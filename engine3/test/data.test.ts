@@ -43,7 +43,7 @@ test('het smaakwiel van Engine 3 is gelijk aan dat van de app (opnieuw genereren
   assert.equal(JSON.stringify(e3), JSON.stringify(app));
 });
 test('de engine-bronbestanden gebruiken geen DOM, opslag, netwerk of klok', () => {
-  for (const f of ['units.ts', 'types.ts', 'events.ts', 'migrate/v3.ts', 'state.ts', 'recipe.ts', 'data/techniques.ts', 'data/selection-rules.ts']) {
+  for (const f of ['units.ts', 'types.ts', 'events.ts', 'migrate/v3.ts', 'state.ts', 'recipe.ts', 'strength.ts', 'data/techniques.ts', 'data/selection-rules.ts']) {
     const src = readFileSync(new URL(`../src/${f}`, import.meta.url), 'utf8').replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
     for (const bad of ['document.', 'window.', 'localStorage', 'indexedDB', 'fetch(', 'Date.now(', 'Math.random(']) {
       assert.ok(!src.includes(bad), `${f} gebruikt ${bad}`);
