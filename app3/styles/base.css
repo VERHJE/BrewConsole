@@ -102,3 +102,12 @@ table.pours th, table.pours td { padding: 8px 6px; border-bottom: 1px solid var(
 .hint { color: var(--text-2); margin: 0 0 8px; font-size: .9rem; }
 .notehit { margin: 0 0 12px; }
 .notehit .chips { margin-top: 6px; }
+
+/* logboek, inzicht */
+.stars { color: var(--accent); letter-spacing: 1px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0 0 12px; }
+.kv dt { color: var(--text-2); }
+.kv dd { margin: 0; font-variant-numeric: tabular-nums; }
+table.plain { width: 100%; border-collapse: collapse; font-size: .9rem; }
+table.plain th, table.plain td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.plain td.n, table.plain th.n { text-align: right; font-variant-numeric: tabular-nums; }

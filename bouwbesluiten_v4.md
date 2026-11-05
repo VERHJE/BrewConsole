@@ -1274,3 +1274,11 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - Na het proeven van de tweede kop vraagt het scherm welke beter was (kop 1, kop 2, geen verschil) en schrijft een `pair.trial` (`kind: 'technique'`, dosis, techniek en klik van beide kanten). Daarna ziet de engine de uitkomst en stelt dezelfde proef niet opnieuw voor (kerntest met een bloemige zak: 2 Kasuya-koppen → voorstel → 2 proefkoppen → keuze → geen nieuw voorstel met hetzelfde id).
 - **Bug onderweg:** een zak-id bevat zelf `:`; het proef-id (`tech:<zak>:<variant>:<n>`) moet van achteren gelezen worden. Vastgelegd in `core/trials.ts` en de test.
 - **Niet getest in de browser:** de proefkaart zelf (er zijn daarvoor twee volledige zetsels met proeven nodig); de kernlogica is wel getest.
+
+### Frontend · F5 klaar: Logboek en inzicht (5 nov 2026)
+
+- **Logboek** (`core/insights.ts`, `Logboek.tsx`): koppen nieuwste eerst met zak, techniek, dosis, klik, tijd en waardering; 'nog te proeven' bij een klaar zetsel zonder proeverij. Detail met recept, werkelijke tijden (erdoor per giet), proeverij en verwijderen (`brew.delete`, met bevestiging; de kop verdwijnt uit de toestand en dus uit het advies).
+- **Meer → Smaakprofiel:** gevoeligheid per smaakgroep (treffers en valse alarmen met de status uit `tasteProfile()`), herkende notities en woordenschat, waardering per groep/proces/branding (alleen betrouwbare groepen), met de zin dat het profiel het recept niet stuurt. Bij te weinig data staat er 'nog te weinig zakken om iets te zeggen', geen gok.
+- **Meer → Molen:** effect per klik uit `fitGrind`/`perClickEffect`, of dat uit eigen metingen komt of de startwaarde is, en het aantal bruikbare metingen; met de aanwijzing hoe je meer metingen krijgt.
+- **Regel:** geen getal op deze schermen wordt in de frontend berekend wat de engine ook geeft.
+- **Nog niet:** verloopgrafieken en de pasvorm van een zak (`beanFit`) in het zakdetail; beide kunnen later zonder de engine aan te raken.
