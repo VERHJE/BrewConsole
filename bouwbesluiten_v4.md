@@ -1236,3 +1236,12 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 
 - Besluit Jelle: de AI-foto-herkenning (`POST /scan`, Anthropic-API) is het enige onderdeel dat geld kost; dat doen we niet, of in ieder geval nog niet.
 - Gevolg: geen `ANTHROPIC_API_KEY` op de Worker; `/scan` geeft dan 404. Synchronisatie (gratis Cloudflare-plan), tekst, OCR, QR en het smaakprofiel blijven gratis werken. Code en tests blijven staan.
+
+### Frontend · plan en F0 klaar (5 nov 2026)
+
+- **Besluit Jelle:** de hele frontend wordt opnieuw opgebouwd rond `createEngine()`; layout en kleuren van de oude app hoeven niet behouden te blijven. Plan, schermen en stappen F0–F7: `docs/engine3/18-frontend.md`.
+- **Naast de oude app:** de nieuwe app staat in `app3/` en wordt gebouwd naar `dist/app3/` (bereikbaar op `/app3/`). `npm run build` bouwt nu beide. De oude app verandert niet; omschakelen is stap F7.
+- **Techniek:** TypeScript strict, Preact 10.29.8 (exact vastgezet) met esbuild, eigen CSS-tokens (licht/donker), IndexedDB voor het logboek. Geen router- of staatbibliotheek.
+- **F0:** `app3/src/core/` (zonder DOM: `storage.ts`, `store.ts`, `router.ts`, `ids.ts`) met 5 kerntests; `app3/src/ui/` met schil, tabbalk (Zetten · Zakken · Logboek · Meer) en lege schermen; Playwright-schermtests (start, opslag overleeft herladen, 320 px zonder horizontale scroll). `npm run app3:check` draait in CI.
+- **Store-regel:** eerst opslaan, dan het geheugen bijwerken; mislukt opslaan laat het logboek ongewijzigd. Ongeldige gebeurtenissen worden geweigerd (`validateEvent`).
+- **Inspiratie:** Beanconqueror en Timer.Coffee bekeken; Filtru, BeanBench en Coffee Book waren niet op te halen en zijn dus niet beoordeeld (zie 18).

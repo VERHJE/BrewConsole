@@ -43,3 +43,7 @@ jobs:
       # proefbouw met esbuild. Raakt de huidige app niet.
       - name: Engine 3 checks
         run: npm run e3:check
+
+      # Nieuwe frontend (app3): typecheck, kerntests en schermtests in Chromium.
+      - name: App3 checks
+        run: npm run app3:check
