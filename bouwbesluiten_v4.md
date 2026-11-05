@@ -1154,3 +1154,75 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
   - De back-up blijft dus nodig.
   - Engine 3 neemt een eigen QR-decoder mee.
 - **Meetplan voor eigen data:** later.
+
+### Engine 3 · synchronisatie in het bouwplan (5 nov 2026)
+
+- **Besluit:** de synchronisatie wordt bouwstap 0, vóór de rekenlogica. iOS geeft de app geen blijvende opslag, en rechtstreeks aan iCloud koppelen kan niet zonder betaald Apple-ontwikkelaarsaccount.
+- **Opzet:** een eigen, gratis Cloudflare Worker die alleen versleutelde blokken bewaart (AES-GCM, sleutel uit een wachtwoordzin via PBKDF2). De iCloud Drive-back-up via het deelmenu blijft de reserve.
+- **Ontwerp:** `docs/engine3/08-synchronisatie.md`.
+
+### Engine 3 · bouwplan en stap 0a–0c (5 nov 2026)
+
+- **Bouwplan:** `docs/engine3/09-bouwplan.md`, met poorten per stap (0 synchronisatie, 1 logboek→toestand, 2 recept, 3 sterkte, 4 tijd en molen, 5 techniekkeuze, 6 zakherkenning, 7 smaakprofiel, 8 samenstellen).
+- **Synchronisatie gebouwd** in `engine3/sync/`: versleutelde, onveranderlijke blokken (PBKDF2 600.000 rondes, AES-GCM, blok-id als gebonden gegeven), server als `Request → Response` met geheugen- en Cloudflare-KV-opslag, en een client met push, pull en opruimen. De engine zelf blijft zuiver; de synchronisatie staat ernaast.
+- **Getoetst:** 19 nieuwe tests (totaal 43), onder meer: verkeerde zin, gewijzigd of verwisseld blok worden geweigerd; twee toestellen komen in willekeurige volgorde op hetzelfde logboek uit; een gewiste app herstelt zonder conflict; de server bewaart geen leesbare tekst.
+- **Nog te doen door Jelle (stap 0d):** Cloudflare-account en uitrollen, zie `docs/engine3/08`.
+
+### Engine 3 · stap 1 klaar (5 nov 2026)
+
+- **`learnFacts()`** (`engine3/src/state.ts`, uitleg in `docs/engine3/10-toestand.md`): het effectieve logboek wordt per zak en per zetsel omgezet in feiten (werkelijk gebruikte waarden, tijden, 'erdoor' per giet, status, oordeel). Nog zonder model.
+- **Getoetst:** 10 nieuwe tests (totaal 54), onder meer dezelfde toestand bij elke volgorde en dubbeling. Op Jelles back-up: 105 gebeurtenissen, 5 zakken, 20 zetsels, 9 met sterkte, 0 met 'erdoor'-tik.
+
+### Engine 3 · stap 2 klaar (5 nov 2026)
+
+- **`buildRecipe()`** (`engine3/src/recipe.ts`, uitleg in `docs/engine3/11-recept.md`): techniek, dosis, water en branding in, gietschema met temperatuur, verwacht einde en meldingen uit.
+- **Besluiten verwerkt:** Hario-momenten bij elke hoeveelheid, Kasuya 40/60 met instelbare eerste verdeling (50+70, 40+80, 80+40), Kasuya-temperatuur per branding (93/88/83 °C, onbekend 92 °C), Hoffmann net van de kook, Wendelboe 96 °C als aanname.
+- **Gegevens:** `ReferencePour` heeft nu `waitForDrain` (Kasuya vanaf de tweede giet; ook de laatste gieten van Gagné en Rao).
+- **Getoetst:** 12 nieuwe tests (totaal 66), onder meer het exacte brongetal per techniek bij de referentiehoeveelheid en een eigenschapstest over 120–800 g.
+
+### Engine 3 · stap 3 klaar (5 nov 2026)
+
+- **`strengthPlan()`** (`engine3/src/strength.ts`, uitleg in `docs/engine3/12-sterkte.md`): de sterktemodule, voorlopig dezelfde rekenkunde als Engine 2 (e2-2026.5), gelezen uit het logboek. De nulmeting laat weinig ruimte zien (46 van 52 %); verbeteren kan later met de meetopstelling als scheidsrechter.
+- **Poort gehaald:** in alle zes werelden zijn alle vijf maatstaven gelijk aan Engine 2 (200 herhalingen). Een test eist bovendien dezelfde dosis bij elke kop. 'Tegen het oordeel in' blijft 0 %.
+- **Kleine wijzigingen:** `FactState.trials` bewaart nu het moment van elke proef, en `CupFacts` heeft `dilutionG`.
+- **Getoetst:** 14 nieuwe tests (totaal 80), onder meer een eigenschapstest dat de dosis nooit tegen het oordeel in gaat.
+
+### Engine 3 · stap 4 klaar (5 nov 2026)
+
+- **`grindPlan()`** (`engine3/src/grind.ts`, uitleg in `docs/engine3/13-tijd-en-molen.md`): Bayesiaanse regressie van ln(doorloop na de laatste giet) op techniek, klik, hoeveelheid en zak, met de natuurkundige verwachting (−11 % per klik) als prior. Geeft het verwachte einde met band, de kans dat het in de band valt, en zo nodig een klikadvies (hooguit 4 klikken, binnen klik 8–25).
+- **Molen:** BrewTuner en Beean bevestigen de C3S Pro, maar noemen geen micron per klik; andere bronnen geven 83 en 20 micron. Daarom rekent de engine niet met microns; het effect van een klik leert hij uit jouw zetsels (`engine3/src/data/grinder.ts`).
+- **Meetopstelling:** acht werelden, in alle werelden minstens 97 % op tijd (vaste klik 16: 15–99 %), met een gemiddelde klikstap onder 0,1.
+- **Eén afwijking van Engine 2 in stap 3:** de afwijking per zak gaat nooit tegen het laatste antwoord in. Daardoor 0 % in plaats van 0,05–0,23 % stappen tegen het oordeel in, tegen maximaal 0,24 punt 'precies goed'.
+- **Nog niet getoetst op eigen tikken:** de back-up bevat geen 'erdoor'-tikken en maar twee naburige klikstanden (16 en 17); het meetplan in 07 moet het klikeffect zichtbaar maken.
+
+### Engine 3 · stap 5 klaar (5 nov 2026)
+
+- **`chooseTechnique()`** (`engine3/src/technique.ts`, uitleg in `docs/engine3/14-techniekkeuze.md`): volgorde zelf gekozen → jouw gewonnen proef → vergelijkbare zakken → regeltabel → Kasuya. Een afwijking van Kasuya is altijd een paar-proef met Kasuya als controle; alleen Chemex → Hoffmann is een direct besluit. `trialProposalFor()` maakt de twee recepten.
+- **Bewaking:** pas na 2 geproefde Kasuya-koppen van de zak, nooit twee proeven tegelijk, een afkoelperiode van twee koppen, geen herhaling van een variant die al is geprobeerd, en nooit Osmotic Flow (geen schema).
+- **Vergelijkbare zakken:** zelfde proces, brandingklasse en minstens één gedeelde smaakcategorie; twee netto gewonnen proeven maken een techniek de standaard.
+- **Meetopstelling** (`engine3/eval/technique-sim.ts`): nergens meer spijt dan altijd Kasuya, minder dan twee proeven per zak; bij 80 % juiste regels daalt de spijt van 0,74 naar 0,37.
+- **Frontend moet:** de proef kunnen aanbieden, blind laten kiezen en vastleggen als `pair.trial` met `kind: 'technique'`, en 'ongelijk doorlopen' meegeven als `feedback`.
+
+### Engine 3 · stap 8 klaar (5 nov 2026)
+
+- **`createEngine()`** (`engine3/src/engine.ts`, uitleg in `docs/engine3/15-samenstellen.md`): `learn()` en `plan()` zetten techniek, water uit de kopgrootte, sterkte, recept, molen en proef achter elkaar en leggen per module uit waarom. Contract `e3-contract-1.0`: `PlanRequest` kreeg het optionele veld `feedback`. Doel (helder, gebalanceerd, rond) zet bij Kasuya de eerste giet.
+- **Dosisgrenzen:** V60 15–22 g (uit de oude app, geschat), Chemex geen grens; daarbuiten wordt begrensd met een waarschuwing.
+- **Molen:** zonder gelogde doorlooptijden voor een techniek zet het advies hooguit 1 klik verschil, daarna 2, 3, 4 (de natuurkundige verwachting is een beginpunt, geen bewijs). Meetopstelling opnieuw gedraaid: minstens 97 % op tijd in alle werelden.
+- **Poort:** op jouw koppen (lokaal) gelijk aan Engine 2: 3 goede kant, 1 verkeerde, 5 geen richting. De vijf vaste regels uit het contract zijn eigenschapstests op `plan()`. `npm run e3:check` bouwt de bundel en draait er een rooktest op.
+- **Niet gedaan:** een schakelaar in de oude app. De frontend wordt later opnieuw gebouwd rond `createEngine()`.
+
+### Engine 3 · stap 6 klaar (5 nov 2026)
+
+- **Tekst:** `parseBeanText` (en alles eromheen: naam, brander, zakgrootte, branddatum, smaaknotities, hoogte, boerderij) is overgezet naar strikte TypeScript (`engine3/src/bean/text.ts`). De woordenlijsten worden uit de app gegenereerd (`gen-bean-scan-data.mjs`). Een differentiële test eist dezelfde uitkomst als de app, op alle app-testteksten (inclusief de 8 voorbeeldzakken) en 600 willekeurige etiketten.
+- **Boonvelden:** `scanBeanText()` maakt er velden van volgens het datamodel: proces in drie assen, hoogte als bereik (de app middelde), notities in drie lijsten, bron per veld. Niets geraden; fuzzy treffers en webshoptekst worden gemarkeerd.
+- **QR:** jsQR 1.4.0 (Apache-2.0) in een aparte bundel (`engine3/qr`, de iPhone heeft geen `BarcodeDetector`) en `readQrPayload()` voor webadres, JSON, sleutel-waarde en tekst. Geen eigen decoder: een beproefd pakket is betrouwbaarder.
+- **AI:** `POST /scan` op de Worker, alleen met toestemming per scan en een API-sleutel als geheim; vast model, limiet van 30 per dag, geen foto bewaard, antwoord is een voorstel dat eerst `validateAiScan()` doorloopt.
+- **Aangepaste poort:** de meting '35 van 45 trefwoorden' op de foto's is niet te herhalen zonder die foto's; vervangen door de differentiële toets met de app.
+- **Nieuwe devDependencies:** `jsqr` (in de QR-bundel), `qrcode` en `@types/qrcode` (alleen tests), alle drie exact vastgezet.
+
+### Engine 3 · stap 7 klaar (5 nov 2026)
+
+- **`tasteProfile()` en `beanFit()`** (`engine3/src/profile.ts`, uitleg in `docs/engine3/17-smaakprofiel.md`): gevoeligheid per smaakcategorie uit de blinde keuzevakjes (treffers en valse alarmen tegenover de notities van de zak), herkende notities en een woordenschat, waardering per categorie, proces en brandingklasse (kleine aantallen bijgetrokken), tendensen, en hoe goed een zak bij je smaak past.
+- **Stuurt het recept niet:** een test eist hetzelfde `plan()`-advies met en zonder keuzevakjes, herkende notities, waardering en notitie.
+- **Contract:** `tasting` kreeg het optionele veld `cataAsked` (is de keuzevraag gesteld), zodat 'niets aangevinkt' te onderscheiden is van 'niet gevraagd'. Bestaande gebeurtenissen blijven geldig; de frontend schrijft het zodra de vraag getoond is.
+- **Alle stappen van het bouwplan zijn nu af** (0 t/m 8). Open blijft: stap 0d (uitrollen van de Worker), eigen metingen voor het klikeffect, en de frontend.

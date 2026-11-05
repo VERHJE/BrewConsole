@@ -27,6 +27,8 @@ export interface ReferencePour {
   readonly agitationAfter: Agitation;
   /** De bron koppelt het moment aan het doorlopen i.p.v. (alleen) aan de klok. */
   readonly drainCue: string | null;
+  /** Gieten pas als het bed (bijna) doorgelopen is; de klok is dan alleen een richtlijn. */
+  readonly waitForDrain: boolean;
 }
 
 export interface TechniqueDef {
@@ -77,11 +79,11 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
       tempNote: 'Besluit Jelle (5 nov 2026): temperatuur per branding volgens Philocoffea — 93 °C licht, 88 °C medium, 83 °C donker. Hario-interview noemt 92 °C.',
       grind: 'grof (Hario); medium-grof tot grof (Philocoffea)',
       pours: [
-        { atSec: 0, toG: 50, style: 'spiral', agitationAfter: 'none', drainCue: null },
-        { atSec: 45, toG: 120, style: 'spiral', agitationAfter: 'none', drainCue: 'Philocoffea: pas gieten als het water bijna helemaal door het filter is' },
-        { atSec: 90, toG: 180, style: 'spiral', agitationAfter: 'none', drainCue: 'idem' },
-        { atSec: 130, toG: 240, style: 'spiral', agitationAfter: 'none', drainCue: 'idem' },
-        { atSec: 160, toG: 300, style: 'spiral', agitationAfter: 'none', drainCue: 'idem' }
+        { atSec: 0, toG: 50, style: 'spiral', agitationAfter: 'none', waitForDrain: false, drainCue: null },
+        { atSec: 45, toG: 120, style: 'spiral', agitationAfter: 'none', waitForDrain: true, drainCue: 'Philocoffea: pas gieten als het water bijna helemaal door het filter is' },
+        { atSec: 90, toG: 180, style: 'spiral', agitationAfter: 'none', waitForDrain: true, drainCue: 'idem' },
+        { atSec: 130, toG: 240, style: 'spiral', agitationAfter: 'none', waitForDrain: true, drainCue: 'idem' },
+        { atSec: 160, toG: 300, style: 'spiral', agitationAfter: 'none', waitForDrain: true, drainCue: 'idem' }
       ],
       endSec: { lo: 210, hi: 210 },
       notes: [
@@ -107,9 +109,9 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
       tempC: 100, tempNote: "Hario USA: 'the hotter, the better (especially with lighter roasts)' en 'water just off the boil' voor het spoelen; secundaire gidsen: net van de kook. Licht en medium: net van de kook (100 °C op de ketel). Donker: 88 °C (alleen secundair, klasse C; aanname).",
       grind: 'medium-fijn',
       pours: [
-        { atSec: 0, toG: 60, style: 'spiral', agitationAfter: 'swirl', drainCue: null },
-        { atSec: 45, toG: 300, style: 'spiral', agitationAfter: 'none', drainCue: null },
-        { atSec: 75, toG: 500, style: 'spiral', agitationAfter: 'stir', drainCue: null }
+        { atSec: 0, toG: 60, style: 'spiral', agitationAfter: 'swirl', waitForDrain: false, drainCue: null },
+        { atSec: 45, toG: 300, style: 'spiral', agitationAfter: 'none', waitForDrain: false, drainCue: null },
+        { atSec: 75, toG: 500, style: 'spiral', agitationAfter: 'stir', waitForDrain: false, drainCue: null }
       ],
       endSec: { lo: 210, hi: 210 },
       notes: ['Kuiltje in het bed; bloom 2 × de dosis en swirlen; bloom tot 0:45.', '0:45–1:15 tot 300 g (60 %), 1:15–1:45 tot 500 g, iets rustiger.', 'Op 1:45 één keer met en één keer tegen de klok in roeren; daarna even laten zakken en zacht swirlen.', 'Doorgelopen voor 3:30.']
@@ -130,9 +132,9 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
       tempC: 100, tempNote: 'kokend water (waterkoker opnieuw aan)',
       grind: 'fijner tot het samentrekkend wordt, dan één klik terug',
       pours: [
-        { atSec: 0, toG: 66, style: 'spiral', agitationAfter: 'rao_spin', drainCue: null },
-        { atSec: 30, toG: 200, style: 'spiral', agitationAfter: 'rao_spin', drainCue: null },
-        { atSec: 60, toG: 352, style: 'spiral', agitationAfter: 'rao_spin', drainCue: 'tweede giet na de eerste (geen vaste tijd in de bron)' }
+        { atSec: 0, toG: 66, style: 'spiral', agitationAfter: 'rao_spin', waitForDrain: false, drainCue: null },
+        { atSec: 30, toG: 200, style: 'spiral', agitationAfter: 'rao_spin', waitForDrain: false, drainCue: null },
+        { atSec: 60, toG: 352, style: 'spiral', agitationAfter: 'rao_spin', waitForDrain: true, drainCue: 'tweede giet na de eerste (geen vaste tijd in de bron)' }
       ],
       endSec: { lo: 150, hi: 210 },
       notes: ['Plastic V60, kuiltje (trench) maken.', '1:16, bij minder ontwikkelde branding 1:16,5–1:18.', 'Doel ~1,25 % TDS bij ~20 % EY.', 'Het moment van de laatste giet (60 s) is een aanname van dit bestand: de bron noemt alleen "tot ~200 g" en dan "tot 352 g".']
@@ -153,9 +155,9 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
       tempC: 96, tempNote: "Eigen gids zegt alleen 'hot water'. 96 °C is een aanname (klasse C): zijn café zet de AeroPress met 96 °C uit de boiler, en recepten-sites die deze gids overnemen geven 96 °C. Bij donkere branding de Philocoffea-regel (88/83 °C) als terugval.",
       grind: 'filtermaling; kleinere hoeveelheden fijner',
       pours: [
-        { atSec: 0, toG: 60, style: 'spiral', agitationAfter: 'stir', drainCue: null },
-        { atSec: 30, toG: 200, style: 'circles', agitationAfter: 'none', drainCue: null },
-        { atSec: 60, toG: 500, style: 'circles', agitationAfter: 'none', drainCue: 'doorlopend in rondjes tot 500 g; gieten duurt 2–2,5 min' }
+        { atSec: 0, toG: 60, style: 'spiral', agitationAfter: 'stir', waitForDrain: false, drainCue: null },
+        { atSec: 30, toG: 200, style: 'circles', agitationAfter: 'none', waitForDrain: false, drainCue: null },
+        { atSec: 60, toG: 500, style: 'circles', agitationAfter: 'none', waitForDrain: false, drainCue: 'doorlopend in rondjes tot 500 g; gieten duurt 2–2,5 min' }
       ],
       endSec: { lo: 180, hi: 210 },
       notes: ['65 g per liter.', 'Bloom ~60 g en roeren met een theelepel.', 'Gieten 2–2,5 min, dan ~1 min uitlopen; kan aan het eind roeren.', 'Te lang → bitter (grover); veel korter → slap en zuur (fijner).', 'Het moment 60 s voor de derde stap is een aanname: de bron zegt alleen "doorgaan in rondjes".']
@@ -195,12 +197,12 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
       tempC: 92, tempNote: '92 °C komt uit een gids uit 2018 (tweedehands, klasse C)',
       grind: null,
       pours: [
-        { atSec: 0, toG: 50, style: 'circles', agitationAfter: 'none', drainCue: null },
-        { atSec: 40, toG: 100, style: 'circles', agitationAfter: 'none', drainCue: null },
-        { atSec: 70, toG: 150, style: 'circles', agitationAfter: 'none', drainCue: null },
-        { atSec: 100, toG: 200, style: 'circles', agitationAfter: 'none', drainCue: null },
-        { atSec: 130, toG: 250, style: 'circles', agitationAfter: 'none', drainCue: null },
-        { atSec: 160, toG: 300, style: 'circles', agitationAfter: 'none', drainCue: null }
+        { atSec: 0, toG: 50, style: 'circles', agitationAfter: 'none', waitForDrain: false, drainCue: null },
+        { atSec: 40, toG: 100, style: 'circles', agitationAfter: 'none', waitForDrain: false, drainCue: null },
+        { atSec: 70, toG: 150, style: 'circles', agitationAfter: 'none', waitForDrain: false, drainCue: null },
+        { atSec: 100, toG: 200, style: 'circles', agitationAfter: 'none', waitForDrain: false, drainCue: null },
+        { atSec: 130, toG: 250, style: 'circles', agitationAfter: 'none', waitForDrain: false, drainCue: null },
+        { atSec: 160, toG: 300, style: 'circles', agitationAfter: 'none', waitForDrain: false, drainCue: null }
       ],
       endSec: { lo: 200, hi: 210 },
       notes: ['Zes gieten van 50 g.']
@@ -221,9 +223,9 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
       tempC: 93, tempNote: '93–96 °C bij lichte branding (secundaire bronnen)',
       grind: 'medium-fijn; afstellen op 120–150 s totale doorloop',
       pours: [
-        { atSec: 0, toG: 45, style: 'spiral', agitationAfter: 'none', drainCue: null },
-        { atSec: 30, toG: 90, style: 'spiral', agitationAfter: 'none', drainCue: null },
-        { atSec: 60, toG: 225, style: 'center', agitationAfter: 'none', drainCue: null }
+        { atSec: 0, toG: 45, style: 'spiral', agitationAfter: 'none', waitForDrain: false, drainCue: null },
+        { atSec: 30, toG: 90, style: 'spiral', agitationAfter: 'none', waitForDrain: false, drainCue: null },
+        { atSec: 60, toG: 225, style: 'center', agitationAfter: 'none', waitForDrain: false, drainCue: null }
       ],
       endSec: { lo: 120, hi: 150 },
       notes: ['Blooms niet swirlen (trage filters slibben anders dicht).', 'Hoofdgiet krachtig in het midden (~10 g/s).', 'Loopt het te snel: kleine swirl na de hoofdgiet geeft 10–15 s extra.']
@@ -244,9 +246,9 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
       tempC: 97, tempNote: null,
       grind: null,
       pours: [
-        { atSec: 0, toG: 60, style: 'spiral', agitationAfter: 'rao_spin', drainCue: null },
-        { atSec: 40, toG: 200, style: 'spiral', agitationAfter: 'gentle_swirl', drainCue: null },
-        { atSec: 100, toG: 330, style: 'spiral', agitationAfter: 'gentle_swirl', drainCue: 'als de slurry ~70 % doorgelopen is' }
+        { atSec: 0, toG: 60, style: 'spiral', agitationAfter: 'rao_spin', waitForDrain: false, drainCue: null },
+        { atSec: 40, toG: 200, style: 'spiral', agitationAfter: 'gentle_swirl', waitForDrain: false, drainCue: null },
+        { atSec: 100, toG: 330, style: 'spiral', agitationAfter: 'gentle_swirl', waitForDrain: true, drainCue: 'als de slurry ~70 % doorgelopen is' }
       ],
       endSec: { lo: 240, hi: 270 },
       notes: ['Altijd plastic V60; vogelnestje maken.', 'Laag en verticaal gieten, rondgaand.', 'Rao noemt 22–24,5 % EY.', 'Het moment 100 s voor de laatste giet is een plaatshouder: de bron koppelt hem aan ~70 % doorgelopen.']

@@ -28,7 +28,7 @@ Bron van waarheid: `engine3/src/types.ts`. De regels staan in `engine3/src/event
 | `brew.plan` | brewId, beanId, goal, engine (naam en versie), recipe, trialId, legacy | één per zetsel |
 | `brew.timer` | brewId, type, tSec, pourIndex | start, pauze, 'erdoor', bed droog, klaar of afgebroken |
 | `brew.actuals` | brewId, werkelijke dosis, water, klik, bypass, kop, TDS, techniek | laatste wint |
-| `tasting` | brewId, sterkte (−2…+2), zuur, afdronk, waardering, doel gehaald, vergelijking, gemist, blinde CATA, herkende notities, oude scores, notitie | laatste wint |
+| `tasting` | brewId, sterkte (−2…+2), zuur, afdronk, waardering, doel gehaald, vergelijking, gemist, blinde CATA (met `cataAsked`: is de vraag gesteld), herkende notities, oude scores, notitie | laatste wint |
 | `pair.trial` | trialId, soort, controle en variant, voorkeur, helderder | blinde proef |
 | `setting` | water · grinder · brightLighter | laatste wint |
 | `retract` | targetId, reden | trekt één gebeurtenis in |
@@ -54,7 +54,7 @@ Bron van waarheid: `engine3/src/types.ts`. De regels staan in `engine3/src/event
 
 Gewicht in g (1 ml water = 1 g). Tijd binnen een zetsel in s, tijdstip in epoch-ms, datum als YYYY-MM-DD. Verder: °C, TDS in %, EY als fractie, klikken op de C3S Pro, en hoogte in m. Zie `engine3/src/units.ts`.
 
-## Synchronisatie (later)
+## Synchronisatie (bouwstap 0, zie 08)
 
 1. **Lokaal (standaard):** het logboek gaat als bestand via het deelmenu naar iCloud Drive, en een ander toestel leest het weer in. Samenvoegen gebeurt met `mergeLogs`.
 2. **Optioneel automatisch:** via een gratis Cloudflare Worker.

@@ -70,3 +70,27 @@ Het orakel kent de ware voorkeur, wat in het echt niet kan. Het laat zien wat he
 
 - **Doorloopmaatstaf:** het aandeel koppen met het einde binnen 2:50–4:10 bij Kasuya. Daarnaast het aantal koppen tot een zak 'op tijd' loopt.
 - **Techniekkeuze:** in de simulator een verborgen 'beste techniek per zak'. Daarmee is te meten hoe snel een proef die vindt, en hoe vaak een proef overbodig is.
+
+## Engine 3, stap 3 (sterkte)
+
+De sterktemodule van Engine 3 is gemeten met dezelfde opstelling (`node engine3/eval/run.ts 200`). In alle zes werelden zijn alle vijf maatstaven gelijk aan Engine 2, en 'tegen het oordeel in' blijft 0 %. Zie [12-sterkte.md](12-sterkte.md).
+
+## Engine 3, stap 4 (tijd en molen)
+
+De doorloopmaatstaf staat er nu: `node engine3/eval/grind-sim.ts 200`, met acht werelden en als vergelijking een vaste klik, 'zelf één klik bijsturen' en een orakel. Zie [13-tijd-en-molen.md](13-tijd-en-molen.md).
+
+## Engine 3, stap 5 (techniekkeuze)
+
+De simulator met een verborgen beste techniek per zak staat er nu: `node engine3/eval/technique-sim.ts 200`. Zie [14-techniekkeuze.md](14-techniekkeuze.md).
+
+## Engine 3, stap 8 (samenstellen)
+
+Op de eigen koppen (lokaal) doet het volledige `plan()` hetzelfde als Engine 2: 3 keer de goede kant op, 1 keer de verkeerde, 5 keer geen richting. Zie [15-samenstellen.md](15-samenstellen.md).
+
+## Engine 3, stap 6 (zakherkenning)
+
+Geen simulatie maar een differentiële toets tegen de app: dezelfde tekst geeft dezelfde uitkomst (alle app-testteksten en 600 willekeurige etiketten). Zie [16-zakherkenning.md](16-zakherkenning.md).
+
+## Engine 3, stap 7 (smaakprofiel)
+
+Geen poort in de simulator: het profiel stuurt niets. Getoetst met een simulatie van een proever met bekende treffers en valse alarmen (de schatting komt binnen 0,12 van de waarheid) en met een test dat `plan()` onveranderd blijft. Zie [17-smaakprofiel.md](17-smaakprofiel.md).

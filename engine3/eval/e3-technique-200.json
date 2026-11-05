@@ -1,0 +1,691 @@
+{
+  "runs": 200,
+  "scenario": {
+    "bags": 12,
+    "cupsPerBag": 10,
+    "waterG": 300,
+    "doseG": 20
+  },
+  "worlds": [
+    {
+      "name": "regels kloppen deels (50 %)",
+      "ruleAccuracy": 0.5,
+      "effect": 1,
+      "trialNoiseSd": 0.7,
+      "tie": 0.25
+    },
+    {
+      "name": "regels kloppen vaak (80 %)",
+      "ruleAccuracy": 0.8,
+      "effect": 1,
+      "trialNoiseSd": 0.7,
+      "tie": 0.25
+    },
+    {
+      "name": "regels kloppen niet (0 %)",
+      "ruleAccuracy": 0,
+      "effect": 1,
+      "trialNoiseSd": 0.7,
+      "tie": 0.25
+    },
+    {
+      "name": "klein verschil tussen technieken",
+      "ruleAccuracy": 0.5,
+      "effect": 0.5,
+      "trialNoiseSd": 0.7,
+      "tie": 0.25
+    },
+    {
+      "name": "veel ruis in de proef",
+      "ruleAccuracy": 0.5,
+      "effect": 1,
+      "trialNoiseSd": 1.2,
+      "tie": 0.25
+    },
+    {
+      "name": "groot verschil tussen technieken",
+      "ruleAccuracy": 0.5,
+      "effect": 2,
+      "trialNoiseSd": 0.7,
+      "tie": 0.25
+    }
+  ],
+  "results": {
+    "regels kloppen deels (50 %)": {
+      "altijd Kasuya": {
+        "regret": {
+          "mean": 0.7812718249259877,
+          "sd": 0.16070554317523786
+        },
+        "onBestShare": {
+          "mean": 0.22041666666666665,
+          "sd": 0.11482073396904578
+        },
+        "trialsPerBag": {
+          "mean": 0,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0,
+          "sd": 0
+        },
+        "cupsToBest": {
+          "mean": 8.795833333333329,
+          "sd": 1.1482073396904586
+        },
+        "finalOnBest": {
+          "mean": 0.22041666666666665,
+          "sd": 0.11482073396904578
+        }
+      },
+      "Engine 3 (regels + proeven)": {
+        "regret": {
+          "mean": 0.5151957014974744,
+          "sd": 0.12866692043630368
+        },
+        "onBestShare": {
+          "mean": 0.4590833333333337,
+          "sd": 0.10743958737723287
+        },
+        "trialsPerBag": {
+          "mean": 0.7516666666666666,
+          "sd": 0.1558374648992338
+        },
+        "superfluousTrials": {
+          "mean": 0.08435876623376619,
+          "sd": 0.09643400164856178
+        },
+        "cupsToBest": {
+          "mean": 5.909166666666668,
+          "sd": 1.0936785391826416
+        },
+        "finalOnBest": {
+          "mean": 0.5616666666666666,
+          "sd": 0.13215560258365522
+        }
+      },
+      "proef elke techniek": {
+        "regret": {
+          "mean": 0.7007897816968519,
+          "sd": 0.08471599464720286
+        },
+        "onBestShare": {
+          "mean": 0.2517916666666667,
+          "sd": 0.04618981589794064
+        },
+        "trialsPerBag": {
+          "mean": 5,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0.3615833333333335,
+          "sd": 0.10386443592343286
+        },
+        "cupsToBest": {
+          "mean": 5.8058333333333305,
+          "sd": 0.984281475155299
+        },
+        "finalOnBest": {
+          "mean": 0.10083333333333332,
+          "sd": 0.08745661762553558
+        }
+      },
+      "orakel (kent de beste)": {
+        "regret": {
+          "mean": 0,
+          "sd": 0
+        },
+        "onBestShare": {
+          "mean": 1,
+          "sd": 0
+        },
+        "trialsPerBag": {
+          "mean": 0,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0,
+          "sd": 0
+        },
+        "cupsToBest": {
+          "mean": 1,
+          "sd": 0
+        },
+        "finalOnBest": {
+          "mean": 1,
+          "sd": 0
+        }
+      }
+    },
+    "regels kloppen vaak (80 %)": {
+      "altijd Kasuya": {
+        "regret": {
+          "mean": 0.7447002926132396,
+          "sd": 0.1709380107483458
+        },
+        "onBestShare": {
+          "mean": 0.26249999999999996,
+          "sd": 0.11416619288559086
+        },
+        "trialsPerBag": {
+          "mean": 0,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0,
+          "sd": 0
+        },
+        "cupsToBest": {
+          "mean": 8.375,
+          "sd": 1.1416619288559093
+        },
+        "finalOnBest": {
+          "mean": 0.26249999999999996,
+          "sd": 0.11416619288559086
+        }
+      },
+      "Engine 3 (regels + proeven)": {
+        "regret": {
+          "mean": 0.3743314812734737,
+          "sd": 0.10726539966427891
+        },
+        "onBestShare": {
+          "mean": 0.6030000000000003,
+          "sd": 0.09903583207977923
+        },
+        "trialsPerBag": {
+          "mean": 0.740416666666667,
+          "sd": 0.1393375639520258
+        },
+        "superfluousTrials": {
+          "mean": 0.0455042041292041,
+          "sd": 0.065333717623667
+        },
+        "cupsToBest": {
+          "mean": 4.3375,
+          "sd": 0.831226398471843
+        },
+        "finalOnBest": {
+          "mean": 0.7391666666666665,
+          "sd": 0.12650820997671705
+        }
+      },
+      "proef elke techniek": {
+        "regret": {
+          "mean": 0.70266363829501,
+          "sd": 0.08378242286871465
+        },
+        "onBestShare": {
+          "mean": 0.26150000000000007,
+          "sd": 0.03954444664865325
+        },
+        "trialsPerBag": {
+          "mean": 5,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0.38075,
+          "sd": 0.09328512604037423
+        },
+        "cupsToBest": {
+          "mean": 5.707916666666666,
+          "sd": 0.8416667703202413
+        },
+        "finalOnBest": {
+          "mean": 0.08500000000000008,
+          "sd": 0.07745606272402435
+        }
+      },
+      "orakel (kent de beste)": {
+        "regret": {
+          "mean": 0,
+          "sd": 0
+        },
+        "onBestShare": {
+          "mean": 1,
+          "sd": 0
+        },
+        "trialsPerBag": {
+          "mean": 0,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0,
+          "sd": 0
+        },
+        "cupsToBest": {
+          "mean": 1,
+          "sd": 0
+        },
+        "finalOnBest": {
+          "mean": 1,
+          "sd": 0
+        }
+      }
+    },
+    "regels kloppen niet (0 %)": {
+      "altijd Kasuya": {
+        "regret": {
+          "mean": 0.8447196574999815,
+          "sd": 0.14816081965528693
+        },
+        "onBestShare": {
+          "mean": 0.1475,
+          "sd": 0.10221923319981202
+        },
+        "trialsPerBag": {
+          "mean": 0,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0,
+          "sd": 0
+        },
+        "cupsToBest": {
+          "mean": 9.524999999999999,
+          "sd": 1.0221923319981203
+        },
+        "finalOnBest": {
+          "mean": 0.1475,
+          "sd": 0.10221923319981202
+        }
+      },
+      "Engine 3 (regels + proeven)": {
+        "regret": {
+          "mean": 0.7654728001157056,
+          "sd": 0.13129652466403066
+        },
+        "onBestShare": {
+          "mean": 0.19720833333333318,
+          "sd": 0.10056123044809602
+        },
+        "trialsPerBag": {
+          "mean": 0.7633333333333333,
+          "sd": 0.15437053612405208
+        },
+        "superfluousTrials": {
+          "mean": 0.14091050616050613,
+          "sd": 0.12294763843267807
+        },
+        "cupsToBest": {
+          "mean": 8.735416666666666,
+          "sd": 1.0544380398314848
+        },
+        "finalOnBest": {
+          "mean": 0.23291666666666663,
+          "sd": 0.12143794039275445
+        }
+      },
+      "proef elke techniek": {
+        "regret": {
+          "mean": 0.7089435879010264,
+          "sd": 0.07987211330774327
+        },
+        "onBestShare": {
+          "mean": 0.24199999999999988,
+          "sd": 0.050311980339850224
+        },
+        "trialsPerBag": {
+          "mean": 5,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0.34141666666666654,
+          "sd": 0.10435756377328183
+        },
+        "cupsToBest": {
+          "mean": 5.954583333333336,
+          "sd": 1.0520976063346803
+        },
+        "finalOnBest": {
+          "mean": 0.14083333333333328,
+          "sd": 0.10776328567657069
+        }
+      },
+      "orakel (kent de beste)": {
+        "regret": {
+          "mean": 0,
+          "sd": 0
+        },
+        "onBestShare": {
+          "mean": 1,
+          "sd": 0
+        },
+        "trialsPerBag": {
+          "mean": 0,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0,
+          "sd": 0
+        },
+        "cupsToBest": {
+          "mean": 1,
+          "sd": 0
+        },
+        "finalOnBest": {
+          "mean": 1,
+          "sd": 0
+        }
+      }
+    },
+    "klein verschil tussen technieken": {
+      "altijd Kasuya": {
+        "regret": {
+          "mean": 0.39063591246299384,
+          "sd": 0.08035277158761893
+        },
+        "onBestShare": {
+          "mean": 0.22041666666666665,
+          "sd": 0.11482073396904578
+        },
+        "trialsPerBag": {
+          "mean": 0,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0,
+          "sd": 0
+        },
+        "cupsToBest": {
+          "mean": 8.795833333333329,
+          "sd": 1.1482073396904586
+        },
+        "finalOnBest": {
+          "mean": 0.22041666666666665,
+          "sd": 0.11482073396904578
+        }
+      },
+      "Engine 3 (regels + proeven)": {
+        "regret": {
+          "mean": 0.2864517223505959,
+          "sd": 0.06753579264875904
+        },
+        "onBestShare": {
+          "mean": 0.4107083333333334,
+          "sd": 0.10394029842421998
+        },
+        "trialsPerBag": {
+          "mean": 0.763333333333333,
+          "sd": 0.16486462984922232
+        },
+        "superfluousTrials": {
+          "mean": 0.08381100843600839,
+          "sd": 0.09837894772194042
+        },
+        "cupsToBest": {
+          "mean": 5.904583333333334,
+          "sd": 1.0815891609411257
+        },
+        "finalOnBest": {
+          "mean": 0.48041666666666694,
+          "sd": 0.12390714337224934
+        }
+      },
+      "proef elke techniek": {
+        "regret": {
+          "mean": 0.375807593925063,
+          "sd": 0.043374883437467975
+        },
+        "onBestShare": {
+          "mean": 0.21508333333333343,
+          "sd": 0.03914380636541053
+        },
+        "trialsPerBag": {
+          "mean": 5,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0.2881666666666667,
+          "sd": 0.0891612069588226
+        },
+        "cupsToBest": {
+          "mean": 5.8058333333333305,
+          "sd": 0.984281475155299
+        },
+        "finalOnBest": {
+          "mean": 0.10083333333333332,
+          "sd": 0.08745661762553558
+        }
+      },
+      "orakel (kent de beste)": {
+        "regret": {
+          "mean": 0,
+          "sd": 0
+        },
+        "onBestShare": {
+          "mean": 1,
+          "sd": 0
+        },
+        "trialsPerBag": {
+          "mean": 0,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0,
+          "sd": 0
+        },
+        "cupsToBest": {
+          "mean": 1,
+          "sd": 0
+        },
+        "finalOnBest": {
+          "mean": 1,
+          "sd": 0
+        }
+      }
+    },
+    "veel ruis in de proef": {
+      "altijd Kasuya": {
+        "regret": {
+          "mean": 0.7812718249259877,
+          "sd": 0.16070554317523786
+        },
+        "onBestShare": {
+          "mean": 0.22041666666666665,
+          "sd": 0.11482073396904578
+        },
+        "trialsPerBag": {
+          "mean": 0,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0,
+          "sd": 0
+        },
+        "cupsToBest": {
+          "mean": 8.795833333333329,
+          "sd": 1.1482073396904586
+        },
+        "finalOnBest": {
+          "mean": 0.22041666666666665,
+          "sd": 0.11482073396904578
+        }
+      },
+      "Engine 3 (regels + proeven)": {
+        "regret": {
+          "mean": 0.5563808097375494,
+          "sd": 0.1371638432215575
+        },
+        "onBestShare": {
+          "mean": 0.42862500000000026,
+          "sd": 0.10783637302548717
+        },
+        "trialsPerBag": {
+          "mean": 0.7433333333333332,
+          "sd": 0.15207480013232813
+        },
+        "superfluousTrials": {
+          "mean": 0.08559601509601507,
+          "sd": 0.10121564984941385
+        },
+        "cupsToBest": {
+          "mean": 5.92625,
+          "sd": 1.0900986251540796
+        },
+        "finalOnBest": {
+          "mean": 0.5100000000000001,
+          "sd": 0.13171123855968334
+        }
+      },
+      "proef elke techniek": {
+        "regret": {
+          "mean": 0.7407043183467674,
+          "sd": 0.08654706495984797
+        },
+        "onBestShare": {
+          "mean": 0.22275000000000028,
+          "sd": 0.04172700823304257
+        },
+        "trialsPerBag": {
+          "mean": 5,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0.3034999999999999,
+          "sd": 0.09267701158168568
+        },
+        "cupsToBest": {
+          "mean": 5.8058333333333305,
+          "sd": 0.984281475155299
+        },
+        "finalOnBest": {
+          "mean": 0.10083333333333332,
+          "sd": 0.08745661762553558
+        }
+      },
+      "orakel (kent de beste)": {
+        "regret": {
+          "mean": 0,
+          "sd": 0
+        },
+        "onBestShare": {
+          "mean": 1,
+          "sd": 0
+        },
+        "trialsPerBag": {
+          "mean": 0,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0,
+          "sd": 0
+        },
+        "cupsToBest": {
+          "mean": 1,
+          "sd": 0
+        },
+        "finalOnBest": {
+          "mean": 1,
+          "sd": 0
+        }
+      }
+    },
+    "groot verschil tussen technieken": {
+      "altijd Kasuya": {
+        "regret": {
+          "mean": 1.5625436498519754,
+          "sd": 0.3214110863504757
+        },
+        "onBestShare": {
+          "mean": 0.22041666666666665,
+          "sd": 0.11482073396904578
+        },
+        "trialsPerBag": {
+          "mean": 0,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0,
+          "sd": 0
+        },
+        "cupsToBest": {
+          "mean": 8.795833333333329,
+          "sd": 1.1482073396904586
+        },
+        "finalOnBest": {
+          "mean": 0.22041666666666665,
+          "sd": 0.11482073396904578
+        }
+      },
+      "Engine 3 (regels + proeven)": {
+        "regret": {
+          "mean": 0.9621732784871757,
+          "sd": 0.2494642163551087
+        },
+        "onBestShare": {
+          "mean": 0.4897916666666668,
+          "sd": 0.10706947830904609
+        },
+        "trialsPerBag": {
+          "mean": 0.7358333333333331,
+          "sd": 0.14640442140306137
+        },
+        "superfluousTrials": {
+          "mean": 0.0873600843600843,
+          "sd": 0.09900261850444816
+        },
+        "cupsToBest": {
+          "mean": 5.911249999999998,
+          "sd": 1.0850256560120386
+        },
+        "finalOnBest": {
+          "mean": 0.6116666666666667,
+          "sd": 0.13141416111684306
+        }
+      },
+      "proef elke techniek": {
+        "regret": {
+          "mean": 1.3368719006542114,
+          "sd": 0.17033595617572192
+        },
+        "onBestShare": {
+          "mean": 0.2784166666666667,
+          "sd": 0.04723060489856456
+        },
+        "trialsPerBag": {
+          "mean": 5,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0.4148333333333335,
+          "sd": 0.10750443097876021
+        },
+        "cupsToBest": {
+          "mean": 5.8058333333333305,
+          "sd": 0.984281475155299
+        },
+        "finalOnBest": {
+          "mean": 0.10083333333333332,
+          "sd": 0.08745661762553558
+        }
+      },
+      "orakel (kent de beste)": {
+        "regret": {
+          "mean": 0,
+          "sd": 0
+        },
+        "onBestShare": {
+          "mean": 1,
+          "sd": 0
+        },
+        "trialsPerBag": {
+          "mean": 0,
+          "sd": 0
+        },
+        "superfluousTrials": {
+          "mean": 0,
+          "sd": 0
+        },
+        "cupsToBest": {
+          "mean": 1,
+          "sd": 0
+        },
+        "finalOnBest": {
+          "mean": 1,
+          "sd": 0
+        }
+      }
+    }
+  }
+}

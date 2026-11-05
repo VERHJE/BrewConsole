@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Toegangstoken · Engine 3</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { color-scheme: light dark; --bg:#EDE7DC; --fg:#1A1714; --muted:#6B625A; --card:#F7F3EC; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0F0F10; --fg:#ECE6DD; --muted:#9C9389; --card:#1A1A1C; } }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:16px/1.45 -apple-system, system-ui, sans-serif; max-width:640px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  h2 { font-size:15px; margin:16px 0 4px; }
+  p { color:var(--muted); margin:0 0 12px; }
+  code { display:block; background:var(--card); border-radius:10px; padding:10px 12px; word-break:break-all; font:13px/1.4 ui-monospace, Menlo, monospace; color:var(--fg); min-height:1.4em; }
+  button { font:inherit; padding:12px 16px; border-radius:10px; border:0; background:#8A5A2B; color:#fff; width:100%; margin:8px 0 0; }
+  button.secondary { background:var(--card); color:var(--fg); }
+</style>
+</head>
+<body>
+<h1>Toegangstoken voor een toestel</h1>
+<p>Maakt een willekeurig toegangstoken en de bijbehorende hash voor de synchronisatie-Worker. Alles gebeurt op dit toestel; er wordt niets verstuurd of bewaard.</p>
+<button id="make" type="button">Nieuw token maken</button>
+
+<h2>Token (bewaar op dit toestel, deel het met niemand)</h2>
+<code id="token">–</code>
+<button class="secondary" id="copyToken" type="button">Token kopiëren</button>
+
+<h2>Hash (zet deze in Cloudflare als TOKEN_HASHES)</h2>
+<code id="hash">–</code>
+<button class="secondary" id="copyHash" type="button">Hash kopiëren</button>
+
+<p style="margin-top:16px">Meerdere toestellen: maak voor elk een eigen token en zet alle hashes achter elkaar, gescheiden door komma's. Een toestel kwijt? Haal alleen zijn hash weg.</p>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  function b64url(bytes) {
+    let s = '';
+    bytes.forEach((b) => { s += String.fromCharCode(b); });
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function hex(buf) { return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join(''); }
+  async function copy(text, btn) {
+    if (!text || text === '–') return;
+    try { await navigator.clipboard.writeText(text); btn.textContent = 'Gekopieerd'; setTimeout(() => { btn.textContent = btn.dataset.label; }, 1500); }
+    catch (e) { btn.textContent = 'Kopiëren lukt niet: selecteer de tekst'; }
+  }
+  $('copyToken').dataset.label = 'Token kopiëren';
+  $('copyHash').dataset.label = 'Hash kopiëren';
+  $('make').addEventListener('click', async () => {
+    const token = b64url(crypto.getRandomValues(new Uint8Array(32)));
+    const hash = hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token)));
+    $('token').textContent = token;
+    $('hash').textContent = hash;
+  });
+  $('copyToken').addEventListener('click', (e) => copy($('token').textContent, e.currentTarget));
+  $('copyHash').addEventListener('click', (e) => copy($('hash').textContent, e.currentTarget));
+})();
+</script>
+</body>
+</html>

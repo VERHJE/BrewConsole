@@ -89,6 +89,7 @@ export function validateEvent(e: unknown): ValidationIssue[] {
       if (!(st === null || st === -2 || st === -1 || st === 0 || st === 1 || st === 2)) bad('data.strength', 'moet −2…+2 of null zijn');
       if (!Array.isArray(d['finish'])) bad('data.finish', 'geen lijst');
       if (!Array.isArray(d['cata'])) bad('data.cata', 'geen lijst');
+      if (d['cataAsked'] !== undefined && typeof d['cataAsked'] !== 'boolean') bad('data.cataAsked', 'moet waar of onwaar zijn');
       break;
     }
     case 'pair.trial':

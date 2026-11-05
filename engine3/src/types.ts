@@ -233,6 +233,8 @@ export type TastingEvent = EventEnvelope<'tasting', {
   readonly missed: Missed | null;
   /** Blind aangevinkte wielcategorieën (vóór de zaknotities getoond werden). */
   readonly cata: readonly WheelCategory[];
+  /** Is de blinde keuzevraag gesteld? Zonder dit veld telt een lege lijst als 'niet gesteld' (migratie, oude app). */
+  readonly cataAsked?: boolean;
   /** Daarna: werden de notities van de zak herkend? */
   readonly noteHits: readonly NoteRecognition[];
   /** Oude 7-punts scores uit schema 1–5, ongewijzigd bewaard. */
@@ -302,6 +304,9 @@ export interface TrialProposal {
   readonly variant: Recipe;
 }
 
+/** Klachten die de engine niet zelf uit het logboek kan afleiden; de frontend geeft ze mee. */
+export type FeedbackSignal = 'sour_or_hollow' | 'drying' | 'uneven_drain';
+
 export interface PlanRequest {
   readonly at: EpochMs;
   readonly beanId: string | null;
@@ -311,6 +316,8 @@ export interface PlanRequest {
   readonly goal: Goal | null;
   /** De gebruiker kiest zelf een techniek; anders kiest de engine. */
   readonly technique: TechniqueId | null;
+  /** Optioneel: extra klachten, bijvoorbeeld 'uneven_drain' (ongelijk doorlopen). */
+  readonly feedback?: readonly FeedbackSignal[];
 }
 
 export interface Advice {
