@@ -90,7 +90,7 @@ test('twee toestellen in willekeurige volgorde komen op hetzelfde logboek uit', 
 });
 test('de synchronisatiecode gebruikt geen eigen klok of toeval en geen vaste netwerkaanroep', async () => {
   const { readFileSync } = await import('node:fs');
-  for (const f of ['crypto.ts', 'blocks.ts', 'client.ts', 'server.ts', 'kv-store.ts']) {
+  for (const f of ['crypto.ts', 'blocks.ts', 'client.ts', 'server.ts', 'kv-store.ts', 'ai.ts']) {
     const src = readFileSync(new URL(`../sync/${f}`, import.meta.url), 'utf8').replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
     for (const bad of ['Date.now(', 'Math.random(', 'localStorage', 'document.', 'window.', 'globalThis.fetch', ' fetch(']) {
       assert.ok(!src.includes(bad), `${f} gebruikt ${bad}`);

@@ -1210,3 +1210,12 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Molen:** zonder gelogde doorlooptijden voor een techniek zet het advies hooguit 1 klik verschil, daarna 2, 3, 4 (de natuurkundige verwachting is een beginpunt, geen bewijs). Meetopstelling opnieuw gedraaid: minstens 97 % op tijd in alle werelden.
 - **Poort:** op jouw koppen (lokaal) gelijk aan Engine 2: 3 goede kant, 1 verkeerde, 5 geen richting. De vijf vaste regels uit het contract zijn eigenschapstests op `plan()`. `npm run e3:check` bouwt de bundel en draait er een rooktest op.
 - **Niet gedaan:** een schakelaar in de oude app. De frontend wordt later opnieuw gebouwd rond `createEngine()`.
+
+### Engine 3 · stap 6 klaar (5 nov 2026)
+
+- **Tekst:** `parseBeanText` (en alles eromheen: naam, brander, zakgrootte, branddatum, smaaknotities, hoogte, boerderij) is overgezet naar strikte TypeScript (`engine3/src/bean/text.ts`). De woordenlijsten worden uit de app gegenereerd (`gen-bean-scan-data.mjs`). Een differentiële test eist dezelfde uitkomst als de app, op alle app-testteksten (inclusief de 8 voorbeeldzakken) en 600 willekeurige etiketten.
+- **Boonvelden:** `scanBeanText()` maakt er velden van volgens het datamodel: proces in drie assen, hoogte als bereik (de app middelde), notities in drie lijsten, bron per veld. Niets geraden; fuzzy treffers en webshoptekst worden gemarkeerd.
+- **QR:** jsQR 1.4.0 (Apache-2.0) in een aparte bundel (`engine3/qr`, de iPhone heeft geen `BarcodeDetector`) en `readQrPayload()` voor webadres, JSON, sleutel-waarde en tekst. Geen eigen decoder: een beproefd pakket is betrouwbaarder.
+- **AI:** `POST /scan` op de Worker, alleen met toestemming per scan en een API-sleutel als geheim; vast model, limiet van 30 per dag, geen foto bewaard, antwoord is een voorstel dat eerst `validateAiScan()` doorloopt.
+- **Aangepaste poort:** de meting '35 van 45 trefwoorden' op de foto's is niet te herhalen zonder die foto's; vervangen door de differentiële toets met de app.
+- **Nieuwe devDependencies:** `jsqr` (in de QR-bundel), `qrcode` en `@types/qrcode` (alleen tests), alle drie exact vastgezet.

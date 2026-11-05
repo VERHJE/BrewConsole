@@ -17,5 +17,5 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "sync/**/*.ts", "eval/**/*.ts", "test/**/*.ts"]
+  "include": ["src/**/*.ts", "sync/**/*.ts", "qr/**/*.ts", "eval/**/*.ts", "test/**/*.ts"]
 }

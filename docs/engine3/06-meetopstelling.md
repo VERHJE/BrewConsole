@@ -86,3 +86,7 @@ De simulator met een verborgen beste techniek per zak staat er nu: `node engine3
 ## Engine 3, stap 8 (samenstellen)
 
 Op de eigen koppen (lokaal) doet het volledige `plan()` hetzelfde als Engine 2: 3 keer de goede kant op, 1 keer de verkeerde, 5 keer geen richting. Zie [15-samenstellen.md](15-samenstellen.md).
+
+## Engine 3, stap 6 (zakherkenning)
+
+Geen simulatie maar een differentiële toets tegen de app: dezelfde tekst geeft dezelfde uitkomst (alle app-testteksten en 600 willekeurige etiketten). Zie [16-zakherkenning.md](16-zakherkenning.md).

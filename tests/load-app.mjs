@@ -128,6 +128,7 @@ export function loadApp(){
       adviceOutcomeStats, ADVICE_GATE_MIN_TESTED, ADVICE_GATE_SUCCESS_MIN, ADVICE_GATE_HARM_MAX,
       extractBeanNameFromText, extractRoastDateFromText, extractRoasterFromText, extractBagSizeFromText,
       parseBeanText, extractFarmFromText, extractAltitudeFromText, expandSharedHeadNouns, preprocessCanvasForOCR,
+      scanFlavorTagsInText, scanFlavorSourceText, unmappedScanNotes, ROAST_SCAN_KEYWORDS, INTENDED_USE_SCAN_KEYWORDS, PROCESS_SCAN_KEYWORDS, EXPERIMENTAL_SCAN_KEYWORDS, COUNTRY_SCAN_SYNONYMS, REGION_SCAN_SYNONYMS, VARIETY_SCAN_SYNONYMS, FLAVOR_SCAN_SYNONYMS,
       tastingDraftFromRecord, actualsModeOfRecord,
       defaultWaterMlFor, drinkWindowFor, bagSummaryFor, roasterSummary, roasterSummaryText, goalStepFor, missedQuestionApplies, TASTING_MISSED, standFromRecord, updateBeanStand, beanStandFor,
       abTrialVerdict, abArmForAnswer, AB_MIN_TRIALS, AB_WIN_SHARE, AB_LIGHTER_STEP, abTrialsForStep,

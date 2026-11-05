@@ -27,3 +27,11 @@ export { chooseTechnique, trialProposalFor, matchedRulesFor, ruleCandidateFor, r
 export type { TechniqueChoice, TechniqueRequest, TechniqueSource, TechniqueTrialPlan, TrialRecipeInput, Feedback } from './technique.ts';
 export { createEngine, plan, ENGINE3_VERSION } from './engine.ts';
 export { DOSE_LIMITS } from './data/brewer.ts';
+export { parseBeanText, scanFlavorTagsInText, extractFarmFromText, extractAltitudeFromText, extractAltitudeRangeFromText, extractBeanNameFromText, extractRoasterFromText, extractBagSizeFromText, extractRoastDateFromText, expandSharedHeadNouns } from './bean/text.ts';
+export type { ParsedBeanText } from './bean/text.ts';
+export { scanBeanText, processFromScan, recognisedKeys } from './bean/scan.ts';
+export type { BeanScan, ScanFlags, ScanSource } from './bean/scan.ts';
+export { readQrPayload } from './bean/qr.ts';
+export type { QrReading, QrKind } from './bean/qr.ts';
+export { validateAiScan, checkAiRequest, AI_TOOL, AI_PROMPT, AI_SCAN_MODEL, AI_DAILY_LIMIT, AI_MAX_IMAGE_BYTES, AI_MEDIA_TYPES } from './bean/ai.ts';
+export type { AiScanRequest, AiValidation, AiMediaType } from './bean/ai.ts';

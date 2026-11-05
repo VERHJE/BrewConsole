@@ -10,15 +10,18 @@
     "qa:dist": "node scripts/build.mjs && BREWCONSOLE_APP_HTML=dist/index.html node --test tests/adversarial-robustness.test.mjs tests/brewconsole.pure-logic.test.mjs tests/kernflow.smoke.test.mjs",
     "e3:typecheck": "tsc -p engine3",
     "e3:test": "node --test engine3/test/*.test.ts",
-    "e3:build": "esbuild engine3/src/index.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=engine3/dist/engine3.mjs && esbuild engine3/sync/index.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=engine3/dist/sync-client.mjs && esbuild engine3/sync/worker.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=engine3/dist/sync-worker.mjs",
+    "e3:build": "esbuild engine3/src/index.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=engine3/dist/engine3.mjs && esbuild engine3/sync/index.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=engine3/dist/sync-client.mjs && esbuild engine3/sync/worker.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=engine3/dist/sync-worker.mjs && esbuild engine3/qr/decode.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=engine3/dist/qr.mjs",
     "e3:eval": "node engine3/eval/run.ts",
     "e3:check": "npm run e3:typecheck && npm run e3:test && npm run e3:build && node engine3/scripts/smoke-bundle.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
+    "@types/qrcode": "1.5.5",
     "esbuild": "0.28.2",
     "fast-check": "4.10.2",
+    "jsqr": "1.4.0",
     "playwright": "^1.62.1",
+    "qrcode": "1.5.4",
     "typescript": "7.0.2"
   }
 }

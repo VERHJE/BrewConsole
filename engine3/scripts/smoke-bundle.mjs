@@ -1,7 +1,8 @@
 // Rooktest van de gebouwde bundel (engine3/dist/engine3.mjs): draait zoals de frontend hem straks laadt,
 // zonder TypeScript en zonder iets uit src/. Draait na `npm run e3:build`.
 import assert from 'node:assert/strict';
-import { createEngine, ENGINE3_CONTRACT_VERSION, ENGINE3_VERSION, migrateBackupV3 } from '../dist/engine3.mjs';
+import { createEngine, ENGINE3_CONTRACT_VERSION, ENGINE3_VERSION, migrateBackupV3, scanBeanText, readQrPayload } from '../dist/engine3.mjs';
+import { decodeQr } from '../dist/qr.mjs';
 
 assert.equal(ENGINE3_CONTRACT_VERSION, 'e3-contract-1.0');
 const engine = createEngine();
@@ -23,4 +24,10 @@ assert.ok(Array.isArray(migrated.events));
 // Zuiver: twee keer dezelfde vraag, twee keer hetzelfde antwoord.
 const again = engine.plan(engine.learn([bean]), { at: 1_790_000_100_000, beanId: 'zak', method: 'v60', cupG: 250, goal: null, technique: null });
 assert.equal(JSON.stringify(advice), JSON.stringify(again));
+// Zakherkenning: tekst, QR-inhoud en de pixel-decoder uit de aparte QR-bundel.
+const scan = scanBeanText('Colombia El Diviso\nProcess: Natural\nLight roast', { source: 'paste', nowMs: 1_790_000_000_000 });
+assert.equal(scan.fields.country, 'Colombia');
+assert.equal(scan.fields.process.base, 'natural');
+assert.equal(readQrPayload('https://www.blommers.coffee/products/kenya-aa', 1_790_000_000_000).fields.roaster, 'Blommers');
+assert.equal(decodeQr({ data: new Uint8ClampedArray(30 * 30 * 4).fill(255), width: 30, height: 30 }), null);
 console.log('bundel-rooktest: ok');

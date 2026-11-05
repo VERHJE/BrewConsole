@@ -22,6 +22,7 @@ Engine 3 is de nieuwe rekenkern van Brew Console. Hij wordt vanaf nul gebouwd en
 | Tijd en molen (stap 4) | [13-tijd-en-molen.md](13-tijd-en-molen.md) | klaar, nog niet getoetst op eigen tikken |
 | Techniekkeuze (stap 5) | [14-techniekkeuze.md](14-techniekkeuze.md) | klaar |
 | Samenstellen (stap 8) | [15-samenstellen.md](15-samenstellen.md) | klaar, contract 1.0 |
+| Zakherkenning (stap 6) | [16-zakherkenning.md](16-zakherkenning.md) | klaar |
 
 ## Draaien
 
@@ -51,7 +52,7 @@ Elke stap is pas af als de tests groen zijn en de meetopstelling niet slechter i
 3. **Sterkte** (klaar, `engine3/src/strength.ts`). Dit module is voorlopig gelijk aan Engine 2, want de nulmeting laat weinig ruimte zien (6 punten tot het orakel). Daarna kan het verbeterd worden.
 4. **Tijd en molen** (klaar, `engine3/src/grind.ts`, zie 13). Bayesiaans, met de natuurkundige verwachting (−11 % doorloop per klik grover) en een term per hoeveelheid. Hier zit de grootste winst.
 5. **Techniekkeuze** (klaar, `engine3/src/technique.ts`, zie 14). Volgens `SELECTION_RULES`. Een afwijking van Kasuya is altijd een proef; een gewonnen proef wint van elke regel.
-6. **Zakherkenning.** `parseBeanText` uit de huidige app wordt overgezet (die is getoetst op 8 zakken). Daarna komen QR en, alleen met toestemming, AI.
+6. **Zakherkenning** (klaar, `engine3/src/bean/`, zie 16). `parseBeanText` uit de huidige app wordt overgezet (die is getoetst op 8 zakken). Daarna komen QR en, alleen met toestemming, AI.
 7. **Smaakprofiel.** Blinde keuzevakjes (CATA) en herkende notities over alle zakken heen. Dit stuurt het recept niet.
 
 ## Grenzen
