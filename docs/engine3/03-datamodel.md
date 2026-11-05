@@ -54,7 +54,7 @@ Bron van waarheid: `engine3/src/types.ts`. De regels staan in `engine3/src/event
 
 Gewicht in g (1 ml water = 1 g). Tijd binnen een zetsel in s, tijdstip in epoch-ms, datum als YYYY-MM-DD. Verder: °C, TDS in %, EY als fractie, klikken op de C3S Pro, en hoogte in m. Zie `engine3/src/units.ts`.
 
-## Synchronisatie (later)
+## Synchronisatie (bouwstap 0, zie 08)
 
 1. **Lokaal (standaard):** het logboek gaat als bestand via het deelmenu naar iCloud Drive, en een ander toestel leest het weer in. Samenvoegen gebeurt met `mergeLogs`.
 2. **Optioneel automatisch:** via een gratis Cloudflare Worker.

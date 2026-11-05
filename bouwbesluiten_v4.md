@@ -1154,3 +1154,9 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
   - De back-up blijft dus nodig.
   - Engine 3 neemt een eigen QR-decoder mee.
 - **Meetplan voor eigen data:** later.
+
+### Engine 3 · synchronisatie in het bouwplan (5 nov 2026)
+
+- **Besluit:** de synchronisatie wordt bouwstap 0, vóór de rekenlogica. iOS geeft de app geen blijvende opslag, en rechtstreeks aan iCloud koppelen kan niet zonder betaald Apple-ontwikkelaarsaccount.
+- **Opzet:** een eigen, gratis Cloudflare Worker die alleen versleutelde blokken bewaart (AES-GCM, sleutel uit een wachtwoordzin via PBKDF2). De iCloud Drive-back-up via het deelmenu blijft de reserve.
+- **Ontwerp:** `docs/engine3/08-synchronisatie.md`.

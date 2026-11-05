@@ -28,7 +28,10 @@
 - **Maalgraad.** Eén proef met 3 klikken verschil, 5 koppen per stand. Dat ziet het effect in 88 % van de gevallen.
 - **'Erdoor'-tikken.** Zet 'Gieten op doorlopen' aan. De back-up bevat nog geen enkele tik, en de molenmodule heeft ze nodig.
 
-## Accounts (pas nodig bij de AI-stap)
+## Accounts
 
-- Een gratis Cloudflare-account, voor de Worker met de API-sleutel en eventueel de synchronisatie.
+- **Nu nodig (bouwstap 0):** een gratis Cloudflare-account, voor de synchronisatie-Worker. Later draait daar ook de AI-stap.
+
+Pas nodig bij de AI-stap:
+
 - Een Anthropic Console-account met betaling per gebruik, met een eigen werkruimte en sleutel voor de Worker en een uitgavenlimiet. Of die limiet voor dit account kan, moet nog bekeken worden.
