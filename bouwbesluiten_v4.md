@@ -1226,3 +1226,8 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Stuurt het recept niet:** een test eist hetzelfde `plan()`-advies met en zonder keuzevakjes, herkende notities, waardering en notitie.
 - **Contract:** `tasting` kreeg het optionele veld `cataAsked` (is de keuzevraag gesteld), zodat 'niets aangevinkt' te onderscheiden is van 'niet gevraagd'. Bestaande gebeurtenissen blijven geldig; de frontend schrijft het zodra de vraag getoond is.
 - **Alle stappen van het bouwplan zijn nu af** (0 t/m 8). Open blijft: stap 0d (uitrollen van de Worker), eigen metingen voor het klikeffect, en de frontend.
+
+### Hulppagina's in de gebouwde map (5 nov 2026)
+
+- **Probleem:** een gesleepte map naar Netlify wordt gebouwd (`npm run build` → `dist/`), en `dist/` bevatte alleen de app. `tokengenerator.html` en `toestelcheck.html` ontbraken daardoor. Daarnaast liet de service worker élke navigatie op dit adres de app-shell tonen, dus op een toestel waar de app al staat zou elke losse pagina toch de app tonen (aangetoond in een echte browser: `/tokengenerator.html` gaf 'Brew Console 2.0').
+- **Herstel:** `scripts/build.mjs` kopieert beide pagina's naar `dist/`; `sw.js` serveert de app-shell alleen voor de hoofdmap en `index.html`, andere pagina's gaan naar het netwerk. Tests: `tests/sw-navigation.test.mjs` (nieuw) en de bouwtest eist de bestanden. In een echte browser met actieve worker tonen `/tokengenerator.html` en `/toestelcheck.html` nu hun eigen pagina.

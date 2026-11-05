@@ -41,7 +41,7 @@ describe('K23: commentaar strippen zonder de code te raken', () => {
     const built = fs.readFileSync(path.join(out, 'index.html'), 'utf8');
     const engine = (h) => { const b = h.indexOf('<body>'); const s = h.indexOf('<script>', b); return h.slice(s, h.indexOf('</script>', s)); };
     assert.equal(engine(built), engine(src), 'de rekenkern is byte voor byte gelijk');
-    for (const f of ['sw.js', 'manifest.webmanifest', 'icons/icon-512.png', 'photos/home-hero.webp']) assert.ok(fs.existsSync(path.join(out, f)), f);
+    for (const f of ['sw.js', 'manifest.webmanifest', 'toestelcheck.html', 'tokengenerator.html', 'icons/icon-512.png', 'photos/home-hero.webp']) assert.ok(fs.existsSync(path.join(out, f)), f);
     const browser = await chromium.launch({ executablePath, args: ['--no-sandbox'] });
     const page = await browser.newPage();
     const errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });

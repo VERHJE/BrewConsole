@@ -127,11 +127,24 @@ self.addEventListener('fetch', (event) => {
   if (!sameOrigin) return;
 
   if (request.mode === 'navigate') {
+    /* Alleen de app zelf start vanaf de cache. Losse pagina's naast de app (toestelcheck.html,
+       tokengenerator.html) gaan gewoon naar het netwerk; anders zou elke pagina op dit adres de app tonen. */
+    if (!isAppNavigation(request.url)) return;
     event.respondWith(cacheFirstShell(event));
     return;
   }
   event.respondWith(cacheFirst(request));
 });
+
+/* De app staat op de hoofdmap of op index.html; elke andere .html-pagina is een losse pagina. */
+function isAppNavigation(url) {
+  try {
+    const path = new URL(url).pathname;
+    return path.endsWith('/') || path.endsWith('/index.html');
+  } catch (e) {
+    return true;
+  }
+}
 
 /* K22: start vanaf de cache; ververs op de achtergrond. updateReady blijft staan tot een start
    de nieuwe versie uit de cache serveert, zodat een app die later vraagt het ook nog hoort. */
