@@ -6989,6 +6989,7 @@ let formRoastChip = null;
 let formIntendedUseChip = null; // optioneel, geen zinvolle default
 let formProcessChip = 'overig';
 let formExperimentalFlag = false;
+let formDecafFlag = false; // zakherkenning nov 2026: cafeïnevrij (sugarcane/EA, Swiss Water …), alleen vastgelegd
 let formProfileChip = 'klassiek';
 let formProfileManual = false;
 let beanAddReturnTo = 'beans';
@@ -7288,7 +7289,10 @@ const SCA_FLAVOR_WHEEL = [
   ]},
   { key:'bloemig', name:'Bloemig', short:'Bloemig', color:'#B48FC4', subgroups:[
     { label:'Thee', tags:[
-      {t:'Zwarte thee', h:'fresh_clean'}
+      {t:'Zwarte thee', h:'fresh_clean'},
+      /* Groene thee: komt op specialty-zakken voor (Zwarte Roes Pink Borbon Creation), staat niet in
+         het WCR-lexicon (dat kent alleen black tea). Zelfde hint als Zwarte thee: licht en theeachtig. */
+      {t:'Groene thee', h:'fresh_clean'}
     ]},
     /* Hibiscus, lavendel en sinaasappelbloesem: net als bij tropisch fruit
        staat het originele wiel hier mager — alleen kamille/roos/jasmijn.
@@ -7501,7 +7505,7 @@ const PROCESS_SCAN_KEYWORDS = {
    Deze lots zijn extractiegevoeliger dan klassieke washed/natural/honey — vandaar een losse vlag
    bovenop het process-veld i.p.v. een nieuwe process-optie. Bronnen: Perfect Daily Grind (co-fermentation
    & carbonic maceration explainers), Barista Hustle (fermentation deep dives), en het werk van Luis
-   Marcelino/Aroma Nativo (Honduras) — pionier van "double fermentation"-verwerking bij o.a. door hem
+   Marcelino/Aroma Nativo (Pitalito, Huila, Colombia — eerder stond hier ten onrechte Honduras) — pionier van "double fermentation"-verwerking bij o.a. door hem
    verwerkte lots die via Europese specialty-roasters (waaronder Nederlandse) verkocht worden. */
 const EXPERIMENTAL_SCAN_KEYWORDS = [
   'double fermentation','dubbele fermentatie','double honey','double honey fermentation',
@@ -7534,7 +7538,16 @@ const EXPERIMENTAL_SCAN_KEYWORDS = [
   /* Nederlandse tegenhangers van de al aanwezige Engelse 'double honey'/'hydro-honey' —
      ontbraken nog, in tegenstelling tot bijna elke andere term in deze lijst die wel een
      EN/NL-paar heeft. */
-  'dubbele honing fermentatie','hydro-honing','hydro honing'
+  'dubbele honing fermentatie','hydro-honing','hydro honing',
+  /* Zakherkenning (8 voorbeeldzakken, nov 2026): zo staat het écht op zakken. "Experimental Washed"
+     (Blommers El Diviso) en "Lactic Fermented Honey"/"double fermented" (Blommers Aroma Nativo)
+     werden niet als experimenteel herkend: de lijst kende alleen 'experimental process' en
+     'double fermentation'. 'Lactic' komt op een zak vrijwel alleen als proces voor (melkzuur-
+     bacteriën); als smaak heet het hier 'yoghurt'. */
+  'experimental washed','experimental natural','experimental honey','experimental','experimenteel',
+  'double fermented','double-fermented','triple fermented','triple fermentation','dubbel gefermenteerd',
+  'lactic','lactic fermented','lactic fermentation','lactic acid fermentation','melkzuurfermentatie',
+  'thermal shock','yeast inoculated','inoculated','geïnoculeerd'
 ];
 /* Engelse landnaam/spelling → exacte optietekst in de land-dropdown. */
 const COUNTRY_SCAN_SYNONYMS = {
@@ -7612,6 +7625,9 @@ const VARIETY_SCAN_SYNONYMS = {
   'red bourbon':'Bourbon (rood)', 'bourbon rood':'Bourbon (rood)',
   'yellow bourbon':'Bourbon (geel)', 'bourbon geel':'Bourbon (geel)', 'bourbon amarillo':'Bourbon (geel)',
   'pink bourbon':'Bourbon (roze)', 'bourbon roze':'Bourbon (roze)', 'bourbon rosado':'Bourbon (roze)',
+  // Aji Bourbon is een eigen lijn, geen rode Bourbon (Blommers El Diviso, Wonder Beans: twee zakken,
+  // ook in omgekeerde volgorde). Geen optie in de lijst → komt als 'Overig' met deze tekst binnen.
+  'aji bourbon':'Aji Bourbon', 'bourbon aji':'Aji Bourbon',
   'bourbon':'Bourbon (rood)',
   'caturra':'Caturra', 'catuai':'Catuai', 'catuaí':'Catuai', 'mundo novo':'Mundo Novo',
   'villa sarchi':'Villa Sarchi', 'pacas':'Pacas', 'pache':'Pache', 'blue mountain':'Blue Mountain',
@@ -7679,6 +7695,14 @@ const FLAVOR_SCAN_SYNONYMS = {
   'violet':'Viooltje', 'viooltje':'Viooltje',
   'elderflower':'Vlierbloesem', 'vlierbloesem':'Vlierbloesem',
   'lemongrass':'Citroengras', 'lemon grass':'Citroengras', 'citroengras':'Citroengras',
+  // Zakherkenning (nov 2026): op echte zakken gezien en niet herkend. Magnolia is een bloem → algemeen
+  // bloemig; limoenblad en 'herbal' zijn kruidig (niet de vrucht limoen); groene thee kreeg een eigen tag.
+  'magnolia':'Bloemig (algemeen)', 'magnolia blossom':'Bloemig (algemeen)',
+  'green tea':'Groene thee', 'groene thee':'Groene thee',
+  'lime leaf':'Kruidachtig', 'kaffir lime':'Kruidachtig', 'kaffir lime leaf':'Kruidachtig', 'limoenblad':'Kruidachtig',
+  'herbal':'Kruidachtig', 'herbs':'Kruidachtig', 'kruidig':'Kruidachtig',
+  'spices':'Specerijen (algemeen)', 'spice':'Specerijen (algemeen)', 'specerijen':'Specerijen (algemeen)',
+  'tropische vruchten':'Tropisch fruit (algemeen)', 'gedroogde vruchten':'Gedroogd fruit (algemeen)',
   'honey':'Honing', 'caramel':'Gekarameliseerd', 'maple':'Ahornsiroop', 'molasses':'Melasse',
   'vanilla':'Vanille', 'brown sugar':'Gekarameliseerd', 'sweet':'Algeheel zoet',
   'sugar cane':'Rietsuiker', 'sugarcane':'Rietsuiker', 'cane sugar':'Rietsuiker', 'rietsuiker':'Rietsuiker',
@@ -7782,7 +7806,17 @@ const FLAVOR_CONTEXT_STRIP_PATTERNS = [
   /(?:licht|lichte|medium|middel|donker|donkere)[- ]?(?:gebrand|gebrande|branding|geroosterd|geroosterde)(?![a-zà-öø-ÿ])/g,
   /(?:gebrand|geroosterd) op(?![a-zà-öø-ÿ])/g,
   /(?:(?:white|yellow|golden|red|black|double|hydro)[- ])?honey[- ](?:process(?:ed)?|method)(?![a-zà-öø-ÿ])/g,
-  /(?:white|yellow|golden|red|black|double|hydro)[- ]honey(?![a-zà-öø-ÿ])/g
+  /(?:white|yellow|golden|red|black|double|hydro)[- ]honey(?![a-zà-öø-ÿ])/g,
+  /* Zakherkenning (8 voorbeeldzakken, nov 2026): proceswoorden die als smaak binnenkwamen.
+     "Lactic Fermented Honey" gaf Gefermenteerd + Yoghurt-achtig + Honing, "double fermented …
+     lactic bacteria" idem, "Sugarcane Decaf" gaf Rietsuiker. Dit zijn verwerkings-, geen smaakwoorden. */
+  /(?:(?:double|triple|lactic|anaerobic|aerobic|yeast|extended|co|carbonic|thermal)[- ]?)+(?:fermented|fermentation|ferment)(?:[- ](?:honey|natural|washed|process))?(?![a-zà-öø-ÿ])/g,
+  /fermented[- ](?:honey|natural|washed)(?![a-zà-öø-ÿ])/g,
+  /lactic(?:[- ]acid)?[- ](?:bacteria|process|fermentation|fermented)(?![a-zà-öø-ÿ])/g,
+  /(?:sugar[- ]?cane|ea|e\.a\.|swiss[- ]water|mountain[- ]water|co2|ethyl[- ]acetate)[-\s]+(?:decaf(?:feinated)?|decaffeination|process|method)(?![a-zà-öø-ÿ])/g,
+  /* "Roasted red apple" is een appelnotitie, geen geroosterde smaak: 'roasted' vóór een vrucht
+     is een bijvoeglijk naamwoord (gegaarde vrucht). */
+  /roasted(?=[- ](?:(?:red|green|yellow)[- ])?(?:apples?|pears?|peach(?:es)?|plums?|pineapples?|bananas?|figs?|cherr(?:y|ies)|apricots?|nectarines?|grapes?)(?![a-zà-öø-ÿ]))/g
 ];
 function stripFlavorContextPhrases(text){
   return FLAVOR_CONTEXT_STRIP_PATTERNS.reduce((t, re) => t.replace(re, m => ' '.repeat(m.length)), text);
@@ -7811,9 +7845,16 @@ function flavorFuzzyDistance(len){
 }
 // Geeft de set herkende smaaktags terug voor een (al lowercase) tekst. opts.fuzzy zet de
 // tikfouttolerantie aan (OCR-scan); classifyProfile() gebruikt alleen exacte treffers.
+/* "Gedroogd & tropisch fruit", "milk and dark chocolate": twee notities met één gedeeld
+   hoofdwoord. Uitschrijven naar "gedroogd fruit, tropisch fruit", anders valt de eerste weg
+   (Wonder Beans, nov 2026). */
+const SHARED_HEAD_RE = /([a-zà-öø-ÿ]+)\s*(?:&|\+|\/|\band\b|\ben\b)\s*([a-zà-öø-ÿ]+)\s+(fruit|fruits|vruchten|berries|bessen|chocolate|chocolade|thee|tea)(?![a-zà-öø-ÿ])/g;
+function expandSharedHeadNouns(text){
+  return String(text || '').replace(SHARED_HEAD_RE, (m, a, b, head) => `${a} ${head}, ${b} ${head}`);
+}
 function scanFlavorTagsInText(lowerText, opts){
   const fuzzy = !!(opts && opts.fuzzy);
-  const text = stripFlavorContextPhrases(lowerText || '');
+  const text = stripFlavorContextPhrases(expandSharedHeadNouns(lowerText || ''));
   const candidates = []; // { keyword, tag }
   Object.keys(FLAVOR_TAG_HINTS).forEach(tag => candidates.push({ keyword: tag.toLowerCase(), tag }));
   Object.keys(FLAVOR_SCAN_SYNONYMS).forEach(kw => candidates.push({ keyword: kw, tag: FLAVOR_SCAN_SYNONYMS[kw] }));
@@ -7847,7 +7888,10 @@ function scanFlavorTagsInText(lowerText, opts){
 /* Hoogteligging staat vaak letterlijk op de zak: "1900-2200 masl", "1900m", of
    "grown at 1850 meters". Pakt een range (neemt het gemiddelde) of een los getal. */
 function extractAltitudeFromText(text){
-  let m = text.match(/(\d{3,4})\s*[-–]\s*(\d{3,4})\s*m(?:\.?a\.?s\.?l\.?|eter|eters)?\b/i);
+  // Bereik achter een label zonder eenheid: "ELEVATION 1580 - 1680" (Wonder Beans) → gemiddelde.
+  let m = text.match(/(?:hoogte|altitude|elevation)\D{0,12}(\d{3,4})\s*[-–]\s*(\d{3,4})(?!\d)/i);
+  if (m) return Math.round((parseInt(m[1],10) + parseInt(m[2],10)) / 2);
+  m = text.match(/(\d{3,4})\s*[-–]\s*(\d{3,4})\s*m(?:\.?a\.?s\.?l\.?|eter|eters)?\b/i);
   if (m) return Math.round((parseInt(m[1],10) + parseInt(m[2],10)) / 2);
   m = text.match(/(\d{3,4})\s*m\.?a\.?s\.?l\.?\b/i);
   if (m) return parseInt(m[1],10);
@@ -7867,54 +7911,148 @@ function extractAltitudeFromText(text){
 function extractFarmFromText(rawText){
   if (!rawText) return null;
   const m = rawText.match(/(?:^|\n)\s*(?:farm|estate|finca|hacienda|washing station|wasstation)\s*[:：]\s*([^\n,;]{2,60})/i);
-  return m ? m[1].trim() : null;
+  if (m) return m[1].trim();
+  // Zonder label, maar met het woord erin ("REGION ACEVEDO -FINCA LAS BRISAS", "Sitio Beija Flor #2").
+  const inl = rawText.match(/(?:^|[^a-zà-öø-ÿ])((?:finca|hacienda|sitio|fazenda)\s+[a-zà-öø-ÿ0-9][a-zà-öø-ÿ0-9 '’.#&-]{1,40}?)\s*(?=$|\n|[,;|]|\s[-–—]\s)/im);
+  if (!inl) return null;
+  // OCR-ruis achteraan weg ("FINCA LAS BRISAS Em ’"), maar "#2" mag blijven (Sitio Beija Flor #2).
+  const toks = inl[1].trim().split(/\s+/);
+  while (toks.length > 2 && !/^#?\d+$/.test(toks[toks.length - 1]) && (/^[a-zà-öø-ÿ]{1,2}$/i.test(toks[toks.length - 1]) || /[^a-zà-öø-ÿ'-]/i.test(toks[toks.length - 1]))) toks.pop();
+  const farm = toks.join(' ');
+  const letterToks = toks.filter(t => /[a-zà-öø-ÿ]/i.test(t));
+  return letterToks.every(t => t === t.toUpperCase()) ? tidyAllCaps(farm) : farm;
 }
 
-function applyParsedTextToForm(rawText){
-  const text = (rawText || '').toLowerCase();
-  const found = { roast:null, intendedUse:null, process:null, country:null, countryFuzzy:false, region:null, regionFuzzy:false, farm:null, variety:null, varietyFuzzy:false, tags:[], experimental:false, altitude:null };
+/* Zakherkenning (8 voorbeeldzakken, nov 2026): etiketten werken met vaste veldnamen
+   (Origin/Process/Variety/Notes/Taste/Sort …). Eerst de velden lezen, dan pas de woorden:
+   een procesregel ("PROCESS LACTIC FERMENTED HONEY") of variëteitregel levert dan geen
+   smaaknotities meer op, en een beschrijvende zin telt niet mee als er een notitieveld is. */
+const SCAN_NOTES_FIELD_RE = /^\s*(?:tasting notes|flavou?r notes|cup notes|cup profile|notes|note|taste|smaaknotities|smaakprofiel|smaak|in de kop)\b\s*[:：]?\s*(.*)$/i;
+const SCAN_OTHER_FIELD_RE = /^\s*(?:process(?:ing)?|proces|verwerking|variety|varietal|vari[eë]teit|sort|cultivar|region|regio|regi[oó]n|origin|herkomst|country|elevation|altitude|hoogte|harvest(?:\s+year)?|oogst(?:jaar)?|quantity|amount|inhoud|preparation|manufacturer|producer|producent|farm|finca|estate|roast(?:\s+(?:type|level|date|profile))?|cupping score|score|best before|ingredi[eë]nts?|co[oö]rdinat(?:es|en)|perfect brew|name|naam)(?![a-zà-öø-ÿ])/i;
+const SCAN_REGION_FIELD_RE = /^\s*(?:region|regio|regi[oó]n)\s*[:：]?\s+(.{2,80})$/i;
+/* Webshoppagina's (Coffee Roasting Man): keuzemenu's als "espresso prep ▾" en "250g, 1KG" zijn
+   bestelopties, geen kenmerken van de boon. */
+const SCAN_WEBSHOP_RE = /add to cart|in (?:de )?winkel(?:wagen|mand)|excl\.?\s*(?:vat|btw)|terms of delivery|delivery is free|verzendkosten/i;
+function scanFlavorSourceText(rawText){
+  const lines = String(rawText || '').split('\n');
+  const notes = [];
+  let hasNotesField = false, inNotes = false;
+  const kept = [];
+  lines.forEach(line => {
+    const t = line.trim();
+    const nm = t.match(SCAN_NOTES_FIELD_RE);
+    if (nm){ hasNotesField = true; inNotes = true; if (nm[1]) notes.push(nm[1]); kept.push(nm[1] || ''); return; }
+    // Afgebroken notitieregel ("Apple | Tangerine |" → "Green Tea") hoort er nog bij.
+    if (inNotes && notes.length && /[,|&+\/]\s*$/.test(notes[notes.length - 1]) && t && !SCAN_OTHER_FIELD_RE.test(t)){ notes[notes.length - 1] += ' ' + t; kept.push(t); return; }
+    inNotes = false;
+    if (SCAN_OTHER_FIELD_RE.test(t)){ kept.push(''); return; }
+    kept.push(t);
+  });
+  // Met een notitieveld tellen lange beschrijvende zinnen niet mee als smaak.
+  // Een zin, geen lijst: eindigt op een punt, of één stuk tussen de scheidingstekens heeft 5+ woorden
+  // ("A double fermented Caturra Mejorado, with …"). "Black Cherry | Raisin | Black Tea" blijft staan.
+  const isProse = (l) => /[a-zà-öø-ÿ]\.\s*$/i.test(l) || /[a-zà-öø-ÿ]\.\s+[A-ZÀ-Ý]/.test(l)
+    || l.split(/[,;|]/).some(seg => seg.split(/\s+/).filter(w => /[a-zà-öø-ÿ]/i.test(w)).length >= 5);
+  const body = hasNotesField ? kept.filter(l => !isProse(l)) : kept;
+  return { text: body.join('\n').toLowerCase(), notes, hasNotesField };
+}
+// Notities uit het notitieveld die geen enkele smaaktag opleveren: niet raden, wel bewaren.
+function unmappedScanNotes(notes){
+  const out = [];
+  notes.forEach(n => expandSharedHeadNouns(n.toLowerCase()).split(/\s*[,;|]\s*|\s+&\s+/).forEach(item => {
+    const it = item.replace(/[*.]+$/, '').trim();
+    // Alleen iets wat op een notitie lijkt (letters, hooguit 3 woorden); OCR-ruis valt af.
+    if (it.length < 3 || it.length > 40 || !/^[a-zà-öø-ÿ][a-zà-öø-ÿ '’-]*$/.test(it) || it.split(/\s+/).length > 3) return;
+    if (scanFlavorTagsInText(it, { fuzzy: false }).size) return;
+    if (!out.includes(it)) out.push(it);
+  }));
+  return out;
+}
+const SCAN_DECAF_RE = /(?:^|[^a-zà-öø-ÿ])(?:decaf(?:feinated)?|cafe[iï]nevrij|entkoffeiniert|swiss[- ]water|ethyl[- ]acetate)(?![a-zà-öø-ÿ])/i;
+
+function parseBeanText(rawText){
+  const raw = String(rawText || '');
+  const text = raw.toLowerCase();
+  const found = { roast:null, intendedUse:null, process:null, processAmbiguous:null, country:null, countryFuzzy:false, region:null, regionFuzzy:false, farm:null, variety:null, varietyFuzzy:false, tags:[], unmappedNotes:[], experimental:false, decaf:false, altitude:null, webshop:false };
   if (!text.trim()) return found;
   const tokens = tokenizeForFuzzy(text);
-  found.farm = extractFarmFromText(rawText);
+  found.webshop = SCAN_WEBSHOP_RE.test(raw);
+  found.farm = extractFarmFromText(raw);
 
   for (const key of Object.keys(ROAST_SCAN_KEYWORDS)){
     if (ROAST_SCAN_KEYWORDS[key].some(kw => textOrFuzzyIncludes(text, tokens, kw))){ found.roast = key; break; }
   }
+  // "espresso prep"/"filter prep" is een maal-/bestelkeuze op een webshop, geen beoogd gebruik.
+  const useText = text.replace(/(?:espresso|filter|whole bean|hele bonen)[- ]prep(?![a-zà-öø-ÿ])/g, m => ' '.repeat(m.length));
+  const useTokens = tokenizeForFuzzy(useText);
   for (const key of Object.keys(INTENDED_USE_SCAN_KEYWORDS)){
-    if (INTENDED_USE_SCAN_KEYWORDS[key].some(kw => textOrFuzzyIncludes(text, tokens, kw))){ found.intendedUse = key; break; }
+    if (INTENDED_USE_SCAN_KEYWORDS[key].some(kw => textOrFuzzyIncludes(useText, useTokens, kw))){ found.intendedUse = key; break; }
   }
+  // Noemt de zak beide ("Preparation espresso, filter"), dan is het een omni-branding.
+  if (found.intendedUse && found.intendedUse !== 'omni' && /(?:^|[^a-z])espresso(?![a-z])/.test(useText) && /(?:^|[^a-z])filter(?![a-z])/.test(useText)) found.intendedUse = 'omni';
+  // Semi-washed is in de vakwereld niet eenduidig (zie PROCESS_SCAN_KEYWORDS): niet laten
+  // doorglippen als 'washed' omdat dat woord erin zit, maar expliciet laten kiezen.
+  const SEMI_RE = /semi[- ]?washed/g;
+  if (SEMI_RE.test(text)) found.processAmbiguous = 'semi-washed';
+  const procText = text.replace(SEMI_RE, m => ' '.repeat(m.length));
+  const procTokens = tokenizeForFuzzy(procText);
   for (const key of Object.keys(PROCESS_SCAN_KEYWORDS)){
-    if (PROCESS_SCAN_KEYWORDS[key].some(kw => textOrFuzzyIncludes(text, tokens, kw))){ found.process = key; break; }
+    if (PROCESS_SCAN_KEYWORDS[key].some(kw => textOrFuzzyIncludes(procText, procTokens, kw))){ found.process = key; break; }
   }
-  found.experimental = EXPERIMENTAL_SCAN_KEYWORDS.some(kw => textOrFuzzyIncludes(text, tokens, kw));
+  found.experimental = EXPERIMENTAL_SCAN_KEYWORDS.some(kw => textOrFuzzyIncludes(procText, procTokens, kw));
   if (found.experimental && !found.process){
     // experimentele/meertraps-fermentatie zonder herkende basis → anaerobic is de dichtstbijzijnde aanname
     found.process = 'anaerobic';
   }
+  found.decaf = SCAN_DECAF_RE.test(raw);
   for (const key of Object.keys(COUNTRY_SCAN_SYNONYMS)){
     const kind = matchKind(text, tokens, key);
     if (kind){ found.country = COUNTRY_SCAN_SYNONYMS[key]; found.countryFuzzy = kind === 'fuzzy'; break; }
   }
   // Langste-eerst: voorkomt dat een kortere deelmatch (bijv. "west valley" bevat ook geen losstaand
   // "valley"-woord, maar bij andere lijsten kan dit wel spelen) een preciezere match wegkaapt.
+  // Tikfouttolerantie alleen voor regionamen van 5+ letters: 'lime' (lime leaf) werd anders
+  // de Ethiopische regio Limu op een Colombiaanse zak.
   for (const key of Object.keys(REGION_SCAN_SYNONYMS).sort((a,b)=>b.length-a.length)){
     const kind = matchKind(text, tokens, key);
+    if (kind === 'fuzzy' && key.length < 5) continue;
     if (kind){ found.region = REGION_SCAN_SYNONYMS[key]; found.regionFuzzy = kind === 'fuzzy'; break; }
+  }
+  if (!found.region){
+    // Geen bekende regio: neem de waarde van het regioveld zelf ("REGION ACEVEDO -FINCA LAS BRISAS" → Acevedo).
+    for (const line of raw.split('\n')){
+      const m = line.match(SCAN_REGION_FIELD_RE);
+      if (!m) continue;
+      const head = m[1].split(/\s+[-–—]\s*|\s*[-–—]\s+|\s*[,;|]\s*|\s+-(?=[a-zà-öø-ÿ])/i)[0].trim();
+      if (head.length >= 4 && head.length <= 40 && /^[A-ZÀ-Ý][A-Za-zÀ-ÿ' -]+$/.test(head) && !/^(?:finca|hacienda|sitio|fazenda)\b/i.test(head)){ found.region = tidyAllCaps(head); break; }
+    }
   }
   for (const key of Object.keys(VARIETY_SCAN_SYNONYMS).sort((a,b)=>b.length-a.length)){
     const kind = matchKind(text, tokens, key);
     if (kind){ found.variety = VARIETY_SCAN_SYNONYMS[key]; found.varietyFuzzy = kind === 'fuzzy'; break; }
   }
   found.altitude = extractAltitudeFromText(text);
-  // BC-06: eigen, strengere smaakmatcher — zie scanFlavorTagsInText().
-  found.tags = Array.from(scanFlavorTagsInText(text, { fuzzy: true }));
+  // BC-06: eigen, strengere smaakmatcher — zie scanFlavorTagsInText(). Alleen op de regels die
+  // smaak kunnen zijn (zie scanFlavorSourceText).
+  const flavorSrc = scanFlavorSourceText(raw);
+  found.tags = Array.from(scanFlavorTagsInText(flavorSrc.text, { fuzzy: true }));
+  found.unmappedNotes = unmappedScanNotes(flavorSrc.notes);
 
-  // BC-20: naamsuggestie (ook uit een lange eerste regel) en branddatum — alleen als die
-  // velden nog leeg zijn, nooit iets overschrijven wat je zelf invulde.
-  found.name = extractBeanNameFromText(rawText);
-  found.roaster = extractRoasterFromText(rawText); // R-17
-  found.bagSizeG = extractBagSizeFromText(rawText); // R-17
-  found.roastDate = extractRoastDateFromText(rawText);
+  // BC-20: naamsuggestie (ook uit een lange eerste regel) en branddatum.
+  found.name = extractBeanNameFromText(raw);
+  // Alleen een land als naam ("Colombia") zegt weinig: vul aan met de finca als die er is.
+  if (found.name && found.farm && isCountryOnlyLine(found.name)) found.name = `${found.name} ${found.farm}`;
+  found.roaster = extractRoasterFromText(raw); // R-17
+  found.bagSizeG = extractBagSizeFromText(raw); // R-17
+  found.roastDate = extractRoastDateFromText(raw);
+  return found;
+}
+
+/* Herkent kenmerken in vrije tekst (OCR of geplakt) via parseBeanText() en past het
+   bonenformulier daarop aan. Vult nooit iets over wat je zelf invulde. */
+function applyParsedTextToForm(rawText){
+  const found = parseBeanText(rawText);
+  if (!String(rawText || '').trim()) return found;
   const nameEl = document.getElementById('f-name');
   if (nameEl && !nameEl.value.trim() && found.name) nameEl.value = found.name;
   const roasterEl = document.getElementById('f-roaster');
@@ -7928,6 +8066,16 @@ function applyParsedTextToForm(rawText){
   if (found.intendedUse){ formIntendedUseChip = found.intendedUse; renderFormIntendedUseChips(); }
   if (found.process){ formProcessChip = found.process; renderFormProcessChips(); }
   if (found.experimental){ formExperimentalFlag = true; renderFormExperimentalToggle(); }
+  if (found.decaf){ formDecafFlag = true; renderFormExperimentalToggle(); }
+  if (found.unmappedNotes && found.unmappedNotes.length){
+    // Notities die (nog) geen smaaktag hebben: niet raden, wel bewaren als eigen notitie.
+    const extraEl = document.getElementById('f-notes-extra');
+    if (extraEl){
+      const have = extraEl.value.split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+      const add = found.unmappedNotes.filter(n => !have.includes(n));
+      if (add.length) extraEl.value = have.concat(add).join(', ');
+    }
+  }
   if (found.country){
     const sel = document.getElementById('f-country');
     if (sel) sel.value = found.country;
@@ -7970,7 +8118,69 @@ function applyParsedTextToForm(rawText){
 /* Naam en branddatum uit de etikettekst (BC-20, pure functies, getest). Naam: het stuk vóór het
    eerste scheidingsteken van een lange eerste regel. Branddatum: alleen met een brand-/roast-woord
    ervoor op dezelfde regel, zodat een THT-/best-before-datum nooit als branddatum telt. */
-const NAME_SKIP_RE = /^(roast(ed)?\b|gebrand|branddatum|best before|tht\b|ten minste|origin\b|herkomst|process\b|proces\b|notes?\b|smaak|tasting)/i;
+const NAME_SKIP_RE = /^(roast(ed)?\b|gebrand|branddatum|best before|tht\b|ten minste|origin\b|herkomst|process\b|processing\b|proces\b|notes?\b|smaak|tasting|taste\b|variety\b|varietal\b|vari[eë]teit\b|sort\b|region\b|regio\b|elevation\b|altitude\b|hoogte\b|country\b|quantity\b|amount\b|inhoud\b|preparation\b|cupping\b|harvest\b|oogst|manufacturer\b|producer\b|ingredi|co[oö]rdinat|perfect brew\b|info\b|score\b|specification\b|terms of delivery\b|add to cart\b)/i;
+/* Zakherkenning (8 voorbeeldzakken, nov 2026): de naam was bij 6 van de 8 fout — het land
+   ("Colombia"), de brander ("Blommers", "Zwarte Roes", "Wonder Beans") of OCR-ruis. Regels:
+   - Een regel met alleen algemene zakteksten (specialty coffee, whole bean coffee, 100% arabica …)
+     is nooit de naam.
+   - Een brander staat vaak bovenaan met een slogan eronder die op 'coffee' eindigt
+     ("Zwarte Roes / SPECIALTY COFFEE", "WONDER BEANS / GREED FREE® COFFEE"), of als los woord in
+     hoofdletters met daaronder een regel die met een land begint ("BLOMMERS / COLOMBIA EL DIVISO").
+   - Een veld "Name …" wint altijd.
+   - Een regel met alleen een land krijgt de volgende regel erbij ("COLOMBIA / LORD VOLDEMOR,
+     NATURAL" → "Colombia Lord Voldemor"). */
+const NAME_GENERIC_RE = /^(?:(?:100\s*%\s*)?(?:specialty|speciality)\s+arabica|100\s*%\s*arabica|whole bean coffee[*"'”]*|whole beans?|hele bonen|single origin|filter roast|espresso roast|omni roast|name|naam|where have your beans been\??|ingredients?\b.*|roasted beans)$/i;
+const NAME_TAGLINE_RE = /^[^\n]{0,40}\b(?:coffee|koffie)\*?$/i;
+function isCountryOnlyLine(line){
+  const l = String(line || '').toLowerCase().replace(/[^a-zà-öø-ÿ\s-]/g, '').trim();
+  return Object.prototype.hasOwnProperty.call(COUNTRY_SCAN_SYNONYMS, l);
+}
+function startsWithCountry(line){
+  const l = String(line || '').toLowerCase().trim();
+  return Object.keys(COUNTRY_SCAN_SYNONYMS).some(k => l === k || l.startsWith(k + ' '));
+}
+function isTaglineLine(line){ return NAME_TAGLINE_RE.test(line) && !/www|\.(?:com|nl|be|coffee)\b/i.test(line) && line.split(/\s+/).length <= 4 && !isCountryOnlyLine(line.replace(/\b(?:coffee|koffie)\*?$/i, '')); }
+// Een brandernaam is kort en bevat geen veldwoorden of cijfers ("Amount Process ROAST DATE" is het niet).
+function looksLikeBrandLine(line){
+  return line.split(/\s+/).length <= 4 && !/\d/.test(line) && !/(?:process|roast|amount|date|notes?|variety|taste|origin|region|score)/i.test(line);
+}
+// Webadres op de zak ("WWW.BLOMMERS.COFFEE") noemt vaak de brander.
+function roasterFromWebAddress(rawText){
+  const m = String(rawText || '').match(/www\s*\.?\s*([a-z][a-z0-9-]{2,30})\s*\.\s*(?:coffee|com|nl|be|de|eu|co|cafe)\b|www\s+([a-z][a-z0-9-]{2,30})\s+(?:coffee|com|nl|be)\b/i);
+  const name = m ? (m[1] || m[2]) : null;
+  return name ? name.charAt(0).toUpperCase() + name.slice(1).toLowerCase() : null;
+}
+// Index van de branderregel in de (al opgeschoonde) regels, of -1.
+function roasterLineIndex(lines){
+  for (let i = 0; i < lines.length; i++){
+    const l = lines[i];
+    if (isRoasterLine(l)) return i;
+    if (isCountryOnlyLine(l) || startsWithCountry(l) || NAME_GENERIC_RE.test(l) || l.length > 40) continue;
+    const next = lines[i + 1];
+    if (next && isTaglineLine(next) && !isTaglineLine(l) && looksLikeBrandLine(l)) return i;
+    if (i === 0 && next && /^[A-ZÀ-Ý][A-ZÀ-Ý&'’.-]{2,}$/.test(l) && startsWithCountry(next)) return i;
+  }
+  return -1;
+}
+/* OCR-ruis rond logo's ("ons, (a) Colombia", "L & Be 5", "MME,"): korte losse brokjes met
+   leestekens vooraan weghalen, en een regel zonder één echt woord (4+ letters) overslaan. */
+function cleanScanLine(line){
+  const toks = String(line || '').trim().split(/\s+/).filter(Boolean);
+  const junk = (t) => /^[^a-z0-9]*[a-z]{0,3}[^a-z0-9]+$/i.test(t) || /^[^a-z0-9]+$/i.test(t) || /^[a-z]$/i.test(t) || /^[a-z]{1,5}[^a-z0-9\s]+$/.test(t);
+  while (toks.length > 1 && junk(toks[0])) toks.shift();
+  // Ook achteraan: "El Diviso 3", "Aroma Nativo 7", "EL DIVISO qd" (losse cijfers, brokjes van 1–2 letters).
+  while (toks.length > 1 && (/^(?:\d|[a-z]{1,2})$/.test(toks[toks.length - 1]) || /^[^a-z0-9]+$/i.test(toks[toks.length - 1]))) toks.pop();
+  return toks.join(' ');
+}
+function looksLikeText(line){
+  const chars = line.replace(/\s/g, '');
+  if (!chars) return false;
+  const letters = (chars.match(/[a-zà-öø-ÿ]/gi) || []).length;
+  return /[a-zà-öø-ÿ]{4,}/i.test(line) && letters / chars.length >= 0.7;
+}
+function scanNameLines(rawText){
+  return String(rawText || '').split('\n').map(cleanScanLine).filter(l => l && looksLikeText(l));
+}
 /* Review R-17: veel etiketten beginnen met de brander ("Kawa Coffee Roasters"), en dan werd
    de brander de boonnaam. Een regel met een branderwoord is nu de brander; de naam komt
    uit de eerstvolgende regel. Een regel in hoofdletters wordt netjes gemaakt. */
@@ -7981,23 +8191,46 @@ function tidyAllCaps(line){
   return line.toLowerCase().replace(/(^|[\s\-/(])([a-zà-ÿ])/g, (m, a, b) => a + b.toUpperCase());
 }
 function extractRoasterFromText(rawText){
-  const line = String(rawText || '').split('\n').map(s => s.trim()).filter(Boolean).find(isRoasterLine);
-  return line ? tidyAllCaps(line) : null;
+  const lines = scanNameLines(rawText);
+  const i = roasterLineIndex(lines);
+  if (i >= 0) return tidyAllCaps(lines[i].replace(/[®™]/g, '').trim());
+  return roasterFromWebAddress(rawText);
 }
 // Zakgrootte: "250g", "250 gram", "1 kg", "1kg" — alleen een plausibele zak (100–2500 g).
 function extractBagSizeFromText(rawText){
   const t = String(rawText || '');
-  const kg = t.match(/(?:^|[^\d.,])(\d(?:[.,]\d)?)\s?kg\b/i);
-  if (kg){ const g = Math.round(parseFloat(kg[1].replace(',', '.')) * 1000); if (g >= 100 && g <= 2500) return g; }
-  const gr = t.match(/(?:^|[^\d.,])(\d{3,4})\s?(?:g|gr|gram|grams)\b/i);
-  if (gr){ const g = Number(gr[1]); if (g >= 100 && g <= 2500) return g; }
-  return null;
+  const sizes = new Set();
+  for (const m of t.matchAll(/(?:^|[^\d.,])(\d(?:[.,]\d)?)\s?kg\b/gi)){ const g = Math.round(parseFloat(m[1].replace(',', '.')) * 1000); if (g >= 100 && g <= 2500) sizes.add(g); }
+  for (const m of t.matchAll(/(?:^|[^\d.,])(\d{3,4})\s?(?:g|gr|gram|grams)\b/gi)){ const g = Number(m[1]); if (g >= 100 && g <= 2500) sizes.add(g); }
+  // Meerdere maten ("Quantity 250g, 1KG" op een webshop) = bestelkeuze: niet raden.
+  return sizes.size === 1 ? [...sizes][0] : null;
 }
 function extractBeanNameFromText(rawText){
-  const lines = String(rawText || '').split('\n').map(s => s.trim()).filter(Boolean).filter(l => !NAME_SKIP_RE.test(l));
-  const nonRoaster = lines.filter(l => !isRoasterLine(l));
-  const first = nonRoaster.length ? tidyAllCaps(nonRoaster[0]) : (lines[0] || null);
+  const all = scanNameLines(rawText);
+  for (const l of all){
+    const m = l.match(/^(?:name|naam)\s*[:：]?\s+(.{2,60})$/i);
+    if (m) return tidyAllCaps(m[1].trim());
+  }
+  const lines = all.filter(l => !NAME_SKIP_RE.test(l));
+  const ri = roasterLineIndex(lines);
+  // Een stuk beschrijvende zin (begint met een kleine letter, 4+ woorden) is geen naam.
+  const isProseBit = (l) => /^[a-zà-öø-ÿ]/.test(l) && l.split(/\s+/).length >= 4;
+  // Een rij smaaknotities ("LEMONGRASS, MELON", "SWEET,CHOCOLATE,COCOA…") is ook geen naam.
+  const isFlavorList = (l) => scanFlavorTagsInText(l.toLowerCase()).size >= 2;
+  // Een kopregel van het etiket ("VARIETY TASTE ROAST TYPE", "AMOUNT PROCESS ROAST DATE").
+  const isHeaderRow = (l) => (l.match(/(?:process|roast\s*(?:type|date)|amount|variety|taste|best before|origin|notes)/gi) || []).length >= 2;
+  const nonRoaster = lines.filter((l, i) => i !== ri && !isRoasterLine(l) && !NAME_GENERIC_RE.test(l) && !(ri >= 0 && i === ri + 1 && isTaglineLine(l)) && !isTaglineLine(l) && !isProseBit(l) && !isFlavorList(l) && !isHeaderRow(l));
+  // OCR zet logo-brokjes vóór de echte tekst ("Rfect", "Ansi,"). Staat er verderop een regel die
+  // met een land begint, dan begint de naam daar.
+  const ci = nonRoaster.findIndex(l => startsWithCountry(l));
+  if (ci > 0) nonRoaster.splice(0, ci);
+  let first = nonRoaster.length ? tidyAllCaps(nonRoaster[0]) : (lines[0] || null);
   if (!first) return null;
+  // Een finca-regel niet aan het land plakken: parseBeanText() maakt er "land + finca" van.
+  if (isCountryOnlyLine(first) && nonRoaster.length > 1 && !isCountryOnlyLine(nonRoaster[1]) && !/(?:^|[^a-zà-öø-ÿ])(?:finca|hacienda|sitio|fazenda)(?![a-zà-öø-ÿ])/i.test(nonRoaster[1])){
+    const next = tidyAllCaps(nonRoaster[1]).split(/\s*[,;|]\s*|\s[—–-]\s/)[0].trim();
+    if (next.length >= 3 && next.length <= 40 && next.split(/\s+/).length <= 6) first = `${first} ${next}`;
+  }
   if (first.length <= 40 && !/[.:;]\s/.test(first) && !/\s[—–|]\s/.test(first)) return first;
   const head = first.split(/\s[—–\-|·]\s|[.,;:](?:\s|$)/)[0].trim();
   if (head.length >= 3 && head.length <= 60) return head;
@@ -8035,7 +8268,7 @@ function extractRoastDateFromText(rawText, nowMs){
 }
 
 function summariseScan(found){
-  if (!found || (!found.roast && !found.intendedUse && !found.process && !found.country && !found.region && !found.farm && !found.variety && !found.altitude && !found.tags.length && !found.experimental)){
+  if (!found || (!found.roast && !found.intendedUse && !found.process && !found.country && !found.region && !found.farm && !found.variety && !found.altitude && !found.tags.length && !found.experimental && !found.decaf && !found.processAmbiguous)){
     return 'Niets herkend in de tekst — vul de kenmerken hieronder handmatig in.';
   }
   const parts = [];
@@ -8043,6 +8276,7 @@ function summariseScan(found){
   if (found.intendedUse) parts.push(INTENDED_USE_INFO[found.intendedUse].name);
   if (found.process) parts.push(PROCESS_INFO[found.process].name);
   if (found.experimental) parts.push('experimenteel/dubbele fermentatie');
+  if (found.decaf) parts.push('cafeïnevrij');
   if (found.country) parts.push((found.countryFuzzy ? '~' : '') + found.country);
   if (found.region) parts.push((found.regionFuzzy ? '~' : '') + found.region);
   if (found.farm) parts.push(`farm: ${found.farm}`);
@@ -8487,7 +8721,7 @@ function renderBeanLibraryScreen(){
     // VA-13: één metaregel (proces · branding · versheid · voorraad); herkomst staat op boondetail.
     const freshWord = freshTier ? freshTier.name.toLowerCase() : null;
     const stockWord = b.bagSizeG ? (() => { const rem = Math.round((b.bagSizeG - (b.doseUsedG || 0)) * 10) / 10; return rem > 0 ? `${fmt(rem, 0)} g over` : 'zak leeg'; })() : null;
-    const metaLine = [procName, r.name, b.experimental ? 'experimenteel' : null, freshWord, stockWord].filter(Boolean).join(' · ');
+    const metaLine = [procName, r.name, b.experimental ? 'experimenteel' : null, b.decaf ? 'cafeïnevrij' : null, freshWord, stockWord].filter(Boolean).join(' · ');
     // Hoogstens drie smaaklabels, neutraal (de kleurcategorie staat op het boondetail), +N voor de rest.
     const flavorTags = b.flavorNotes || [];
     const visibleFlavorTags = flavorTags.slice(0, 3);
@@ -13165,6 +13399,7 @@ function editBean(id){
   formIntendedUseChip = INTENDED_USE_INFO[bean.intendedUse] ? bean.intendedUse : null;
   formProcessChip = PROCESS_INFO[bean.process] ? bean.process : 'overig';
   formExperimentalFlag = !!bean.experimental;
+  formDecafFlag = !!bean.decaf;
   formProfileChip = PROFILE_INFO[bean.profileKey] ? bean.profileKey : 'klassiek';
   formProfileManual = true; // profiel stond al vast voor deze boon — niet laten overschrijven tenzij je zelf tags wijzigt
 
@@ -13365,7 +13600,7 @@ function renderBeanChipsInAdvice(){
     const r = ROAST_INFO[b.roastLevel] || ROAST_INFO.medium;
     const p = PROFILE_INFO[b.profileKey] || PROFILE_INFO.klassiek;
     const proc = PROCESS_INFO[b.process] ? PROCESS_INFO[b.process].name : null;
-    const meta = [r.name, proc, b.experimental ? 'experimenteel' : null, p ? beanProfileLabel(b) : null].filter(Boolean).join(' · '); // VA-10
+    const meta = [r.name, proc, b.experimental ? 'experimenteel' : null, b.decaf ? 'cafeïnevrij' : null, p ? beanProfileLabel(b) : null].filter(Boolean).join(' · '); // VA-10
     return `<button type="button" class="bean-pick-card" data-bean-pick="${b.id}" data-selected="${isSelected}">
       <span><span class="bean-pick-name">${escapeHtml(b.name || 'Naamloze boon')}</span><span class="bean-pick-meta">${escapeHtml(meta)}</span></span>
       <span class="bean-pick-arrow">→</span>
@@ -13893,12 +14128,18 @@ function renderBypassToggle(){
 function renderFormExperimentalToggle(){
   const el = document.getElementById('f-experimental-chip');
   if (!el) return;
-  el.innerHTML = `<button type="button" class="chip" id="f-experimental-btn" data-selected="${formExperimentalFlag}">Experimenteel / dubbele fermentatie</button>`;
+  el.innerHTML = `<button type="button" class="chip" id="f-experimental-btn" data-selected="${formExperimentalFlag}" aria-label="Experimenteel proces (dubbele fermentatie e.d.)">Experimenteel proces</button>`
+    + `<button type="button" class="chip" id="f-decaf-btn" data-selected="${formDecafFlag}">Cafeïnevrij</button>`;
   const btn = document.getElementById('f-experimental-btn');
   if (btn) btn.addEventListener('click', ()=>{
     formExperimentalFlag = !formExperimentalFlag;
     renderFormExperimentalToggle();
     suggestProfileFromForm();
+  });
+  const decafBtn = document.getElementById('f-decaf-btn');
+  if (decafBtn) decafBtn.addEventListener('click', ()=>{
+    formDecafFlag = !formDecafFlag;
+    renderFormExperimentalToggle();
   });
 }
 
@@ -13987,6 +14228,7 @@ function resetBeanForm(){
   formIntendedUseChip = null;
   formProcessChip = 'overig';
   formExperimentalFlag = false;
+  formDecafFlag = false;
   setBeanFieldError('name', false);
   setBeanFieldError('roast', false);
   formProfileChip = 'klassiek';
@@ -14054,6 +14296,11 @@ function downscaleImageForScan(file, maxDim){
    preprocessing-adviezen en meerdere onafhankelijke Tesseract.js-gidsen (Smashing Magazine,
    freeCodeCamp). Otsu's methode kiest de drempel automatisch uit het histogram, dus werkt
    zonder handmatig te tunen per foto/belichting. Puur beeldbewerking, geen AI/netwerk nodig. */
+/* Zakherkenning (nov 2026, gemeten op 6 echte zakfoto's/webshopschermen met dezelfde Tesseract
+   5.1.1, eng+nld): het oude zwart-wit maken met één drempel (Otsu) wiste gekleurde etiketten en
+   kleine grijze letters uit — 28 van 45 kernwoorden gelezen. Grijswaarden met contraststrekking
+   (1e–99e percentiel) las er 33, en die pas plus een tweede pas op de originele kleurenfoto samen
+   35. Vandaar nu: grijs + strekken, en een tweede pas op de kleurenkopie (runBeanPhotoScan). */
 function preprocessCanvasForOCR(canvas){
   const ctx = canvas.getContext('2d');
   const { width, height } = canvas;
@@ -14062,36 +14309,30 @@ function preprocessCanvasForOCR(canvas){
   const n = width * height;
   const gray = new Uint8ClampedArray(n);
   const hist = new Array(256).fill(0);
-
   // Grijswaarden via de standaard luminantie-weging (ITU-R BT.601), en meteen het histogram vullen.
   for (let i = 0, p = 0; i < n; i++, p += 4){
     const g = Math.round(0.299 * px[p] + 0.587 * px[p+1] + 0.114 * px[p+2]);
     gray[i] = g;
     hist[g]++;
   }
-
-  // Otsu's methode: zoek de drempel die de between-class variance maximaliseert.
-  let sumAll = 0;
-  for (let t = 0; t < 256; t++) sumAll += t * hist[t];
-  let sumB = 0, wB = 0, maxVar = 0, threshold = 128;
-  for (let t = 0; t < 256; t++){
-    wB += hist[t];
-    if (wB === 0) continue;
-    const wF = n - wB;
-    if (wF === 0) break;
-    sumB += t * hist[t];
-    const mB = sumB / wB;
-    const mF = (sumAll - sumB) / wF;
-    const between = wB * wF * (mB - mF) * (mB - mF);
-    if (between > maxVar){ maxVar = between; threshold = t; }
-  }
-
+  // 1e en 99e percentiel als zwart- en witpunt.
+  let lo = 0, hi = 255, acc = 0;
+  for (let t = 0; t < 256; t++){ acc += hist[t]; if (acc >= n * 0.01){ lo = t; break; } }
+  acc = 0;
+  for (let t = 255; t >= 0; t--){ acc += hist[t]; if (acc >= n * 0.01){ hi = t; break; } }
+  const span = Math.max(1, hi - lo);
   for (let i = 0, p = 0; i < n; i++, p += 4){
-    const v = gray[i] >= threshold ? 255 : 0;
+    const v = Math.max(0, Math.min(255, Math.round((gray[i] - lo) * 255 / span)));
     px[p] = v; px[p+1] = v; px[p+2] = v;
   }
   ctx.putImageData(imgData, 0, 0);
   return canvas;
+}
+function cloneCanvasForScan(canvas){
+  const c = document.createElement('canvas');
+  c.width = canvas.width; c.height = canvas.height;
+  c.getContext('2d').drawImage(canvas, 0, 0);
+  return c;
 }
 
 function setScanStatus(text, isError){
@@ -14123,9 +14364,13 @@ function showScanResult(found){
     ['Brander', ((document.getElementById('f-roaster') || {}).value || '').trim() || null, 'niet herkend — optioneel'],
     ['Branddatum', dateVal ? new Date(dateVal + 'T00:00:00').toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' }) : null, 'niet herkend — staat die op de zak? Vul hieronder in (preciezer bloom-advies)'],
     ['Roast', found.roast ? ROAST_INFO[found.roast].name : null, ROAST_INFO[formRoastChip] ? `niet herkend — staat nu op ${ROAST_INFO[formRoastChip].name}, controleer` : 'niet herkend — kies hieronder de roast'],
-    ['Proces', found.process ? PROCESS_INFO[found.process].name : null, `niet herkend — staat nu op ${PROCESS_INFO[formProcessChip] ? PROCESS_INFO[formProcessChip].name : formProcessChip} (standaard), controleer`],
+    ['Proces', found.process ? [PROCESS_INFO[found.process].name, found.experimental ? 'experimenteel' : null, found.decaf ? 'cafeïnevrij' : null].filter(Boolean).join(' · ') : (found.decaf ? `cafeïnevrij — ${found.processAmbiguous ? '“semi-washed” is niet eenduidig (soms honey/pulped natural, soms wet-hulled), kies hieronder het proces' : 'basisproces niet herkend, kies hieronder'}` : null),
+      found.processAmbiguous ? '“Semi-washed” staat op de zak — die term is niet eenduidig (soms honey/pulped natural, soms wet-hulled). Kies hieronder zelf.' : `niet herkend — staat nu op ${PROCESS_INFO[formProcessChip] ? PROCESS_INFO[formProcessChip].name : formProcessChip} (standaard), controleer`],
     ['Herkomst', origin || null, 'niet herkend'],
-    ['Smaak', found.tags && found.tags.length ? found.tags.slice(0, 5).join(', ') + (found.tags.length > 5 ? ` +${found.tags.length - 5}` : '') : null, 'geen smaaknotities herkend'],
+    ['Smaak', (found.tags && found.tags.length) || (found.unmappedNotes && found.unmappedNotes.length)
+      ? [found.tags.length ? found.tags.slice(0, 5).join(', ') + (found.tags.length > 5 ? ` +${found.tags.length - 5}` : '') : null,
+         found.unmappedNotes && found.unmappedNotes.length ? `als eigen notitie: ${found.unmappedNotes.join(', ')}` : null].filter(Boolean).join(' · ')
+      : null, 'geen smaaknotities herkend'],
     ['Zak', (document.getElementById('f-bagsize') || {}).value ? `${document.getElementById('f-bagsize').value} g` : null, 'niet herkend — optioneel, voor je voorraad']
   ];
   el.innerHTML = `<p class="scan-review-summary">${escapeHtml(summariseScan(found))}</p>
@@ -14149,21 +14394,29 @@ async function runBeanPhotoScan(file){
     await loadTesseractScript();
     setScanStatus('Foto voorbereiden…');
     const canvas = await downscaleImageForScan(file, 1500);
+    const colorCanvas = cloneCanvasForScan(canvas);
     preprocessCanvasForOCR(canvas);
     setScanStatus('Taalmodellen downloaden (eenmalig, NL+EN)…');
     // 'eng+nld': koffieverpakkingen zijn net zo vaak Nederlands als Engels.
     // Beide taalmodellen samen ~4-5MB, eenmalig; de service worker cachet
     // ze daarna, dus scannen werkt vanaf de tweede keer altijd offline.
-    const result = await window.Tesseract.recognize(canvas, 'eng+nld', {
-      logger: m => {
-        if (m.status === 'recognizing text' && typeof m.progress === 'number'){
-          setScanStatus(`Tekst herkennen… ${Math.round(m.progress * 100)}%`);
-        } else if (m.status === 'loading language traineddata'){
-          setScanStatus('Taalmodellen downloaden (eenmalig, NL+EN)…');
+    // Twee passen (zie preprocessCanvasForOCR): grijs eerst — die tekst staat vooraan, dus de naam
+    // komt daaruit — en daarna de kleurenkopie voor wat de eerste pas mist.
+    const passes = [canvas, colorCanvas];
+    const texts = [];
+    for (let k = 0; k < passes.length; k++){
+      const result = await window.Tesseract.recognize(passes[k], 'eng+nld', {
+        logger: m => {
+          if (m.status === 'recognizing text' && typeof m.progress === 'number'){
+            setScanStatus(`Tekst herkennen (${k + 1}/${passes.length})… ${Math.round(m.progress * 100)}%`);
+          } else if (m.status === 'loading language traineddata'){
+            setScanStatus('Taalmodellen downloaden (eenmalig, NL+EN)…');
+          }
         }
-      }
-    });
-    const text = result && result.data ? result.data.text : '';
+      });
+      texts.push(result && result.data ? result.data.text : '');
+    }
+    const text = texts.join('\n');
     setScanStatus(null);
     const found = applyParsedTextToForm(text);
     showScanResult(found);
@@ -15735,6 +15988,7 @@ document.getElementById('bean-form').addEventListener('submit', (e)=>{
         flavorScores: flavorCls.scores,
         fermentEvidence: flavorCls.fermentEvidence,
         experimental: formExperimentalFlag,
+        decaf: formDecafFlag,
         roastDate: roastDateVal,
         openedDate: openedDateVal,
         intendedUse: formIntendedUseChip,
@@ -15755,6 +16009,7 @@ document.getElementById('bean-form').addEventListener('submit', (e)=>{
       flavorScores: flavorCls.scores,
       fermentEvidence: flavorCls.fermentEvidence,
       experimental: formExperimentalFlag,
+      decaf: formDecafFlag,
       roastDate: roastDateVal,
       openedDate: openedDateVal,
       intendedUse: formIntendedUseChip,

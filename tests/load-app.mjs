@@ -127,6 +127,7 @@ export function loadApp(){
       recommendNext, recommendationTexts, TASTING_GOAL_HIT, TASTING_VS_LAST,
       adviceOutcomeStats, ADVICE_GATE_MIN_TESTED, ADVICE_GATE_SUCCESS_MIN, ADVICE_GATE_HARM_MAX,
       extractBeanNameFromText, extractRoastDateFromText, extractRoasterFromText, extractBagSizeFromText,
+      parseBeanText, extractFarmFromText, extractAltitudeFromText, expandSharedHeadNouns, preprocessCanvasForOCR,
       tastingDraftFromRecord, actualsModeOfRecord,
       defaultWaterMlFor, drinkWindowFor, bagSummaryFor, roasterSummary, roasterSummaryText, goalStepFor, missedQuestionApplies, TASTING_MISSED, standFromRecord, updateBeanStand, beanStandFor,
       abTrialVerdict, abArmForAnswer, AB_MIN_TRIALS, AB_WIN_SHARE, AB_LIGHTER_STEP, abTrialsForStep,

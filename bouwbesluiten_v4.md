@@ -1053,3 +1053,63 @@ Jelle: "bouw de volgende stappen van Engine 2". Details staan in `docs/engine2.m
   - `tests/engine2.smoke.test.mjs`: 1 nieuwe browsertest, 12 in totaal.
 - **Jouw recept:** gelijk (15,8 g op 300 ml, 18,5 g op 350 ml).
 
+
+## Zakherkenning: alle gevonden fouten hersteld (keuze Jelle, nov 2026)
+
+Jelle leverde 8 voorbeeldzakken en webshopschermen aan (Coffee Roasting Man ×3, Blommers ×2, Zwarte Roes ×2, Wonder Beans) en koos "fix all". De zakken zijn de toetsset in `tests/bean-scan-zakken.test.mjs`. De analyse en het ontwerp voor de herbouw staan in het verslag (punt 3).
+
+- **Eerst velden, dan woorden** (`parseBeanText`, nieuw en zonder DOM, zodat het te testen is):
+  - smaak komt alleen nog uit regels die smaak kunnen zijn;
+  - regels met een ander veld (Process, Variety, Region, Origin …) tellen niet mee;
+  - is er een notitieveld (Notes/Taste/Smaak), dan tellen beschrijvende zinnen ook niet mee;
+  - een afgebroken notitieregel ("Apple | Tangerine |" + "Green Tea") hoort er nog bij.
+- **Proceswoorden zijn geen smaak meer:**
+  - double/lactic/anaerobic fermented, lactic bacteria en sugarcane decaf zijn weg;
+  - een kale "fermented" als smaak blijft wel.
+  - "Roasted red apple" geeft alleen appel, geen geroosterd. "Roasted hazelnut" blijft geroosterd.
+- **Semi-washed** wordt niet meer stilletjes washed. Het woord zat erin, en dat ging in tegen de eigen ontwerpregel. De controlekaart vraagt het nu.
+- **Experimenteel** herkent nu ook:
+  - experimental washed/natural/honey en experimental;
+  - double/triple fermented;
+  - lactic (fermented/fermentation);
+  - thermal shock en inoculated.
+- **Cafeïnevrij:**
+  - herkend: decaf, cafeïnevrij, Swiss Water, ethyl acetate;
+  - een eigen keuzeknop naast experimenteel;
+  - opgeslagen als `bean.decaf` en zichtbaar in de bonenlijst;
+  - de knop 'Experimenteel / dubbele fermentatie' heet nu 'Experimenteel proces' (de volle tekst staat in het schermlezerlabel), zodat beide knoppen op één regel passen en het formulier binnen 4 schermhoogtes blijft (VA-24);
+  - stuurt het recept niet.
+- **Gedeeld hoofdwoord:** "gedroogd & tropisch fruit" en "milk and dark chocolate" worden uitgeschreven.
+- **Smaakwoorden:**
+  - nieuw: magnolia (bloemig), green tea (nieuwe tag Groene thee), lime leaf en herbal (kruidig, niet limoen), spices;
+  - wat geen tag heeft (red fruit, fruity, aloe vera) wordt niet geraden, maar komt als eigen notitie in het notitieveld.
+- **Variëteit:** Aji Bourbon en Bourbon Aji worden 'Aji Bourbon' (Overig), niet meer rode Bourbon.
+- **Regio:**
+  - tikfouttolerantie alleen bij namen van 5+ letters (lime gaf eerder Limu);
+  - zonder bekende regio telt de waarde van het regioveld ("REGION ACEVEDO -FINCA LAS BRISAS" → Acevedo).
+- **Finca, hacienda, sitio, fazenda** worden ook zonder label herkend, met de OCR-ruis achteraan eraf.
+- **Naam en brander:**
+  - de naam was bij 6 van de 8 fout (land, brander of OCR-ruis);
+  - nu telt een veld "Name";
+  - een brander wordt herkend aan een slogan eronder ("… COFFEE"), een los woord in hoofdletters boven een landregel, of een webadres (www.blommers.coffee);
+  - een losse landregel krijgt de lotnaam of de finca erbij;
+  - algemene zakteksten, beschrijvende zinnen, smaakrijen en kopregels van het etiket zijn nooit de naam.
+- **Webshop:**
+  - "espresso prep" (een maalkeuze) telt niet als beoogd gebruik;
+  - noemt de zak espresso én filter, dan is het omni;
+  - meerdere zakmaten ("250g, 1KG") geven geen zakgrootte.
+- **Hoogte:** een bereik achter een label zonder eenheid ("ELEVATION 1580 - 1680") geeft het gemiddelde.
+- **Foto-voorbewerking**, gemeten met Tesseract 5.1.1 (eng+nld) op 6 aangeleverde afbeeldingen. Telling: kernwoorden gelezen van de 45:
+
+  | Voorbewerking | Gelezen |
+  |---|---|
+  | Oud: zwart-wit met één drempel (Otsu) | 28 |
+  | Kleur | 32 |
+  | Grijs met contraststrekking (1e–99e percentiel) | 33 |
+  | Grijs met contraststrekking én een tweede pas op kleur | 35 |
+
+  - De app doet nu twee passen: grijs eerst, dan kleur.
+  - In de browser kost dat 2–5 s per foto (headless Chromium).
+- **Herstelde opmerking:** Aroma Nativo is Luis Marcelino uit Pitalito, Huila (Colombia), niet Honduras. Het stond alleen in een opmerking.
+- **Toetsing:** `tests/bean-scan-zakken.test.mjs`, 18 tests (8 zakken, 9 losse regels, 1 voorbewerking). Alle bestaande tests blijven groen.
+- **Nog steeds zwak:** echte zakfoto's met een etiket in kolommen of kleine letters (Blommers, de rechterkolom van Wonder Beans). Dat zit in de OCR zelf. Voor de herbouw is gekozen voor een combinatie van QR-code, betere voorbewerking en een AI-lezer (met toestemming).
