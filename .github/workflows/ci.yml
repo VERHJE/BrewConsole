@@ -38,3 +38,8 @@ jobs:
 
       - name: Run QA suite
         run: npm run qa
+
+      # Engine 3 (in voorbereiding): typecheck (TypeScript strict), eigen tests en een
+      # proefbouw met esbuild. Raakt de huidige app niet.
+      - name: Engine 3 checks
+        run: npm run e3:check

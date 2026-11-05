@@ -1113,3 +1113,44 @@ Jelle leverde 8 voorbeeldzakken en webshopschermen aan (Coffee Roasting Man ×3,
 - **Herstelde opmerking:** Aroma Nativo is Luis Marcelino uit Pitalito, Huila (Colombia), niet Honduras. Het stond alleen in een opmerking.
 - **Toetsing:** `tests/bean-scan-zakken.test.mjs`, 18 tests (8 zakken, 9 losse regels, 1 voorbewerking). Alle bestaande tests blijven groen.
 - **Nog steeds zwak:** echte zakfoto's met een etiket in kolommen of kleine letters (Blommers, de rechterkolom van Wonder Beans). Dat zit in de OCR zelf. Voor de herbouw is gekozen voor een combinatie van QR-code, betere voorbewerking en een AI-lezer (met toestemming).
+
+## Engine 3: voorbereiding klaar (keuze Jelle, nov 2026)
+
+Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine te bouwen", zonder directe rekening met de frontend. Alles staat in `docs/engine3/` en `engine3/`. De huidige app is niet veranderd.
+
+- **Toolchain:**
+  - TypeScript 7 strict (alleen wisbare syntax, zodat Node 22 de bestanden direct draait);
+  - esbuild voor de bouw;
+  - node:test en fast-check voor de tests;
+  - `npm run e3:check` draait in CI, als eigen stap na de QA-suite.
+- **Contract (concept 0.1):** `learn(logboek) → toestand` en `plan(toestand, vraag) → advies`, puur. Er zijn 12 vaste regels, waaronder de besluiten over Kasuya en dat sterkte persoonlijk is.
+- **Datamodel:** een logboek met 10 soorten gebeurtenissen, waar alleen aan wordt toegevoegd.
+  - Samenvoegen kan in elke volgorde (getoetst met fast-check).
+  - Een gebeurtenis intrekken en een zetsel verwijderen kunnen ook.
+- **Migratie** van backupVersion 3:
+  - deterministisch, zonder verzinnen en zonder weggooien (`legacy`);
+  - op Jelles back-up: 105 gebeurtenissen, 0 fouten, 12 van de 12 proeven over.
+- **Technieken en regeltabel als data:**
+  - de 8 technieken met bronklasse en de exacte getallen uit de bronnen; waar een tijd ontbreekt, staat een gemarkeerde plaatshouder;
+  - de regeltabel volgt het verslag;
+  - het smaakwiel wordt uit de app gegenereerd, en een test bewaakt dat het gelijk blijft.
+- **Meetopstelling:** een 'virtuele Jelle' met een voorkeur van 1,17 % TDS (uit Engine 2) en 6 werelden.
+  - Nulmeting, 200 herhalingen: Engine 2 scoort 46 % 'precies goed' tegen 52 % voor het orakel. Het vaste recept haalt 24 %.
+  - Sterkte is dus bijna verzadigd; de winst moet uit molen, tijd, techniek en smaak komen.
+- **Toestelcheck:** `toestelcheck.html` in de root test persist, IndexedDB, AES-GCM/PBKDF2, WebAssembly, BarcodeDetector, bestanden delen en Worker/OffscreenCanvas. Nog te draaien op de iPhone.
+- **Open punten** (`docs/engine3/07-open-punten.md`):
+  - Wendelboe past niet bij zijn rol;
+  - de temperatuur bij Hoffmann en Wendelboe ontbreekt;
+  - Osmotic Flow heeft geen schema;
+  - meetplan voor eigen data.
+
+### Engine 3 · besluiten van 5 nov 2026
+
+- **Wendelboe:** houdt de rol voor bloemige en theeachtige koffies, met zijn eigen recept (bloom roeren, doorlopend in rondjes). Geen 'lage agitatie'-variant; 'Serene pulse' en 'Nordic light' vervallen.
+- **Temperatuur:**
+  - Hoffmann: net van de kook (100 °C op de ketel; Hario USA 'the hotter, the better'). Donker 88 °C (klasse C).
+  - Wendelboe: 96 °C als aanname (klasse C). Zijn eigen gids noemt geen getal; zijn café zet AeroPress met 96 °C. Bij donkere branding Philocoffea (88/83 °C).
+- **Toestelcheck op de iPhone** (iOS 18.7, Safari 27.0.1, ook vanaf het beginscherm): alles werkt behalve `persist` (niet toegekend) en `BarcodeDetector` (niet aanwezig).
+  - De back-up blijft dus nodig.
+  - Engine 3 neemt een eigen QR-decoder mee.
+- **Meetplan voor eigen data:** later.

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Toestelcheck · Engine 3</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { color-scheme: light dark; --bg:#EDE7DC; --fg:#1A1714; --muted:#6B625A; --ok:#2F6B3A; --bad:#9A2F22; --card:#F7F3EC; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0F0F10; --fg:#ECE6DD; --muted:#9C9389; --ok:#7CC48A; --bad:#E58A7D; --card:#1A1A1C; } }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:16px/1.45 -apple-system, system-ui, sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  p { color:var(--muted); margin:0 0 16px; }
+  ul { list-style:none; padding:0; margin:0 0 16px; }
+  li { background:var(--card); border-radius:10px; padding:10px 12px; margin:0 0 8px; }
+  li b { display:block; }
+  .ok { color:var(--ok); } .bad { color:var(--bad); } .info { color:var(--muted); }
+  button { font:inherit; padding:12px 16px; border-radius:10px; border:0; background:#8A5A2B; color:#fff; width:100%; }
+  pre { white-space:pre-wrap; word-break:break-word; font-size:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+<h1>Toestelcheck</h1>
+<p>Test wat Engine 3 op dit toestel kan: opslag die blijft, versleutelen voor synchronisatie, QR lezen en WebAssembly. Open dit bij voorkeur vanaf het beginscherm, net als de app. Er wordt niets verstuurd.</p>
+<ul id="out"></ul>
+<button id="copy" type="button">Uitkomst kopiëren</button>
+<pre id="raw"></pre>
+<script>
+(async function () {
+  const results = [];
+  const out = document.getElementById('out');
+  function add(name, status, detail) {
+    results.push({ name, status, detail });
+    const li = document.createElement('li');
+    const b = document.createElement('b'); b.textContent = name;
+    const span = document.createElement('span'); span.className = status; span.textContent = (status === 'ok' ? '✓ ' : status === 'bad' ? '✗ ' : '· ') + detail;
+    li.append(b, span); out.append(li);
+  }
+  async function check(name, fn) {
+    try { const r = await fn(); add(name, r[0], r[1]); } catch (e) { add(name, 'bad', 'fout: ' + (e && e.message ? e.message : String(e))); }
+  }
+
+  await check('Geopend als app (beginscherm)', async () => {
+    const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+    return [standalone ? 'ok' : 'info', standalone ? 'ja' : 'nee — open via het beginscherm voor de echte uitkomst'];
+  });
+  await check('Opslag blijft bewaard (persist)', async () => {
+    if (!navigator.storage || !navigator.storage.persist) return ['bad', 'niet beschikbaar'];
+    const before = await navigator.storage.persisted();
+    const granted = before || await navigator.storage.persist();
+    return [granted ? 'ok' : 'info', granted ? 'toegekend' + (before ? ' (stond al aan)' : '') : 'niet toegekend (back-up blijft nodig)'];
+  });
+  await check('Opslagruimte', async () => {
+    if (!navigator.storage || !navigator.storage.estimate) return ['info', 'onbekend'];
+    const e = await navigator.storage.estimate();
+    const mb = (x) => x == null ? '?' : (x / 1048576).toFixed(1) + ' MB';
+    return ['ok', `gebruikt ${mb(e.usage)} van ${mb(e.quota)}`];
+  });
+  await check('IndexedDB schrijven en lezen', () => new Promise((resolve) => {
+    const req = indexedDB.open('engine3-toestelcheck', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('t');
+    req.onerror = () => resolve(['bad', 'openen mislukt']);
+    req.onsuccess = () => {
+      const db = req.result;
+      const tx = db.transaction('t', 'readwrite');
+      tx.objectStore('t').put({ at: Date.now() }, 'k');
+      tx.oncomplete = () => {
+        const r = db.transaction('t').objectStore('t').get('k');
+        r.onsuccess = () => { db.close(); indexedDB.deleteDatabase('engine3-toestelcheck'); resolve([r.result ? 'ok' : 'bad', r.result ? 'werkt' : 'niets teruggelezen']); };
+        r.onerror = () => resolve(['bad', 'lezen mislukt']);
+      };
+      tx.onerror = () => resolve(['bad', 'schrijven mislukt']);
+    };
+  }));
+  await check('Versleutelen (PBKDF2 + AES-GCM)', async () => {
+    if (!crypto || !crypto.subtle) return ['bad', 'niet beschikbaar'];
+    const enc = new TextEncoder();
+    const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    const base = await crypto.subtle.importKey('raw', enc.encode('test-wachtwoordzin'), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    const t0 = performance.now();
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode('logboek'));
+    const pt = new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct));
+    return [pt === 'logboek' ? 'ok' : 'bad', pt === 'logboek' ? `werkt (${(performance.now() - t0).toFixed(1)} ms)` : 'terugzetten mislukt'];
+  });
+  await check('WebAssembly', async () => {
+    if (typeof WebAssembly !== 'object') return ['bad', 'niet beschikbaar'];
+    const bytes = new Uint8Array([0,97,115,109,1,0,0,0,1,7,1,96,2,127,127,1,127,3,2,1,0,7,7,1,3,97,100,100,0,0,10,9,1,7,0,32,0,32,1,106,11]);
+    const { instance } = await WebAssembly.instantiate(bytes);
+    const r = instance.exports.add(2, 3);
+    return [r === 5 ? 'ok' : 'bad', r === 5 ? 'werkt (nodig voor een eigen QR-decoder)' : 'verkeerde uitkomst'];
+  });
+  await check('Ingebouwde QR-lezer (BarcodeDetector)', async () => {
+    if (!('BarcodeDetector' in window)) return ['info', 'niet aanwezig — Engine 3 gebruikt dan een eigen decoder'];
+    const formats = await BarcodeDetector.getSupportedFormats();
+    return [formats.includes('qr_code') ? 'ok' : 'info', 'formaten: ' + formats.join(', ')];
+  });
+  await check('Bestand delen (back-up naar iCloud Drive)', async () => {
+    if (!navigator.canShare) return ['info', 'delen niet beschikbaar'];
+    const f = new File(['{}'], 'test.json', { type: 'application/json' });
+    const ok = navigator.canShare({ files: [f] });
+    return [ok ? 'ok' : 'info', ok ? 'bestanden delen kan' : 'alleen tekst/links delen'];
+  });
+  await check('Achtergrondwerk (Web Worker, OffscreenCanvas)', async () => {
+    const w = typeof Worker === 'function', oc = typeof OffscreenCanvas === 'function', ib = typeof createImageBitmap === 'function';
+    return [w ? 'ok' : 'bad', `Worker ${w ? 'ja' : 'nee'} · OffscreenCanvas ${oc ? 'ja' : 'nee'} · createImageBitmap ${ib ? 'ja' : 'nee'}`];
+  });
+  await check('Service worker', async () => ['serviceWorker' in navigator ? 'ok' : 'bad', 'serviceWorker' in navigator ? 'beschikbaar' : 'niet beschikbaar']);
+  add('Toestel', 'info', navigator.userAgent);
+
+  const text = results.map(r => `${r.status === 'ok' ? 'OK ' : r.status === 'bad' ? 'NEE' : '-- '} ${r.name}: ${r.detail}`).join('\n');
+  document.getElementById('raw').textContent = text;
+  document.getElementById('copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(text); document.getElementById('copy').textContent = 'Gekopieerd'; }
+    catch (e) { document.getElementById('copy').textContent = 'Kopiëren lukte niet — selecteer de tekst hieronder'; }
+  });
+})();
+</script>
+</body>
+</html>
