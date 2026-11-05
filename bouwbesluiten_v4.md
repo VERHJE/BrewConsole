@@ -1172,3 +1172,10 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 
 - **`learnFacts()`** (`engine3/src/state.ts`, uitleg in `docs/engine3/10-toestand.md`): het effectieve logboek wordt per zak en per zetsel omgezet in feiten (werkelijk gebruikte waarden, tijden, 'erdoor' per giet, status, oordeel). Nog zonder model.
 - **Getoetst:** 10 nieuwe tests (totaal 54), onder meer dezelfde toestand bij elke volgorde en dubbeling. Op Jelles back-up: 105 gebeurtenissen, 5 zakken, 20 zetsels, 9 met sterkte, 0 met 'erdoor'-tik.
+
+### Engine 3 · stap 2 klaar (5 nov 2026)
+
+- **`buildRecipe()`** (`engine3/src/recipe.ts`, uitleg in `docs/engine3/11-recept.md`): techniek, dosis, water en branding in, gietschema met temperatuur, verwacht einde en meldingen uit.
+- **Besluiten verwerkt:** Hario-momenten bij elke hoeveelheid, Kasuya 40/60 met instelbare eerste verdeling (50+70, 40+80, 80+40), Kasuya-temperatuur per branding (93/88/83 °C, onbekend 92 °C), Hoffmann net van de kook, Wendelboe 96 °C als aanname.
+- **Gegevens:** `ReferencePour` heeft nu `waitForDrain` (Kasuya vanaf de tweede giet; ook de laatste gieten van Gagné en Rao).
+- **Getoetst:** 12 nieuwe tests (totaal 66), onder meer het exacte brongetal per techniek bij de referentiehoeveelheid en een eigenschapstest over 120–800 g.

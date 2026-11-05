@@ -16,3 +16,5 @@ export type { SelectionRule, RuleWhen } from './data/selection-rules.ts';
 export { FLAVOR_WHEEL, TAG_CATEGORY } from './data/flavor-wheel.ts';
 export { learnFacts, factsOf, cupsOf, countsBy } from './state.ts';
 export type { FactState, CupFacts, BeanFacts, CupFilter } from './state.ts';
+export { buildRecipe, referenceRatio, RecipeError, KASUYA_DEFAULT_FIRST_SHARE, KASUYA_END_GUARD } from './recipe.ts';
+export type { RecipeInput, RecipeBuild } from './recipe.ts';
