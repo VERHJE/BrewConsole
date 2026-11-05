@@ -1167,3 +1167,8 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Synchronisatie gebouwd** in `engine3/sync/`: versleutelde, onveranderlijke blokken (PBKDF2 600.000 rondes, AES-GCM, blok-id als gebonden gegeven), server als `Request → Response` met geheugen- en Cloudflare-KV-opslag, en een client met push, pull en opruimen. De engine zelf blijft zuiver; de synchronisatie staat ernaast.
 - **Getoetst:** 19 nieuwe tests (totaal 43), onder meer: verkeerde zin, gewijzigd of verwisseld blok worden geweigerd; twee toestellen komen in willekeurige volgorde op hetzelfde logboek uit; een gewiste app herstelt zonder conflict; de server bewaart geen leesbare tekst.
 - **Nog te doen door Jelle (stap 0d):** Cloudflare-account en uitrollen, zie `docs/engine3/08`.
+
+### Engine 3 · stap 1 klaar (5 nov 2026)
+
+- **`learnFacts()`** (`engine3/src/state.ts`, uitleg in `docs/engine3/10-toestand.md`): het effectieve logboek wordt per zak en per zetsel omgezet in feiten (werkelijk gebruikte waarden, tijden, 'erdoor' per giet, status, oordeel). Nog zonder model.
+- **Getoetst:** 10 nieuwe tests (totaal 54), onder meer dezelfde toestand bij elke volgorde en dubbeling. Op Jelles back-up: 105 gebeurtenissen, 5 zakken, 20 zetsels, 9 met sterkte, 0 met 'erdoor'-tik.

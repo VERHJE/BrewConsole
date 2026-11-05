@@ -16,6 +16,7 @@ Engine 3 is de nieuwe rekenkern van Brew Console. Hij wordt vanaf nul gebouwd en
 | Open punten en beslissingen | [07-open-punten.md](07-open-punten.md) | — |
 | Synchronisatie (eerste bouwstap) | [08-synchronisatie.md](08-synchronisatie.md) | ontwerp klaar, wordt gebouwd |
 | Bouwplan | [09-bouwplan.md](09-bouwplan.md) | vastgesteld |
+| Toestand (stap 1) | [10-toestand.md](10-toestand.md) | klaar |
 
 ## Draaien
 
@@ -38,7 +39,7 @@ Het uitgewerkte plan met poorten per stap staat in [09-bouwplan.md](09-bouwplan.
 Elke stap is pas af als de tests groen zijn en de meetopstelling niet slechter is dan Engine 2 (zie de acceptatie in 06).
 
 0. **Synchronisatie** (besluit Jelle, 5 nov 2026). Het logboek versleuteld naar een eigen, gratis Cloudflare Worker, met de iCloud Drive-back-up als reserve. Dit staat los van de rekenlogica, maar komt eerst, omdat iOS de opslag van de app niet blijvend maakt. Zie 08.
-1. **Logboek → toestand.** `learn()` leest het effectieve logboek (`effectiveEvents`) en bouwt per zak, per techniek en per hoeveelheid de feiten op. Dit is nog zonder modellen.
+1. **Logboek → toestand** (klaar, `engine3/src/state.ts`). `learn()` leest het effectieve logboek (`effectiveEvents`) en bouwt per zak, per techniek en per hoeveelheid de feiten op. Dit is nog zonder modellen.
 2. **Recept.** Techniekdata (`TECHNIQUES`) plus dosis en water geven het gietschema:
    - Kasuya: Hario-momenten, 40/60, en wachten op het doorlopen;
    - temperatuur per branding volgens Philocoffea.

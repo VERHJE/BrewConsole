@@ -14,3 +14,5 @@ export type { TechniqueDef, SourceClass } from './data/techniques.ts';
 export { SELECTION_RULES } from './data/selection-rules.ts';
 export type { SelectionRule, RuleWhen } from './data/selection-rules.ts';
 export { FLAVOR_WHEEL, TAG_CATEGORY } from './data/flavor-wheel.ts';
+export { learnFacts, factsOf, cupsOf, countsBy } from './state.ts';
+export type { FactState, CupFacts, BeanFacts, CupFilter } from './state.ts';
