@@ -9,6 +9,8 @@ import {
   ACIDITY_LABEL, CATEGORIES, FINISH_LABEL, GOALHIT_LABEL, MISSED_LABEL, NOTEHIT_LABEL, STRENGTH_LABEL, VSLAST_LABEL,
   actualsProblems, contextFor, draftFromCup, stepsFor, tastingEvents, type StepId, type TastingContext, type TastingDraft
 } from '../../core/tasting.ts';
+import { pairTrialEvent, pendingTrialFor } from '../../core/trials.ts';
+import type { PairArm } from '../../../../engine3/src/index.ts';
 import { useApp, useSnapshot } from '../store-context.tsx';
 
 function Single<T extends string | number>({ value, options, onPick, label }: { value: T | null; options: ReadonlyArray<readonly [T, string]>; onPick: (v: T | null) => void; label: string }): JSX.Element {
@@ -104,6 +106,21 @@ export function Proeven({ brewId }: { brewId: string }): JSX.Element {
     catch (e) { setErr(`Opslaan is mislukt: ${(e as Error).message}`); }
   };
 
+  const pending = saved ? pendingTrialFor(state, brewId) : null;
+  const choose = async (preferred: PairArm | 'none'): Promise<void> => {
+    if (!pending) return;
+    try { await store.append([pairTrialEvent(env, pending, preferred, null)]); } catch (e) { setErr(`Opslaan is mislukt: ${(e as Error).message}`); }
+  };
+  if (saved && pending) {
+    return (<section><h1>Welke was beter?</h1>
+      <p class="muted">Je hebt beide koppen van de proef geproefd. Welke vond je lekkerder?</p>
+      <div class="choices">
+        <button class="choice" type="button" onClick={() => choose('control')}>Kop 1 · {techniqueName(pending.control.technique)}</button>
+        <button class="choice" type="button" onClick={() => choose('variant')}>Kop 2 · {techniqueName(pending.variant.technique)}</button>
+        <button class="choice" type="button" onClick={() => choose('none')}>Geen verschil</button>
+      </div>
+      {err && <p class="banner warn" role="alert">{err}</p>}</section>);
+  }
   if (saved) {
     return (<section><h1>Opgeslagen</h1><p class="muted">Dit telt mee voor je volgende advies.</p>
       <div class="actions"><a class="btn primary" href={href('zetten')}>Volgende kop</a><a class="btn" href={href('logboek')}>Logboek</a></div></section>);

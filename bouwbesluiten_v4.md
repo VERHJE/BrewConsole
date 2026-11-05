@@ -1267,3 +1267,10 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Bewerken:** opnieuw proeven laadt de eerdere antwoorden; de laatste gebeurtenis wint (zoals de engine voorschrijft).
 - **Poort:** een oordeel 'iets slap' verschijnt in het volgende advies als 'sterker' (Playwright, gehele stroom zak → timer → proeven → nieuw advies); `learn()` en `tasteProfile()` verwerken de uitvoer (kerntests).
 - **Nog niet:** het vastleggen van een proef (`pair.trial`: welke van de twee was beter) — dat vraagt dat een voorgestelde proef als twee koppen gezet kan worden. Dat komt als F4b.
+
+### Frontend · F4b klaar: proeven A tegen B (5 nov 2026)
+
+- Stelt de engine een proef voor (`Advice.trial`), dan toont Zetten twee knoppen: kop 1 (controle) en kop 2 (variant). Elk zet een `brew.plan` met het recept en het `trialId` uit het voorstel, ongewijzigd. 'Zet gewoon dit recept' blijft mogelijk.
+- Na het proeven van de tweede kop vraagt het scherm welke beter was (kop 1, kop 2, geen verschil) en schrijft een `pair.trial` (`kind: 'technique'`, dosis, techniek en klik van beide kanten). Daarna ziet de engine de uitkomst en stelt dezelfde proef niet opnieuw voor (kerntest met een bloemige zak: 2 Kasuya-koppen → voorstel → 2 proefkoppen → keuze → geen nieuw voorstel met hetzelfde id).
+- **Bug onderweg:** een zak-id bevat zelf `:`; het proef-id (`tech:<zak>:<variant>:<n>`) moet van achteren gelezen worden. Vastgelegd in `core/trials.ts` en de test.
+- **Niet getest in de browser:** de proefkaart zelf (er zijn daarvoor twee volledige zetsels met proeven nodig); de kernlogica is wel getest.

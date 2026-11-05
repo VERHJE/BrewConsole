@@ -11,6 +11,7 @@ import {
 import { useApp, useSnapshot } from '../store-context.tsx';
 import { Timer } from './Timer.tsx';
 import { Proeven } from './Proeven.tsx';
+import { trialPlanEvent, type TrialArm } from '../../core/trials.ts';
 
 const KEY = 'brewconsole.zetten';
 function loadForm(): BrewForm {
@@ -38,6 +39,14 @@ function Plan(): JSX.Element {
     const ev = brewPlanEvent(env, outcome.advice, eff);
     try { await store.append([ev]); location.hash = href('timer', ev.data.brewId); }
     catch (e) { setErr(`Opslaan is mislukt: ${(e as Error).message}`); }
+  };
+
+  const startTrial = async (arm: TrialArm): Promise<void> => {
+    if (!outcome.ok) return;
+    try {
+      const ev = trialPlanEvent(env, outcome.advice, eff, arm);
+      await store.append([ev]); location.hash = href('timer', ev.data.brewId);
+    } catch (e) { setErr(`Opslaan is mislukt: ${(e as Error).message}`); }
   };
 
   return (
@@ -82,13 +91,13 @@ function Plan(): JSX.Element {
         </details>
       </div>
 
-      {!outcome.ok ? <p class="banner warn" role="alert">{outcome.message}</p> : <Advice outcome={outcome} onStart={start} />}
+      {!outcome.ok ? <p class="banner warn" role="alert">{outcome.message}</p> : <Advice outcome={outcome} onStart={start} onTrial={startTrial} />}
       {err && <p class="banner warn" role="alert">{err}</p>}
     </section>
   );
 }
 
-function Advice({ outcome, onStart }: { outcome: Extract<ReturnType<typeof planBrew>, { ok: true }>; onStart: () => void }): JSX.Element {
+function Advice({ outcome, onStart, onTrial }: { outcome: Extract<ReturnType<typeof planBrew>, { ok: true }>; onStart: () => void; onTrial: (arm: TrialArm) => void }): JSX.Element {
   const { advice } = outcome;
   const r = advice.recipe;
   const end = bandText(advice.uncertainty.endSec, '', clock);
@@ -115,8 +124,13 @@ function Advice({ outcome, onStart }: { outcome: Extract<ReturnType<typeof planB
       </div>
       {advice.warnings.map(w => <p class="banner warn" key={w} role="status">{w}</p>)}
       {advice.reasons.length > 0 && (<div class="card"><strong>Waarom dit recept</strong><ul class="reasons">{advice.reasons.map(x => <li key={x.code + x.text}>{x.text}</li>)}</ul></div>)}
-      {advice.trial && <p class="banner trial"><strong>Proef:</strong> {advice.trial.text}</p>}
-      <div class="actions"><button class="btn primary" type="button" onClick={onStart}>Start zetsel</button></div>
+      {advice.trial && (
+        <div class="card"><p><strong>Proef:</strong> {advice.trial.text}</p>
+          <div class="actions">
+            <button class="btn" type="button" onClick={() => onTrial('control')}>Zet kop 1: {techniqueName(advice.trial.control.technique)}</button>
+            <button class="btn" type="button" onClick={() => onTrial('variant')}>Zet kop 2: {techniqueName(advice.trial.variant.technique)}</button>
+          </div></div>)}
+      <div class="actions"><button class="btn primary" type="button" onClick={onStart}>{advice.trial ? 'Zet gewoon dit recept' : 'Start zetsel'}</button></div>
     </div>
   );
 }
