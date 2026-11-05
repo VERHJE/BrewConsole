@@ -11,7 +11,7 @@ const OUT = path.join(path.resolve(process.argv[2] ?? path.join(ROOT, 'dist')), 
 fs.mkdirSync(OUT, { recursive: true });
 await build({
   entryPoints: [path.join(ROOT, 'app3/src/main.tsx')],
-  outfile: path.join(OUT, 'app.js'),
+  outdir: OUT, entryNames: 'app', chunkNames: 'chunk-[hash]', splitting: true,
   bundle: true, format: 'esm', target: 'es2022', platform: 'browser', minify: true, legalComments: 'none',
   jsx: 'automatic', jsxImportSource: 'preact', logLevel: 'warning'
 });

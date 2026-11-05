@@ -1245,3 +1245,10 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **F0:** `app3/src/core/` (zonder DOM: `storage.ts`, `store.ts`, `router.ts`, `ids.ts`) met 5 kerntests; `app3/src/ui/` met schil, tabbalk (Zetten · Zakken · Logboek · Meer) en lege schermen; Playwright-schermtests (start, opslag overleeft herladen, 320 px zonder horizontale scroll). `npm run app3:check` draait in CI.
 - **Store-regel:** eerst opslaan, dan het geheugen bijwerken; mislukt opslaan laat het logboek ongewijzigd. Ongeldige gebeurtenissen worden geweigerd (`validateEvent`).
 - **Inspiratie:** Beanconqueror en Timer.Coffee bekeken; Filtru, BeanBench en Coffee Book waren niet op te halen en zijn dus niet beoordeeld (zie 18).
+
+### Frontend · F1 klaar: Zakken (5 nov 2026)
+
+- **Kern** (`app3/src/core/beans.ts`, 5 tests): lijst uit `FactState`, formulier als zuivere functies (`scanText`, `editForm`, `validateForm`, `beanUpsert`, `beanArchive`). Elk veld houdt zijn herkomst; een aangepast veld wordt bron 'user', een onaangeraakt veld houdt zijn bron. Proces en notities behouden hun detail (gisting, tags) zolang het veld niet is aangepast.
+- **Scherm:** zakkenlijst (naam, brander, land, branding, dagen sinds branding, aantal koppen), toevoegen via plakken en/of QR-foto, controlekaart met herkomst per veld en waarschuwingen (gelijkenis, niet-eenduidig proces, webshop), bewerken, archiveren. De QR-lezer (jsQR) wordt pas geladen bij gebruik (codesplitsing).
+- **Poort:** een geplakte tekst geeft dezelfde velden als `scanBeanText`; elk veld toont zijn herkomst. Playwright: plakken → opslaan → herladen, foutmelding zonder naam, QR-PNG (gemaakt met `qrcode`) wordt gelezen, bewerken en archiveren.
+- **Bekend:** foto-OCR is er niet in de browser (staat niet in het plan; AI-foto is uit). Tekst plakken en QR zijn de routes.
