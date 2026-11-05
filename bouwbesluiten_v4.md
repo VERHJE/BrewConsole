@@ -1236,3 +1236,63 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 
 - Besluit Jelle: de AI-foto-herkenning (`POST /scan`, Anthropic-API) is het enige onderdeel dat geld kost; dat doen we niet, of in ieder geval nog niet.
 - Gevolg: geen `ANTHROPIC_API_KEY` op de Worker; `/scan` geeft dan 404. Synchronisatie (gratis Cloudflare-plan), tekst, OCR, QR en het smaakprofiel blijven gratis werken. Code en tests blijven staan.
+
+### Frontend · plan en F0 klaar (5 nov 2026)
+
+- **Besluit Jelle:** de hele frontend wordt opnieuw opgebouwd rond `createEngine()`; layout en kleuren van de oude app hoeven niet behouden te blijven. Plan, schermen en stappen F0–F7: `docs/engine3/18-frontend.md`.
+- **Naast de oude app:** de nieuwe app staat in `app3/` en wordt gebouwd naar `dist/app3/` (bereikbaar op `/app3/`). `npm run build` bouwt nu beide. De oude app verandert niet; omschakelen is stap F7.
+- **Techniek:** TypeScript strict, Preact 10.29.8 (exact vastgezet) met esbuild, eigen CSS-tokens (licht/donker), IndexedDB voor het logboek. Geen router- of staatbibliotheek.
+- **F0:** `app3/src/core/` (zonder DOM: `storage.ts`, `store.ts`, `router.ts`, `ids.ts`) met 5 kerntests; `app3/src/ui/` met schil, tabbalk (Zetten · Zakken · Logboek · Meer) en lege schermen; Playwright-schermtests (start, opslag overleeft herladen, 320 px zonder horizontale scroll). `npm run app3:check` draait in CI.
+- **Store-regel:** eerst opslaan, dan het geheugen bijwerken; mislukt opslaan laat het logboek ongewijzigd. Ongeldige gebeurtenissen worden geweigerd (`validateEvent`).
+- **Inspiratie:** Beanconqueror en Timer.Coffee bekeken; Filtru, BeanBench en Coffee Book waren niet op te halen en zijn dus niet beoordeeld (zie 18).
+
+### Frontend · F1 klaar: Zakken (5 nov 2026)
+
+- **Kern** (`app3/src/core/beans.ts`, 5 tests): lijst uit `FactState`, formulier als zuivere functies (`scanText`, `editForm`, `validateForm`, `beanUpsert`, `beanArchive`). Elk veld houdt zijn herkomst; een aangepast veld wordt bron 'user', een onaangeraakt veld houdt zijn bron. Proces en notities behouden hun detail (gisting, tags) zolang het veld niet is aangepast.
+- **Scherm:** zakkenlijst (naam, brander, land, branding, dagen sinds branding, aantal koppen), toevoegen via plakken en/of QR-foto, controlekaart met herkomst per veld en waarschuwingen (gelijkenis, niet-eenduidig proces, webshop), bewerken, archiveren. De QR-lezer (jsQR) wordt pas geladen bij gebruik (codesplitsing).
+- **Poort:** een geplakte tekst geeft dezelfde velden als `scanBeanText`; elk veld toont zijn herkomst. Playwright: plakken → opslaan → herladen, foutmelding zonder naam, QR-PNG (gemaakt met `qrcode`) wordt gelezen, bewerken en archiveren.
+- **Bekend:** foto-OCR is er niet in de browser (staat niet in het plan; AI-foto is uit). Tekst plakken en QR zijn de routes.
+
+### Frontend · F2 en F3 klaar: Zetten, recept en timer (5 nov 2026)
+
+- **Zetten** (`core/brew.ts`, scherm `Zetten.tsx`): zak, kopgrootte (100–700 g), doel, methode, techniek en 'over de vorige kop' (de drie `FeedbackSignal`'s) → `plan()`. Het scherm toont dosis, water, temperatuur, klik, verwacht einde, het gietschema (met `*` voor 'wacht op doorlopen'), de redenen, de onzekerheid (banden) en waarschuwingen van de engine, plus een voorgestelde proef. Er wordt niets bijgerekend: een test eist dat `planBrew()` exact `plan()` teruggeeft. Een fout van de engine (`RecipeError`) of een kopgrootte buiten bereik wordt een melding, geen crash. De laatste keuzes (zak, kop, doel, methode, techniek) worden per toestel onthouden; de klachten niet.
+- **Timer** (`core/timer.ts`, scherm `Timer.tsx`): de klok wordt **altijd afgeleid** uit de `brew.timer`-gebeurtenissen en de tijd van nu (anker = laatste start/pauze/verder), nooit uit een lopende teller. Daardoor houdt de klok de tijd bij vergrendelen, herladen of op een tweede toestel. Fases per giet: komt nog, wacht op doorlopen (`waitForDrain`, tot 'Erdoor' getikt is) of aan de beurt. 'Alles doorgelopen — klaar' schrijft erdoor, bed droog en klaar als drie gebeurtenissen met oplopende tijd (1 ms verschil) zodat de volgorde vastligt. Pauze, verder, 'Erdoor' ongedaan maken en stoppen (met bevestiging; een afgebroken zetsel telt niet mee). Wake lock en een korte trilling bij een nieuwe giet waar de browser dat toestaat; de tabbalk verdwijnt tijdens het zetsel.
+- **Poort F3:** `learn()` geeft na het tikken dezelfde `endSec`, `bedDrySec`, `drainedAtSec` en `startedAtSec` als getikt (test). Playwright met nagebootste klok doorloopt zak → advies → timer → klaar, en laadt midden in het zetsel opnieuw met de juiste klok.
+- **Bekend:** de engine rekent `lastDrainSec` vanaf de geplande tijd van de laatste giet (niet de werkelijke start). Bij Kasuya, waar giet 2 t/m 5 op doorlopen wachten, kan dat het eindtijdsmodel iets optrekken; dat is een engine-vraag voor de eigen metingen, geen scherm-vraag.
+
+### Frontend · F4 klaar: Proeven (5 nov 2026)
+
+- **Vragenlijst** (`core/tasting.ts`, scherm `Proeven.tsx`): één vraag per stap met voortgang. Volgorde met reden: sterkte, zuur en afdronk → **blinde** keuze van de negen smaakgroepen → pas daarna de notities van de zak (herkennen: ja/een beetje/nee) → waardering en notitie → doel (alleen met een doel), 'wat miste je' (alleen als het doel niet gehaald is) en 'ten opzichte van de vorige kop' (alleen met een vorige geproefde kop van dezelfde zak) → werkelijke waarden.
+- **Contract:** `tasting` krijgt altijd `cataAsked: true` (ook bij een lege keuze), `minutesAfter` uit het 'klaar'-moment en `late` vanaf 120 min. Werkelijke waarden worden alleen als `brew.actuals` geschreven als er iets is ingevuld; niet ingevulde velden nemen het plan over. Waarden buiten het redelijke bereik blokkeren het opslaan met een melding.
+- **Bewerken:** opnieuw proeven laadt de eerdere antwoorden; de laatste gebeurtenis wint (zoals de engine voorschrijft).
+- **Poort:** een oordeel 'iets slap' verschijnt in het volgende advies als 'sterker' (Playwright, gehele stroom zak → timer → proeven → nieuw advies); `learn()` en `tasteProfile()` verwerken de uitvoer (kerntests).
+- **Nog niet:** het vastleggen van een proef (`pair.trial`: welke van de twee was beter) — dat vraagt dat een voorgestelde proef als twee koppen gezet kan worden. Dat komt als F4b.
+
+### Frontend · F4b klaar: proeven A tegen B (5 nov 2026)
+
+- Stelt de engine een proef voor (`Advice.trial`), dan toont Zetten twee knoppen: kop 1 (controle) en kop 2 (variant). Elk zet een `brew.plan` met het recept en het `trialId` uit het voorstel, ongewijzigd. 'Zet gewoon dit recept' blijft mogelijk.
+- Na het proeven van de tweede kop vraagt het scherm welke beter was (kop 1, kop 2, geen verschil) en schrijft een `pair.trial` (`kind: 'technique'`, dosis, techniek en klik van beide kanten). Daarna ziet de engine de uitkomst en stelt dezelfde proef niet opnieuw voor (kerntest met een bloemige zak: 2 Kasuya-koppen → voorstel → 2 proefkoppen → keuze → geen nieuw voorstel met hetzelfde id).
+- **Bug onderweg:** een zak-id bevat zelf `:`; het proef-id (`tech:<zak>:<variant>:<n>`) moet van achteren gelezen worden. Vastgelegd in `core/trials.ts` en de test.
+- **Niet getest in de browser:** de proefkaart zelf (er zijn daarvoor twee volledige zetsels met proeven nodig); de kernlogica is wel getest.
+
+### Frontend · F5 klaar: Logboek en inzicht (5 nov 2026)
+
+- **Logboek** (`core/insights.ts`, `Logboek.tsx`): koppen nieuwste eerst met zak, techniek, dosis, klik, tijd en waardering; 'nog te proeven' bij een klaar zetsel zonder proeverij. Detail met recept, werkelijke tijden (erdoor per giet), proeverij en verwijderen (`brew.delete`, met bevestiging; de kop verdwijnt uit de toestand en dus uit het advies).
+- **Meer → Smaakprofiel:** gevoeligheid per smaakgroep (treffers en valse alarmen met de status uit `tasteProfile()`), herkende notities en woordenschat, waardering per groep/proces/branding (alleen betrouwbare groepen), met de zin dat het profiel het recept niet stuurt. Bij te weinig data staat er 'nog te weinig zakken om iets te zeggen', geen gok.
+- **Meer → Molen:** effect per klik uit `fitGrind`/`perClickEffect`, of dat uit eigen metingen komt of de startwaarde is, en het aantal bruikbare metingen; met de aanwijzing hoe je meer metingen krijgt.
+- **Regel:** geen getal op deze schermen wordt in de frontend berekend wat de engine ook geeft.
+- **Nog niet:** verloopgrafieken en de pasvorm van een zak (`beanFit`) in het zakdetail; beide kunnen later zonder de engine aan te raken.
+
+### Frontend · F6 klaar: Gegevens en synchronisatie (5 nov 2026)
+
+- **Gegevens** (`core/backup.ts`, `Gegevens.tsx`): back-up als één bestand (`brewconsole-log`, deelblad op iPhone, anders download), terugzetten met voorbeeld (wat zit erin, hoeveel nieuw, hoeveel al aanwezig, waarschuwingen) voor zowel een eigen back-up als die van de oude app (`migrateBackupV3`, dezelfde tellingen als de migratietest), en alles wissen na het typen van WISSEN. Herinnering als de laatste back-up 14 dagen of ouder is, of ontbreekt.
+- **Synchronisatie** (`core/sync.ts`, `Sync.tsx`): adres, token en wachtwoordzin → zout ophalen of maken → sleutel afleiden → eerste synchronisatie. Bewaard worden adres, token, voortgang en de **afgeleide, niet-uitleesbare sleutel** (IndexedDB); de wachtwoordzin niet. Foutmeldingen in gewone taal: geen verbinding (alles blijft bewaard), token geweigerd, verkeerde wachtwoordzin (blokken niet te openen). Het adres moet `https://` zijn (localhost mag voor ontwikkeling).
+- **Poort F6:** import van de eigen back-up geeft de verwachte tellingen; twee toestellen komen via de echte servercode (in-process) op hetzelfde logboek uit, ook als elk de helft had; verkeerde wachtwoordzin en verkeerd token worden herkend en laten het logboek ongemoeid; offline laat het logboek ongemoeid.
+- **Nog niet getest:** een echte rondgang naar de Cloudflare-Worker (dat is stap 0d van het bouwplan en ligt bij Jelle: token en `TOKEN_HASHES`); automatisch synchroniseren op de achtergrond (nu handmatig via de knop); rollende automatische back-up.
+
+### Frontend · F7 grotendeels klaar: afwerking (5 nov 2026)
+
+- **PWA:** eigen service worker voor `/app3/` (scope los van de oude app; de oude houdt zijn worker). Versie = hash van alle bestanden, vooraf in de cache, navigaties binnen de scope krijgen de app uit de cache, een nieuwe versie wacht op een tik op 'Vernieuwen' (niet tijdens een zetsel; alleen herladen bij vervanging van een bestaande worker, niet bij de eerste installatie). Manifest en iconen horen bij de app. Test: na de eerste keer start de app offline en de gegevens staan er nog.
+- **Toegankelijkheid:** axe-core 4.10.3 (exact vastgezet, alleen tests) op alle hoofdschermen in licht en donker, WCAG 2 A/AA en 2.1 A/AA: geen overtredingen (inclusief kleurcontrast).
+- **CI:** de `app3:check`-stap draait na de bestaande stappen; de tijdslimiet van de job is van 15 naar 25 minuten gegaan, omdat de installatie van Playwright eerder (PR #43) al bijna 14 minuten kostte.
+- **Niet gedaan, bewust:** `/` naar de nieuwe app laten wijzen. Dat vraagt een besluit van Jelle (blijft de oude app bestaan?), zie 18. De nieuwe app is bereikbaar op `/app3/`.

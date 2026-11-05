@@ -13,7 +13,7 @@ jobs:
   qa:
     name: QA suite (pure-logic + Playwright smoke + service worker)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,3 +43,7 @@ jobs:
       # proefbouw met esbuild. Raakt de huidige app niet.
       - name: Engine 3 checks
         run: npm run e3:check
+
+      # Nieuwe frontend (app3): typecheck, kerntests en schermtests in Chromium.
+      - name: App3 checks
+        run: npm run app3:check
