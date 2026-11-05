@@ -25,4 +25,20 @@ async function start(): Promise<void> {
   render(<Ctx.Provider value={{ store, engine, env }}><App persistent={storage.persistent} /></Ctx.Provider>, document.getElementById('root')!);
 }
 
-void start();
+function registerWorker(): void {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    const announce = (): void => { if (navigator.serviceWorker.controller) dispatchEvent(new CustomEvent('app3:update', { detail: reg })); };
+    if (reg.waiting) announce();
+    reg.addEventListener('updatefound', () => {
+      const w = reg.installing;
+      w?.addEventListener('statechange', () => { if (w.state === 'installed') announce(); });
+    });
+  }).catch(() => { /* zonder worker werkt de app gewoon online */ });
+  // Herladen alleen bij een vervanging van een bestaande worker (bewuste update), niet bij de allereerste installatie.
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !reloading) { reloading = true; location.reload(); } });
+}
+
+void start().then(registerWorker);

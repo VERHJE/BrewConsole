@@ -21,8 +21,19 @@ function useHash(): string {
   return hash;
 }
 
+function useUpdate(): ServiceWorkerRegistration | null {
+  const [reg, setReg] = useState<ServiceWorkerRegistration | null>(null);
+  useEffect(() => {
+    const on = (e: Event): void => setReg((e as CustomEvent<ServiceWorkerRegistration>).detail);
+    addEventListener('app3:update', on);
+    return () => removeEventListener('app3:update', on);
+  }, []);
+  return reg;
+}
+
 export function App({ persistent }: { persistent: boolean }): JSX.Element {
   const route = parseRoute(useHash());
+  const update = useUpdate();
   useSnapshot(); // herteken bij elke wijziging van het logboek
   const screen = route.tab === 'zakken' ? <Zakken route={route} />
     : route.tab === 'logboek' ? <Logboek route={route} />
@@ -40,6 +51,9 @@ export function App({ persistent }: { persistent: boolean }): JSX.Element {
       )}
       <main class={route.focused ? 'main focused' : 'main'} id="main">
         {!persistent && <p class="banner warn" role="status">Opslag in dit venster is tijdelijk: je gegevens verdwijnen als je de pagina sluit. Open de app buiten een privévenster.</p>}
+        {update && !route.focused && (
+          <p class="banner" role="status">Er is een nieuwe versie. <button class="btn" type="button" onClick={() => update.waiting?.postMessage('activate')}>Vernieuwen</button></p>
+        )}
         {screen}
       </main>
     </div>
