@@ -74,3 +74,7 @@ Het orakel kent de ware voorkeur, wat in het echt niet kan. Het laat zien wat he
 ## Engine 3, stap 3 (sterkte)
 
 De sterktemodule van Engine 3 is gemeten met dezelfde opstelling (`node engine3/eval/run.ts 200`). In alle zes werelden zijn alle vijf maatstaven gelijk aan Engine 2, en 'tegen het oordeel in' blijft 0 %. Zie [12-sterkte.md](12-sterkte.md).
+
+## Engine 3, stap 4 (tijd en molen)
+
+De doorloopmaatstaf staat er nu: `node engine3/eval/grind-sim.ts 200`, met acht werelden en als vergelijking een vaste klik, 'zelf één klik bijsturen' en een orakel. Zie [13-tijd-en-molen.md](13-tijd-en-molen.md).

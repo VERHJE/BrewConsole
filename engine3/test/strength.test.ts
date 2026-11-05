@@ -68,6 +68,18 @@ test('eigenschap: de dosis gaat nooit omhoog na "te sterk" of omlaag na "te slap
     });
   }), { numRuns: 60 });
 });
+test('de afwijking per zak gaat nooit tegen het laatste antwoord in (enige afwijking van Engine 2)', () => {
+  // Te sterk, te sterk, te slap: Engine 2 verlaagt hier nog eens via de zak; Engine 3 niet.
+  let ev: EngineEvent[] = [];
+  let dose = 18.8;
+  for (const [i, a] of ([2, 2, -1] as StrengthOrd[]).entries()) {
+    ev = ev.concat(cup(`c${i}`, 'b', AT0 + i * 1000, dose, a));
+    dose = plan(ev, 18.8, 'b')!.doseG;
+  }
+  const before = plan(ev.slice(0, 4), 18.8, 'b')!.doseG;
+  assert.ok(dose >= before - 1e-9, `${before} → ${dose}`);
+  assert.equal(plan(ev, 18.8, 'b')!.bean.applies, false);
+});
 test('volgorde en dubbelingen in het logboek veranderen het advies niet', () => {
   const ev = [0, 1, 2, 3, 4, 5].flatMap(i => cup(`c${i}`, 'b', AT0 + i * 1000, 18 - i * 0.3, ([1, 1, 0, -1, 0, 0] as StrengthOrd[])[i]!));
   const ref = JSON.stringify(plan(ev, 18.8, 'b'));
@@ -135,28 +147,35 @@ test('een ongeldige vraag geeft null in plaats van onzin', () => {
   assert.equal(strengthPlan(learnFacts([]), { method: 'v60', waterG: 300, beanId: null, baselineDoseG: 0 }), null);
 });
 
-test('gelijk aan Engine 2: dezelfde dosis, kop voor kop, in alle zes werelden', async () => {
+test('bijna gelijk aan Engine 2: dezelfde dosis kop voor kop, behalve waar de zakbewaking ingrijpt', async () => {
   const sc = DEFAULT_SCENARIO;
   const e2 = await engine2Strategy(sc.waterG);
   const e3 = await engine3StrengthStrategy(sc.waterG);
   void (await baseRecipe(sc.waterG));
+  let total = 0, differ = 0;
   for (const w of WORLDS) {
-    for (const seed of [11, 12]) {
+    for (const seed of [11, 12, 13]) {
       const r = rng(seed);
       const bags = makeBags(sc, w, r);
       e2.reset(); e3.reset();
       let idx = 0;
       for (const bag of bags) {
+        let divergedInBag = false;
         for (let k = 0; k < sc.cupsPerBag; k++, idx++) {
           const ctx = { beanId: bag.beanId, waterG: sc.waterG, cupIndex: idx, at: AT0 + idx * 86_400_000 };
           const d2 = e2.dose(ctx);
           const d3 = e3.dose(ctx);
-          assert.equal(d3, d2, `${w.name} seed ${seed} kop ${idx}`);
+          total++;
+          if (d3 !== d2) { differ++; divergedInBag = true; }
+          // De zakbewaking werkt pas vanaf de derde kop van een zak (daar begint de afwijking per zak).
+          if (k < 3) assert.equal(d3, d2, `${w.name} seed ${seed} kop ${idx} (k=${k})`);
           const cupRes = tasteCup(d2, bag, idx, sc, w, r);
           e2.observe(ctx, d2, cupRes.answer);
           e3.observe(ctx, d2, cupRes.answer);
         }
+        void divergedInBag;
       }
     }
   }
+  assert.ok(differ / total <= 0.03, `${differ} van ${total} wijken af`);
 });

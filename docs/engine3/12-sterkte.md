@@ -25,14 +25,18 @@ De nulmeting (06) laat zien dat sterkte bijna verzadigd is: Engine 2 haalt 46 va
 
 | Wereld | Engine 2 | Engine 3 | Tegen het oordeel in |
 |---|---|---|---|
-| basis | 46 % | 46 % | 0 % |
-| veel ruis | 33 % | 33 % | 0 % |
-| vlak oordeel | 49 % | 49 % | 0 % |
-| scheef | 44 % | 44 % | 0 % |
-| voorkeur drift | 45 % | 45 % | 0 % |
-| zakken verschillen veel | 43 % | 43 % | 0 % |
+| basis | 46,3 % | 46,4 % | 0 % |
+| veel ruis | 32,6 % | 32,3 % | 0 % |
+| vlak oordeel | 49,1 % | 49,1 % | 0 % |
+| scheef | 44,3 % | 44,3 % | 0 % |
+| voorkeur drift | 45,3 % | 45,2 % | 0 % |
+| zakken verschillen veel | 42,7 % | 42,6 % | 0 % |
 
-(200 herhalingen per wereld; 'koppen tot eerste goede', afwijking in de tweede helft en dosisstap zijn ook gelijk.) Een test speelt bovendien in alle zes werelden twee volledige reeksen (8 zakken × 10 koppen) af en eist dat Engine 3 **bij elke kop dezelfde dosis** geeft als Engine 2. Dat is strenger dan de eis uit het bouwplan (maximaal 1 punt verlies).
+(200 herhalingen per wereld; 'koppen tot eerste goede' en afwijking in de tweede helft zijn ook gelijk.) Met de bewaking tegen het laatste antwoord (zie hieronder) verschilt 'precies goed' hooguit 0,24 punt van Engine 2, ruim binnen de eis van 1 punt. Een test speelt in alle zes werelden drie volledige reeksen af en eist dat de dosis gelijk is aan die van Engine 2 voor de derde kop van elke zak, en daarna in minstens 97 % van de koppen.
+
+## Eén bewuste afwijking van Engine 2
+
+Een afwijking per zak (pas vanaf 3 koppen van die zak) die de andere kant op wijst dan het laatste antwoord over die zak, wordt niet toegepast. Voorbeeld: te sterk, te sterk, te slap: Engine 2 verlaagt dan nog eens via de zak, terwijl je net 'te slap' zei. In de meetopstelling kwam Engine 2 daardoor in 0,05–0,23 % van de stappen tegen het oordeel in; Engine 3 in 0 %. Het kost tot 0,24 punt 'precies goed' (veel ruis 32,6 → 32,3 %) en de dosisstap wordt iets groter (0,12 → 0,13 g).
 
 ## Wat nog niet is overgezet
 

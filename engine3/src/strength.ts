@@ -14,7 +14,7 @@
 import type { CupFacts, FactState } from './state.ts';
 import type { Method } from './types.ts';
 
-export const STRENGTH_MODEL_VERSION = 'e3-strength-0.1 (= e2-2026.5)';
+export const STRENGTH_MODEL_VERSION = 'e3-strength-0.1 (= e2-2026.5, met bewaking tegen het laatste antwoord bij de afwijking per zak)';
 
 const R_ABS = 2.1;
 const EY_NOMINAL = 0.20;
@@ -69,7 +69,7 @@ export function ratioForTdsPct(tdsPct: number, rAbs: number = R_ABS, ey: number 
 }
 
 /** Normale verdelingsfunctie (Abramowitz & Stegun 7.1.26). */
-function phi(z: number): number {
+export function phi(z: number): number {
   const s = z < 0 ? -1 : 1;
   const x = Math.abs(z) / Math.SQRT2;
   const t = 1 / (1 + 0.3275911 * x);
@@ -420,7 +420,13 @@ export function strengthPlan(facts: FactState, req: StrengthRequest): StrengthPl
   if (baseTds === null) return null;
   const dec = decide(obs, Math.log(baseTds));
   const bean = req.beanId && dec.summary ? beanOffset(obs, req.beanId, dec.targetLn, dec.summary.slopeMean) : { n: 0, offsetLn: 0, applies: false };
-  const targetLn = dec.targetLn + (bean.applies ? bean.offsetLn : 0);
+  // Nooit tegen het laatste antwoord in (e3-0.1: de enige afwijking van Engine 2): een afwijking per zak die de
+  // andere kant op wijst dan het laatste antwoord over die zak, wordt niet toegepast.
+  const lastOfBean = req.beanId ? [...obs].reverse().find((o): o is JarObs => o.type === 'jar' && o.beanId === req.beanId) : undefined;
+  const lastDir = lastOfBean ? answerDirection(lastOfBean) : 0;
+  const against = bean.applies && lastDir !== 0 && Math.sign(bean.offsetLn) === -lastDir;
+  const beanUsed: BeanOffset = against ? { ...bean, applies: false } : bean;
+  const targetLn = dec.targetLn + (beanUsed.applies ? beanUsed.offsetLn : 0);
   const targetTds = Math.exp(targetLn);
   const ratio = ratioForTdsPct(targetTds, retention.value, ey);
   const doseG = Math.round(req.waterG / ratio * 10) / 10;
@@ -430,7 +436,7 @@ export function strengthPlan(facts: FactState, req: StrengthRequest): StrengthPl
   return {
     version: STRENGTH_MODEL_VERSION, doseG, targetTds, ratio, band, mode: dec.mode, n: dec.n, pairs: obs.filter(x => x.type === 'pair').length,
     sdLn: dec.summary ? dec.summary.sdLn : null, slopeMean: dec.summary ? dec.summary.slopeMean : null,
-    retention, ey, baseDoseG: req.baselineDoseG, baseTds, bean, calibration,
+    retention, ey, baseDoseG: req.baselineDoseG, baseTds, bean: beanUsed, calibration,
     last: dec.trail.length ? dec.trail[dec.trail.length - 1]! : null, trail: dec.trail
   };
 }

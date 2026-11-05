@@ -21,7 +21,7 @@ Vastgesteld 5 nov 2026. Elke stap heeft een opleverpunt, tests en een poort. Een
 | 1 | Logboek → toestand (**klaar**) | `learn()` met per zak, techniek en hoeveelheid de feiten (zetsels, werkelijke waarden, oordelen, proeven) | dezelfde toestand bij elke volgorde en dubbeling; Jelles migratie (lokaal) geeft de verwachte tellingen |
 | 2 | Recept (**klaar**) | `plan()` bouwt het gietschema uit `TECHNIQUES` (Kasuya met Hario-momenten, 40/60-verdeling en wachten op doorlopen; temperatuur per branding) | elke techniek geeft bij de referentiehoeveelheid precies het brongetal terug; schalen volgt de bron |
 | 3 | Sterkte (**klaar**) | module gelijk aan Engine 2 (dosis uit TDS-voorkeur en oordelen) | meetopstelling: gelijk aan Engine 2 binnen 1 punt in alle zes werelden |
-| 4 | Tijd en molen | Bayesiaanse klik- en tijdvoorspelling met −11 % doorloop per klik en een term per hoeveelheid | nieuwe doorloopmaatstaf (06): einde binnen 2:50–4:10 bij Kasuya; beter dan niets doen |
+| 4 | Tijd en molen (**klaar**) | Bayesiaanse klik- en tijdvoorspelling met −11 % doorloop per klik en een term per hoeveelheid | nieuwe doorloopmaatstaf (06): einde binnen 2:50–4:10 bij Kasuya; beter dan niets doen |
 | 5 | Techniekkeuze | `SELECTION_RULES` toepassen; afwijking van Kasuya is altijd een proef; een gewonnen proef wint | simulator met verborgen beste techniek per zak (06): hoe snel de proef die vindt |
 | 6 | Zakherkenning | `parseBeanText` overgezet naar TypeScript, plus QR; AI alleen met toestemming en via de Worker | dezelfde 35 van 45 trefwoorden als de huidige app op de acht voorbeeldzakken |
 | 7 | Smaakprofiel | blinde keuzevakjes en herkende notities over alle zakken; stuurt het recept niet | herleidbaar uit het logboek; geen invloed op `plan()` |

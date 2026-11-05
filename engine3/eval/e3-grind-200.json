@@ -1,0 +1,804 @@
+{
+  "runs": 200,
+  "scenario": {
+    "bags": 8,
+    "cupsPerBag": 10,
+    "waterG": 300,
+    "doseG": 20,
+    "lastPourAtSec": 160,
+    "band": {
+      "lo": 170,
+      "mid": 210,
+      "hi": 250
+    },
+    "startClick": 16
+  },
+  "worlds": [
+    {
+      "name": "basis",
+      "baseTailSec": 78,
+      "perClickLn": -0.1210383283770561,
+      "beanSd": 0.1,
+      "noiseSd": 0.167,
+      "driftPerCup": 0
+    },
+    {
+      "name": "trager dan gedacht",
+      "baseTailSec": 110,
+      "perClickLn": -0.1210383283770561,
+      "beanSd": 0.1,
+      "noiseSd": 0.167,
+      "driftPerCup": 0
+    },
+    {
+      "name": "sneller dan gedacht",
+      "baseTailSec": 55,
+      "perClickLn": -0.1210383283770561,
+      "beanSd": 0.1,
+      "noiseSd": 0.167,
+      "driftPerCup": 0
+    },
+    {
+      "name": "flauw klikeffect (−7 %)",
+      "baseTailSec": 78,
+      "perClickLn": -0.07257069283483537,
+      "beanSd": 0.1,
+      "noiseSd": 0.167,
+      "driftPerCup": 0
+    },
+    {
+      "name": "steil klikeffect (−16 %)",
+      "baseTailSec": 78,
+      "perClickLn": -0.1743533871447778,
+      "beanSd": 0.1,
+      "noiseSd": 0.167,
+      "driftPerCup": 0
+    },
+    {
+      "name": "zakken verschillen veel",
+      "baseTailSec": 78,
+      "perClickLn": -0.1210383283770561,
+      "beanSd": 0.25,
+      "noiseSd": 0.167,
+      "driftPerCup": 0
+    },
+    {
+      "name": "veel ruis",
+      "baseTailSec": 78,
+      "perClickLn": -0.1210383283770561,
+      "beanSd": 0.1,
+      "noiseSd": 0.25,
+      "driftPerCup": 0
+    },
+    {
+      "name": "drift (−0,4 % per kop)",
+      "baseTailSec": 78,
+      "perClickLn": -0.1210383283770561,
+      "beanSd": 0.1,
+      "noiseSd": 0.167,
+      "driftPerCup": -0.004
+    }
+  ],
+  "results": {
+    "basis": {
+      "vaste klik 16": {
+        "inBand": {
+          "mean": 0.7686875000000002,
+          "sd": 0.07291918217723635
+        },
+        "nearTarget": {
+          "mean": 0.2914999999999999,
+          "sd": 0.07811536372731843
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.379375,
+          "sd": 0.3621928390211367
+        },
+        "clickStep": {
+          "mean": 0,
+          "sd": 0
+        },
+        "inBandLate": {
+          "mean": 0.7652499999999999,
+          "sd": 0.08349277042695279
+        }
+      },
+      "één klik bijsturen (zelf doen)": {
+        "inBand": {
+          "mean": 0.9640000000000006,
+          "sd": 0.008821940442205975
+        },
+        "nearTarget": {
+          "mean": 0.7527499999999998,
+          "sd": 0.07533593108578944
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.069375,
+          "sd": 0.08744838750592801
+        },
+        "clickStep": {
+          "mean": 0.03798611111111112,
+          "sd": 0.010647566520500673
+        },
+        "inBandLate": {
+          "mean": 0.9733749999999985,
+          "sd": 0.022980970388562817
+        }
+      },
+      "Engine 3 (tijd en molen)": {
+        "inBand": {
+          "mean": 0.9990625000000004,
+          "sd": 0.0035305335411842625
+        },
+        "nearTarget": {
+          "mean": 0.9637500000000001,
+          "sd": 0.026106180557802453
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.00125,
+          "sd": 0.012468553409301456
+        },
+        "clickStep": {
+          "mean": 0.002777777777777778,
+          "sd": 0.017390748014633216
+        },
+        "inBandLate": {
+          "mean": 0.9989999999999998,
+          "sd": 0.00491127305442035
+        }
+      },
+      "orakel (kent de molen)": {
+        "inBand": {
+          "mean": 0.9996250000000002,
+          "sd": 0.0021376911886637007
+        },
+        "nearTarget": {
+          "mean": 0.9766875000000002,
+          "sd": 0.016371429757707716
+        },
+        "cupsToFirstInBand": {
+          "mean": 1,
+          "sd": 0
+        },
+        "clickStep": {
+          "mean": 0,
+          "sd": 0
+        },
+        "inBandLate": {
+          "mean": 0.9994999999999998,
+          "sd": 0.003508782949819604
+        }
+      }
+    },
+    "trager dan gedacht": {
+      "vaste klik 16": {
+        "inBand": {
+          "mean": 0.15218750000000011,
+          "sd": 0.06018237436885791
+        },
+        "nearTarget": {
+          "mean": 0.009249999999999987,
+          "sd": 0.01170459257886348
+        },
+        "cupsToFirstInBand": {
+          "mean": 6.40625,
+          "sd": 1.4520037921998736
+        },
+        "clickStep": {
+          "mean": 0,
+          "sd": 0
+        },
+        "inBandLate": {
+          "mean": 0.1542499999999999,
+          "sd": 0.07220982477454052
+        }
+      },
+      "één klik bijsturen (zelf doen)": {
+        "inBand": {
+          "mean": 0.9288750000000008,
+          "sd": 0.008717185417784793
+        },
+        "nearTarget": {
+          "mean": 0.7101249999999998,
+          "sd": 0.07844265821694664
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.273125,
+          "sd": 0.1580530391702568
+        },
+        "clickStep": {
+          "mean": 0.07590277777777792,
+          "sd": 0.010863865191938687
+        },
+        "inBandLate": {
+          "mean": 0.9586249999999985,
+          "sd": 0.025262130774269267
+        }
+      },
+      "Engine 3 (tijd en molen)": {
+        "inBand": {
+          "mean": 0.992375000000001,
+          "sd": 0.008930742736701426
+        },
+        "nearTarget": {
+          "mean": 0.9071875000000005,
+          "sd": 0.049833855555713714
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.01875,
+          "sd": 0.044745932691836014
+        },
+        "clickStep": {
+          "mean": 0.05388888888888875,
+          "sd": 0.009900553976558327
+        },
+        "inBandLate": {
+          "mean": 0.9941249999999993,
+          "sd": 0.013722276757046742
+        }
+      },
+      "orakel (kent de molen)": {
+        "inBand": {
+          "mean": 0.9996250000000001,
+          "sd": 0.0021376911886636985
+        },
+        "nearTarget": {
+          "mean": 0.9757500000000003,
+          "sd": 0.017119884703505086
+        },
+        "cupsToFirstInBand": {
+          "mean": 1,
+          "sd": 0
+        },
+        "clickStep": {
+          "mean": 0,
+          "sd": 0
+        },
+        "inBandLate": {
+          "mean": 0.9994999999999998,
+          "sd": 0.0035087829498196095
+        }
+      }
+    },
+    "sneller dan gedacht": {
+      "vaste klik 16": {
+        "inBand": {
+          "mean": 0.9936250000000006,
+          "sd": 0.009292666098385348
+        },
+        "nearTarget": {
+          "mean": 0.8908750000000003,
+          "sd": 0.048220696311478295
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.00875,
+          "sd": 0.036556385854371126
+        },
+        "clickStep": {
+          "mean": 0,
+          "sd": 0
+        },
+        "inBandLate": {
+          "mean": 0.9929999999999991,
+          "sd": 0.012571404098390321
+        }
+      },
+      "één klik bijsturen (zelf doen)": {
+        "inBand": {
+          "mean": 0.994812500000001,
+          "sd": 0.007008329125810112
+        },
+        "nearTarget": {
+          "mean": 0.9084374999999999,
+          "sd": 0.0432275426780184
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.00625,
+          "sd": 0.030049164070012506
+        },
+        "clickStep": {
+          "mean": 0.005486111111111104,
+          "sd": 0.007613308012909723
+        },
+        "inBandLate": {
+          "mean": 0.9939999999999992,
+          "sd": 0.010993373975117196
+        }
+      },
+      "Engine 3 (tijd en molen)": {
+        "inBand": {
+          "mean": 0.9983125000000004,
+          "sd": 0.004800920530450223
+        },
+        "nearTarget": {
+          "mean": 0.8525,
+          "sd": 0.06368844944701378
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.00125,
+          "sd": 0.012468553409301456
+        },
+        "clickStep": {
+          "mean": 0.04256944444444438,
+          "sd": 0.023998872777621034
+        },
+        "inBandLate": {
+          "mean": 0.9978749999999998,
+          "sd": 0.007425297990737919
+        }
+      },
+      "orakel (kent de molen)": {
+        "inBand": {
+          "mean": 0.9995625000000001,
+          "sd": 0.0023030117379914897
+        },
+        "nearTarget": {
+          "mean": 0.9757499999999993,
+          "sd": 0.0172113670514255
+        },
+        "cupsToFirstInBand": {
+          "mean": 1,
+          "sd": 0
+        },
+        "clickStep": {
+          "mean": 0,
+          "sd": 0
+        },
+        "inBandLate": {
+          "mean": 0.9993749999999999,
+          "sd": 0.00391291830329247
+        }
+      }
+    },
+    "flauw klikeffect (−7 %)": {
+      "vaste klik 16": {
+        "inBand": {
+          "mean": 0.7686875000000002,
+          "sd": 0.07291918217723635
+        },
+        "nearTarget": {
+          "mean": 0.2914999999999999,
+          "sd": 0.07811536372731843
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.379375,
+          "sd": 0.3621928390211367
+        },
+        "clickStep": {
+          "mean": 0,
+          "sd": 0
+        },
+        "inBandLate": {
+          "mean": 0.7652499999999999,
+          "sd": 0.08349277042695279
+        }
+      },
+      "één klik bijsturen (zelf doen)": {
+        "inBand": {
+          "mean": 0.9494374999999997,
+          "sd": 0.011907931723842666
+        },
+        "nearTarget": {
+          "mean": 0.6838124999999997,
+          "sd": 0.0771244090160852
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.088125,
+          "sd": 0.10981761661772656
+        },
+        "clickStep": {
+          "mean": 0.052569444444444426,
+          "sd": 0.01439458360499233
+        },
+        "inBandLate": {
+          "mean": 0.9569999999999983,
+          "sd": 0.025578728599833095
+        }
+      },
+      "Engine 3 (tijd en molen)": {
+        "inBand": {
+          "mean": 0.9921875000000006,
+          "sd": 0.009330400614557803
+        },
+        "nearTarget": {
+          "mean": 0.8753124999999996,
+          "sd": 0.05547076819705904
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.0125,
+          "sd": 0.03759410303378144
+        },
+        "clickStep": {
+          "mean": 0.021388888888888857,
+          "sd": 0.024627317067678775
+        },
+        "inBandLate": {
+          "mean": 0.9918749999999992,
+          "sd": 0.015436997097783782
+        }
+      },
+      "orakel (kent de molen)": {
+        "inBand": {
+          "mean": 0.9996250000000001,
+          "sd": 0.0021376911886636985
+        },
+        "nearTarget": {
+          "mean": 0.9775000000000007,
+          "sd": 0.015651673213169893
+        },
+        "cupsToFirstInBand": {
+          "mean": 1,
+          "sd": 0
+        },
+        "clickStep": {
+          "mean": 0,
+          "sd": 0
+        },
+        "inBandLate": {
+          "mean": 0.9994999999999998,
+          "sd": 0.0035087829498196095
+        }
+      }
+    },
+    "steil klikeffect (−16 %)": {
+      "vaste klik 16": {
+        "inBand": {
+          "mean": 0.7686875000000002,
+          "sd": 0.07291918217723635
+        },
+        "nearTarget": {
+          "mean": 0.2914999999999999,
+          "sd": 0.07811536372731843
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.379375,
+          "sd": 0.3621928390211367
+        },
+        "clickStep": {
+          "mean": 0,
+          "sd": 0
+        },
+        "inBandLate": {
+          "mean": 0.7652499999999999,
+          "sd": 0.08349277042695279
+        }
+      },
+      "één klik bijsturen (zelf doen)": {
+        "inBand": {
+          "mean": 0.9715624999999989,
+          "sd": 0.006856559325120306
+        },
+        "nearTarget": {
+          "mean": 0.7989374999999999,
+          "sd": 0.07683861795867357
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.055,
+          "sd": 0.07889787305028752
+        },
+        "clickStep": {
+          "mean": 0.0298611111111111,
+          "sd": 0.008554890226256523
+        },
+        "inBandLate": {
+          "mean": 0.9786249999999977,
+          "sd": 0.018821680404956707
+        }
+      },
+      "Engine 3 (tijd en molen)": {
+        "inBand": {
+          "mean": 0.9993750000000001,
+          "sd": 0.0030049164070012468
+        },
+        "nearTarget": {
+          "mean": 0.9071250000000005,
+          "sd": 0.04477242146252638
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.00125,
+          "sd": 0.012468553409301454
+        },
+        "clickStep": {
+          "mean": 0.006041666666666665,
+          "sd": 0.020958700589614607
+        },
+        "inBandLate": {
+          "mean": 0.9994999999999998,
+          "sd": 0.0043119560322573604
+        }
+      },
+      "orakel (kent de molen)": {
+        "inBand": {
+          "mean": 0.9996875000000002,
+          "sd": 0.001956459151646225
+        },
+        "nearTarget": {
+          "mean": 0.9730624999999997,
+          "sd": 0.017232225384683872
+        },
+        "cupsToFirstInBand": {
+          "mean": 1,
+          "sd": 0
+        },
+        "clickStep": {
+          "mean": 0,
+          "sd": 0
+        },
+        "inBandLate": {
+          "mean": 0.9996249999999999,
+          "sd": 0.0030464370819815747
+        }
+      }
+    },
+    "zakken verschillen veel": {
+      "vaste klik 16": {
+        "inBand": {
+          "mean": 0.6804375000000001,
+          "sd": 0.11674082165615755
+        },
+        "nearTarget": {
+          "mean": 0.3584374999999999,
+          "sd": 0.12391449209233976
+        },
+        "cupsToFirstInBand": {
+          "mean": 2.300625,
+          "sd": 0.9725421200396704
+        },
+        "clickStep": {
+          "mean": 0,
+          "sd": 0
+        },
+        "inBandLate": {
+          "mean": 0.6778749999999999,
+          "sd": 0.12393205860774595
+        }
+      },
+      "één klik bijsturen (zelf doen)": {
+        "inBand": {
+          "mean": 0.9473750000000003,
+          "sd": 0.016558010555856022
+        },
+        "nearTarget": {
+          "mean": 0.7298124999999999,
+          "sd": 0.07698052415543968
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.174375,
+          "sd": 0.1652513978684823
+        },
+        "clickStep": {
+          "mean": 0.05583333333333337,
+          "sd": 0.01898741015844696
+        },
+        "inBandLate": {
+          "mean": 0.967124999999998,
+          "sd": 0.02345442228286845
+        }
+      },
+      "Engine 3 (tijd en molen)": {
+        "inBand": {
+          "mean": 0.9876875000000004,
+          "sd": 0.014585860632887249
+        },
+        "nearTarget": {
+          "mean": 0.8501250000000004,
+          "sd": 0.07125258965583857
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.04125,
+          "sd": 0.08601120354743565
+        },
+        "clickStep": {
+          "mean": 0.05069444444444443,
+          "sd": 0.06511117471121956
+        },
+        "inBandLate": {
+          "mean": 0.991874999999999,
+          "sd": 0.01502458203500631
+        }
+      },
+      "orakel (kent de molen)": {
+        "inBand": {
+          "mean": 0.9996875000000002,
+          "sd": 0.001956459151646225
+        },
+        "nearTarget": {
+          "mean": 0.9748750000000003,
+          "sd": 0.01713592937009501
+        },
+        "cupsToFirstInBand": {
+          "mean": 1,
+          "sd": 0
+        },
+        "clickStep": {
+          "mean": 0,
+          "sd": 0
+        },
+        "inBandLate": {
+          "mean": 0.9994999999999998,
+          "sd": 0.0035087829498196064
+        }
+      }
+    },
+    "veel ruis": {
+      "vaste klik 16": {
+        "inBand": {
+          "mean": 0.7035000000000003,
+          "sd": 0.06552551384631884
+        },
+        "nearTarget": {
+          "mean": 0.34343749999999995,
+          "sd": 0.07130708834323524
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.48375,
+          "sd": 0.3416516011713026
+        },
+        "clickStep": {
+          "mean": 0,
+          "sd": 0
+        },
+        "inBandLate": {
+          "mean": 0.7045000000000001,
+          "sd": 0.08112587155264267
+        }
+      },
+      "één klik bijsturen (zelf doen)": {
+        "inBand": {
+          "mean": 0.9496249999999995,
+          "sd": 0.010402544866449369
+        },
+        "nearTarget": {
+          "mean": 0.7776875000000001,
+          "sd": 0.055235867869041694
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.088125,
+          "sd": 0.10087361800314887
+        },
+        "clickStep": {
+          "mean": 0.05270833333333329,
+          "sd": 0.013157567703708021
+        },
+        "inBandLate": {
+          "mean": 0.9598749999999987,
+          "sd": 0.026033595901793702
+        }
+      },
+      "Engine 3 (tijd en molen)": {
+        "inBand": {
+          "mean": 0.989875000000001,
+          "sd": 0.011305349603096808
+        },
+        "nearTarget": {
+          "mean": 0.8788125000000001,
+          "sd": 0.04093745804401547
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.011875,
+          "sd": 0.04079436574310124
+        },
+        "clickStep": {
+          "mean": 0.008194444444444445,
+          "sd": 0.027714542764363918
+        },
+        "inBandLate": {
+          "mean": 0.9882499999999991,
+          "sd": 0.018230448327760787
+        }
+      },
+      "orakel (kent de molen)": {
+        "inBand": {
+          "mean": 0.9909375000000007,
+          "sd": 0.010554469569307931
+        },
+        "nearTarget": {
+          "mean": 0.8930625000000001,
+          "sd": 0.032933843291052395
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.005625,
+          "sd": 0.025978042042111377
+        },
+        "clickStep": {
+          "mean": 0,
+          "sd": 0
+        },
+        "inBandLate": {
+          "mean": 0.9896249999999989,
+          "sd": 0.016487680035857818
+        }
+      }
+    },
+    "drift (−0,4 % per kop)": {
+      "vaste klik 16": {
+        "inBand": {
+          "mean": 0.9175625,
+          "sd": 0.04197722933523979
+        },
+        "nearTarget": {
+          "mean": 0.5931875,
+          "sd": 0.07887595116453781
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.141875,
+          "sd": 0.19880196296160388
+        },
+        "clickStep": {
+          "mean": 0,
+          "sd": 0
+        },
+        "inBandLate": {
+          "mean": 0.9231249999999994,
+          "sd": 0.04774681314840969
+        }
+      },
+      "één klik bijsturen (zelf doen)": {
+        "inBand": {
+          "mean": 0.9756249999999992,
+          "sd": 0.008568193784200862
+        },
+        "nearTarget": {
+          "mean": 0.8313750000000002,
+          "sd": 0.05639101531308154
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.05,
+          "sd": 0.07622533376468546
+        },
+        "clickStep": {
+          "mean": 0.02604166666666665,
+          "sd": 0.009937445874598636
+        },
+        "inBandLate": {
+          "mean": 0.9837499999999983,
+          "sd": 0.017677669529663705
+        }
+      },
+      "Engine 3 (tijd en molen)": {
+        "inBand": {
+          "mean": 0.9999375,
+          "sd": 0.0008838834764831839
+        },
+        "nearTarget": {
+          "mean": 0.9221250000000001,
+          "sd": 0.03874017139090875
+        },
+        "cupsToFirstInBand": {
+          "mean": 1.000625,
+          "sd": 0.008838834764831867
+        },
+        "clickStep": {
+          "mean": 0.004444444444444445,
+          "sd": 0.019580563675510847
+        },
+        "inBandLate": {
+          "mean": 1,
+          "sd": 0
+        }
+      },
+      "orakel (kent de molen)": {
+        "inBand": {
+          "mean": 0.9995625000000001,
+          "sd": 0.0023030117379914897
+        },
+        "nearTarget": {
+          "mean": 0.9752500000000002,
+          "sd": 0.017180317709021422
+        },
+        "cupsToFirstInBand": {
+          "mean": 1,
+          "sd": 0
+        },
+        "clickStep": {
+          "mean": 0.03215277777777781,
+          "sd": 0.018131764821081746
+        },
+        "inBandLate": {
+          "mean": 0.9994999999999998,
+          "sd": 0.0035087829498196095
+        }
+      }
+    }
+  }
+}

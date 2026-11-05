@@ -1186,3 +1186,11 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Poort gehaald:** in alle zes werelden zijn alle vijf maatstaven gelijk aan Engine 2 (200 herhalingen). Een test eist bovendien dezelfde dosis bij elke kop. 'Tegen het oordeel in' blijft 0 %.
 - **Kleine wijzigingen:** `FactState.trials` bewaart nu het moment van elke proef, en `CupFacts` heeft `dilutionG`.
 - **Getoetst:** 14 nieuwe tests (totaal 80), onder meer een eigenschapstest dat de dosis nooit tegen het oordeel in gaat.
+
+### Engine 3 · stap 4 klaar (5 nov 2026)
+
+- **`grindPlan()`** (`engine3/src/grind.ts`, uitleg in `docs/engine3/13-tijd-en-molen.md`): Bayesiaanse regressie van ln(doorloop na de laatste giet) op techniek, klik, hoeveelheid en zak, met de natuurkundige verwachting (−11 % per klik) als prior. Geeft het verwachte einde met band, de kans dat het in de band valt, en zo nodig een klikadvies (hooguit 4 klikken, binnen klik 8–25).
+- **Molen:** BrewTuner en Beean bevestigen de C3S Pro, maar noemen geen micron per klik; andere bronnen geven 83 en 20 micron. Daarom rekent de engine niet met microns; het effect van een klik leert hij uit jouw zetsels (`engine3/src/data/grinder.ts`).
+- **Meetopstelling:** acht werelden, in alle werelden minstens 99 % op tijd (vaste klik 16: 15–99 %), met een gemiddelde klikstap onder 0,1.
+- **Eén afwijking van Engine 2 in stap 3:** de afwijking per zak gaat nooit tegen het laatste antwoord in. Daardoor 0 % in plaats van 0,05–0,23 % stappen tegen het oordeel in, tegen maximaal 0,24 punt 'precies goed'.
+- **Nog niet getoetst op eigen tikken:** de back-up bevat geen 'erdoor'-tikken en maar twee naburige klikstanden (16 en 17); het meetplan in 07 moet het klikeffect zichtbaar maken.
