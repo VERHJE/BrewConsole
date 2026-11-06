@@ -52,3 +52,11 @@ export async function brewToEnd(page, base, beanName) {
   await page.click('a:has-text("Proeven")');
   await page.waitForSelector('.progress');
 }
+
+/** Zet een logboek met koppen in de app via Meer → Gegevens (zelfde route als een echte gebruiker). */
+export async function importLog(page, base, json) {
+  await page.goto(base + '#/meer/gegevens');
+  await page.setInputFiles('input[type=file]', { name: 'seed.json', mimeType: 'application/json', buffer: Buffer.from(json) });
+  await page.click('button:has-text("toevoegen")');
+  await page.waitForSelector('.banner:has-text("nieuwe gebeurtenissen toegevoegd")');
+}
