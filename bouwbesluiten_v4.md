@@ -1373,3 +1373,11 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Probleem:** een zak bewerken en een veld leegmaken liet de oude waarde staan, omdat opslaan nieuwe velden over de oude heen legt en een leeg veld niet werd meegestuurd.
 - **Herstel:** `validateForm` stuurt nu voor elk veld van het formulier een expliciete leegwaarde mee (tekstvelden, branding, datum, zakgrootte en winkeladres `null`; proces 'onbekend'; notities leeg), met bron 'jij'. Alleen de velden in het formulier; wat de formulier niet toont (producent, hoogte, oogstjaar …) blijft zoals het was. De naam blijft verplicht.
 - **Test:** zak met alle velden → leegmaken → opnieuw lezen: alles leeg, land en naam blijven. app3: 95 tests groen.
+
+### Foto's in de back-up (6 nov 2026)
+
+- **Besluit:** de back-up wordt versie 2 met een extra lijst `photos` (`{ beanId, type, data }`, base64). Oudere back-ups (versie 1, zonder het veld) lezen gewoon in; een versie-1-lezer negeert het extra veld. Foto's blijven **buiten** het logboek en **buiten** de synchronisatie (grootte; blokken blijven onder ±900 kB).
+- **Maken:** per zak met een foto wordt de foto (al ≲150 kB) meegenomen; de melding noemt het aantal. **Terugzetten:** alleen foto's van bekende zakken (uit de back-up of al aanwezig), type webp/jpeg/png, geldige base64, hoogstens 400 kB per foto en 300 foto's; wat niet past wordt overgeslagen met een melding. Een foto die al op dit toestel staat blijft staan.
+- **Alles wissen** wist nu ook de foto's (voorheen bleven ze achter).
+- **Teksten:** bij het fotoveld staat nu 'staat in je back-up; niet in de synchronisatie' (dit vervangt de eerdere vermelding 'niet in de back-up').
+- **Tests:** app3 97 (kern: base64 heen en terug, filter op onbekende zak/type/kapotte data/te groot/dubbel, versie 1; scherm: maken → wissen → terugzetten).
