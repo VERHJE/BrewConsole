@@ -36,6 +36,7 @@ export function BeanFormView({ form, problems, onChange }: Props): JSX.Element {
         </select></label>
       <label class="field"><Label k="roastDate" /><input name="roastDate" type="date" value={form.values.roastDate} onInput={set('roastDate')} /><Err k="roastDate" /></label>
       <label class="field"><Label k="bagSizeG" /><input name="bagSizeG" inputMode="numeric" value={form.values.bagSizeG} onInput={set('bagSizeG')} /><Err k="bagSizeG" /></label>
+      <label class="field"><Label k="shopUrl" /><input name="shopUrl" type="url" inputMode="url" value={form.values.shopUrl} onInput={set('shopUrl')} placeholder="brander.nl/jouw-zak" autocomplete="off" aria-invalid={problems.shopUrl ? 'true' : undefined} /><Err k="shopUrl" /></label>
       <label class="field"><Label k="notes" /><input name="notes" value={form.values.notes} onInput={set('notes')} placeholder="bijv. jasmijn, perzik, zwarte thee" /></label>
     </div>
   );

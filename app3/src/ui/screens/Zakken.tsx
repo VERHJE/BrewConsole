@@ -4,7 +4,7 @@ import { encodePhoto } from '../photo-encode.ts';
 import type { Route } from '../../core/router.ts';
 import { href } from '../../core/router.ts';
 import {
-  ROAST_LABEL, beanArchive, beanDetail, beanRows, beanUpsert, daysSinceRoast, emptyForm, formFromBean, scanText, validateForm,
+  ROAST_LABEL, beanArchive, beanDetail, stockView, beanRows, beanUpsert, daysSinceRoast, emptyForm, formFromBean, scanText, validateForm,
   type BeanForm, type FormKey, type BeanRow
 } from '../../core/beans.ts';
 import { formFromScan } from '../../core/beans.ts';
@@ -71,6 +71,7 @@ function Detail({ beanId }: { beanId: string }): JSX.Element {
   if (!d) return <section><h1>Zak niet gevonden</h1><a class="btn" href={href('zakken')}>Terug</a></section>;
   const age = daysSinceRoast(d.roastDate, todayIso(env.now()));
   const rest = restView(age);
+  const stock = stockView(state, beanId);
   const zet = (): void => {
     try {
       const prev = JSON.parse(localStorage.getItem('brewconsole.zetten') ?? '{}') as Record<string, unknown>;
@@ -86,6 +87,12 @@ function Detail({ beanId }: { beanId: string }): JSX.Element {
       <h1>{d.name}</h1>
       <p class="muted">{[d.roaster, age !== null ? `${age} d na branding` : null, d.cups ? `${d.cups} ${d.cups === 1 ? 'kop' : 'koppen'}` : null].filter(Boolean).join(' · ')}</p>
       {rest && <p class="rest"><span class="tag">{rest.label}</span> <span class="muted">{rest.hint}</span></p>}
+      {stock.remainingG !== null && (
+        <p class="stock"><span class={stock.low ? 'tag warn' : 'tag'}>{stock.low ? 'Bijna op' : 'Voorraad'}</span>{' '}
+          <span class="muted">nog ± {stock.remainingG} g{stock.cupsLeft !== null ? `, ongeveer ${stock.cupsLeft} ${stock.cupsLeft === 1 ? 'kop' : 'koppen'}` : ''}</span></p>)}
+      {d.shopUrl
+        ? <p><a class={stock.low ? 'btn primary' : 'btn'} href={d.shopUrl} target="_blank" rel="noopener noreferrer">Opnieuw kopen <span class="sr-only">(opent de winkel in een nieuw tabblad)</span></a></p>
+        : stock.low && <p class="muted">Bijna op. Voeg bij Bewerken een webadres toe om hem met één tik opnieuw te kopen.</p>}
       {d.tags.length > 0 && <p class="chips">{d.tags.map(t => <span class="tag" key={t}>{t}</span>)}</p>}
       {d.facts.length > 0 && <dl class="facts">{d.facts.map(f => <div key={f.label}><dt>{f.label}</dt><dd>{f.value}</dd></div>)}</dl>}
       <BeanInsights beanId={beanId} />
@@ -123,7 +130,8 @@ function Editor({ beanId }: { beanId: string | null }): JSX.Element {
       const { readQrFromPixels } = await import('../../../../engine3/qr/decode.ts');
       const reading = readQrFromPixels({ data: px.data, width: px.width, height: px.height }, env.now());
       if (!reading) { setQrMsg('Geen QR-code gevonden in deze foto.'); return; }
-      setForm(formFromScan(reading));
+      const scanned = formFromScan(reading);
+      setForm(reading.url ? { ...scanned, values: { ...scanned.values, shopUrl: reading.url }, sources: { ...scanned.sources, shopUrl: 'qr' } } : scanned);
       setQrMsg(reading.url ? `QR gelezen (webadres: ${reading.url}). Plak de tekst van die pagina voor meer velden.` : 'QR gelezen.');
     } catch { setQrMsg('Deze foto kon niet gelezen worden.'); }
   };

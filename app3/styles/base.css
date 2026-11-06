@@ -215,3 +215,7 @@ table.plain th { white-space: nowrap; }
 .liking-fine { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; }
 .liking-fine .btn { min-width: 64px; }
 .liking-val { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+
+/* Voorraad en opnieuw kopen */
+.stock { margin: 4px 0 8px; }
+.tag.warn { background: color-mix(in srgb, var(--warn) 28%, var(--surface)); color: var(--text); border: 1px solid var(--warn); }

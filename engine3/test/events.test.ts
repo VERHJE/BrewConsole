@@ -55,3 +55,16 @@ test('waardering: afronden, begrenzen en een kwart omhoog of omlaag', async () =
   assert.equal(nudgeLiking(5, 1), 5);
   assert.equal(isLiking(4.25), true);
 });
+
+test('winkeladres: alleen http(s); normaliseren; validatie op bean.upsert (contract 1.2)', async () => {
+  const { isShopUrl, normaliseShopUrl } = await import('../src/shopurl.ts');
+  assert.equal(normaliseShopUrl('brander.nl/zak'), 'https://brander.nl/zak');
+  assert.equal(normaliseShopUrl('http://a.nl/x'), 'http://a.nl/x');
+  for (const bad of ['javascript:alert(1)', 'data:text/html,hi', 'ftp://a.nl', '', '   ', 'http://']) assert.equal(normaliseShopUrl(bad), null, bad);
+  assert.equal(isShopUrl('https://a.nl'), true);
+  assert.equal(isShopUrl('javascript:alert(1)'), false);
+  const up = (shopUrl: unknown) => validateEvent({ id: 'x', at: 1, device: 'd', v: 1, kind: 'bean.upsert', data: { beanId: 'b', fields: { name: 'z', shopUrl }, sources: {} } });
+  assert.deepEqual(up('https://a.nl/z'), []);
+  assert.deepEqual(up(null), []);
+  assert.ok(up('javascript:alert(1)').some(i => i.path === 'data.fields.shopUrl'));
+});

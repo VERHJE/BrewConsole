@@ -1359,3 +1359,11 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Engine:** `Liking` is nu `number`; `engine3/src/liking.ts` (`isLiking`, `normaliseLiking`, `nudgeLiking`, `LIKING_*`), `validateEvent` weigert alles buiten 1–5 in kwarten (0, 0,75, 5,25, 3,3, tekst). Het profiel rekent al met gemiddelden en verschillen, dus geen verandering in rekenregels. Rooktest en versiecheck op 1.1.
 - **App:** snel blijft snel: eerst één tik op een hele ster, daarna verschijnen −¼ en +¼ met de waarde ('4,25 van 5') als statusmelding. In lijsten en detail staat een rij sterren met een gedeeltelijk gevulde laatste ster (`Stars.tsx`, voor schermlezers 'x van 5'); verloopgrafiek, vergelijken en koppenlijst gebruiken dezelfde opmaak (`formatLiking`, Nederlandse komma).
 - **Tests:** engine 171 (nieuw: validatie van kwarten, afronden/begrenzen/bijstellen), app3 91 (nieuw: kwartsterren-flow in licht en donker met axe).
+
+### Opnieuw kopen (6 nov 2026) · contract e3-contract-1.2
+
+- **Besluit:** het winkeladres hoort bij de zak en reist dus mee in logboek, back-up en synchronisatie. `BeanFields.shopUrl` is een optioneel veld (geen breuk: bestaande zakken en code blijven werken). `engine3/src/shopurl.ts`: alleen `http(s)`, hoogstens 500 tekens; `normaliseShopUrl('brander.nl/zak')` → `https://brander.nl/zak`; `javascript:`, `data:` en `ftp:` worden geweigerd, ook in `validateEvent` (bij binnenkomst via sync of import).
+- **Formulier:** veld 'Waar koop je hem'; een QR-code met een webadres vult het veld (bron 'QR'). Leeg laten wist een eerder adres. Let op: dat geldt alleen voor dit veld; andere velden die je leegmaakt houden bij opslaan hun oude waarde (bestaand gedrag van het samenvoegen, apart te beslissen).
+- **Voorraad:** `stockView()`: zakgrootte min de dosis van alle afgeronde koppen; 'ongeveer N koppen' met de laatste dosis; minder dan twee koppen = 'Bijna op'. Een schatting, geen weegschaal.
+- **Zakdetail:** 'Voorraad nog ± x g'; knop 'Opnieuw kopen' opent het adres in een nieuw tabblad (`noopener noreferrer`), opvallend (primair) bij 'Bijna op'; bijna op zonder adres geeft een hint naar Bewerken.
+- **Tests:** engine 172 (winkeladres), app3 94 (formulier, voorraad, scherm met formulierfout en wissen).

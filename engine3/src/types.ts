@@ -111,6 +111,8 @@ export interface BeanFields {
   readonly cuppingScore: number | null;
   readonly harvestYear: number | null;
   readonly coordinates: { readonly lat: number; readonly lon: number } | null;
+  /** Waar je deze zak (opnieuw) koopt: een http(s)-adres (contract 1.2). */
+  readonly shopUrl?: string | null;
 }
 export type BeanFieldKey = keyof BeanFields;
 
