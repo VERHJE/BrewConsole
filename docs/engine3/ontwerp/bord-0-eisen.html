@@ -1,0 +1,148 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#e9e5dc;font-family:Inter,system-ui,sans-serif;color:#222}
+.board{padding:56px 64px 64px;width:max-content}
+.board h1{font:700 40px/1.1 Inter;margin-bottom:6px;color:#1b1a17}
+.board .lede{font:400 18px/1.4 Inter;color:#55514a;margin-bottom:34px;max-width:1500px}
+.grid{display:grid;gap:34px 54px;align-items:start}
+.colhead{font:600 15px/1.35 Inter;color:#1b1a17;padding-bottom:6px}
+.colhead small{display:block;font-weight:400;color:#6b665d;font-size:13px;margin-top:2px}
+.rowlabel{font:600 15px/1.3 Inter;color:#1b1a17;margin:6px 0 10px;display:flex;align-items:center;gap:10px}
+.rowlabel i{font-style:normal;background:#1b1a17;color:#fff;border-radius:99px;padding:2px 10px;font-size:13px}
+.cap{font:500 13px/1.3 Inter;color:#55514a;margin-top:10px;text-align:center}
+
+/* telefoon */
+.phone{width:390px;height:812px;border-radius:48px;border:10px solid #0a0a0a;overflow:hidden;position:relative;background:var(--bg);color:var(--text);box-shadow:0 26px 50px rgba(0,0,0,.28);font-family:Inter}
+.notch{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:104px;height:28px;border-radius:20px;background:#000;z-index:9}
+.status{height:46px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 30px 4px;font-size:14px;font-weight:600;position:relative;z-index:8}
+.head{font-family:var(--head)}
+.serif{--head:'Fraunces',Georgia,serif;--headw:600;--headtrack:-.01em}
+.sans{--head:Inter,system-ui,sans-serif;--headw:700;--headtrack:-.02em}
+.lux{--bg:#120e0a;--bg2:#1b1510;--surface:#211911;--line:rgba(240,215,180,.15);--text:#f5ecdf;--text2:#cdbda6;--accent:#d9a65a;--on:#1a1108;--ring:rgba(255,255,255,.13);--warn:#e2b04d;--ok:#8fcf9d}
+.org{--bg:#f4efe4;--bg2:#ece6d6;--surface:#fcfaf4;--line:#e0d9c7;--text:#1d261c;--text2:#515c4e;--accent:#3f6b3c;--on:#ffffff;--ring:#e2dccb;--warn:#8a5a00;--ok:#2f6b3f}
+.min{--bg:#ffffff;--bg2:#f5f5f4;--surface:#ffffff;--line:#e6e6e4;--text:#0f0f0f;--text2:#575755;--accent:#111111;--on:#ffffff;--ring:#ecebe8;--warn:#8a5a00;--ok:#2f6b3f;--spot:#a4552a}
+.screen{position:absolute;inset:46px 0 0 0;display:flex;flex-direction:column}
+.pad{padding:0 20px}
+.eyebrow{font:600 12px/1 Inter;letter-spacing:.09em;text-transform:uppercase;color:var(--text2)}
+h1.t{font:var(--headw) 30px/1.1 var(--head);letter-spacing:var(--headtrack);color:var(--text)}
+h2.t{font:var(--headw) 21px/1.15 var(--head);letter-spacing:var(--headtrack)}
+.summary{display:flex;align-items:center;gap:10px;padding:8px 12px 8px 8px;border:1px solid var(--line);background:var(--surface);border-radius:16px;margin:10px 20px 12px}
+.summary .th{width:36px;height:36px;border-radius:10px;overflow:hidden;flex:none;background:var(--bg2)}
+.summary .th svg,.summary .th img{width:100%;height:100%;object-fit:cover;display:block}
+.summary b{font:600 14px/1.2 Inter;display:block}
+.summary small{font:400 12px/1.2 Inter;color:var(--text2)}
+.summary .edit{margin-left:auto;font:600 13px Inter;color:var(--accent)}
+.lux .summary .edit{color:var(--accent)}
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 20px}
+.num{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:10px 10px 9px}
+.num b{display:block;font:700 22px/1.05 Inter;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.num small{font:400 11px/1.2 Inter;color:var(--text2)}
+.min .num{border:0;border-top:1px solid var(--line);border-radius:0;padding:10px 0 4px;background:transparent}
+.nums.big2{grid-template-columns:1fr 1fr;gap:8px}.nums.big2 .num b{font-size:28px}.nums.big2 .num{padding:10px 14px}.why{margin:10px 22px 0;font:400 13px/1.35 Inter;color:var(--text2)}
+.sched{margin:12px 20px 0;font-variant-numeric:tabular-nums}
+.sched div{display:flex;gap:12px;padding:7px 2px;border-bottom:1px solid var(--line);font-size:14px;color:var(--text2)}
+.sched div b{color:var(--text);font-weight:600;width:44px}
+.sched div span:last-child{margin-left:auto;color:var(--text)}
+.startbar{position:absolute;left:0;right:0;bottom:64px;padding:10px 20px 10px;background:linear-gradient(to top,var(--bg) 70%,transparent)}
+.btn{display:flex;align-items:center;justify-content:center;height:56px;border-radius:16px;background:var(--accent);color:var(--on);font:700 17px Inter}
+.min .btn{border-radius:14px}
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:64px;border-top:1px solid var(--line);background:var(--bg);display:flex;padding-bottom:6px}
+.tabbar span{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:500 11px Inter;color:var(--text2)}
+.tabbar span.on{color:var(--accent);font-weight:700}
+.min .tabbar span.on{color:var(--text)}
+.tabbar svg{width:22px;height:22px}
+.hero{position:relative;margin:0 20px 10px;border-radius:22px;overflow:hidden;height:150px;background:#000}
+.hero img{width:100%;height:100%;object-fit:cover;display:block}
+.hero:after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(10,6,3,.86) 0%,rgba(10,6,3,.55) 42%,rgba(10,6,3,.05) 80%)}
+.hero .tx{position:absolute;left:16px;right:16px;bottom:13px;z-index:2;color:#f7efe3}
+.hero .tx small{font:500 12px Inter;color:#e3d4bd;letter-spacing:.06em;text-transform:uppercase}
+.hero .tx h2{font:var(--headw) 26px/1.1 var(--head);letter-spacing:var(--headtrack)}
+.range{margin:0 20px 10px;padding:12px 14px;border:1px solid var(--line);background:var(--surface);border-radius:16px}
+.range .r1{display:flex;justify-content:space-between;font:600 13px Inter}
+.range .ok{color:var(--ok)}
+.bar{height:8px;border-radius:99px;background:var(--ring);margin-top:9px;position:relative}
+.bar i{position:absolute;left:34%;width:34%;top:0;bottom:0;border-radius:99px;background:var(--accent);opacity:.9}
+.bar b{position:absolute;left:52%;top:-4px;width:3px;height:16px;border-radius:2px;background:var(--text)}
+.org .photo,.org .hero2{border-radius:24px}
+.hero2{margin:0 20px 10px;height:112px;border-radius:24px;overflow:hidden;position:relative;background:#cfc6b0}
+.hero2 img{width:100%;height:100%;object-fit:cover;object-position:50% 40%;display:block;filter:saturate(.9)}
+.big{font:700 72px/1 Inter;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.totaal{font:500 12px Inter;letter-spacing:.09em;text-transform:uppercase;color:var(--text2);margin-top:2px}
+.ringwrap{display:flex;gap:14px;align-items:center;margin:12px 20px 6px;padding:14px;border:2px solid var(--accent);border-radius:20px;background:var(--surface)}
+.min .ringwrap{border:1px solid var(--line);border-radius:0;border-left:0;border-right:0;background:transparent;padding:16px 0}
+.ring{position:relative;width:148px;height:148px;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .tr{fill:none;stroke:var(--ring);stroke-width:9}
+.ring .pr{fill:none;stroke:var(--spot,var(--accent));stroke-width:9;stroke-linecap:round}
+.ring span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 34px Inter;font-variant-numeric:tabular-nums}
+.ringwrap h2{font:var(--headw) 26px/1.15 var(--head);letter-spacing:var(--headtrack);margin-bottom:4px}
+.ringwrap p{font:400 15px/1.4 Inter;color:var(--text2)}
+.next{margin:8px 22px 10px;font:500 15px Inter;color:var(--text2)}
+.steps{margin:0 20px;font-variant-numeric:tabular-nums}
+.steps div{display:flex;gap:14px;padding:10px 12px;border-radius:12px;font-size:15.5px;color:var(--text2)}
+.steps div.go{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--text);font-weight:600}
+.btnrow{position:absolute;left:20px;right:20px;bottom:20px}
+.btn2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.btn2 div{height:48px;border:1px solid var(--line);border-radius:14px;display:flex;align-items:center;justify-content:center;font:600 15px Inter;background:var(--surface)}
+
+/* zakken */
+.stack{position:relative;margin:8px 20px 0;height:330px}
+.card{position:absolute;left:0;right:0;border-radius:26px;overflow:hidden;border:1px solid var(--line)}
+.card.c3{top:0;transform:scale(.88);opacity:.55;height:300px;transform-origin:50% 0}
+.card.c2{top:20px;transform:scale(.94);opacity:.8;height:300px;transform-origin:50% 0}
+.card.c1{top:44px;height:288px;box-shadow:0 18px 30px rgba(0,0,0,.25)}
+.card .bagbg{height:176px;display:flex;align-items:center;justify-content:center}
+.card .bagbg svg{height:150px}
+.card .info{padding:12px 16px;background:var(--surface);height:112px}
+.card .info h2{font:var(--headw) 22px/1.1 var(--head);letter-spacing:var(--headtrack)}
+.card .info p{font:400 13px/1.35 Inter;color:var(--text2);margin-top:3px}
+.chip{display:inline-flex;align-items:center;gap:5px;font:600 12px Inter;padding:4px 10px;border-radius:99px;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--text);margin:8px 6px 0 0}
+.row{display:flex;gap:12px;align-items:center;margin:0 20px 10px;padding:10px;border:1px solid var(--line);background:var(--surface);border-radius:16px}
+.row .th{width:46px;height:46px;border-radius:12px;overflow:hidden;flex:none}
+.row b{display:block;font:600 15px Inter}.row small{font:400 12.5px Inter;color:var(--text2)}
+.row .st{margin-left:auto;font:600 13px Inter;color:var(--accent)}
+.min .row .st{color:var(--text)}
+.dhero{height:268px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.lux .dhero ~ *{}
+.dhero svg.bag{height:210px;position:relative;z-index:1}
+.dhero .back,.dhero .fav{position:absolute;top:54px;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:2;color:#fff;font-size:18px}
+.dhero .back{left:16px}.dhero .fav{right:16px}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;margin:10px 20px 0}
+.facts div{padding:8px 0;border-bottom:1px solid var(--line)}
+.facts small{display:block;font:500 11px Inter;letter-spacing:.07em;text-transform:uppercase;color:var(--text2)}
+.facts b{font:600 15px Inter}
+.fit{margin:12px 20px 0;display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+.fit .v{font:700 26px Inter;color:var(--ok)}
+.fit p{font:400 13px/1.3 Inter;color:var(--text2)}
+.spark{margin:10px 20px 0;height:84px;width:350px}
+.startbar.low{bottom:0;padding-bottom:22px}
+</style></head><body><style>.eis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:28px;width:1700px}.k{background:#fffdf8;border:1px solid #d9d2c2;border-radius:20px;padding:26px 28px}.k h2{font:700 22px Inter;margin-bottom:12px}.k h3{font:700 15px Inter;margin:14px 0 6px;color:#3f3a31}.k li{font:400 15.5px/1.45 Inter;margin:0 0 7px 18px;color:#2b2822}.k li b{font-weight:600}.tag{display:inline-block;font:600 12px Inter;padding:2px 9px;border-radius:99px;margin-right:6px}.ja{background:#dcebd9;color:#245a2a}.nee{background:#f2d9d4;color:#8a2a1f}.deels{background:#f1e5c4;color:#7a5600}.bron{font:400 13px/1.4 Inter;color:#6b665d;margin-top:14px}</style><div class="board"><h1>Ontwerpeisen voor Brew Console · ronde 3</h1><p class="lede">Wat 2026 vraagt, wat standhoudt en waar elk ontwerp aan moet voldoen. Eerlijk over de bronnen: veel trendartikelen zijn vooral meningen van bureaus; de toegankelijkheidscijfers komen uit de richtlijnen zelf.</p>
+  <div class="eis">
+   <div class="k"><h2>Wat 2026 vraagt (en houdt stand)</h2>
+    <ul><li><span class="tag ja">past</span><b>Eenvoud en snelheid.</b> Alle bronnen noemen het; weinig harde cijfers.</li>
+    <li><span class="tag ja">past</span><b>Duim-navigatie</b> (menu onderaan) en gebaren.</li>
+    <li><span class="tag ja">past</span><b>Licht én donker</b>, volgt het toestel.</li>
+    <li><span class="tag ja">past</span><b>Haptiek en geluid</b> bij stappen. Trilling hebben we, geluid nog niet.</li>
+    <li><span class="tag deels">deels</span><b>Expressief ontwerp</b> (Material 3 Expressive): grotere cijfers, kleur en vorm voor hiërarchie. Google meldt sneller vinden van hoofdzaken, maar waarschuwt zelf dat helderheid voorgaat.</li>
+    <li><span class="tag nee">liever niet</span><b>Doorschijnend glas over inhoud</b> (iOS 26 Liquid Glass): kritiek op tekstcontrast over wisselende achtergronden; Apple voegde in 26.1 een 'Tinted'-optie toe om het af te zwakken.</li>
+    <li><span class="tag nee">nee</span><b>AI-eerst</b>: past niet bij jouw kostenbesluit.</li></ul>
+    <p class="bron">Bronnen: trendartikelen van bureaus (mening), MacRumors en Infinum over Liquid Glass, Google-onderzoek over Material 3 Expressive (via secundaire berichten).</p></div>
+   <div class="k"><h2>Eisen aan elk ontwerp (meetbaar)</h2>
+    <h3>Toegankelijkheid</h3><ul><li>Tekstcontrast ≥ 4,5 : 1, bedieningselementen ≥ 3 : 1, in licht én donker. <b>Getest met axe.</b></li>
+    <li>Tikvlakken ≥ 48 px (WCAG 2.2 vraagt minimaal 24 px).</li>
+    <li>Ondersteunt tekstvergroting tot 200 % en 'minder beweging'.</li>
+    <li>WCAG 2.1 AA is nu de wettelijke maat (Europese toegankelijkheidswet); 2.2 AA is ons doel.</li></ul>
+    <h3>Leesbaarheid tijdens het zetten</h3><ul><li>Tijd, doel en actie zijn op een armlengte leesbaar: cijfers ≥ 22 px, ronde getallen.</li>
+    <li>Tekst over een foto krijgt altijd een donkere verloop-laag (≥ 55 %), nooit blur.</li>
+    <li>Geen informatie alleen via kleur.</li></ul>
+    <h3>Techniek</h3><ul><li>Werkt offline. Geen laadsprongen.</li><li>Het koppenlettertype laadt alleen voor koppen (subset), met terugval op Georgia.</li></ul></div>
+   <div class="k"><h2>Foto per zak</h2>
+    <ul><li><b>Optioneel.</b> Zonder foto staat er een getekende zak met de naam.</li>
+    <li>De foto blijft <b>op het toestel</b> (IndexedDB) en wordt verkleind: lange zijde 1080 px, WebP, ≲ 150 kB.</li>
+    <li>Foto's gaan <b>niet mee in de synchronisatieblokken</b> (limiet ≈ 900 kB per blok), of alleen als kleine miniatuur.</li>
+    <li>Camera of fotobibliotheek; foto's verlaten je telefoon niet (zoals BeanBench belooft).</li>
+    <li>Verwijderen met één tik; ook in de back-up optioneel.</li></ul>
+    <h3>Wat ik niet toepas</h3><ul><li>Glas met blur, 3D-draaiing, vloeiende achtergrondanimaties.</li><li>Foto's van anderen: alleen jouw eigen beeld en de hero-foto's die al in de repo staan.</li></ul>
+    <p class="bron">Hero-foto's: de bestaande beelden van de V60 en de Chemex uit de oude app.</p></div>
+  </div></div></body></html>
