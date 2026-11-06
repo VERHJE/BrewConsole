@@ -1363,7 +1363,13 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 ### Opnieuw kopen (6 nov 2026) · contract e3-contract-1.2
 
 - **Besluit:** het winkeladres hoort bij de zak en reist dus mee in logboek, back-up en synchronisatie. `BeanFields.shopUrl` is een optioneel veld (geen breuk: bestaande zakken en code blijven werken). `engine3/src/shopurl.ts`: alleen `http(s)`, hoogstens 500 tekens; `normaliseShopUrl('brander.nl/zak')` → `https://brander.nl/zak`; `javascript:`, `data:` en `ftp:` worden geweigerd, ook in `validateEvent` (bij binnenkomst via sync of import).
-- **Formulier:** veld 'Waar koop je hem'; een QR-code met een webadres vult het veld (bron 'QR'). Leeg laten wist een eerder adres. Let op: dat geldt alleen voor dit veld; andere velden die je leegmaakt houden bij opslaan hun oude waarde (bestaand gedrag van het samenvoegen, apart te beslissen).
+- **Formulier:** veld 'Waar koop je hem'; een QR-code met een webadres vult het veld (bron 'QR'). Leeg laten wist een eerder adres.
 - **Voorraad:** `stockView()`: zakgrootte min de dosis van alle afgeronde koppen; 'ongeveer N koppen' met de laatste dosis; minder dan twee koppen = 'Bijna op'. Een schatting, geen weegschaal.
 - **Zakdetail:** 'Voorraad nog ± x g'; knop 'Opnieuw kopen' opent het adres in een nieuw tabblad (`noopener noreferrer`), opvallend (primair) bij 'Bijna op'; bijna op zonder adres geeft een hint naar Bewerken.
 - **Tests:** engine 172 (winkeladres), app3 94 (formulier, voorraad, scherm met formulierfout en wissen).
+
+### Velden leegmaken (6 nov 2026)
+
+- **Probleem:** een zak bewerken en een veld leegmaken liet de oude waarde staan, omdat opslaan nieuwe velden over de oude heen legt en een leeg veld niet werd meegestuurd.
+- **Herstel:** `validateForm` stuurt nu voor elk veld van het formulier een expliciete leegwaarde mee (tekstvelden, branding, datum, zakgrootte en winkeladres `null`; proces 'onbekend'; notities leeg), met bron 'jij'. Alleen de velden in het formulier; wat de formulier niet toont (producent, hoogte, oogstjaar …) blijft zoals het was. De naam blijft verplicht.
+- **Test:** zak met alle velden → leegmaken → opnieuw lezen: alles leeg, land en naam blijven. app3: 95 tests groen.

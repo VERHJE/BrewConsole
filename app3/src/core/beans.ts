@@ -127,6 +127,7 @@ export function validateForm(form: BeanForm, env: Env): FormResult | FormProblem
   const text = (k: 'name' | 'roaster' | 'country' | 'region' | 'farm' | 'variety'): void => {
     const t = v[k].trim();
     if (t) { fields[k] = t.slice(0, 120); sources[k] = src(k); }
+    else if (k !== 'name') { fields[k] = null; sources[k] = 'user'; } // leeg laten wist een eerdere waarde
   };
   if (!v.name.trim()) problems.name = 'Geef de zak een naam.';
   (['name', 'roaster', 'country', 'region', 'farm', 'variety'] as const).forEach(text);
@@ -136,30 +137,31 @@ export function validateForm(form: BeanForm, env: Env): FormResult | FormProblem
     const same = form.scanProcess && form.scanProcess.base === base;
     fields.process = same ? form.scanProcess! : { base, fermentation: [], experimental: false, decaf: null, ambiguousTerm: null };
     sources.process = src('process');
-  }
+  } else { fields.process = { base: 'unknown', fermentation: [], experimental: false, decaf: null, ambiguousTerm: null }; sources.process = 'user'; }
   if (v.roastLevel) { fields.roastLevel = v.roastLevel as RoastLevel; sources.roastLevel = src('roastLevel'); }
+  else { fields.roastLevel = null; sources.roastLevel = 'user'; }
   if (v.roastDate) {
     try {
       const d = isoDate(v.roastDate);
       if (Date.parse(d) > env.now() + 86_400_000) problems.roastDate = 'Deze datum ligt in de toekomst.';
       else { fields.roastDate = d; sources.roastDate = src('roastDate'); }
     } catch { problems.roastDate = 'Gebruik een datum als 2026-11-05.'; }
-  }
+  } else { fields.roastDate = null; sources.roastDate = 'user'; }
   if (v.bagSizeG.trim()) {
     const n = Number(v.bagSizeG.replace(',', '.'));
     if (!Number.isFinite(n) || n < 20 || n > 5000) problems.bagSizeG = 'Geef een gewicht tussen 20 en 5000 gram.';
     else { fields.bagSizeG = g(Math.round(n)); sources.bagSizeG = src('bagSizeG'); }
-  }
+  } else { fields.bagSizeG = null; sources.bagSizeG = 'user'; }
   if (v.shopUrl.trim()) {
     const u = normaliseShopUrl(v.shopUrl);
     if (!u) problems.shopUrl = 'Geef een webadres, bijvoorbeeld brander.nl/zak.';
     else { fields.shopUrl = u; sources.shopUrl = src('shopUrl'); }
-  } else fields.shopUrl = null; // leeg laten wist een eerder adres (de rest van het veld blijft bij het oude)
+  } else { fields.shopUrl = null; sources.shopUrl = 'user'; }
   if (v.notes.trim()) {
     const unchanged = form.scanNotes && form.scanNotes.raw.join(', ') === v.notes.trim();
     fields.notes = unchanged ? form.scanNotes! : (scanBeanText(`Notes: ${v.notes}`, { source: 'paste', nowMs: env.now() }).fields.notes ?? { raw: [v.notes.trim()], tags: [], unmapped: [v.notes.trim()] });
     sources.notes = src('notes');
-  }
+  } else { fields.notes = { raw: [], tags: [], unmapped: [] }; sources.notes = 'user'; }
   return Object.keys(problems).length ? { ok: false, problems } : { ok: true, fields, sources };
 }
 
