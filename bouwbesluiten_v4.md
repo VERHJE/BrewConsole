@@ -1301,3 +1301,11 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 
 - `netlify.toml` (repo-root): bouwcommando `npm run build`, publicatiemap `dist` (oude app op `/`, nieuwe app op `/app3/`), Node 22, geen Playwright-browser, en `no-cache` voor beide service workers en `app3/index.html` zodat een nieuwe versie niet blijft hangen.
 - De koppeling Netlify ↔ GitHub zelf wordt in het Netlify-dashboard gelegd (Add new site → Import from Git); dat kan niet vanuit de repo.
+
+### Frontend · instellingen voor water en molen (6 nov 2026)
+
+- **Water** (`core/settings.ts`, `Instellingen.tsx`): hardheid (mg/L CaCO3), alkaliniteit (CaCO3 of HCO3, ×0,82 omgerekend), verdunning kraan:demi (1:0, 2:1, 1:1; demiwater telt als 0) en de snelkeuzes uit de oude app (R-12: Dunea, Waternet, PWN Andijk met hun bron, plus de SCA-richtwaarde 68/40). Het scherm toont wat er na verdunning in de kop zit en zet dat tegen de SCA-richtwaarden (hardheid 50–175, alkaliniteit 40–70 mg/L). Onmogelijke waarden (buiten 0–600) blokkeren het opslaan.
+- **Water stuurt het recept niet** — zelfde besluit als in de oude app (er is geen gevalideerde omrekening naar temperatuur of maling). Een test eist hetzelfde `plan()`-advies met en zonder water-, molen- en voorkeursinstellingen.
+- **Molen:** 'nulpunt zojuist gecontroleerd' (`zeroCheckedAt`), met uitleg en hoeveel dagen geleden. Het modelnummer staat vast (Timemore C3S Pro).
+- **Voorkeuren:** `brightLighter` aan zet na een A-tegen-B-keuze de vraag 'welke was helderder?' erbij (`pair.trial.brighter`). Standaard uit. **Niet in een browser getest** (dat vraagt twee volledige proefkoppen); de aan/uit-schakelaar zelf wel.
+- Alles zijn `setting`-gebeurtenissen: de laatste wint, en ze gaan mee met back-up en synchronisatie.

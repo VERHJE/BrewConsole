@@ -10,6 +10,7 @@ import {
   actualsProblems, contextFor, draftFromCup, stepsFor, tastingEvents, type StepId, type TastingContext, type TastingDraft
 } from '../../core/tasting.ts';
 import { pairTrialEvent, pendingTrialFor } from '../../core/trials.ts';
+import { settingsOf } from '../../core/settings.ts';
 import type { PairArm } from '../../../../engine3/src/index.ts';
 import { useApp, useSnapshot } from '../store-context.tsx';
 
@@ -92,6 +93,7 @@ export function Proeven({ brewId }: { brewId: string }): JSX.Element {
   const [i, setI] = useState(0);
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState('');
+  const [pref, setPref] = useState<PairArm | 'none' | null>(null);
   if (!ctx) return <section><h1>Zetsel niet gevonden</h1><a class="btn" href={href('zetten')}>Terug</a></section>;
   const d = draft ?? draftFromCup(ctx.cup);
   const set = (p: Partial<TastingDraft>): void => setDraft({ ...d, ...p });
@@ -107,17 +109,29 @@ export function Proeven({ brewId }: { brewId: string }): JSX.Element {
   };
 
   const pending = saved ? pendingTrialFor(state, brewId) : null;
-  const choose = async (preferred: PairArm | 'none'): Promise<void> => {
+  const lighter = settingsOf(state).brightLighter;
+  const choose = async (preferred: PairArm | 'none', brighter: PairArm | 'none' | null): Promise<void> => {
     if (!pending) return;
-    try { await store.append([pairTrialEvent(env, pending, preferred, null)]); } catch (e) { setErr(`Opslaan is mislukt: ${(e as Error).message}`); }
+    try { await store.append([pairTrialEvent(env, pending, preferred, brighter)]); } catch (e) { setErr(`Opslaan is mislukt: ${(e as Error).message}`); }
   };
+  if (saved && pending && pref !== null) {
+    return (<section><h1>Welke was helderder?</h1>
+      <p class="muted">Helderder is frisser en levendiger, niet per se lekkerder.</p>
+      <div class="choices">
+        <button class="choice" type="button" onClick={() => choose(pref, 'control')}>Kop 1 · {techniqueName(pending.control.technique)}</button>
+        <button class="choice" type="button" onClick={() => choose(pref, 'variant')}>Kop 2 · {techniqueName(pending.variant.technique)}</button>
+        <button class="choice" type="button" onClick={() => choose(pref, 'none')}>Geen verschil</button>
+      </div>
+      {err && <p class="banner warn" role="alert">{err}</p>}</section>);
+  }
   if (saved && pending) {
+    const pick = (v: PairArm | 'none'): void => { if (lighter) setPref(v); else void choose(v, null); };
     return (<section><h1>Welke was beter?</h1>
       <p class="muted">Je hebt beide koppen van de proef geproefd. Welke vond je lekkerder?</p>
       <div class="choices">
-        <button class="choice" type="button" onClick={() => choose('control')}>Kop 1 · {techniqueName(pending.control.technique)}</button>
-        <button class="choice" type="button" onClick={() => choose('variant')}>Kop 2 · {techniqueName(pending.variant.technique)}</button>
-        <button class="choice" type="button" onClick={() => choose('none')}>Geen verschil</button>
+        <button class="choice" type="button" onClick={() => pick('control')}>Kop 1 · {techniqueName(pending.control.technique)}</button>
+        <button class="choice" type="button" onClick={() => pick('variant')}>Kop 2 · {techniqueName(pending.variant.technique)}</button>
+        <button class="choice" type="button" onClick={() => pick('none')}>Geen verschil</button>
       </div>
       {err && <p class="banner warn" role="alert">{err}</p>}</section>);
   }

@@ -111,5 +111,8 @@ De nieuwe app staat op `<adres>/app3/`. De oude app op `/` is ongewijzigd.
 - Verloopgrafieken (sterkte en tijd per zak) en `beanFit` in het zakdetail.
 - Foto-OCR van een zak in de browser (de AI-route blijft uit).
 - Automatisch synchroniseren op de achtergrond en een rollende back-up.
-- Water- en molen-instellingen als scherm (de `setting`-gebeurtenissen bestaan al in het contract).
 - Gesproken aanwijzingen en een melding op de volgende giet buiten de app (alleen scherm en trilling).
+
+## Instellingen (6 nov 2026)
+
+Meer → **Water** (hardheid, alkaliniteit in CaCO3 of HCO3, verdunning met demiwater, snelkeuzes Dunea/Waternet/PWN/SCA met bron), Meer → **Molen** (nulpunt gecontroleerd) en Meer → **Voorkeuren** (bij een proef A tegen B ook vragen welke helderder was). Alles zijn `setting`-gebeurtenissen en gaat dus mee met back-up en synchronisatie. Water en molen sturen het recept niet (een test eist hetzelfde `plan()`-advies met en zonder).
