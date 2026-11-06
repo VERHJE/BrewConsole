@@ -19,6 +19,7 @@ test('telefoon: eerste keer staat het formulier open; daarna ingeklapt met samen
   await page.waitForSelector('.numbers');
   assert.equal(await page.locator('#zform').isVisible(), true, 'nog nooit gebruikt: open');
   await page.selectOption('select[name=bean]', { label: SEED_BEAN });
+  await page.waitForFunction(() => (localStorage.getItem('brewconsole.zetten') || '').includes('"beanId":"'));
   await page.reload();
   await page.waitForSelector('.numbers');
   assert.equal(await page.locator('#zform').isVisible(), false, 'eerder gebruikt: dicht');
@@ -40,6 +41,7 @@ test('telefoon: de startknop staat zonder scrollen in beeld, boven de tabbalk', 
   await importLog(page, app.base, json);
   await page.goto(app.base + '#/zetten');
   await page.selectOption('select[name=bean]', { label: SEED_BEAN });
+  await page.waitForFunction(() => (localStorage.getItem('brewconsole.zetten') || '').includes('"beanId":"'));
   await page.reload();
   await page.waitForSelector('.startbar .btn');
   const btn = await page.locator('.startbar .btn').boundingBox();

@@ -4,6 +4,8 @@ import type { Route } from '../../core/router.ts';
 import { href } from '../../core/router.ts';
 import { CATEGORIES } from '../../core/tasting.ts';
 import { STATUS_TEXT, grindView, profileOf } from '../../core/insights.ts';
+import { useEffect, useState } from 'preact/hooks';
+import { indexedDbSyncStorage } from '../../core/sync.ts';
 import { useSnapshot } from '../store-context.tsx';
 import { Gegevens } from './Gegevens.tsx';
 import { Sync } from './Sync.tsx';
@@ -77,7 +79,20 @@ function Over(): JSX.Element {
   );
 }
 
+function useSyncLine(): string {
+  const [line, setLine] = useState('Twee toestellen gelijk houden');
+  useEffect(() => { void (async () => {
+    try {
+      const st = await indexedDbSyncStorage();
+      const v = st ? await st.load() : null;
+      if (v) setLine(v.settings.lastSyncAt ? `Verbonden · laatst ${new Date(v.settings.lastSyncAt).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : 'Verbonden · nog niet gesynchroniseerd');
+    } catch { /* onbekend: standaardtekst */ }
+  })(); }, []);
+  return line;
+}
+
 export function Meer({ route }: { route: Route }): JSX.Element {
+  const syncLine = useSyncLine();
   switch (route.parts[1]) {
     case 'profiel': return <Profiel />;
     case 'molen': return <Molen />;
@@ -96,7 +111,7 @@ export function Meer({ route }: { route: Route }): JSX.Element {
             <li><a class="item" href={href('meer', 'water')}><strong>Water</strong><small>Hardheid, alkaliniteit en verdunning</small></a></li>
             <li><a class="item" href={href('meer', 'voorkeuren')}><strong>Voorkeuren</strong><small>Hoe proeven en vragen werken</small></a></li>
             <li><a class="item" href={href('meer', 'gegevens')}><strong>Gegevens</strong><small>Back-up maken en terugzetten</small></a></li>
-            <li><a class="item" href={href('meer', 'sync')}><strong>Synchronisatie</strong><small>Twee toestellen gelijk houden</small></a></li>
+            <li><a class="item" href={href('meer', 'sync')}><strong>Synchronisatie</strong><small>{syncLine}</small></a></li>
             <li><a class="item" href={href('meer', 'over')}><strong>Over</strong><small>Versie en privacy</small></a></li>
           </ul>
         </section>

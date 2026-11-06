@@ -16,9 +16,14 @@ await build({
   bundle: true, format: 'esm', target: 'es2022', platform: 'browser', minify: true, legalComments: 'none',
   jsx: 'automatic', jsxImportSource: 'preact', logLevel: 'warning'
 });
-const css = ['tokens.css', 'base.css'].map(f => fs.readFileSync(path.join(ROOT, 'app3/styles', f), 'utf8')).join('\n');
+const css = ['fonts.css', 'tokens.css', 'base.css'].map(f => fs.readFileSync(path.join(ROOT, 'app3/styles', f), 'utf8')).join('\n');
 fs.writeFileSync(path.join(OUT, 'app.css'), css);
 fs.copyFileSync(path.join(ROOT, 'app3/index.html'), path.join(OUT, 'index.html'));
+// Lettertype voor koppen (OFL-1.1): bestand en licentietekst gaan samen mee.
+const FONT_DIR = path.join(ROOT, 'node_modules/@fontsource-variable/fraunces');
+fs.mkdirSync(path.join(OUT, 'fonts'), { recursive: true });
+fs.copyFileSync(path.join(FONT_DIR, 'files/fraunces-latin-wght-normal.woff2'), path.join(OUT, 'fonts/fraunces-latin-wght-normal.woff2'));
+fs.copyFileSync(path.join(FONT_DIR, 'LICENSE'), path.join(OUT, 'fonts/Fraunces-OFL.txt'));
 fs.copyFileSync(path.join(ROOT, 'app3/manifest.webmanifest'), path.join(OUT, 'manifest.webmanifest'));
 fs.mkdirSync(path.join(OUT, 'icons'), { recursive: true });
 for (const f of fs.readdirSync(path.join(ROOT, 'icons'))) fs.copyFileSync(path.join(ROOT, 'icons', f), path.join(OUT, 'icons', f));

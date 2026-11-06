@@ -174,3 +174,35 @@ export function formFromBean(state: EngineState, beanId: string): BeanForm | nul
   const f = formFromScan({ fields: b.fields, sources: b.sources, flags: { countryFuzzy: false, regionFuzzy: false, varietyFuzzy: false, webshop: false, ambiguousTerm: null }, found: undefined as never });
   return { ...f, warnings: [] };
 }
+
+// ───────────── detail (redactionele weergave) ─────────────
+
+export interface BeanDetail {
+  readonly id: string;
+  readonly name: string;
+  readonly eyebrow: string;
+  readonly roaster: string | null;
+  readonly facts: ReadonlyArray<{ label: string; value: string }>;
+  readonly tags: readonly string[];
+  readonly roastDate: string | null;
+  readonly cups: number;
+}
+
+export function beanDetail(state: EngineState, beanId: string): BeanDetail | null {
+  const b = factsOf(state).beans.get(beanId);
+  if (!b || b.archived) return null;
+  const f = b.fields;
+  const alt = f.altitude ? (f.altitude.minM === f.altitude.maxM ? `${f.altitude.minM} m` : `${f.altitude.minM}–${f.altitude.maxM} m`) : null;
+  const process = f.process && f.process.base !== 'unknown' ? PROCESS_LABEL[f.process.base] : null;
+  const pairs: Array<[string, string | null | undefined]> = [
+    ['Land', f.country], ['Regio', f.region], ['Boerderij', f.farm], ['Hoogte', alt], ['Variëteit', f.variety], ['Oogst', f.harvestYear ? String(f.harvestYear) : null]
+  ];
+  const facts: Array<{ label: string; value: string }> = [];
+  for (const [label, value] of pairs) if (value) facts.push({ label, value });
+  return {
+    id: b.beanId, name: f.name ?? '(zonder naam)',
+    eyebrow: [process, f.roastLevel ? ROAST_LABEL[f.roastLevel] : null].filter(Boolean).join(' · '),
+    roaster: f.roaster ?? null, facts,
+    tags: [...(f.notes?.tags ?? []), ...(f.notes?.unmapped ?? [])], roastDate: f.roastDate ?? null, cups: b.brewIds.length
+  };
+}
