@@ -134,3 +134,17 @@ Voortgekomen uit een eigen controle van de schermen (telefoon 390 px, laptop 128
 - **Logica** (`core/timer.ts` → `stepGuide`): puur en getest (klaar, giet met aftelling en 'hierna', wachten op doorlopen, laatste giet, klaar).
 - **Gevonden door de toegankelijkheidstest:** het grijs van kleine tekst (`--text-3`) was in het lichte thema te zwak; donkerder gemaakt. Gedane stappen hebben geen doorzichtigheid meer.
 - **Niet gedaan:** gesproken aanwijzingen en geluid bij een nieuwe stap (nu trilling en scherm).
+
+## Ontwerpinspiratie voor ronde 3 (6 nov 2026, nog niet toegepast)
+
+Bron: Stuurlui, '10 mooie websites ter inspiratie' (gelezen). Het tweede artikel (Android Authority, 'best-looking Android app designs 2026') gaf bij ophalen 403 en is **niet gelezen**; de inhoud moet Jelle aanleveren (tekst plakken of pdf).
+
+Het artikel gaat over **websites met veel beeld**, niet over gebruiksapps. Wat daarvan bruikbaar is voor Brew Console:
+- **Rust en witruimte**; een ingehouden palet zodat de inhoud opvalt (Uit Pauline's Keuken). Past bij onze warme neutrale basis met één koperkleur.
+- **Herkenbaar lettertype** als merk (The New Yorker, Pauline's Keuken); serif met schreefloos als paar (Stock Dutch Design). Nu gebruiken we alleen het systeemlettertype; een koppen-lettertype is een keuze voor ronde 3.
+- **Kookmodus** met scherm aan (Pauline's Keuken): hebben we al (wake lock tijdens het zetsel).
+- **Menu onderaan op mobiel** voor de duim (The White House): hebben we al (tabbalk).
+- **Subtiele beweging**, niet storend of traag (Douwe Egberts, Stock Dutch Design): wij beperken beweging tot de ring, het verloop en tikfeedback, en respecteren 'minder beweging'.
+- **Functie boven vorm** (het artikel zelf): een timer moet in één oogopslag leesbaar blijven; contrast en grote getallen gaan voor sfeer.
+
+Niet bruikbaar zonder beeldmateriaal: foto-gedreven indeling, parallax, volle-breedte-foto's. Een optie voor later is een foto per zak (BeanBench en Timer.Coffee hebben die), maar dat staat niet op het plan.
