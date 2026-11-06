@@ -7,6 +7,7 @@ import { STATUS_TEXT, grindView, profileOf } from '../../core/insights.ts';
 import { useSnapshot } from '../store-context.tsx';
 import { Gegevens } from './Gegevens.tsx';
 import { Sync } from './Sync.tsx';
+import { Voorkeuren, Water, ZeroCheck } from './Instellingen.tsx';
 
 const pct = (n: number | null): string => (n === null ? '–' : `${Math.round(n * 100)} %`);
 const catName = (k: string): string => CATEGORIES.find(c => c.key === k)?.name ?? k;
@@ -60,6 +61,7 @@ function Molen(): JSX.Element {
         <dt>Bron</dt><dd>{g.learned ? 'uit jouw metingen' : 'startwaarde (nog niet uit jouw metingen)'}</dd>
         <dt>Bruikbare metingen</dt><dd>{g.observations}</dd>
       </dl>
+      <ZeroCheck />
       {!g.learned && <p class="banner">Tik bij elke giet op “Erdoor” en zet een paar koppen met 3 klikken verschil; dan leert de molen jouw waarde.</p>}
     </section>
   );
@@ -82,6 +84,8 @@ export function Meer({ route }: { route: Route }): JSX.Element {
     case 'over': return <Over />;
     case 'gegevens': return <Gegevens />;
     case 'sync': return <Sync />;
+    case 'water': return <Water />;
+    case 'voorkeuren': return <Voorkeuren />;
     default:
       return (
         <section>
@@ -89,6 +93,8 @@ export function Meer({ route }: { route: Route }): JSX.Element {
           <ul class="list">
             <li><a class="item" href={href('meer', 'profiel')}><strong>Smaakprofiel</strong><small>Wat je opmerkt en waardeert</small></a></li>
             <li><a class="item" href={href('meer', 'molen')}><strong>Molen</strong><small>Hoe jouw molen reageert</small></a></li>
+            <li><a class="item" href={href('meer', 'water')}><strong>Water</strong><small>Hardheid, alkaliniteit en verdunning</small></a></li>
+            <li><a class="item" href={href('meer', 'voorkeuren')}><strong>Voorkeuren</strong><small>Hoe proeven en vragen werken</small></a></li>
             <li><a class="item" href={href('meer', 'gegevens')}><strong>Gegevens</strong><small>Back-up maken en terugzetten</small></a></li>
             <li><a class="item" href={href('meer', 'sync')}><strong>Synchronisatie</strong><small>Twee toestellen gelijk houden</small></a></li>
             <li><a class="item" href={href('meer', 'over')}><strong>Over</strong><small>Versie en privacy</small></a></li>

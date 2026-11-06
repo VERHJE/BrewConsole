@@ -22,7 +22,7 @@ for (const scheme of ['light', 'dark']) {
     await brewToEnd(page, app.base, 'Axezak'); // laat de pagina op 'Proeven' staan
     const seen = [];
     seen.push(['proeven stap 1', await violations(page)]);
-    for (const [name, hash] of [['zetten', '#/zetten'], ['zakken', '#/zakken'], ['zak toevoegen', '#/zakken/nieuw'], ['logboek', '#/logboek'], ['meer', '#/meer'], ['profiel', '#/meer/profiel'], ['molen', '#/meer/molen'], ['gegevens', '#/meer/gegevens'], ['sync', '#/meer/sync']]) {
+    for (const [name, hash] of [['zetten', '#/zetten'], ['zakken', '#/zakken'], ['zak toevoegen', '#/zakken/nieuw'], ['logboek', '#/logboek'], ['meer', '#/meer'], ['profiel', '#/meer/profiel'], ['molen', '#/meer/molen'], ['gegevens', '#/meer/gegevens'], ['sync', '#/meer/sync'], ['water', '#/meer/water'], ['voorkeuren', '#/meer/voorkeuren']]) {
       await page.goto(app.base + hash);
       await page.waitForSelector('h1');
       seen.push([name, await violations(page)]);
