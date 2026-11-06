@@ -6,7 +6,8 @@ Vastgesteld 6 nov 2026 als voorstel; de keuze ligt bij Jelle. Borden: `docs/engi
 
 - Richtingen uit het sfeerbord: **1 Quiet Luxury** (donker), **3 Organic Light** (licht), **6 Minimal Pro** (licht, alleen typografie), **8 Spatial Depth** (alleen de kaartenstapel voor zakken) en eventueel **10 Editorial Story** (herkomstverhaal van een zak).
 - **Foto per zak: ja.**
-- Beide lettertype-opties moeten zichtbaar zijn: A) serif voor koppen (Fraunces) met schreefloos (Inter) voor getallen en tekst, B) alles schreefloos.
+- **Donker wordt een volwaardig thema naast licht** (6 nov): met eigen keuze in Instellingen (licht, donker, volg toestel) en eigen kleuren, niet alleen een omgekeerd licht thema.
+- Beide lettertype-opties moeten zichtbaar zijn (`bord-4-lettertype.png` zet ze groot naast elkaar): A) serif voor koppen (Fraunces) met schreefloos (Inter) voor getallen en tekst, B) alles schreefloos.
 
 ## Wat 2026 vraagt (en wat standhoudt)
 
@@ -40,4 +41,4 @@ Veel trendartikelen zijn meningen van bureaus; harde cijfers zijn schaars.
 
 1. Eén richting als basis, of de combinatie: 6 voor Zetten en Timer, 3 als licht thema, 1 als donker thema, 8 en 10 voor de zakken.
 2. Serif voor koppen of alles schreefloos.
-3. Of het donkere thema een volwaardig tweede thema wordt naast licht (nu volgt de app het toestel).
+3. ~~Of het donkere thema een volwaardig tweede thema wordt~~ — besloten: ja.

@@ -285,11 +285,39 @@ function eisenBoard() {
   </div></div>`;
 }
 
+
+function lettertypeBoard() {
+  const cell = (dir, type) => `<div class="spec ${dir} ${type}">
+    <div class="eyebrow">Gewassen · Licht gebrand</div>
+    <h1 class="t sp1">Finca La Esperanza</h1>
+    <p class="sp2">Colombia · Huila · 1.800 m</p>
+    <div class="spline"></div>
+    <div class="sprow"><div class="spl">Zetten</div><h2 class="t sp3">Een heldere, zoete kop</h2></div>
+    <div class="sprow"><div class="spl">Timer</div><div><h2 class="t sp4">Giet 2</h2><p class="sp5">68 g tot 117 g, in spiraal. Hierna giet 3 om 1:30.</p></div></div>
+    <div class="sprow"><div class="spl">Zakken</div><h2 class="t sp4">Verloopzak</h2></div>
+    <div class="sprow"><div class="spl">Getallen</div><div class="spn"><b>22 g</b><b>292 g</b><b>92 °C</b><b>klik 22</b></div></div>
+  </div>`;
+  const dirs = [['lux', '1 · Quiet Luxury (donker)'], ['org', '3 · Organic Light (licht)'], ['min', '6 · Minimal Pro (licht)']];
+  const S = `.spec{width:690px;border-radius:26px;padding:34px 38px 30px;background:var(--bg);color:var(--text);border:1px solid rgba(0,0,0,.08)}
+.spec .eyebrow{margin-bottom:12px}.sp1{font-size:48px!important;line-height:1.05!important}.sp2{font:400 17px Inter;color:var(--text2);margin:10px 0 18px}
+.spline{height:1px;background:var(--line);margin-bottom:6px}.sprow{display:flex;gap:22px;align-items:baseline;padding:15px 0;border-bottom:1px solid var(--line)}
+.spl{width:76px;font:600 11px Inter;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);flex:none}
+.sp3{font-size:34px!important;line-height:1.12!important}.sp4{font-size:30px!important;line-height:1.1!important}.sp5{font:400 16px/1.4 Inter;color:var(--text2);margin-top:6px}
+.spn{display:flex;gap:26px;font:700 32px Inter;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.gl{display:grid;gap:30px 48px;grid-template-columns:150px 690px 690px;align-items:start}.gl .rl{font:600 17px/1.3 Inter;color:#1b1a17;padding-top:34px}.gl .rl small{display:block;font:400 13px Inter;color:#6b665d;margin-top:3px}
+.note{display:grid;grid-template-columns:150px 690px 690px;gap:48px;margin-bottom:10px}.note div{font:600 17px/1.35 Inter;color:#1b1a17}.note small{display:block;font:400 14px/1.4 Inter;color:#55514a;margin-top:4px}`;
+  return `<style>${S}</style><div class="board"><h1>Serif of schreefloos: hetzelfde, groot naast elkaar</h1>
+    <p class="lede">Alleen koppen en namen veranderen. Getallen, uitleg en knoppen blijven in beide opties schreefloos (Inter), omdat cijfers bij een keukentimer scherp en gelijk moeten zijn. Kijk vooral naar de hoofdletters, de 'g' en de 'a' in de titels.</p>
+    <div class="note"><span></span><div>A · Serif voor koppen (Fraunces)<small>Warmer en meer 'tijdschrift': klinkt premium en ambachtelijk. De cijfers blijven strak.</small></div><div>B · Alles schreefloos (Inter)<small>Strakker en technischer: één lettertype, sneller te laden, past bij 'instrument'.</small></div></div>
+    <div class="gl">${dirs.map(([d, l]) => `<div class="rl">${l}<small>${d === 'lux' ? 'Donker, goud' : d === 'org' ? 'Crème, groen' : 'Wit, zwart'}</small></div>${cell(d, 'serif')}${cell(d, 'sans')}`).join('')}</div></div>`;
+}
+
 const boards = [
   ['bord-0-eisen', eisenBoard(), 1740],
   ['bord-1-zetten', recipeBoard('Zetten: drie richtingen, twee lettertype-opties', 'Dezelfde gegevens (22 g · 292 g · 92 °C · klik 22) in de drie gekozen richtingen. Boven: serif voor koppen; onder: alles schreefloos.', zetten), 1500],
   ['bord-2-timer', recipeBoard('Timer: één stap tegelijk met ring en "Hierna"', 'De timer blijft in alle richtingen functioneel: totale tijd, ring met aftelling, opdracht, volgende stap, grote Erdoor-knop.', timer), 1500],
-  ['bord-3-zakken', zakkenBoard(), 1980]
+  ['bord-3-zakken', zakkenBoard(), 1980],
+  ['bord-4-lettertype', lettertypeBoard(), 1740]
 ];
 
 fs.mkdirSync(OUT, { recursive: true });
