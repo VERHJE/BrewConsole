@@ -1381,3 +1381,12 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Alles wissen** wist nu ook de foto's (voorheen bleven ze achter).
 - **Teksten:** bij het fotoveld staat nu 'staat in je back-up; niet in de synchronisatie' (dit vervangt de eerdere vermelding 'niet in de back-up').
 - **Tests:** app3 97 (kern: base64 heen en terug, filter op onbekende zak/type/kapotte data/te groot/dubbel, versie 1; scherm: maken → wissen → terugzetten).
+
+### Herstel na de schermencontrole (6 nov 2026)
+
+Uit de screenshots van alle schermen (licht en donker, telefoon en laptop):
+1. **Voorkeuren:** de keuzerondjes erfden de regel voor invoervelden (volle breedte) en stonden blauw met woorden die midden in het woord braken. Nu 22 px, accentkleur, tekst vult de rest, geen afbreken; geen rand om de groep.
+2. **Smaakprofiel:** de tabel met vier kolommen is een lijst geworden (naam, beeld, treffers en valse alarmen in gewone zinnen). Groepen waar nog te weinig voor is staan als één regel onderaan.
+3. **Kopdetail:** 'Advies van engine3 e3-2026.1' staat nu als kleine regel onderaan ('Advies gemaakt door …', versie blijft op één regel).
+4. **Vaste knop** ('Start zetsel', 'Zet deze zak'): effen achtergrond in plaats van een doorzichtige laag met blur. Dat was ook in strijd met de eigen eis 'geen glas over tekst'.
+Tests: `herstel.ui.test.mjs` (rondjes en regels, lijst en notitie, effen achtergrond), samen 101 app3-tests.
