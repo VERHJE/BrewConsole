@@ -4,7 +4,8 @@ import type { Route } from '../../core/router.ts';
 import { href } from '../../core/router.ts';
 import { clock, nl1, pourLines, techniqueName } from '../../core/brew.ts';
 import { cupRows, brewDeleteEvent } from '../../core/insights.ts';
-import { ACIDITY_LABEL, FINISH_LABEL, GOALHIT_LABEL, STRENGTH_LABEL, VSLAST_LABEL } from '../../core/tasting.ts';
+import { Stars } from '../Stars.tsx';
+import { ACIDITY_LABEL, formatLiking, FINISH_LABEL, GOALHIT_LABEL, STRENGTH_LABEL, VSLAST_LABEL } from '../../core/tasting.ts';
 import { compareById, groupByMonth, matches } from '../../core/ronde2.ts';
 import { useState } from 'preact/hooks';
 import { Trends } from '../Insights.tsx';
@@ -12,12 +13,11 @@ import { useApp, useSnapshot } from '../store-context.tsx';
 
 const STATUS: Record<string, string> = { planned: 'Niet gestart', brewing: 'Bezig', complete: 'Klaar', abandoned: 'Afgebroken' };
 const dateText = (ms: number): string => new Date(ms).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-const stars = (n: number | null): string => (n === null ? '' : '★'.repeat(n) + '☆'.repeat(5 - n));
 
 function Row({ r }: { r: ReturnType<typeof cupRows>[number] }): JSX.Element {
   return (
     <li><a class="item" href={href('logboek', r.id)}>
-      <strong>{r.beanName ?? 'Zonder zak'} <span class="stars" aria-label={r.liking ? `${r.liking} van 5` : undefined}>{stars(r.liking)}</span></strong>
+      <strong>{r.beanName ?? 'Zonder zak'} <Stars value={r.liking} /></strong>
       <small>{dateText(r.at)} · {techniqueName(r.technique)} · {nl1(r.doseG)} g{r.click !== null ? ` · klik ${r.click}` : ''}{r.endSec !== null ? ` · ${clock(r.endSec)}` : ''}{r.status !== 'complete' ? ` · ${STATUS[r.status]}` : ''}{r.status === 'complete' && !r.tasted ? ' · nog te proeven' : ''}</small>
     </a></li>
   );
@@ -90,7 +90,7 @@ function Detail({ id }: { id: string }): JSX.Element {
             {t.strength !== null && <><dt>Sterkte</dt><dd>{STRENGTH_LABEL[t.strength]}</dd></>}
             {t.acidity && <><dt>Zuur</dt><dd>{ACIDITY_LABEL[t.acidity]}</dd></>}
             {t.finish.length > 0 && <><dt>Afdronk</dt><dd>{t.finish.map(f => FINISH_LABEL[f]).join(', ')}</dd></>}
-            {t.liking && <><dt>Waardering</dt><dd class="stars">{stars(t.liking)}</dd></>}
+            {t.liking && <><dt>Waardering</dt><dd><Stars value={t.liking} /> <span class="muted">{formatLiking(t.liking)} van 5</span></dd></>}
             {t.goalHit && <><dt>Doel gehaald</dt><dd>{GOALHIT_LABEL[t.goalHit]}</dd></>}
             {t.vsLast && <><dt>Tegenover vorige</dt><dd>{VSLAST_LABEL[t.vsLast]}</dd></>}
             {t.note && <><dt>Notitie</dt><dd>{t.note}</dd></>}
@@ -101,7 +101,7 @@ function Detail({ id }: { id: string }): JSX.Element {
         <label class="field"><span>Vergelijk met een andere kop</span>
           <select name="compare" value="" onChange={e => { const v = (e.currentTarget as HTMLSelectElement).value; if (v) location.hash = href('logboek', 'vergelijk', id, v); }}>
             <option value="">Kies een kop…</option>
-            {others.map(o => <option key={o.id} value={o.id}>{dateText(o.at)}{o.liking ? ` · ${o.liking} van 5` : ''}</option>)}
+            {others.map(o => <option key={o.id} value={o.id}>{dateText(o.at)}{o.liking ? ` · ${formatLiking(o.liking)} van 5` : ''}</option>)}
           </select></label>)}
       <div class="actions"><button class="btn" type="button" onClick={del}>Kop verwijderen</button></div>
     </section>

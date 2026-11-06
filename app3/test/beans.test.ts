@@ -80,3 +80,21 @@ test('dagen sinds branding', () => {
   assert.equal(daysSinceRoast(null, '2026-11-05'), null);
   assert.equal(daysSinceRoast('2026-12-01', '2026-11-05'), null);
 });
+
+test('leegmaken wist het veld echt: tekst, proces, branding, datum, zakgrootte en notities', async () => {
+  const store = await createStore(memoryStorage(), createEngine());
+  const full = validateForm(scanText(env, TEXT), env);
+  if (!full.ok) throw new Error('vol');
+  const first = beanUpsert(env, null, full);
+  await store.append([first]);
+  const id = first.data.beanId;
+  let form = formFromBean(store.snapshot().state, id)!;
+  for (const k of ['region', 'variety', 'process', 'roastLevel', 'roastDate', 'bagSizeG', 'notes'] as const) form = editForm(form, k, '');
+  const cleared = validateForm(form, env);
+  if (!cleared.ok) throw new Error(JSON.stringify(cleared.problems));
+  await store.append([beanUpsert(env, id, cleared)]);
+  const after = formFromBean(store.snapshot().state, id)!;
+  for (const k of ['region', 'variety', 'process', 'roastLevel', 'roastDate', 'bagSizeG', 'notes'] as const) assert.equal(after.values[k], '', k);
+  assert.equal(after.values.country, 'Colombia', 'wat blijft staat er nog');
+  assert.equal(after.values.name.length > 0, true);
+});

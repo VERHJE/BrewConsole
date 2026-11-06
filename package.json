@@ -6,8 +6,8 @@
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "qa": "node qa/run-qa.js",
-    "build": "node scripts/build.mjs && node scripts/build-app3.mjs",
-    "qa:dist": "node scripts/build.mjs && BREWCONSOLE_APP_HTML=dist/index.html node --test tests/adversarial-robustness.test.mjs tests/brewconsole.pure-logic.test.mjs tests/kernflow.smoke.test.mjs",
+    "build": "node scripts/build.mjs dist/oud && node scripts/build-app3.mjs dist --root",
+    "qa:dist": "node scripts/build.mjs dist/oud && BREWCONSOLE_APP_HTML=dist/oud/index.html node --test tests/adversarial-robustness.test.mjs tests/brewconsole.pure-logic.test.mjs tests/kernflow.smoke.test.mjs",
     "e3:typecheck": "tsc -p engine3",
     "e3:test": "node --test engine3/test/*.test.ts",
     "e3:build": "esbuild engine3/src/index.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=engine3/dist/engine3.mjs && esbuild engine3/sync/index.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=engine3/dist/sync-client.mjs && esbuild engine3/sync/worker.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=engine3/dist/sync-worker.mjs && esbuild engine3/qr/decode.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=engine3/dist/qr.mjs",

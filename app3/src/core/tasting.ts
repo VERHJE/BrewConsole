@@ -134,3 +134,8 @@ export function actualsProblems(a: TastingDraft['actuals']): string[] {
   range(a.bypassG, 0, 400, 'Bypass (g)'); range(a.cupG, 50, 1000, 'Kop (g)'); range(a.tdsPct, 0.3, 3, 'TDS (%)');
   return out;
 }
+
+/** '3,75' (Nederlandse komma, geen overbodige nullen). */
+export function formatLiking(v: number): string {
+  return String(Math.round(v * 100) / 100).replace('.', ',');
+}

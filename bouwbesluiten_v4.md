@@ -1345,3 +1345,31 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Synchronisatiestatus** zichtbaar in het Meer-menu (verbonden / laatst gesynchroniseerd).
 - **Niet gedaan:** kwartsterren. De engine kent waarderingen als 1–5 (contract), dus dat vraagt een contractwijziging; eerst jouw beslissing. 'Opnieuw kopen' is niet gebouwd omdat er geen winkeladres per zak wordt bewaard.
 - **Tests:** 89 app3-tests groen (nieuw: ronde2-kern en ronde2-UI met axe in licht en donker).
+
+### Overstap `/` → app3 (6 nov 2026)
+
+- **Besluit:** app3 staat op `/`, de oude app op `/oud/`. `npm run build`: `build.mjs dist/oud` + `build-app3.mjs dist --root`; `qa:dist` wijst naar `dist/oud/index.html`. Netlify: `/app3/*` → `/` (301), no-cache voor beide workers en index-pagina's.
+- **Service worker:** app3-worker laat `/oud/` met rust en geeft de app-schil alleen aan `/` en `/index.html`, zodat `tokengenerator.html` en `toestelcheck.html` (nu ook op `/`) hun eigen pagina tonen. De voorgecachete lijst bevat `oud/` en die hulppagina's niet.
+- **Controle:** upgradepad nagespeeld in Chromium (oude site met actieve worker → nieuwe site): na één herlaadbeurt app3, geen foutmelding, `/oud/` en `/tokengenerator.html` werken. app3: 89 tests; volledige QA-suite: 1120 tests groen.
+- **Let op voor de gebruiker:** gegevens uit de oude app moeten via back-up en inlezen mee (Meer → Over wijst ernaar).
+
+### Kwartsterren (6 nov 2026) · contract e3-contract-1.1
+
+- **Besluit:** waardering is 1–5 sterren in stappen van een kwart (17 waarden). Uitbreiding, geen breuk: hele sterren uit oudere logboeken en back-ups blijven geldig, en een toestel met de nieuwe app kan nog steeds met oude blokken samenvoegen.
+- **Engine:** `Liking` is nu `number`; `engine3/src/liking.ts` (`isLiking`, `normaliseLiking`, `nudgeLiking`, `LIKING_*`), `validateEvent` weigert alles buiten 1–5 in kwarten (0, 0,75, 5,25, 3,3, tekst). Het profiel rekent al met gemiddelden en verschillen, dus geen verandering in rekenregels. Rooktest en versiecheck op 1.1.
+- **App:** snel blijft snel: eerst één tik op een hele ster, daarna verschijnen −¼ en +¼ met de waarde ('4,25 van 5') als statusmelding. In lijsten en detail staat een rij sterren met een gedeeltelijk gevulde laatste ster (`Stars.tsx`, voor schermlezers 'x van 5'); verloopgrafiek, vergelijken en koppenlijst gebruiken dezelfde opmaak (`formatLiking`, Nederlandse komma).
+- **Tests:** engine 171 (nieuw: validatie van kwarten, afronden/begrenzen/bijstellen), app3 91 (nieuw: kwartsterren-flow in licht en donker met axe).
+
+### Opnieuw kopen (6 nov 2026) · contract e3-contract-1.2
+
+- **Besluit:** het winkeladres hoort bij de zak en reist dus mee in logboek, back-up en synchronisatie. `BeanFields.shopUrl` is een optioneel veld (geen breuk: bestaande zakken en code blijven werken). `engine3/src/shopurl.ts`: alleen `http(s)`, hoogstens 500 tekens; `normaliseShopUrl('brander.nl/zak')` → `https://brander.nl/zak`; `javascript:`, `data:` en `ftp:` worden geweigerd, ook in `validateEvent` (bij binnenkomst via sync of import).
+- **Formulier:** veld 'Waar koop je hem'; een QR-code met een webadres vult het veld (bron 'QR'). Leeg laten wist een eerder adres.
+- **Voorraad:** `stockView()`: zakgrootte min de dosis van alle afgeronde koppen; 'ongeveer N koppen' met de laatste dosis; minder dan twee koppen = 'Bijna op'. Een schatting, geen weegschaal.
+- **Zakdetail:** 'Voorraad nog ± x g'; knop 'Opnieuw kopen' opent het adres in een nieuw tabblad (`noopener noreferrer`), opvallend (primair) bij 'Bijna op'; bijna op zonder adres geeft een hint naar Bewerken.
+- **Tests:** engine 172 (winkeladres), app3 94 (formulier, voorraad, scherm met formulierfout en wissen).
+
+### Velden leegmaken (6 nov 2026)
+
+- **Probleem:** een zak bewerken en een veld leegmaken liet de oude waarde staan, omdat opslaan nieuwe velden over de oude heen legt en een leeg veld niet werd meegestuurd.
+- **Herstel:** `validateForm` stuurt nu voor elk veld van het formulier een expliciete leegwaarde mee (tekstvelden, branding, datum, zakgrootte en winkeladres `null`; proces 'onbekend'; notities leeg), met bron 'jij'. Alleen de velden in het formulier; wat de formulier niet toont (producent, hoogte, oogstjaar …) blijft zoals het was. De naam blijft verplicht.
+- **Test:** zak met alle velden → leegmaken → opnieuw lezen: alles leeg, land en naam blijven. app3: 95 tests groen.

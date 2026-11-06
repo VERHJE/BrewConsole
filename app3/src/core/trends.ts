@@ -1,6 +1,7 @@
 // Verloop en pasvorm: alleen lezen uit de feiten van de engine. Er wordt hier niets zelf gemodelleerd;
 // de reeksen zijn de koppen op volgorde, en de pasvorm komt uit beanFit().
 
+import { formatLiking } from './tasting.ts';
 import { factsOf, tasteProfile, beanFit, type EngineState, type WheelCategory } from '../../../engine3/src/index.ts';
 import { PROCESS_LABEL } from './beans.ts';
 import { CATEGORIES } from './tasting.ts';
@@ -52,7 +53,7 @@ export function seriesOf(points: readonly TrendPoint[]): Series[] {
     { key: 'dose', title: 'Koffie per kop', unit: 'g', points: take(p => p.doseG, p => `${num1(p.doseG)} g${p.click !== null ? ` · klik ${p.click}` : ''}`) },
     { key: 'end', title: 'Klaar na', unit: 'min:sec', points: take(p => p.endSec, p => `${clock(p.endSec!)}${p.lastDrainSec !== null ? ` · laatste giet na ${clock(p.lastDrainSec)}` : ''}${p.click !== null ? ` · klik ${p.click}` : ''}`) },
     { key: 'strength', title: 'Sterkte-oordeel', unit: '', points: take(p => p.strength, p => STRENGTH_WORD[String(p.strength)] ?? '') },
-    { key: 'liking', title: 'Waardering', unit: 'van 5', points: take(p => p.liking, p => `${p.liking} van 5`) }
+    { key: 'liking', title: 'Waardering', unit: 'van 5', points: take(p => p.liking, p => `${formatLiking(p.liking!)} van 5`) }
   ];
 }
 

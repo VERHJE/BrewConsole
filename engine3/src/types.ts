@@ -61,7 +61,8 @@ export type WheelCategory =
 export type StrengthOrd = -2 | -1 | 0 | 1 | 2;
 export type Acidity = 'flat' | 'lively' | 'sharp';
 export type Finish = 'sweet_clean' | 'bitter' | 'drying' | 'hollow';
-export type Liking = 1 | 2 | 3 | 4 | 5;
+/** 1–5 sterren in stappen van een kwart (zie liking.ts); hele sterren uit oudere logboeken blijven geldig. */
+export type Liking = number;
 export type Goal = 'bright' | 'balanced' | 'rich';
 export type GoalHit = 'yes' | 'almost' | 'no';
 export type VsLast = 'better' | 'same' | 'worse';
@@ -110,6 +111,8 @@ export interface BeanFields {
   readonly cuppingScore: number | null;
   readonly harvestYear: number | null;
   readonly coordinates: { readonly lat: number; readonly lon: number } | null;
+  /** Waar je deze zak (opnieuw) koopt: een http(s)-adres (contract 1.2). */
+  readonly shopUrl?: string | null;
 }
 export type BeanFieldKey = keyof BeanFields;
 

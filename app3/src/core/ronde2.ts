@@ -2,7 +2,7 @@
 
 import { factsOf, type CupFacts, type EngineState } from '../../../engine3/src/index.ts';
 import { clock, nl1, techniqueName } from './brew.ts';
-import { STRENGTH_LABEL } from './tasting.ts';
+import { STRENGTH_LABEL, formatLiking } from './tasting.ts';
 
 /** Alle woorden van de zoekvraag moeten ergens in de tekst staan (hoofdletters en accenten maken niet uit). */
 export function matches(text: string, query: string): boolean {
@@ -77,7 +77,7 @@ export function compareCups(a: CupFacts, b: CupFacts): CompareRow[] {
     row('Temperatuur', a.planned.tempC === null ? null : `${a.planned.tempC} °C`, b.planned.tempC === null ? null : `${b.planned.tempC} °C`),
     row('Klaar na', a.endSec === null ? null : clock(a.endSec), b.endSec === null ? null : clock(b.endSec)),
     row('Sterkte', str(a.tasting), str(b.tasting)),
-    row('Waardering', a.tasting?.liking ? `${a.tasting.liking} van 5` : null, b.tasting?.liking ? `${b.tasting.liking} van 5` : null)
+    row('Waardering', a.tasting?.liking ? `${formatLiking(a.tasting.liking)} van 5` : null, b.tasting?.liking ? `${formatLiking(b.tasting.liking)} van 5` : null)
   ];
 }
 

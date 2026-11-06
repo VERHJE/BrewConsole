@@ -11,13 +11,16 @@ import { exportLog } from '../src/core/backup.ts';
 
 export const SEED_BEAN = 'Verloopzak';
 
-export async function seedLog(cups = 8): Promise<{ events: EngineEvent[]; json: string }> {
+export async function seedLog(cups = 8, extra: { bagSizeG?: string; shopUrl?: string } = {}): Promise<{ events: EngineEvent[]; json: string }> {
   let now = Date.UTC(2026, 9, 1, 8);
   let n = 0;
   const env: Env = { now: () => now, uuid: () => `seed${++n}`, device: 'seed' };
   const engine = createEngine();
   const store = await createStore(memoryStorage(), engine);
-  const r = validateForm(editForm(scanText(env, 'Notes: jasmine, peach\nProcess: Washed\nRoast: Light'), 'name', SEED_BEAN), env);
+  let form = editForm(scanText(env, 'Notes: jasmine, peach\nProcess: Washed\nRoast: Light'), 'name', SEED_BEAN);
+  if (extra.bagSizeG) form = editForm(form, 'bagSizeG', extra.bagSizeG);
+  if (extra.shopUrl) form = editForm(form, 'shopUrl', extra.shopUrl);
+  const r = validateForm(form, env);
   if (!r.ok) throw new Error('zak');
   const bean = beanUpsert(env, null, r);
   await store.append([bean]);

@@ -1,6 +1,6 @@
 # 18 · Frontend rond `createEngine()`
 
-Vastgesteld 5 nov 2026. De hele frontend wordt opnieuw opgebouwd. Layout, kleuren en indeling van de oude app hoeven niet behouden te blijven. De engine blijft zoals hij is (`e3-contract-1.0`): de frontend leest en schrijft alleen via het contract.
+Vastgesteld 5 nov 2026. De hele frontend wordt opnieuw opgebouwd. Layout, kleuren en indeling van de oude app hoeven niet behouden te blijven. De engine blijft zoals hij is (`e3-contract-1.0`; sinds de kwartsterren `e3-contract-1.1`, alleen uitgebreid): de frontend leest en schrijft alleen via het contract.
 
 ## Uitgangspunten
 
@@ -8,7 +8,7 @@ Vastgesteld 5 nov 2026. De hele frontend wordt opnieuw opgebouwd. Layout, kleure
 2. **Kern zonder DOM.** Alles wat geen scherm is (opslag, gebeurtenissen maken, timer-logica, formulieren omzetten naar gebeurtenissen) staat in `app3/src/core/` en draait in Node. Daar zitten de meeste tests. De schermen zijn dun.
 3. **Niet verzinnen, wel laten zien wat onzeker is.** `Advice.uncertainty`, `reasons` en `warnings` worden getoond; een band is een band, geen getal.
 4. **Offline eerst, privé eerst.** Alles werkt zonder netwerk. Synchronisatie is optioneel en versleuteld (08). AI-foto-herkenning blijft uit (besluit Jelle).
-5. **Naast de oude app, niet erin.** De nieuwe app staat op `/app3/` tot hij de oude kan vervangen. De oude app verandert niet. Het omschakelen is een aparte stap.
+5. **Overgestapt (6 nov 2026).** De nieuwe app staat op `/`; de oude app is ongewijzigd verplaatst naar `/oud/`. `/app3/` stuurt door naar `/`.
 
 ## Techniek
 
@@ -18,7 +18,7 @@ Vastgesteld 5 nov 2026. De hele frontend wordt opnieuw opgebouwd. Layout, kleure
 | Preact 10 + JSX (esbuild) | 4 kB, geen build-magie, bekende componenten. Geen router- of staatbibliotheek: een kleine hash-router en een store van ±60 regels. |
 | IndexedDB voor het logboek, `localStorage` alleen voor voorkeuren | Het logboek is groot en mag niet stil verdwijnen; `navigator.storage.persist()` wordt gevraagd (zie `toestelcheck.html`). |
 | Eigen CSS met tokens (licht/donker), geen CSS-framework | Volledige controle over timerscherm en teltafel; geen extra gewicht. |
-| Bundel naar `dist/app3/` via `npm run app3:build` | De bestaande publicatie (`npm run build`) neemt `dist/app3/` mee. |
+| Bundel via `npm run build`: de oude app naar `dist/oud/`, app3 direct in `dist/` (`build-app3.mjs dist --root`) | De schermtests bouwen nog naar een tijdelijke map met `/app3/` (zonder `--root`). |
 
 ## Mappen
 
@@ -152,3 +152,9 @@ Niet bruikbaar zonder beeldmateriaal: foto-gedreven indeling, parallax, volle-br
 ## Ronde 3: gekozen ontwerp (6 nov 2026)
 
 Licht (Organic Light) en donker (Quiet Luxury) als volwaardige thema's met keuze; Fraunces voor koppen met een schakelaar naar schreefloos; Zetten/Timer in Minimal Pro-stijl; foto per zak (alleen op het toestel, niet in sync of back-up); zakkenlijst als kaartstapel en zakdetail als redactioneel verhaal met 'Zet deze zak'. Details en testresultaten: `bouwbesluiten_v4.md`, ontwerpkeuzes: `19-ontwerp.md`.
+
+## Overstap van `/` naar app3 (6 nov 2026)
+
+- **Publicatie:** app3 op `/`, de oude app op `/oud/` (eigen service worker met kleinere scope, dus die wint daar), `/app3/*` verwijst door. `tokengenerator.html` en `toestelcheck.html` staan ook op `/` en tonen hun eigen pagina (de worker geeft alleen de app-schil aan `/` en `/index.html`).
+- **Bestaande installaties:** de worker staat op dezelfde URL (`/sw.js`). Een toestel met de oude app pakt de nieuwe worker op en toont na één herlaadbeurt app3 (in een echte browser nagespeeld: oude site → nieuwe site, vier herlaadbeurten, nieuwe tab, `/oud/` en de tokengenerator).
+- **Gegevens:** de oude app bewaart zijn gegevens in dit toestel onder dezelfde herkomst en raakt ze niet kwijt. Ze komen niet vanzelf in app3: maak in `/oud/` een back-up (Meer → Gegevens) en lees die in app3 in (Meer → Gegevens). Meer → Over wijst daarnaar met een knop.

@@ -2,7 +2,7 @@
 // Elk veld houdt zijn herkomst bij; zodra de gebruiker een veld aanpast wordt de bron 'user'.
 
 import {
-  factsOf, isoDate, scanBeanText, g,
+  factsOf, isoDate, scanBeanText, g, normaliseShopUrl, isShopUrl,
   type BeanFieldKey, type BeanFields, type BeanProcess, type BeanScan, type BeanUpsertEvent, type EngineState,
   type FieldSource, type ProcessBase, type RoastLevel, type BeanArchiveEvent, type ScanSource
 } from '../../../engine3/src/index.ts';
@@ -63,14 +63,14 @@ export interface BeanForm {
   readonly warnings: readonly string[];
 }
 
-export type FormKey = 'name' | 'roaster' | 'country' | 'region' | 'farm' | 'variety' | 'process' | 'roastLevel' | 'roastDate' | 'bagSizeG' | 'notes';
-export const FORM_KEYS: readonly FormKey[] = ['name', 'roaster', 'country', 'region', 'farm', 'variety', 'process', 'roastLevel', 'roastDate', 'bagSizeG', 'notes'];
+export type FormKey = 'name' | 'roaster' | 'country' | 'region' | 'farm' | 'variety' | 'process' | 'roastLevel' | 'roastDate' | 'bagSizeG' | 'notes' | 'shopUrl';
+export const FORM_KEYS: readonly FormKey[] = ['name', 'roaster', 'country', 'region', 'farm', 'variety', 'process', 'roastLevel', 'roastDate', 'bagSizeG', 'notes', 'shopUrl'];
 export const FORM_LABEL: Readonly<Record<FormKey, string>> = {
   name: 'Naam', roaster: 'Brander', country: 'Land', region: 'Regio', farm: 'Boerderij', variety: 'Variëteit', process: 'Proces',
-  roastLevel: 'Branding', roastDate: 'Brandingsdatum', bagSizeG: 'Zakgrootte (g)', notes: 'Smaaknotities'
+  roastLevel: 'Branding', roastDate: 'Brandingsdatum', bagSizeG: 'Zakgrootte (g)', notes: 'Smaaknotities', shopUrl: 'Waar koop je hem (webadres)'
 };
 
-const EMPTY: Record<FormKey, string> = { name: '', roaster: '', country: '', region: '', farm: '', variety: '', process: '', roastLevel: '', roastDate: '', bagSizeG: '', notes: '' };
+const EMPTY: Record<FormKey, string> = { name: '', roaster: '', country: '', region: '', farm: '', variety: '', process: '', roastLevel: '', roastDate: '', bagSizeG: '', notes: '', shopUrl: '' };
 
 export function emptyForm(): BeanForm {
   return { values: { ...EMPTY }, sources: {}, scanProcess: null, scanNotes: null, scanned: null, warnings: [] };
@@ -127,6 +127,7 @@ export function validateForm(form: BeanForm, env: Env): FormResult | FormProblem
   const text = (k: 'name' | 'roaster' | 'country' | 'region' | 'farm' | 'variety'): void => {
     const t = v[k].trim();
     if (t) { fields[k] = t.slice(0, 120); sources[k] = src(k); }
+    else if (k !== 'name') { fields[k] = null; sources[k] = 'user'; } // leeg laten wist een eerdere waarde
   };
   if (!v.name.trim()) problems.name = 'Geef de zak een naam.';
   (['name', 'roaster', 'country', 'region', 'farm', 'variety'] as const).forEach(text);
@@ -136,25 +137,31 @@ export function validateForm(form: BeanForm, env: Env): FormResult | FormProblem
     const same = form.scanProcess && form.scanProcess.base === base;
     fields.process = same ? form.scanProcess! : { base, fermentation: [], experimental: false, decaf: null, ambiguousTerm: null };
     sources.process = src('process');
-  }
+  } else { fields.process = { base: 'unknown', fermentation: [], experimental: false, decaf: null, ambiguousTerm: null }; sources.process = 'user'; }
   if (v.roastLevel) { fields.roastLevel = v.roastLevel as RoastLevel; sources.roastLevel = src('roastLevel'); }
+  else { fields.roastLevel = null; sources.roastLevel = 'user'; }
   if (v.roastDate) {
     try {
       const d = isoDate(v.roastDate);
       if (Date.parse(d) > env.now() + 86_400_000) problems.roastDate = 'Deze datum ligt in de toekomst.';
       else { fields.roastDate = d; sources.roastDate = src('roastDate'); }
     } catch { problems.roastDate = 'Gebruik een datum als 2026-11-05.'; }
-  }
+  } else { fields.roastDate = null; sources.roastDate = 'user'; }
   if (v.bagSizeG.trim()) {
     const n = Number(v.bagSizeG.replace(',', '.'));
     if (!Number.isFinite(n) || n < 20 || n > 5000) problems.bagSizeG = 'Geef een gewicht tussen 20 en 5000 gram.';
     else { fields.bagSizeG = g(Math.round(n)); sources.bagSizeG = src('bagSizeG'); }
-  }
+  } else { fields.bagSizeG = null; sources.bagSizeG = 'user'; }
+  if (v.shopUrl.trim()) {
+    const u = normaliseShopUrl(v.shopUrl);
+    if (!u) problems.shopUrl = 'Geef een webadres, bijvoorbeeld brander.nl/zak.';
+    else { fields.shopUrl = u; sources.shopUrl = src('shopUrl'); }
+  } else { fields.shopUrl = null; sources.shopUrl = 'user'; }
   if (v.notes.trim()) {
     const unchanged = form.scanNotes && form.scanNotes.raw.join(', ') === v.notes.trim();
     fields.notes = unchanged ? form.scanNotes! : (scanBeanText(`Notes: ${v.notes}`, { source: 'paste', nowMs: env.now() }).fields.notes ?? { raw: [v.notes.trim()], tags: [], unmapped: [v.notes.trim()] });
     sources.notes = src('notes');
-  }
+  } else { fields.notes = { raw: [], tags: [], unmapped: [] }; sources.notes = 'user'; }
   return Object.keys(problems).length ? { ok: false, problems } : { ok: true, fields, sources };
 }
 
@@ -186,6 +193,7 @@ export interface BeanDetail {
   readonly tags: readonly string[];
   readonly roastDate: string | null;
   readonly cups: number;
+  readonly shopUrl: string | null;
 }
 
 export function beanDetail(state: EngineState, beanId: string): BeanDetail | null {
@@ -203,6 +211,30 @@ export function beanDetail(state: EngineState, beanId: string): BeanDetail | nul
     id: b.beanId, name: f.name ?? '(zonder naam)',
     eyebrow: [process, f.roastLevel ? ROAST_LABEL[f.roastLevel] : null].filter(Boolean).join(' · '),
     roaster: f.roaster ?? null, facts,
-    tags: [...(f.notes?.tags ?? []), ...(f.notes?.unmapped ?? [])], roastDate: f.roastDate ?? null, cups: b.brewIds.length
+    tags: [...(f.notes?.tags ?? []), ...(f.notes?.unmapped ?? [])], roastDate: f.roastDate ?? null, cups: b.brewIds.length, shopUrl: isShopUrl(f.shopUrl) ? f.shopUrl : null
   };
+}
+
+// ───────────── voorraad en opnieuw kopen ─────────────
+
+export interface StockView {
+  /** Geschat aantal gram dat nog in de zak zit (zakgrootte min wat je zette), of null zonder zakgrootte. */
+  readonly remainingG: number | null;
+  readonly cupsLeft: number | null;
+  /** Minder dan twee koppen over: tijd om te bestellen. */
+  readonly low: boolean;
+}
+
+/** Telt de dosis van alle afgeronde koppen met deze zak; `typicalDoseG` is de laatste kop (of 15 g). */
+export function stockView(state: EngineState, beanId: string): StockView {
+  const f = factsOf(state);
+  const bean = f.beans.get(beanId);
+  const size = bean?.fields.bagSizeG ?? null;
+  if (!bean || !size) return { remainingG: null, cupsLeft: null, low: false };
+  const cups = [...f.cups.values()].filter(c => c.beanId === beanId && c.status === 'complete').sort((a, b) => a.at - b.at);
+  const used = cups.reduce((a, c) => a + c.doseG, 0);
+  const typical = cups.length ? cups[cups.length - 1]!.doseG : 15;
+  const remainingG = Math.max(0, Math.round(size - used));
+  const cupsLeft = Math.floor(remainingG / typical);
+  return { remainingG, cupsLeft, low: cupsLeft < 2 };
 }

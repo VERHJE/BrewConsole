@@ -37,3 +37,34 @@ test('de validator vangt kapotte gebeurtenissen', () => {
   assert.ok(validateEvent({ id: 'x', at: 1, device: 'd', v: 1, kind: 'brew.plan', data: { brewId: 'b', recipe: { doseG: 15, waterG: 250, pours: [{ atSec: 30, addG: 50, toG: 50 }, { atSec: 10, addG: 50, toG: 100 }] } } }).some(i => i.path.endsWith('atSec')));
   assert.ok(validateEvent({ id: 'x', at: 1, device: 'd', v: 1, kind: 'onzin', data: {} }).some(i => i.path === 'kind'));
 });
+
+test('waardering: kwartsterren zijn geldig, andere waarden niet (contract 1.1)', () => {
+  const t = (liking: unknown) => validateEvent({ id: 'x', at: 1, device: 'd', v: 1, kind: 'tasting', data: { brewId: 'b', strength: 0, liking, finish: [], cata: [] } });
+  for (const ok of [null, 1, 3, 3.25, 3.5, 3.75, 5]) assert.deepEqual(t(ok), [], String(ok));
+  for (const bad of [0, 0.75, 5.25, 3.3, '4', NaN]) assert.ok(t(bad).some(i => i.path === 'data.liking'), String(bad));
+});
+
+test('waardering: afronden, begrenzen en een kwart omhoog of omlaag', async () => {
+  const { normaliseLiking, nudgeLiking, isLiking } = await import('../src/liking.ts');
+  assert.equal(normaliseLiking(3.3), 3.25);
+  assert.equal(normaliseLiking(9), 5);
+  assert.equal(normaliseLiking(-2), 1);
+  assert.equal(normaliseLiking('x'), null);
+  assert.equal(nudgeLiking(3, 1), 3.25);
+  assert.equal(nudgeLiking(1, -1), 1);
+  assert.equal(nudgeLiking(5, 1), 5);
+  assert.equal(isLiking(4.25), true);
+});
+
+test('winkeladres: alleen http(s); normaliseren; validatie op bean.upsert (contract 1.2)', async () => {
+  const { isShopUrl, normaliseShopUrl } = await import('../src/shopurl.ts');
+  assert.equal(normaliseShopUrl('brander.nl/zak'), 'https://brander.nl/zak');
+  assert.equal(normaliseShopUrl('http://a.nl/x'), 'http://a.nl/x');
+  for (const bad of ['javascript:alert(1)', 'data:text/html,hi', 'ftp://a.nl', '', '   ', 'http://']) assert.equal(normaliseShopUrl(bad), null, bad);
+  assert.equal(isShopUrl('https://a.nl'), true);
+  assert.equal(isShopUrl('javascript:alert(1)'), false);
+  const up = (shopUrl: unknown) => validateEvent({ id: 'x', at: 1, device: 'd', v: 1, kind: 'bean.upsert', data: { beanId: 'b', fields: { name: 'z', shopUrl }, sources: {} } });
+  assert.deepEqual(up('https://a.nl/z'), []);
+  assert.deepEqual(up(null), []);
+  assert.ok(up('javascript:alert(1)').some(i => i.path === 'data.fields.shopUrl'));
+});

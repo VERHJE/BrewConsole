@@ -1,3 +1,4 @@
+import { formatLiking } from '../core/tasting.ts';
 import type { JSX } from 'preact';
 import { href } from '../core/router.ts';
 import { clock, nl1 } from '../core/brew.ts';
@@ -22,7 +23,7 @@ export function Trends({ beanId }: { beanId: string | null }): JSX.Element {
         <TrendChart series={s['dose']!} format={n => `${nl1(n)} g`} dateText={dateText} />
         <TrendChart series={s['end']!} steps={[10, 15, 30, 60, 120]} format={clock} dateText={dateText} />
         <TrendChart series={s['strength']!} domain={[-2.5, 2.5]} ticks={[-2, 0, 2]} format={v => STRENGTH_WORD[String(v)] ?? ordinal(v)} formatTick={ordinal} formatEnd={ordinal} reference={{ at: 0, label: 'goed' }} dateText={dateText} />
-        <TrendChart series={s['liking']!} domain={[0.5, 5.5]} ticks={[1, 3, 5]} format={v => `${v} van 5`} formatTick={v => String(v)} dateText={dateText} />
+        <TrendChart series={s['liking']!} domain={[0.5, 5.5]} ticks={[1, 3, 5]} format={v => `${formatLiking(v)} van 5`} formatTick={v => String(v)} dateText={dateText} />
       </div>
       <p class="meta">Sterkte: onder 0 is te slap, boven 0 te sterk. Alleen afgeronde koppen; een kop zonder oordeel staat niet in die grafiek.</p>
     </div>
@@ -49,7 +50,7 @@ export function BeanInsights({ beanId }: { beanId: string }): JSX.Element {
       <h2>Koppen van deze zak</h2>
       {cups.length === 0 ? <p class="muted">Nog geen koppen met deze zak.</p>
         : <ul class="list">{cups.slice(0, 10).map(r => (
-          <li key={r.id}><a class="item" href={href('logboek', r.id)}><strong>{new Date(r.at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}{r.liking ? ` · ${r.liking} van 5` : ''}</strong>
+          <li key={r.id}><a class="item" href={href('logboek', r.id)}><strong>{new Date(r.at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}{r.liking ? ` · ${formatLiking(r.liking)} van 5` : ''}</strong>
             <small>{nl1(r.doseG)} g{r.click !== null ? ` · klik ${r.click}` : ''}{r.endSec !== null ? ` · ${clock(r.endSec)}` : ''}{r.status === 'complete' && !r.tasted ? ' · nog te proeven' : ''}</small></a></li>))}</ul>}
     </div>
   );

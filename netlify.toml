@@ -1,4 +1,4 @@
-# Netlify bouwt bij elke push naar main en publiceert dist/ (de oude app op / en de nieuwe app op /app3/).
+# Netlify bouwt bij elke push naar main en publiceert dist/: de nieuwe app (app3) op / en de oude app op /oud/.
 [build]
   command = "npm run build"
   publish = "dist"
@@ -15,8 +15,23 @@
   [headers.values]
     Cache-Control = "no-cache"
 
+[[redirects]]
+  from = "/app3/*"
+  to = "/:splat"
+  status = 301
+
+[[headers]]
+  for = "/oud/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
 [[headers]]
   for = "/app3/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/index.html"
   [headers.values]
     Cache-Control = "no-cache"
 
