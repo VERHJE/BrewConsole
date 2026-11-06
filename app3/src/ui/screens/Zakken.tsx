@@ -8,6 +8,7 @@ import {
 } from '../../core/beans.ts';
 import { formFromScan } from '../../core/beans.ts';
 import { BeanFormView } from '../BeanFormView.tsx';
+import { BeanInsights } from '../Insights.tsx';
 import { useApp, useSnapshot } from '../store-context.tsx';
 
 const todayIso = (now: number): string => new Date(now).toISOString().slice(0, 10);
@@ -95,6 +96,7 @@ function Editor({ beanId }: { beanId: string | null }): JSX.Element {
         <button class="btn primary" type="button" onClick={save} disabled={busy}>Opslaan</button>
         {beanId && <button class="btn" type="button" onClick={async () => { await store.append([beanArchive(env, beanId)]); location.hash = href('zakken'); }}>Archiveren</button>}
       </div>
+      {beanId && <BeanInsights beanId={beanId} />}
     </section>
   );
 }

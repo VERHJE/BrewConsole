@@ -100,7 +100,7 @@ Per stap: tests + `npm run e3:check` + de app3-tests groen, docs en `bouwbesluit
 | F2 zetten + recept | klaar |
 | F3 timer | klaar (klok afgeleid uit gebeurtenissen, wake lock, trilling) |
 | F4 proeven | klaar; **F4b** (A tegen B) klaar, kernlogica getest, de proefkaart zelf niet in de browser |
-| F5 logboek en inzicht | klaar zonder verloopgrafieken en zakpasvorm |
+| F5 logboek en inzicht | klaar, inclusief verloopgrafieken en zakpasvorm (6 nov) |
 | F6 gegevens en synchronisatie | klaar; echte rondgang naar de Worker ligt bij Jelle (stap 0d) |
 | F7 afwerking | PWA (eigen worker voor `/app3/`, offline start getest), toegankelijkheid (axe, WCAG 2.1 AA, licht en donker) en gehele stroom getest. **Omschakelen van `/` naar de nieuwe app is nog niet gedaan**: dat is een besluit van Jelle. |
 
@@ -108,7 +108,6 @@ De nieuwe app staat op `<adres>/app3/`. De oude app op `/` is ongewijzigd.
 
 ## Wat er nog niet is
 
-- Verloopgrafieken (sterkte en tijd per zak) en `beanFit` in het zakdetail.
 - Foto-OCR van een zak in de browser (de AI-route blijft uit).
 - Automatisch synchroniseren op de achtergrond en een rollende back-up.
 - Gesproken aanwijzingen en een melding op de volgende giet buiten de app (alleen scherm en trilling).

@@ -5,6 +5,7 @@ import { href } from '../../core/router.ts';
 import { clock, nl1, pourLines, techniqueName } from '../../core/brew.ts';
 import { cupRows, brewDeleteEvent } from '../../core/insights.ts';
 import { ACIDITY_LABEL, FINISH_LABEL, GOALHIT_LABEL, STRENGTH_LABEL, VSLAST_LABEL } from '../../core/tasting.ts';
+import { Trends } from '../Insights.tsx';
 import { useApp, useSnapshot } from '../store-context.tsx';
 
 const STATUS: Record<string, string> = { planned: 'Niet gestart', brewing: 'Bezig', complete: 'Klaar', abandoned: 'Afgebroken' };
@@ -17,6 +18,7 @@ function List(): JSX.Element {
   return (
     <section>
       <h1>Logboek</h1>
+      {rows.length > 1 && <details class="card"><summary>Verloop van alle koppen</summary><Trends beanId={null} /></details>}
       {rows.length === 0 ? <div class="empty"><p>Nog geen koppen.</p><a class="btn primary" href={href('zetten')}>Zet je eerste kop</a></div>
         : <ul class="list">{rows.map(r => (
           <li key={r.id}><a class="item" href={href('logboek', r.id)}>
