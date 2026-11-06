@@ -12,6 +12,7 @@ import { BeanFormView } from '../BeanFormView.tsx';
 import { BeanInsights } from '../Insights.tsx';
 import { BagArt, useApp, useSnapshot } from '../store-context.tsx';
 import { cupRows } from '../../core/insights.ts';
+import { favFirst, matches, readFavs, restView, toggleFav } from '../../core/ronde2.ts';
 
 const todayIso = (now: number): string => new Date(now).toISOString().slice(0, 10);
 
@@ -24,9 +25,12 @@ function Meta({ row, today }: { row: BeanRow; today: string }): JSX.Element {
 function List(): JSX.Element {
   const { state } = useSnapshot();
   const { env } = useApp();
-  const rows = beanRows(state);
+  const [q, setQ] = useState('');
+  const favs = readFavs(localStorage);
+  const all = favFirst(beanRows(state), favs);
+  const rows = q.trim() ? all.filter(r => matches([r.name, r.roaster, r.country].filter(Boolean).join(' '), q)) : all;
   const today = todayIso(env.now());
-  const top = rows[0];
+  const top = q.trim() ? undefined : rows[0];
   const avg = (id: string): string | null => {
     const l = cupRows(state, id).map(c => c.liking).filter((x): x is number => typeof x === 'number');
     return l.length ? (l.reduce((a, b) => a + b, 0) / l.length).toFixed(1).replace('.', ',') : null;
@@ -37,11 +41,12 @@ function List(): JSX.Element {
       {rows.length === 0
         ? <div class="empty"><p>Nog geen zakken.</p><p>Plak de tekst van een zak of een webshoppagina, of scan de QR-code.</p></div>
         : <>
+          {all.length > 3 && <label class="field search"><span class="sr-only">Zoek in zakken</span><input type="search" name="zoek" placeholder="Zoek op naam, brander of land" value={q} onInput={e => setQ((e.currentTarget as HTMLInputElement).value)} /></label>}
           {top && (
             <a class={rows.length > 1 ? 'hero stacked' : 'hero'} href={href('zakken', top.id)} aria-label={`Open ${top.name}`}>
               <BagArt beanId={top.id} name={top.name} large />
               <span class="hero-text">
-                <small class="eyebrow">Nieuwste zak</small>
+                <small class="eyebrow">{favs.has(top.id) ? 'Favoriet' : 'Nieuwste zak'}</small>
                 <strong>{top.name}</strong>
                 <span class="chips">
                   {[top.country, daysSinceRoast(top.roastDate, today) !== null ? `${daysSinceRoast(top.roastDate, today)} d na branding` : null, avg(top.id) ? `★ ${avg(top.id)} · ${top.cups} ${top.cups === 1 ? 'kop' : 'koppen'}` : null]
@@ -50,8 +55,9 @@ function List(): JSX.Element {
               </span>
             </a>)}
           <ul class="list thumbs">{rows.map(r => (
-            <li key={r.id}><a class="item" href={href('zakken', r.id)}><span class="thumb"><BagArt beanId={r.id} name={r.name} /></span><span class="itext"><strong>{r.name}</strong><Meta row={r} today={today} /></span></a></li>
+            <li key={r.id}><a class="item" href={href('zakken', r.id)}><span class="thumb"><BagArt beanId={r.id} name={r.name} /></span><span class="itext"><strong>{favs.has(r.id) && <span aria-label="Favoriet">★ </span>}{r.name}</strong><Meta row={r} today={today} /></span></a></li>
           ))}</ul>
+          {rows.length === 0 && <p class="muted" role="status">Geen zakken gevonden voor ‘{q}’.</p>}
         </>}
     </section>
   );
@@ -61,8 +67,10 @@ function Detail({ beanId }: { beanId: string }): JSX.Element {
   const { state } = useSnapshot();
   const { env } = useApp();
   const d = beanDetail(state, beanId);
+  const [fav, setFav] = useState(() => readFavs(localStorage).has(beanId));
   if (!d) return <section><h1>Zak niet gevonden</h1><a class="btn" href={href('zakken')}>Terug</a></section>;
   const age = daysSinceRoast(d.roastDate, todayIso(env.now()));
+  const rest = restView(age);
   const zet = (): void => {
     try {
       const prev = JSON.parse(localStorage.getItem('brewconsole.zetten') ?? '{}') as Record<string, unknown>;
@@ -73,10 +81,11 @@ function Detail({ beanId }: { beanId: string }): JSX.Element {
   return (
     <section class="detail">
       <div class="hero-photo"><BagArt beanId={beanId} name={d.name} large /></div>
-      <div class="head"><a class="btn" href={href('zakken')} aria-label="Terug naar zakken">Terug</a><a class="btn" href={href('zakken', beanId, 'bewerken')}>Bewerken</a></div>
+      <div class="head"><a class="btn" href={href('zakken')} aria-label="Terug naar zakken">Terug</a><button class="btn" type="button" aria-pressed={fav} onClick={() => setFav(toggleFav(localStorage, beanId))}>{fav ? '★ Favoriet' : '☆ Favoriet'}</button><a class="btn" href={href('zakken', beanId, 'bewerken')}>Bewerken</a></div>
       {d.eyebrow && <small class="eyebrow">{d.eyebrow}</small>}
       <h1>{d.name}</h1>
       <p class="muted">{[d.roaster, age !== null ? `${age} d na branding` : null, d.cups ? `${d.cups} ${d.cups === 1 ? 'kop' : 'koppen'}` : null].filter(Boolean).join(' · ')}</p>
+      {rest && <p class="rest"><span class="tag">{rest.label}</span> <span class="muted">{rest.hint}</span></p>}
       {d.tags.length > 0 && <p class="chips">{d.tags.map(t => <span class="tag" key={t}>{t}</span>)}</p>}
       {d.facts.length > 0 && <dl class="facts">{d.facts.map(f => <div key={f.label}><dt>{f.label}</dt><dd>{f.value}</dd></div>)}</dl>}
       <BeanInsights beanId={beanId} />

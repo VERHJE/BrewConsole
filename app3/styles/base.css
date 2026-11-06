@@ -197,3 +197,13 @@ table.plain th { white-space: nowrap; }
 .photo-preview { flex: none; width: 88px; height: 88px; border-radius: var(--radius-s); overflow: hidden; background: var(--surface-2); }
 .photo-actions { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 @media (min-width: 720px) { .hero-photo { margin: 0 0 16px; border-radius: var(--radius); } }
+
+/* Ronde 2 */
+.search { margin: 0 0 12px; }
+.search input { width: 100%; }
+.month-h { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 0 8px; text-transform: capitalize; }
+.month-h small { color: var(--text-2); font-size: .8125rem; font-weight: 400; text-transform: none; }
+.rest { margin: 4px 0 12px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+.compare th, .compare td { text-align: left; padding: 8px 6px; vertical-align: top; }
+.compare tr.diff td, .compare tr.diff th { background: var(--accent-soft); }
+.detail .head { flex-wrap: wrap; }

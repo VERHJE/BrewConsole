@@ -1334,3 +1334,14 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Foto per zak** (`core/photos.ts`, `ui/photo-encode.ts`): optioneel, lange zijde 1080 px, WebP (JPEG als terugval), kwaliteitstrap tot ≲150 kB; opgeslagen in een eigen IndexedDB-database (`brewconsole-app3-photos`), dus **niet** in het logboek, niet in synchronisatieblokken en (nog) niet in de back-up. Dat staat ook bij het veld. Zonder foto: een getekende zak in kleuren die bij de naam passen.
 - **Zakken:** kaartstapel (nieuwste zak groot, met sterren/koppen) plus lijst met miniaturen. **Zakdetail** is redactioneel (foto, bovenregel proces · branding, naam, smaaktags, feitenraster, pasvorm, verloop, koppen) met een vaste knop 'Zet deze zak' die de zak op het zetscherm kiest. Het formulier staat nu op `#/zakken/:id/bewerken`.
 - **Tests:** 82 app3-tests groen (nieuw: photos-kern, foto-UI in licht en donker met axe, thema, prefs). De zetten-layouttest had een race (herladen vóór het opslaan van de keuze) en wacht nu op de opslag.
+
+### Frontend · ronde 2 (6 nov 2026)
+
+- **Zoeken** (`core/ronde2.ts` → `matches`): alle woorden moeten voorkomen, zonder hoofdletters en accenten. Zoekveld in Zakken (vanaf 4 zakken) en Logboek (vanaf 6 koppen).
+- **Maandweergave:** het logboek groepeert per kalendermaand met aantal koppen.
+- **Favorieten:** ster in het zakdetail; favorieten staan bovenaan en de eerste is de grote kaart. Alleen op dit toestel (`brewconsole.favs`), niet in het logboek of de sync: het is een voorkeur, geen brouwfeit.
+- **Rustdagen:** zakdetail toont 'Nog jong / Bijna op dreef / Op dreef / Nog goed / Oud' met een korte uitleg. Vuistregel voor filterkoffie, geen harde grens en geen invloed op het advies.
+- **Twee koppen vergelijken:** in het kopdetail kies je een andere afgeronde kop van dezelfde zak; een tabel markeert wat anders is (techniek, dosis, water, klik, temperatuur, tijd, sterkte, waardering).
+- **Synchronisatiestatus** zichtbaar in het Meer-menu (verbonden / laatst gesynchroniseerd).
+- **Niet gedaan:** kwartsterren. De engine kent waarderingen als 1–5 (contract), dus dat vraagt een contractwijziging; eerst jouw beslissing. 'Opnieuw kopen' is niet gebouwd omdat er geen winkeladres per zak wordt bewaard.
+- **Tests:** 89 app3-tests groen (nieuw: ronde2-kern en ronde2-UI met axe in licht en donker).
