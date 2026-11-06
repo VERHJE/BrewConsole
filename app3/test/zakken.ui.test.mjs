@@ -64,10 +64,12 @@ test('zak bewerken en archiveren', async () => {
   await page.fill('input[name=name]', 'Bewerkbaar');
   await page.click('button:has-text("Opslaan")');
   await page.click('.item:has-text("Bewerkbaar")');
+  await page.click('a:has-text("Bewerken")');
   await page.fill('input[name=roaster]', 'Kleine Brander');
   await page.click('button:has-text("Opslaan")');
   await page.waitForSelector('.item:has-text("Kleine Brander")');
   await page.click('.item:has-text("Bewerkbaar")');
+  await page.click('a:has-text("Bewerken")');
   await page.click('button:has-text("Archiveren")');
   await page.waitForFunction(() => !document.body.innerText.includes('Bewerkbaar'));
   await page.close();

@@ -148,3 +148,7 @@ Het artikel gaat over **websites met veel beeld**, niet over gebruiksapps. Wat d
 - **Functie boven vorm** (het artikel zelf): een timer moet in één oogopslag leesbaar blijven; contrast en grote getallen gaan voor sfeer.
 
 Niet bruikbaar zonder beeldmateriaal: foto-gedreven indeling, parallax, volle-breedte-foto's. Een optie voor later is een foto per zak (BeanBench en Timer.Coffee hebben die), maar dat staat niet op het plan.
+
+## Ronde 3: gekozen ontwerp (6 nov 2026)
+
+Licht (Organic Light) en donker (Quiet Luxury) als volwaardige thema's met keuze; Fraunces voor koppen met een schakelaar naar schreefloos; Zetten/Timer in Minimal Pro-stijl; foto per zak (alleen op het toestel, niet in sync of back-up); zakkenlijst als kaartstapel en zakdetail als redactioneel verhaal met 'Zet deze zak'. Details en testresultaten: `bouwbesluiten_v4.md`, ontwerpkeuzes: `19-ontwerp.md`.
