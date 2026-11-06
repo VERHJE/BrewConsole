@@ -61,7 +61,13 @@ Bekeken en wat ervan overgenomen wordt (alleen wat de bron zelf zegt):
   → Overnemen: één rustig timerscherm met alleen "wat nu", wake lock en melding op de volgende giet, versheidsmelding op de zak.
 - **Brewio** (App Store): dagboek met eigen recepten en boonvelden (herkomst, brander, proces, brandingsdatum, smaaknotities).
   → Bevestigt de zakvelden die we al hebben; niets nieuws nodig.
-- **Filtru, BeanBench, Coffee Book**: de sites gaven bij het ophalen een fout (429/503) en zoeken leverde niets op. **Niet beoordeeld**; hier wordt dus niets aan ontleend. Als Jelle schermafdrukken of concrete wensen heeft, kan dat alsnog.
+- **Filtru** (getfiltru.com, gelezen 6 nov): stap-voor-stap-timer met per stap het doel en de volgende handeling; 'begin eenvoudig, ga dieper als je wilt'; doel-tegenover-werkelijk-markering bij de weegschaal; gesproken uitlezing en VoiceOver voor wie de handen vol heeft; receptenbibliotheek per methode.
+  → Overnemen: timer die altijd 'nu' en 'straks' toont (staat er), progressieve diepte (eenvoudig zetten, logboek en inzicht pas op verzoek), gesproken aanwijzingen (nog niet).
+- **BeanBench** (App Store, gelezen 6 nov): haptiek en fase-aanwijzingen in de timer; drenageschatting vooraf ingevuld uit het recept; zak scannen met controle vóór opslaan en 'foto's verlaten je telefoon niet'; kwartsterren met tik of slepen; rustdagen en een herinnering als een zak klaar is; 'opnieuw kopen' neemt prijs en maat over; vergelijken alleen binnen dezelfde koffie en methode; vastgezette favoriete methoden bovenaan; zichtbare synchronisatiestatus (laatste keer en wat misging); share cards.
+  → Overnemen: rustdagen in de zakkenlijst en bij Zetten, 'opnieuw kopen', synchronisatiestatus (nu alleen in het scherm), vergelijken binnen dezelfde zak (verloopgrafieken doen dat al), sneller waarderen.
+- **Caliburr** (caliburr.coffee, gelezen 6 nov): recepten vastgepind aan de exacte molen, machine en boon ('een stand op de ene molen is niet dezelfde op een andere'); 'dit werkte' met één tik.
+  → Bevestigt de keuze om de klik altijd bij de molen (Timemore C3S Pro) te houden; geen gedeelde recepten gepland.
+- **Niet beoordeeld**: timer.coffee (blijft 429 geven; alleen de store-beschrijving is gelezen) en Coffee Book (geen adres).
 
 ## Ontwerp
 
