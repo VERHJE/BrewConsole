@@ -123,3 +123,14 @@ De nieuwe app staat op `<adres>/app3/`. De oude app op `/` is ongewijzigd.
 ## Instellingen (6 nov 2026)
 
 Meer → **Water** (hardheid, alkaliniteit in CaCO3 of HCO3, verdunning met demiwater, snelkeuzes Dunea/Waternet/PWN/SCA met bron), Meer → **Molen** (nulpunt gecontroleerd) en Meer → **Voorkeuren** (bij een proef A tegen B ook vragen welke helderder was). Alles zijn `setting`-gebeurtenissen en gaat dus mee met back-up en synchronisatie. Water en molen sturen het recept niet (een test eist hetzelfde `plan()`-advies met en zonder).
+
+## Ronde 1 en 1b: Zetten en Timer (6 nov 2026)
+
+Voortgekomen uit een eigen controle van de schermen (telefoon 390 px, laptop 1280 px) en uit Timer.Coffee (ring per stap en 'Next:').
+
+- **Zetten, telefoon:** het formulier staat de eerste keer open; daarna klapt het in tot één regel ('Zak · 250 g · doel') met 'Wijzig'. De **startknop zit vast** onder het scherm, boven de tabbalk, en staat zonder scrollen in beeld.
+- **Zetten, laptop:** formulier links, recept rechts; geen samenvatting; startknop vast onderaan de rechterkolom.
+- **Timer:** één stap tegelijk. Een **ring** toont de aftelling tot het einde van de stap (tot de volgende giet, of bij de laatste giet tot het verwachte einde), met de opdracht ernaast en een regel **'Hierna …'**. Bij Kasuya, waar een giet op doorlopen wacht, staat er 'wacht' in een gestippelde amberkleurige ring zonder aftelling. De totale tijd blijft groot bovenaan, omdat de gietmomenten absolute tijden zijn. De ring is voor het oog (`aria-hidden`); de tekst ernaast is de statusmelding en verandert alleen per stap, niet elke 200 ms.
+- **Logica** (`core/timer.ts` → `stepGuide`): puur en getest (klaar, giet met aftelling en 'hierna', wachten op doorlopen, laatste giet, klaar).
+- **Gevonden door de toegankelijkheidstest:** het grijs van kleine tekst (`--text-3`) was in het lichte thema te zwak; donkerder gemaakt. Gedane stappen hebben geen doorzichtigheid meer.
+- **Niet gedaan:** gesproken aanwijzingen en geluid bij een nieuwe stap (nu trilling en scherm).

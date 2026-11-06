@@ -17,6 +17,7 @@ const KEY = 'brewconsole.zetten';
 function loadForm(): BrewForm {
   try { return { ...DEFAULT_FORM, ...(JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<BrewForm>), feedback: [] }; } catch { return DEFAULT_FORM; }
 }
+const hasSavedForm = (): boolean => { try { return localStorage.getItem(KEY) !== null; } catch { return false; } };
 function saveForm(f: BrewForm): void {
   try { localStorage.setItem(KEY, JSON.stringify({ beanId: f.beanId, method: f.method, cupG: f.cupG, goal: f.goal, technique: f.technique })); } catch { /* geen opslag: prima */ }
 }
@@ -27,6 +28,8 @@ function Plan(): JSX.Element {
   const rows = beanRows(state);
   const [form, setForm] = useState<BrewForm>(loadForm);
   const [err, setErr] = useState('');
+  // Op een telefoon start het formulier ingeklapt zodra je het eerder gebruikte; op een laptop staat het altijd open.
+  const [open, setOpen] = useState(() => !hasSavedForm());
   // Een zak die niet meer bestaat (archief, andere toestel) valt terug op 'geen zak'.
   const beanId = form.beanId && rows.some(r => r.id === form.beanId) ? form.beanId : null;
   const eff = useMemo(() => ({ ...form, beanId }), [form, beanId]);
@@ -49,10 +52,18 @@ function Plan(): JSX.Element {
     } catch (e) { setErr(`Opslaan is mislukt: ${(e as Error).message}`); }
   };
 
+  const beanName = beanId ? rows.find(r => r.id === beanId)?.name ?? 'Zak' : 'Geen zak';
+  const summary = [beanName, `${eff.cupG} g`, eff.goal ? GOAL_LABEL[eff.goal] : 'geen voorkeur', eff.technique ? techniqueName(eff.technique) : null].filter(Boolean).join(' · ');
+
   return (
-    <section>
+    <section class="zetten">
       <h1>Zetten</h1>
-      <div class="card">
+      <div class="zgrid">
+      <div class="zform-col">
+      <button type="button" class="zsummary" aria-expanded={open} aria-controls="zform" onClick={() => setOpen(!open)}>
+        <span class="zsum-text">{summary}</span><span class="zedit">{open ? 'Klaar' : 'Wijzig'}</span>
+      </button>
+      <div class={open ? 'card zform' : 'card zform collapsed'} id="zform">
         <label class="field"><span>Zak</span>
           <select name="bean" value={beanId ?? ''} onChange={e => set({ beanId: (e.currentTarget as HTMLSelectElement).value || null })}>
             <option value="">Geen zak (algemeen)</option>
@@ -91,8 +102,12 @@ function Plan(): JSX.Element {
         </details>
       </div>
 
+      </div>
+      <div class="zadvice-col">
       {!outcome.ok ? <p class="banner warn" role="alert">{outcome.message}</p> : <Advice outcome={outcome} onStart={start} onTrial={startTrial} />}
       {err && <p class="banner warn" role="alert">{err}</p>}
+      </div>
+      </div>
     </section>
   );
 }
@@ -130,7 +145,7 @@ function Advice({ outcome, onStart, onTrial }: { outcome: Extract<ReturnType<typ
             <button class="btn" type="button" onClick={() => onTrial('control')}>Zet kop 1: {techniqueName(advice.trial.control.technique)}</button>
             <button class="btn" type="button" onClick={() => onTrial('variant')}>Zet kop 2: {techniqueName(advice.trial.variant.technique)}</button>
           </div></div>)}
-      <div class="actions"><button class="btn primary" type="button" onClick={onStart}>{advice.trial ? 'Zet gewoon dit recept' : 'Start zetsel'}</button></div>
+      <div class="startbar"><button class="btn primary" type="button" onClick={onStart}>{advice.trial ? 'Zet gewoon dit recept' : 'Start zetsel'}</button></div>
     </div>
   );
 }

@@ -33,16 +33,16 @@ test('hele stroom: zak → advies → timer → klaar; herladen midden in het ze
   await page.selectOption('select[name=bean]', { label: 'Teststroom' });
   await page.click('button:has-text("Start zetsel")');
   await page.waitForSelector('.timer .clock');
-  assert.equal(await page.locator('.clock').innerText(), '0:00');
+  assert.match(await page.locator('.clock').innerText(), /^0:00/);
   assert.equal(await page.locator('nav.tabbar').count(), 0, 'tabbalk is weg tijdens het zetsel');
   await page.clock.install({ time: new Date('2026-11-05T12:00:00Z') });
   await page.click('button:has-text("Start")');
   await page.clock.fastForward(12_000);
-  await page.waitForFunction(() => /0:1[1-3]/.test(document.querySelector('.clock').textContent));
+  await page.waitForFunction(() => /^0:1[1-3]/.test(document.querySelector('.clock').textContent));
   await page.reload();
   await page.waitForSelector('.timer .clock');
   await page.clock.install({ time: new Date('2026-11-05T12:00:13Z') });
-  await page.waitForFunction(() => { const [m, s] = document.querySelector('.clock').textContent.split(':').map(Number); return m * 60 + s >= 12; });
+  await page.waitForFunction(() => { const [m, s] = document.querySelector('.clock').textContent.match(/^(\d+):(\d+)/).slice(1).map(Number); return m * 60 + s >= 12; });
   // Doorlopen: tik tot het einde. Elke ronde: vooruit in de tijd, dan de grote knop.
   for (let i = 0; i < 12; i++) {
     if (await page.locator('a:has-text("Proeven")').count()) break;
@@ -53,6 +53,7 @@ test('hele stroom: zak → advies → timer → klaar; herladen midden in het ze
     if (await erdoor.count()) await erdoor.click();
   }
   await page.waitForSelector('a:has-text("Proeven")');
-  assert.ok((await page.locator('.now.done').innerText()).includes('Klaar in'));
+  assert.match(await page.locator('.stepcard.done .stepname').innerText(), /Klaar/);
+  assert.match(await page.locator('.stepcard.done .stepaction').innerText(), /Proef de koffie/);
   await page.close();
 });

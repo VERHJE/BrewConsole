@@ -4,9 +4,24 @@ import { factsOf } from '../../../../engine3/src/index.ts';
 import { href } from '../../core/router.ts';
 import { clock, pourLines, techniqueName } from '../../core/brew.ts';
 import {
-  abandonTimer, drainedTap, drainedUndo, finishTimer, pauseTimer, resumeTimer, startTimer, timerEventsFor, timerView
+  abandonTimer, drainedTap, drainedUndo, finishTimer, pauseTimer, resumeTimer, startTimer, stepGuide, timerEventsFor, timerView, type StepKind
 } from '../../core/timer.ts';
 import { useApp, useSnapshot } from '../store-context.tsx';
+
+/** Ring rond de tijd van de huidige stap. De getallen erin zijn voor het oog; de uitleg staat in de tekst ernaast. */
+function Ring({ fraction, kind, label }: { fraction: number | null; kind: StepKind; label: string }): JSX.Element {
+  const R = 52, C = 2 * Math.PI * R;
+  const f = kind === 'done' ? 1 : kind === 'hold' ? 1 : fraction ?? 0;
+  return (
+    <div class="ring" aria-hidden="true">
+      <svg viewBox="0 0 120 120">
+        <circle class="track" cx="60" cy="60" r={R} />
+        <circle class={`bar ${kind}`} cx="60" cy="60" r={R} stroke-dasharray={kind === 'hold' ? '5 7' : C.toFixed(1)} stroke-dashoffset={kind === 'hold' ? 0 : (C * (1 - f)).toFixed(1)} transform="rotate(-90 60 60)" />
+      </svg>
+      <span class="ringtext">{label}</span>
+    </div>
+  );
+}
 
 function useTicker(active: boolean): void {
   const [, setTick] = useState(0);
@@ -55,29 +70,21 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
   const send = (evs: ReturnType<typeof startTimer>): void => { void store.append(evs); };
   const t = view.elapsedSec;
   const lastIdx = recipe.pours.length - 1;
-  const cur = view.current >= 0 ? lines[view.current]! : null;
-  const holdIdx = view.phases.findIndex(p => p === 'hold');
 
-  let now: JSX.Element;
-  if (view.status === 'complete') {
-    now = <div class="now done"><b>Klaar in {clock(cup.endSec ?? t)}</b><small>Proef de koffie en leg vast hoe hij was.</small></div>;
-  } else if (view.status === 'abandoned') {
-    now = <div class="now"><b>Afgebroken</b><small>Dit zetsel telt niet mee voor het advies.</small></div>;
-  } else if (view.status === 'ready') {
-    now = <div class="now"><b>{techniqueName(recipe.technique)}</b><small>{recipe.doseG} g koffie · {Math.round(recipe.waterG)} g water{recipe.grindClick !== null ? ` · klik ${recipe.grindClick}` : ''}{recipe.tempC !== null ? ` · ${recipe.tempC} °C` : ''}</small></div>;
-  } else if (holdIdx >= 0) {
-    const l = lines[holdIdx]!;
-    now = <div class="now hold" role="status"><b>Wacht op doorlopen</b><small>Tik “Erdoor” zodra het bed bijna droog is. Dan: {l.add} tot {l.to}.</small></div>;
-  } else if (cur && !view.allPoured) {
-    now = <div class="now" role="status"><b>Giet {view.current + 1}: {cur.add} tot {cur.to}</b><small>{cur.how || 'rustig gieten'}{view.next ? ` · volgende giet over ${clock(view.next.inSec)}` : ' · laatste giet'}</small></div>;
-  } else {
-    now = <div class="now" role="status"><b>{view.next ? `Giet ${view.next.index + 1} over ${clock(view.next.inSec)}` : 'Laat doorlopen'}</b><small>{view.next ? `${lines[view.next.index]!.add} tot ${lines[view.next.index]!.to}` : 'Tik “Erdoor” als alles doorgelopen is.'}</small></div>;
-  }
+  const guide = stepGuide(recipe, view, recipe.expectedEndSec?.mid ?? null);
+  const center = guide.kind === 'ready' ? 'start' : guide.kind === 'done' ? 'klaar' : guide.kind === 'hold' ? 'wacht' : guide.remainingSec !== null ? clock(guide.remainingSec) : 'droog?';
 
   return (
     <section class="timer" aria-label="Timer">
-      <div class="clock" aria-live="off">{clock(Math.floor(t))}</div>
-      {now}
+      <div class="clock" aria-label={`Totale tijd ${clock(Math.floor(t))}`}>{clock(Math.floor(t))}<small>totaal</small></div>
+      <div class={`stepcard ${guide.kind}`}>
+        <Ring fraction={guide.fraction} kind={guide.kind} label={center} />
+        <div class="stepcopy" role="status">
+          <h2 class="stepname">{guide.title}</h2>
+          <p class="stepaction">{guide.action}</p>
+        </div>
+      </div>
+      {guide.next && <p class="stepnext">{guide.next}</p>}
       <ol class="steps" aria-label="Gietschema">
         {lines.map((l, i) => {
           const ph = view.phases[i]!;
