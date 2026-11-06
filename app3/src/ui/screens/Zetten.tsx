@@ -127,7 +127,6 @@ function Advice({ outcome, onStart, onTrial }: { outcome: Extract<ReturnType<typ
         <div class="num"><b>{Math.round(r.waterG)} g</b><small>water{r.bypassG > 0 ? ` (+${Math.round(r.bypassG)} g erbij)` : ''}</small></div>
         {r.tempC !== null && <div class="num"><b>{r.tempC} °C</b><small>temperatuur</small></div>}
         {r.grindClick !== null && <div class="num"><b>klik {r.grindClick}</b><small>Timemore C3S Pro</small></div>}
-        {end && <div class="num"><b>{end}</b><small>verwacht einde</small></div>}
       </div>
       {(dose || tds) && <p class="meta">Onzekerheid: {[dose && `dosis ${dose}`, tds && `doel-TDS ${tds}`].filter(Boolean).join(' · ')}</p>}
       <div class="card">
@@ -145,7 +144,7 @@ function Advice({ outcome, onStart, onTrial }: { outcome: Extract<ReturnType<typ
             <button class="btn" type="button" onClick={() => onTrial('control')}>Zet kop 1: {techniqueName(advice.trial.control.technique)}</button>
             <button class="btn" type="button" onClick={() => onTrial('variant')}>Zet kop 2: {techniqueName(advice.trial.variant.technique)}</button>
           </div></div>)}
-      <div class="startbar"><button class="btn primary" type="button" onClick={onStart}>{advice.trial ? 'Zet gewoon dit recept' : 'Start zetsel'}</button></div>
+      <div class="startbar"><button class="btn primary" type="button" onClick={onStart}><span>{advice.trial ? 'Zet gewoon dit recept' : 'Start zetsel'}</span>{end && <small>klaar rond {end}</small>}</button></div>
     </div>
   );
 }

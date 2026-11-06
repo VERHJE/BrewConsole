@@ -20,7 +20,7 @@ a { color: var(--accent); }
 .spacer { flex: 1; }
 
 .btn { min-height: var(--tap); padding: 0 18px; border-radius: var(--radius-s); border: 1px solid var(--line); background: var(--surface); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; color: var(--text); }
-.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
 .btn:active { transform: translateY(1px); }
 .btn[disabled] { opacity: .5; cursor: default; }
 
@@ -63,10 +63,10 @@ a { color: var(--accent); }
 .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
 .stepper { display: flex; align-items: center; gap: 8px; }
 .stepper input { text-align: center; width: 96px; }
-.numbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 0 0 12px; }
-.num { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; }
-.num b { display: block; font-size: 1.6rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.num small { color: var(--text-2); }
+.numbers { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; margin: 0 0 8px; }
+.num { border-top: 1px solid var(--line); padding: 12px 0 8px; min-width: 0; }
+.num b { display: block; font-size: clamp(1.9rem, 9vw, 2.6rem); font-weight: 700; letter-spacing: -.02em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.num small { color: var(--text-2); font-size: .85rem; }
 table.pours { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 table.pours th { text-align: left; font-weight: 500; color: var(--text-2); font-size: .8rem; }
 table.pours th, table.pours td { padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -76,32 +76,31 @@ table.pours th, table.pours td { padding: 8px 6px; border-bottom: 1px solid var(
 
 /* timer */
 .timer { text-align: center; }
-.timer .clock { font-size: clamp(3.2rem, 17vw, 5.5rem); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; margin: 4px 0 8px; }
+.timer .clock { font-size: clamp(3.6rem, 19vw, 6rem); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; margin: 4px 0 8px; }
 .timer .clock small { display: block; font-size: .8rem; font-weight: 500; color: var(--text-3); letter-spacing: .04em; text-transform: uppercase; margin-top: 2px; }
-.stepcard { display: flex; align-items: center; gap: 16px; text-align: left; background: var(--surface); border: 2px solid var(--accent); border-radius: var(--radius); padding: 14px 16px; margin: 8px 0; }
+.stepcard { display: flex; align-items: center; gap: 18px; text-align: left; border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); border-radius: 0; padding: 18px 0; margin: 8px 0; }
 .stepcard.hold { border-color: var(--warn); }
 .stepcard.done { border-color: var(--ok); }
-.stepcard.ready, .stepcard.wait { border-color: var(--line); }
-.ring { position: relative; flex: none; width: 124px; height: 124px; }
+.ring { position: relative; flex: none; width: 140px; height: 140px; }
 .ring svg { width: 100%; height: 100%; display: block; }
 .ring .track { fill: none; stroke: var(--surface-2); stroke-width: 9; }
 .ring .bar { fill: none; stroke: var(--accent); stroke-width: 9; stroke-linecap: round; transition: stroke-dashoffset .25s linear; }
 .ring .bar.hold { stroke: var(--warn); stroke-linecap: butt; }
 .ring .bar.done { stroke: var(--ok); }
 .ring .bar.ready, .ring .bar.wait { stroke: var(--text-3); }
-.ringtext { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ringtext { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.9rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .stepcopy { min-width: 0; flex: 1; }
-.stepname { margin: 0 0 4px; font-size: 1.35rem; line-height: 1.2; }
+.stepname { margin: 0 0 4px; font-size: 1.6rem; line-height: 1.15; font-weight: 600; }
 .stepaction { margin: 0; color: var(--text-2); font-size: 1rem; line-height: 1.35; }
 .stepnext { margin: 4px 0 8px; color: var(--text-2); font-size: .95rem; text-align: left; padding: 0 4px; }
 .timer .big { min-height: 72px; font-size: 1.25rem; width: 100%; }
 .timer .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
 .timer ol.steps { text-align: left; padding-left: 0; list-style: none; margin: 8px 0 12px; }
-.timer ol.steps li { display: flex; gap: 12px; padding: 6px 10px; border-radius: var(--radius-s); color: var(--text-3); font-size: .9rem; font-variant-numeric: tabular-nums; }
+.timer ol.steps li { display: flex; gap: 14px; padding: 9px 12px; border-radius: var(--radius-s); color: var(--text-3); font-size: 1rem; font-variant-numeric: tabular-nums; }
 .timer ol.steps li.go { background: var(--accent-soft); color: var(--text); font-weight: 600; }
 .timer ol.steps li.hold { background: var(--surface-2); color: var(--warn); }
 .timer ol.steps li.past { color: var(--text-3); text-decoration: line-through; text-decoration-color: var(--line); }
-@media (max-width: 360px) { .ring { width: 96px; height: 96px; } .ringtext { font-size: 1.25rem; } .stepcard { gap: 12px; padding: 12px; } }
+@media (max-width: 360px) { .ring { width: 96px; height: 96px; } .ringtext { font-size: 1.25rem; } .stepcard { gap: 12px; padding: 12px 0; } }
 @media (max-height: 560px) and (orientation: landscape) {
   .timer .clock { font-size: 3rem; margin: 0 0 4px; }
   .ring { width: 88px; height: 88px; } .ringtext { font-size: 1.2rem; }
@@ -161,7 +160,8 @@ table.plain th { white-space: nowrap; }
 .zedit { color: var(--accent); font-weight: 600; flex: none; }
 .zform.collapsed { display: none; }
 .startbar { position: sticky; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 8px); z-index: 4; margin-top: 12px; padding: 8px; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(6px); border-radius: var(--radius); }
-.startbar .btn { width: 100%; min-height: 56px; font-size: 1.1rem; }
+.startbar .btn { width: 100%; min-height: 60px; font-size: 1.1rem; flex-direction: column; gap: 1px; line-height: 1.2; }
+.startbar .btn small { font-size: .8rem; font-weight: 500; opacity: .85; }
 @media (min-width: 900px) {
   .zsummary { display: none; }
   .zform.collapsed { display: block; }
