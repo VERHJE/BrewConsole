@@ -80,7 +80,6 @@ function Detail({ id }: { id: string }): JSX.Element {
         {c.endSec !== null && <><dt>Klaar na</dt><dd>{clock(c.endSec)}</dd></>}
         {c.lastDrainSec !== null && <><dt>Laatste giet doorgelopen na</dt><dd>{clock(c.lastDrainSec)}</dd></>}
         {c.tdsPct !== null && <><dt>TDS</dt><dd>{c.tdsPct.toFixed(2).replace('.', ',')} %</dd></>}
-        <dt>Advies van</dt><dd>{c.engine.name} {c.engine.version}</dd>
       </dl>
       <div class="card"><strong>Schema</strong>
         <table class="plain"><tbody>{lines.map(l => <tr key={l.index}><td>{l.at}</td><td>{l.add}</td><td>→ {l.to}</td><td>{c.drainedAtSec.has(l.index) ? `erdoor ${clock(c.drainedAtSec.get(l.index)!)}` : ''}</td></tr>)}</tbody></table></div>
@@ -103,6 +102,7 @@ function Detail({ id }: { id: string }): JSX.Element {
             <option value="">Kies een kop…</option>
             {others.map(o => <option key={o.id} value={o.id}>{dateText(o.at)}{o.liking ? ` · ${formatLiking(o.liking)} van 5` : ''}</option>)}
           </select></label>)}
+      <p class="engine-note">Advies gemaakt door <span>{c.engine.name} {c.engine.version}</span></p>
       <div class="actions"><button class="btn" type="button" onClick={del}>Kop verwijderen</button></div>
     </section>
   );

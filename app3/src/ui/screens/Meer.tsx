@@ -26,9 +26,18 @@ function Profiel(): JSX.Element {
       <p class="muted">Dit laat zien wat je opmerkt en waardeert. Het stuurt je recept niet.</p>
       <p class="meta">{p.cups} geproefde koppen · {p.cataCups} met de blinde smaakkeuze</p>
       <h2>Wat merk je op?</h2>
-      <table class="plain"><thead><tr><th>Groep</th><th class="n">Treffers</th><th class="n">Valse alarmen</th><th>Beeld</th></tr></thead>
-        <tbody>{p.sensitivity.map(s => (
-          <tr key={s.category}><td>{catName(s.category)}</td><td class="n">{s.hits}/{s.nExpected}</td><td class="n">{s.falseAlarms}/{s.nNotExpected}</td><td>{STATUS_TEXT[s.status]}</td></tr>))}</tbody></table>
+      {(() => {
+        const known = p.sensitivity.filter(s => s.status !== 'unknown');
+        const unknown = p.sensitivity.filter(s => s.status === 'unknown');
+        return (
+          <div>
+            {known.length > 0 && <ul class="sens">{known.map(s => (
+              <li key={s.category}><strong>{catName(s.category)}</strong>
+                <div>{STATUS_TEXT[s.status]}</div>
+                <div class="stat">{s.hits} van {s.nExpected} herkend · {s.falseAlarms} van {s.nNotExpected} aangevinkt zonder dat de zak het noemt</div></li>))}</ul>}
+            {unknown.length > 0 && <p class="sens-empty">Nog te weinig zakken om iets te zeggen over: {unknown.map(s => catName(s.category)).join(', ')}.</p>}
+          </div>);
+      })()}
       <h2>Notities die je herkent</h2>
       {p.notes.length === 0 ? <p class="muted">Nog geen herkende notities.</p>
         : <ul class="list">{p.notes.slice(0, 12).map(n => <li key={n.note}><span class="item"><strong>{n.note}</strong><small>{n.yes}× ja · {n.bit}× een beetje · {n.no}× nee</small></span></li>)}</ul>}
