@@ -99,3 +99,38 @@ test('adres en zwakke invoer worden afgewezen vóór er iets verstuurd wordt', a
     { baseUrl: 'https://x.example', token: TOKEN, passphrase: 'kort' }
   ]) assert.equal((await connect(a.deps, input)).ok, false);
 });
+
+test('back-up met foto\'s: heen en terug; onbekende zak, vreemd type, kapotte base64 en te groot worden overgeslagen', async () => {
+  const { bytesToBase64, base64ToBytes, readPhotos, BACKUP_VERSION } = await import('../src/core/backup.ts');
+  const events = migrateBackupV3(BACKUP_V3).events;
+  const beanId = (events.find(e => e.kind === 'bean.upsert')!.data as { beanId: string }).beanId;
+  const bytes = new Uint8Array([1, 2, 3, 250, 251, 252]);
+  assert.deepEqual([...base64ToBytes(bytesToBase64(bytes))], [...bytes]);
+  const big = new Uint8Array(40_000).map((_, i) => i % 256);
+  assert.deepEqual([...base64ToBytes(bytesToBase64(big))], [...big]);
+
+  const text = exportLog(events, 1, [{ beanId, type: 'image/webp', data: bytesToBase64(bytes) }]);
+  assert.equal(JSON.parse(text).version, BACKUP_VERSION);
+  const p = previewImport(text, []);
+  assert.equal(p.photos.length, 1);
+  assert.equal(p.photos[0]!.beanId, beanId);
+  assert.deepEqual(p.warnings, []);
+
+  const known = new Set([beanId]);
+  const r = readPhotos([
+    { beanId, type: 'image/webp', data: 'AQID' },
+    { beanId, type: 'image/webp', data: 'AQID' }, // dubbel
+    { beanId: 'onbekend', type: 'image/webp', data: 'AQID' },
+    { beanId, type: 'text/html', data: 'AQID' },
+    { beanId, type: 'image/png', data: '<script>' },
+    { beanId, type: 'image/png', data: 'A'.repeat(600_000) },
+    null
+  ], known);
+  assert.equal(r.photos.length, 1);
+  assert.equal(r.skipped, 6);
+  assert.deepEqual(readPhotos('geen lijst', known), { photos: [], skipped: 0 });
+  // een back-up van vóór de foto's (versie 1, zonder veld) leest gewoon
+  const v1 = JSON.stringify({ format: 'brewconsole-log', version: 1, events });
+  assert.equal(previewImport(v1, []).photos.length, 0);
+  assert.equal(previewImport(v1, []).fresh, events.length);
+});

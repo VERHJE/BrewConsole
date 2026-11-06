@@ -1,10 +1,12 @@
-// Foto per zak. De foto blijft op het toestel (eigen IndexedDB-database), staat niet in het logboek,
-// niet in de synchronisatieblokken en (nog) niet in de back-up. Zuivere hulpfuncties + een smalle opslag-interface.
+// Foto per zak. De foto blijft op het toestel (eigen IndexedDB-database), staat niet in het logboek en niet in de
+// synchronisatieblokken, maar wel in de back-up (core/backup.ts, versie 2). Zuivere hulpfuncties + een smalle opslag-interface.
 
 export interface PhotoStore {
   get(beanId: string): Promise<Blob | null>;
   put(beanId: string, blob: Blob): Promise<void>;
   remove(beanId: string): Promise<void>;
+  /** Alles wissen (bij 'Alles wissen' in Gegevens). */
+  clear(): Promise<void>;
 }
 
 export const PHOTO_MAX_SIDE = 1080;
@@ -36,7 +38,8 @@ export function memoryPhotoStore(): PhotoStore {
   return {
     get: async id => map.get(id) ?? null,
     put: async (id, b) => { map.set(id, b); },
-    remove: async id => { map.delete(id); }
+    remove: async id => { map.delete(id); },
+    clear: async () => { map.clear(); }
   };
 }
 
@@ -57,7 +60,8 @@ export async function openPhotoStore(factory: IDBFactory | undefined = globalThi
   return {
     async get(id) { return ((await req(db.transaction(STORE, 'readonly').objectStore(STORE).get(id))) as Blob | undefined) ?? null; },
     async put(id, b) { const tx = db.transaction(STORE, 'readwrite'); tx.objectStore(STORE).put(b, id); await fin(tx); },
-    async remove(id) { const tx = db.transaction(STORE, 'readwrite'); tx.objectStore(STORE).delete(id); await fin(tx); }
+    async remove(id) { const tx = db.transaction(STORE, 'readwrite'); tx.objectStore(STORE).delete(id); await fin(tx); },
+    async clear() { const tx = db.transaction(STORE, 'readwrite'); tx.objectStore(STORE).clear(); await fin(tx); }
   };
 }
 

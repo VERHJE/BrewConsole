@@ -49,3 +49,42 @@ for (const scheme of ['light', 'dark']) {
     await page.close();
   });
 }
+
+test('foto in de back-up: maken, alles wissen, terugzetten', async () => {
+  const png = await QRCode.toBuffer('backup', { margin: 4, scale: 12 });
+  const page = await app.browser.newPage();
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.goto(app.base + '#/zakken/nieuw');
+  await page.fill('input[name=name]', 'Backupzak');
+  await page.setInputFiles('input[name=photo]', { name: 'zak.png', mimeType: 'image/png', buffer: png });
+  await page.waitForSelector('text=Foto klaar');
+  await page.click('button:has-text("Opslaan")');
+  await page.waitForSelector('.thumb img.photo');
+
+  await page.goto(app.base + '#/meer/gegevens');
+  const [download] = await Promise.all([page.waitForEvent('download'), page.click('button:has-text("Back-up maken")')]);
+  await page.waitForSelector('text=met 1 foto');
+  const fs = await import('node:fs');
+  const file = await download.path();
+  const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+  assert.equal(parsed.version, 2);
+  assert.equal(parsed.photos.length, 1);
+  assert.match(parsed.photos[0].type, /^image\/(webp|jpeg)$/);
+
+  await page.fill('input[name=confirm]', 'WISSEN');
+  await page.click('button:has-text("Alles wissen")');
+  await page.waitForSelector('text=Alles op dit toestel is gewist');
+  await page.goto(app.base + '#/zakken');
+  await page.waitForSelector('text=Nog geen zakken');
+
+  await page.goto(app.base + '#/meer/gegevens');
+  await page.setInputFiles('input[type=file]', file);
+  await page.waitForSelector('text=1 foto van zakken');
+  await page.click('button:has-text("toevoegen")');
+  await page.waitForSelector('text=1 foto teruggezet');
+  await page.goto(app.base + '#/zakken');
+  await page.waitForSelector('.thumb img.photo');
+  assert.deepEqual(errors, []);
+  await page.close();
+});

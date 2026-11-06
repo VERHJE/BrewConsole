@@ -141,7 +141,7 @@ function Editor({ beanId }: { beanId: string | null }): JSX.Element {
     const file = input.files?.[0];
     if (!file) return;
     setPhotoMsg('Bezig…');
-    try { setPhotoBlob(await encodePhoto(file)); setPhotoMsg('Foto klaar. Ze blijft op dit toestel en staat niet in de back-up.'); }
+    try { setPhotoBlob(await encodePhoto(file)); setPhotoMsg('Foto klaar. Ze blijft op dit toestel en staat in je back-up, niet in de synchronisatie.'); }
     catch { setPhotoMsg('Deze foto kon niet gelezen worden.'); }
     input.value = '';
   };
@@ -181,7 +181,7 @@ function Editor({ beanId }: { beanId: string | null }): JSX.Element {
           : photoBlob === 'remove' ? <BagArt beanId="x" name={form.values.name || 'zak'} bump={bump} /> : <BagArt beanId={beanId ?? 'nieuw'} name={form.values.name || 'zak'} bump={bump} />}</div>
         <div class="photo-actions">
           <strong>Foto van de zak</strong>
-          <span class="meta">Blijft op dit toestel; niet in synchronisatie en back-up.</span>
+          <span class="meta">Blijft op dit toestel en staat in je back-up; niet in de synchronisatie.</span>
           <div class="row wrap">
             <label class="btn">Foto kiezen<input class="sr-only" type="file" name="photo" accept="image/*" onChange={onPhoto} /></label>
             {(photoBlob && photoBlob !== 'remove' || beanId) && <button class="btn" type="button" onClick={() => { setPhotoBlob('remove'); setBump(bump + 1); setPhotoMsg('Foto wordt verwijderd bij opslaan.'); }}>Foto verwijderen</button>}

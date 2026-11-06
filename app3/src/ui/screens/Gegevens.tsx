@@ -1,7 +1,7 @@
 import type { JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { href } from '../../core/router.ts';
-import { exportLog, previewImport, type ImportPreview } from '../../core/backup.ts';
+import { base64ToBytes, bytesToBase64, exportLog, previewImport, type BackupPhoto, type ImportPreview } from '../../core/backup.ts';
 import { useApp, useSnapshot } from '../store-context.tsx';
 
 const KIND_LABEL: Record<string, string> = {
@@ -11,7 +11,7 @@ const KIND_LABEL: Record<string, string> = {
 const LAST_EXPORT = 'brewconsole.lastExport';
 
 export function Gegevens(): JSX.Element {
-  const { store, env } = useApp();
+  const { store, env, photos } = useApp();
   const { events } = useSnapshot();
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [msg, setMsg] = useState('');
@@ -21,7 +21,15 @@ export function Gegevens(): JSX.Element {
   const days = last ? Math.floor((env.now() - last) / 86_400_000) : null;
 
   const doExport = async (): Promise<void> => {
-    const text = exportLog(events, env.now());
+    const beanIds = [...new Set(events.filter(e => e.kind === 'bean.upsert').map(e => (e.data as { beanId: string }).beanId))];
+    const pics: BackupPhoto[] = [];
+    for (const id of beanIds) {
+      try {
+        const b = await photos.get(id);
+        if (b) pics.push({ beanId: id, type: b.type || 'image/jpeg', data: bytesToBase64(new Uint8Array(await b.arrayBuffer())) });
+      } catch { /* deze foto laten we weg; de rest van de back-up is belangrijker */ }
+    }
+    const text = exportLog(events, env.now(), pics);
     const name = `brewconsole-${new Date(env.now()).toISOString().slice(0, 10)}.json`;
     const file = new File([text], name, { type: 'application/json' });
     try {
@@ -33,7 +41,7 @@ export function Gegevens(): JSX.Element {
         setTimeout(() => URL.revokeObjectURL(url), 10_000);
       }
       try { localStorage.setItem(LAST_EXPORT, String(env.now())); } catch { /* geen opslag: prima */ }
-      setMsg('Back-up gemaakt.');
+      setMsg(pics.length ? `Back-up gemaakt, met ${pics.length} foto${pics.length === 1 ? '' : "'s"}.` : 'Back-up gemaakt.');
     } catch (e) { if ((e as Error).name !== 'AbortError') setMsg('De back-up kon niet worden gedeeld of opgeslagen.'); }
   };
 
@@ -45,10 +53,18 @@ export function Gegevens(): JSX.Element {
   };
   const doImport = async (): Promise<void> => {
     if (!preview) return;
-    try { const r = await store.merge(preview.events); setMsg(`${r.added} nieuwe gebeurtenissen toegevoegd.`); setPreview(null); }
+    try {
+      const r = await store.merge(preview.events);
+      let pics = 0;
+      for (const p of preview.photos) {
+        if (await photos.get(p.beanId)) continue; // een foto op dit toestel blijft staan
+        await photos.put(p.beanId, new Blob([base64ToBytes(p.data) as BlobPart], { type: p.type })); pics++;
+      }
+      setMsg(`${r.added} nieuwe gebeurtenissen toegevoegd${pics ? `, ${pics} foto${pics === 1 ? '' : "'s"} teruggezet` : ''}.`); setPreview(null);
+    }
     catch (e) { setMsg(`Importeren is mislukt: ${(e as Error).message}`); }
   };
-  const wipe = async (): Promise<void> => { await store.clear(); setConfirm(''); setMsg('Alles op dit toestel is gewist.'); };
+  const wipe = async (): Promise<void> => { await store.clear(); try { await photos.clear(); } catch { /* geen foto's te wissen */ } setConfirm(''); setMsg('Alles op dit toestel is gewist.'); };
 
   return (
     <section>
@@ -58,7 +74,7 @@ export function Gegevens(): JSX.Element {
       {last === null && events.length > 0 && <p class="banner" role="status">Je hebt nog geen back-up gemaakt.</p>}
       {msg && <p class="banner" role="status">{msg}</p>}
 
-      <div class="card"><strong>Back-up maken</strong><p class="meta">Eén bestand met alles. Bewaar het buiten dit toestel.</p>
+      <div class="card"><strong>Back-up maken</strong><p class="meta">Eén bestand met alles, ook de foto's van je zakken. Bewaar het buiten dit toestel.</p>
         <button class="btn primary" type="button" onClick={doExport} disabled={events.length === 0}>Back-up maken</button></div>
 
       <div class="card"><strong>Back-up terugzetten</strong>
@@ -67,9 +83,9 @@ export function Gegevens(): JSX.Element {
         {preview && (
           <div>
             {preview.kind === 'unknown' ? null : <p>{preview.kind === 'old-app' ? 'Back-up van de oude app' : 'Back-up van Brew Console'}: {Object.entries(preview.counts).map(([k, n]) => `${n} ${KIND_LABEL[k] ?? k}`).join(', ')}.</p>}
-            {preview.kind !== 'unknown' && <p>{preview.fresh} nieuw, {preview.known} al aanwezig.</p>}
+            {preview.kind !== 'unknown' && <p>{preview.fresh} nieuw, {preview.known} al aanwezig{preview.photos.length ? `; ${preview.photos.length} foto${preview.photos.length === 1 ? '' : "'s"} van zakken` : ''}.</p>}
             {preview.warnings.map(w => <p class="banner warn" key={w} role="status">{w}</p>)}
-            {preview.kind !== 'unknown' && <button class="btn primary" type="button" onClick={doImport} disabled={preview.fresh === 0}>{preview.fresh === 0 ? 'Niets nieuws' : `${preview.fresh} toevoegen`}</button>}
+            {preview.kind !== 'unknown' && <button class="btn primary" type="button" onClick={doImport} disabled={preview.fresh === 0 && preview.photos.length === 0}>{preview.fresh > 0 ? `${preview.fresh} toevoegen` : preview.photos.length > 0 ? "Foto's terugzetten" : 'Niets nieuws'}</button>}
           </div>)}
       </div>
 
