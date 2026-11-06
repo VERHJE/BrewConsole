@@ -6,6 +6,7 @@ import {
   DILUTIONS, SCA_ALKALINITY, SCA_HARDNESS, WATER_PRESETS, brightLighterEvent, dilutionKey, effectiveWater, grinderEvent,
   settingsOf, validateWater, verdictOf, waterEvent, type Verdict
 } from '../../core/settings.ts';
+import { THEME_KEY, THEME_LABEL, TYPE_KEY, TYPE_LABEL, applyPrefs, readTheme, readType, savePref, themeColor, type ThemePref, type TypePref } from '../../core/prefs.ts';
 import { useApp, useSnapshot } from '../store-context.tsx';
 
 const VERDICT: Record<Verdict, string> = { below: 'onder', within: 'binnen', above: 'boven' };
@@ -72,14 +73,37 @@ export function Water(): JSX.Element {
   );
 }
 
+function Radios<T extends string>({ name, legend, value, labels, onPick }: { name: string; legend: string; value: T; labels: Readonly<Record<T, string>>; onPick: (v: T) => void }): JSX.Element {
+  return (
+    <fieldset class="field"><legend class="meta">{legend}</legend>
+      {(Object.keys(labels) as T[]).map(k => (
+        <label key={k} class="choice" style="margin-top:8px"><input type="radio" name={name} value={k} checked={value === k} onChange={() => onPick(k)} /><span>{labels[k]}</span></label>
+      ))}
+    </fieldset>
+  );
+}
+
 export function Voorkeuren(): JSX.Element {
   const { store, env } = useApp();
   const { state } = useSnapshot();
   const s = settingsOf(state);
+  const [theme, setTheme] = useState<ThemePref>(() => readTheme(localStorage));
+  const [type, setType] = useState<TypePref>(() => readType(localStorage));
+  const change = (t: ThemePref, f: TypePref): void => {
+    savePref(localStorage, THEME_KEY, t); savePref(localStorage, TYPE_KEY, f);
+    applyPrefs(document.documentElement, t, f);
+    document.querySelector('meta[name=theme-color]')?.setAttribute('content', themeColor(t, matchMedia('(prefers-color-scheme: dark)').matches));
+    setTheme(t); setType(f);
+  };
   return (
     <section>
       <div class="head"><Back /><h1>Voorkeuren</h1></div>
-      <label class="choice" style="margin-top:12px">
+      <h2>Weergave</h2>
+      <Radios<ThemePref> name="theme" legend="Thema" value={theme} labels={THEME_LABEL} onPick={t => change(t, type)} />
+      <Radios<TypePref> name="type" legend="Lettertype van koppen en namen" value={type} labels={TYPE_LABEL} onPick={f => change(theme, f)} />
+      <p class="meta">Cijfers en teksten blijven in beide gevallen schreefloos. Deze keuze geldt voor dit toestel.</p>
+      <h2>Proeven</h2>
+      <label class="choice" style="margin-top:8px">
         <input type="checkbox" name="lighter" checked={s.brightLighter} onChange={e => { void store.append([brightLighterEvent(env, (e.currentTarget as HTMLInputElement).checked)]); }} />
         <span>Bij een proef A tegen B ook vragen welke helderder was</span>
       </label>

@@ -1,0 +1,8 @@
+/* Fraunces (SIL Open Font License 1.1), latin, variabel gewicht: alleen voor koppen en namen. Eigen kopie, dus ook offline. */
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('fonts/fraunces-latin-wght-normal.woff2') format('woff2');
+}

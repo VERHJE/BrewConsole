@@ -4,6 +4,7 @@ import { memoryStorage, openIndexedDbStorage } from './core/storage.ts';
 import { createStore } from './core/store.ts';
 import type { Env } from './core/ids.ts';
 import { App } from './ui/App.tsx';
+import { applyPrefs, readTheme, readType } from './core/prefs.ts';
 import { Ctx } from './ui/store-context.tsx';
 
 function deviceId(): string {
@@ -16,6 +17,7 @@ function deviceId(): string {
 }
 
 async function start(): Promise<void> {
+  applyPrefs(document.documentElement, readTheme(localStorage), readType(localStorage));
   const engine = createEngine();
   const idb = await openIndexedDbStorage();
   const storage = idb ?? memoryStorage();
