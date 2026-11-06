@@ -1352,3 +1352,10 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Service worker:** app3-worker laat `/oud/` met rust en geeft de app-schil alleen aan `/` en `/index.html`, zodat `tokengenerator.html` en `toestelcheck.html` (nu ook op `/`) hun eigen pagina tonen. De voorgecachete lijst bevat `oud/` en die hulppagina's niet.
 - **Controle:** upgradepad nagespeeld in Chromium (oude site met actieve worker → nieuwe site): na één herlaadbeurt app3, geen foutmelding, `/oud/` en `/tokengenerator.html` werken. app3: 89 tests; volledige QA-suite: 1120 tests groen.
 - **Let op voor de gebruiker:** gegevens uit de oude app moeten via back-up en inlezen mee (Meer → Over wijst ernaar).
+
+### Kwartsterren (6 nov 2026) · contract e3-contract-1.1
+
+- **Besluit:** waardering is 1–5 sterren in stappen van een kwart (17 waarden). Uitbreiding, geen breuk: hele sterren uit oudere logboeken en back-ups blijven geldig, en een toestel met de nieuwe app kan nog steeds met oude blokken samenvoegen.
+- **Engine:** `Liking` is nu `number`; `engine3/src/liking.ts` (`isLiking`, `normaliseLiking`, `nudgeLiking`, `LIKING_*`), `validateEvent` weigert alles buiten 1–5 in kwarten (0, 0,75, 5,25, 3,3, tekst). Het profiel rekent al met gemiddelden en verschillen, dus geen verandering in rekenregels. Rooktest en versiecheck op 1.1.
+- **App:** snel blijft snel: eerst één tik op een hele ster, daarna verschijnen −¼ en +¼ met de waarde ('4,25 van 5') als statusmelding. In lijsten en detail staat een rij sterren met een gedeeltelijk gevulde laatste ster (`Stars.tsx`, voor schermlezers 'x van 5'); verloopgrafiek, vergelijken en koppenlijst gebruiken dezelfde opmaak (`formatLiking`, Nederlandse komma).
+- **Tests:** engine 171 (nieuw: validatie van kwarten, afronden/begrenzen/bijstellen), app3 91 (nieuw: kwartsterren-flow in licht en donker met axe).

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { createEngine, ENGINE3_CONTRACT_VERSION, ENGINE3_VERSION, migrateBackupV3, scanBeanText, readQrPayload, tasteProfile } from '../dist/engine3.mjs';
 import { decodeQr } from '../dist/qr.mjs';
 
-assert.equal(ENGINE3_CONTRACT_VERSION, 'e3-contract-1.0');
+assert.equal(ENGINE3_CONTRACT_VERSION, 'e3-contract-1.1');
 const engine = createEngine();
 assert.equal(engine.stamp.name, 'engine3');
 assert.equal(engine.stamp.version, ENGINE3_VERSION);

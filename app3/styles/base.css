@@ -207,3 +207,11 @@ table.plain th { white-space: nowrap; }
 .compare th, .compare td { text-align: left; padding: 8px 6px; vertical-align: top; }
 .compare tr.diff td, .compare tr.diff th { background: var(--accent-soft); }
 .detail .head { flex-wrap: wrap; }
+
+/* Kwartsterren */
+.starrow { position: relative; display: inline-block; line-height: 1; letter-spacing: 1px; white-space: nowrap; vertical-align: middle; }
+.starrow-bg { color: var(--line); }
+.starrow-fg { position: absolute; left: 0; top: 0; overflow: hidden; color: var(--accent); }
+.liking-fine { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; }
+.liking-fine .btn { min-width: 64px; }
+.liking-val { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }

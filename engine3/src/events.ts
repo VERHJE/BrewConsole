@@ -6,6 +6,7 @@
 //   - 'retract' trekt een eerdere gebeurtenis in; 'brew.delete' verwijdert een heel zetsel.
 //   - Voor 'tasting' en 'brew.actuals' geldt per zetsel: de laatste wint.
 
+import { isLiking } from './liking.ts';
 import type { EngineEvent, EventKind } from './types.ts';
 import { EVENT_SCHEMA_VERSION } from './types.ts';
 import { isIsoDate } from './units.ts';
@@ -87,6 +88,7 @@ export function validateEvent(e: unknown): ValidationIssue[] {
       if (!isStr(d['brewId'])) bad('data.brewId', 'ontbreekt');
       const st = d['strength'];
       if (!(st === null || st === -2 || st === -1 || st === 0 || st === 1 || st === 2)) bad('data.strength', 'moet −2…+2 of null zijn');
+      if (d['liking'] !== undefined && d['liking'] !== null && !isLiking(d['liking'])) bad('data.liking', 'moet 1–5 zijn in stappen van een kwart, of null');
       if (!Array.isArray(d['finish'])) bad('data.finish', 'geen lijst');
       if (!Array.isArray(d['cata'])) bad('data.cata', 'geen lijst');
       if (d['cataAsked'] !== undefined && typeof d['cataAsked'] !== 'boolean') bad('data.cataAsked', 'moet waar of onwaar zijn');

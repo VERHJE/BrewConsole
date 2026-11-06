@@ -1,6 +1,6 @@
 # 18 · Frontend rond `createEngine()`
 
-Vastgesteld 5 nov 2026. De hele frontend wordt opnieuw opgebouwd. Layout, kleuren en indeling van de oude app hoeven niet behouden te blijven. De engine blijft zoals hij is (`e3-contract-1.0`): de frontend leest en schrijft alleen via het contract.
+Vastgesteld 5 nov 2026. De hele frontend wordt opnieuw opgebouwd. Layout, kleuren en indeling van de oude app hoeven niet behouden te blijven. De engine blijft zoals hij is (`e3-contract-1.0`; sinds de kwartsterren `e3-contract-1.1`, alleen uitgebreid): de frontend leest en schrijft alleen via het contract.
 
 ## Uitgangspunten
 

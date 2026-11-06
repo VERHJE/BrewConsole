@@ -3,11 +3,13 @@ import { useMemo, useState } from 'preact/hooks';
 import type {
   Acidity, Finish, GoalHit, Liking, Missed, NoteHit, StrengthOrd, VsLast, WheelCategory
 } from '../../../../engine3/src/index.ts';
+import { LIKING_MAX, LIKING_MIN, nudgeLiking } from '../../../../engine3/src/index.ts';
+import { Stars } from '../Stars.tsx';
 import { href } from '../../core/router.ts';
 import { clock, techniqueName } from '../../core/brew.ts';
 import {
   ACIDITY_LABEL, CATEGORIES, FINISH_LABEL, GOALHIT_LABEL, MISSED_LABEL, NOTEHIT_LABEL, STRENGTH_LABEL, VSLAST_LABEL,
-  actualsProblems, contextFor, draftFromCup, stepsFor, tastingEvents, type StepId, type TastingContext, type TastingDraft
+  actualsProblems, contextFor, formatLiking, draftFromCup, stepsFor, tastingEvents, type StepId, type TastingContext, type TastingDraft
 } from '../../core/tasting.ts';
 import { pairTrialEvent, pendingTrialFor } from '../../core/trials.ts';
 import { settingsOf } from '../../core/settings.ts';
@@ -60,6 +62,12 @@ function Step({ id, ctx, d, set }: { id: StepId; ctx: TastingContext; d: Tasting
     case 'liking':
       return (<div><p class="q">Hoe lekker vond je hem?</p>
         <Single<Liking> label="Waardering" value={d.liking} onPick={v => set({ liking: v })} options={([1, 2, 3, 4, 5] as Liking[]).map(v => [v, `${v} ${'★'.repeat(v)}`] as const)} />
+        {d.liking !== null && (
+          <div class="liking-fine">
+            <button class="btn" type="button" aria-label="Een kwart ster lager" disabled={d.liking <= LIKING_MIN} onClick={() => set({ liking: nudgeLiking(d.liking!, -1) })}>−¼</button>
+            <span class="liking-val" role="status"><Stars value={d.liking} /> {formatLiking(d.liking)} van 5</span>
+            <button class="btn" type="button" aria-label="Een kwart ster hoger" disabled={d.liking >= LIKING_MAX} onClick={() => set({ liking: nudgeLiking(d.liking!, 1) })}>+¼</button>
+          </div>)}
         <label class="field"><span>Notitie (optioneel)</span><textarea name="note" value={d.note} maxLength={500} onInput={e => set({ note: (e.currentTarget as HTMLTextAreaElement).value })} /></label></div>);
     case 'goal':
       return (<div>
