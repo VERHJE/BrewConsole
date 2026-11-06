@@ -1345,3 +1345,10 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Synchronisatiestatus** zichtbaar in het Meer-menu (verbonden / laatst gesynchroniseerd).
 - **Niet gedaan:** kwartsterren. De engine kent waarderingen als 1–5 (contract), dus dat vraagt een contractwijziging; eerst jouw beslissing. 'Opnieuw kopen' is niet gebouwd omdat er geen winkeladres per zak wordt bewaard.
 - **Tests:** 89 app3-tests groen (nieuw: ronde2-kern en ronde2-UI met axe in licht en donker).
+
+### Overstap `/` → app3 (6 nov 2026)
+
+- **Besluit:** app3 staat op `/`, de oude app op `/oud/`. `npm run build`: `build.mjs dist/oud` + `build-app3.mjs dist --root`; `qa:dist` wijst naar `dist/oud/index.html`. Netlify: `/app3/*` → `/` (301), no-cache voor beide workers en index-pagina's.
+- **Service worker:** app3-worker laat `/oud/` met rust en geeft de app-schil alleen aan `/` en `/index.html`, zodat `tokengenerator.html` en `toestelcheck.html` (nu ook op `/`) hun eigen pagina tonen. De voorgecachete lijst bevat `oud/` en die hulppagina's niet.
+- **Controle:** upgradepad nagespeeld in Chromium (oude site met actieve worker → nieuwe site): na één herlaadbeurt app3, geen foutmelding, `/oud/` en `/tokengenerator.html` werken. app3: 89 tests; volledige QA-suite: 1120 tests groen.
+- **Let op voor de gebruiker:** gegevens uit de oude app moeten via back-up en inlezen mee (Meer → Over wijst ernaar).
