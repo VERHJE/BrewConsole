@@ -61,7 +61,15 @@ Bekeken en wat ervan overgenomen wordt (alleen wat de bron zelf zegt):
   → Overnemen: één rustig timerscherm met alleen "wat nu", wake lock en melding op de volgende giet, versheidsmelding op de zak.
 - **Brewio** (App Store): dagboek met eigen recepten en boonvelden (herkomst, brander, proces, brandingsdatum, smaaknotities).
   → Bevestigt de zakvelden die we al hebben; niets nieuws nodig.
-- **Filtru, BeanBench, Coffee Book**: de sites gaven bij het ophalen een fout (429/503) en zoeken leverde niets op. **Niet beoordeeld**; hier wordt dus niets aan ontleend. Als Jelle schermafdrukken of concrete wensen heeft, kan dat alsnog.
+- **Filtru** (getfiltru.com, gelezen 6 nov): stap-voor-stap-timer met per stap het doel en de volgende handeling; 'begin eenvoudig, ga dieper als je wilt'; doel-tegenover-werkelijk-markering bij de weegschaal; gesproken uitlezing en VoiceOver voor wie de handen vol heeft; receptenbibliotheek per methode.
+  → Overnemen: timer die altijd 'nu' en 'straks' toont (staat er), progressieve diepte (eenvoudig zetten, logboek en inzicht pas op verzoek), gesproken aanwijzingen (nog niet).
+- **BeanBench** (App Store, gelezen 6 nov): haptiek en fase-aanwijzingen in de timer; drenageschatting vooraf ingevuld uit het recept; zak scannen met controle vóór opslaan en 'foto's verlaten je telefoon niet'; kwartsterren met tik of slepen; rustdagen en een herinnering als een zak klaar is; 'opnieuw kopen' neemt prijs en maat over; vergelijken alleen binnen dezelfde koffie en methode; vastgezette favoriete methoden bovenaan; zichtbare synchronisatiestatus (laatste keer en wat misging); share cards.
+  → Overnemen: rustdagen in de zakkenlijst en bij Zetten, 'opnieuw kopen', synchronisatiestatus (nu alleen in het scherm), vergelijken binnen dezelfde zak (verloopgrafieken doen dat al), sneller waarderen.
+- **Caliburr** (caliburr.coffee, gelezen 6 nov): recepten vastgepind aan de exacte molen, machine en boon ('een stand op de ene molen is niet dezelfde op een andere'); 'dit werkte' met één tik.
+  → Bevestigt de keuze om de klik altijd bij de molen (Timemore C3S Pro) te houden; geen gedeelde recepten gepland.
+- **Timer.Coffee** (pdf's van de site, door Jelle aangeleverd 6 nov: startpagina, Features, V60-receptpagina; de pagina over branders is niet gebruikt): één focusscherm per stap met een ring (tijd van de stap), de opdracht ('voeg 60–90 g water toe') en onderaan 'Next:'; per stap geluid of trilling, scherm blijft aan, pauzeren en later verdergaan; recepten schalen mee met de hoeveelheid (Kasuya 4:6 heeft sterkte- en zoetheidsregelaars); zakkenkelder met 'zoveel of zo weinig detail als je wilt', foto-herkenning, beoordeling per zak (zoetheid, zuur, body) en favorieten; dagboek dat elke kop **automatisch** bewaart, groepeert per zak ('het pad naar een goede kop') en **twee koppen naast elkaar zet met wat er veranderde** ('maling gelijk, temperatuur +2 °C, verhouding iets strakker'); maandkalender met reeks en weekoverzicht (hoeveel, vaste methode, beste kop); zoeken en filteren op methode, zak, herkomst, waardering, eigen labels en 'heeft notitie', met bladwijzers; werkt volledig offline en synchroniseert op verzoek (of blijft op het toestel); Live Activity op het vergrendelscherm en Apple Watch; ontwerp: wit/zwart, grote vette koppen, afgeronde kaarten met pictogram, titel en één regel uitleg, uitklapbare veelgestelde vragen.
+  → Overnemen: **twee koppen vergelijken met een lijst van wat er veranderde** (past precies bij het logboek: dosis, klik, temperatuur, techniek, tijd), de **ring per stap met 'Hierna:'** op het timerscherm, **favorieten en zoeken/filteren** in zakken en logboek, een **maandweergave met reeks** (rustig, niet als spel). Niet overnemen, bewust: community-recepten en 'live brews' van anderen (privacy), Live Activity en Watch (kan niet in een webapp), 30 methoden (wij doen V60 en Chemex).
+- **Niet beoordeeld**: timer.coffee (blijft 429 geven; alleen de store-beschrijving is gelezen) en Coffee Book (geen adres).
 
 ## Ontwerp
 
@@ -115,3 +123,14 @@ De nieuwe app staat op `<adres>/app3/`. De oude app op `/` is ongewijzigd.
 ## Instellingen (6 nov 2026)
 
 Meer → **Water** (hardheid, alkaliniteit in CaCO3 of HCO3, verdunning met demiwater, snelkeuzes Dunea/Waternet/PWN/SCA met bron), Meer → **Molen** (nulpunt gecontroleerd) en Meer → **Voorkeuren** (bij een proef A tegen B ook vragen welke helderder was). Alles zijn `setting`-gebeurtenissen en gaat dus mee met back-up en synchronisatie. Water en molen sturen het recept niet (een test eist hetzelfde `plan()`-advies met en zonder).
+
+## Ronde 1 en 1b: Zetten en Timer (6 nov 2026)
+
+Voortgekomen uit een eigen controle van de schermen (telefoon 390 px, laptop 1280 px) en uit Timer.Coffee (ring per stap en 'Next:').
+
+- **Zetten, telefoon:** het formulier staat de eerste keer open; daarna klapt het in tot één regel ('Zak · 250 g · doel') met 'Wijzig'. De **startknop zit vast** onder het scherm, boven de tabbalk, en staat zonder scrollen in beeld.
+- **Zetten, laptop:** formulier links, recept rechts; geen samenvatting; startknop vast onderaan de rechterkolom.
+- **Timer:** één stap tegelijk. Een **ring** toont de aftelling tot het einde van de stap (tot de volgende giet, of bij de laatste giet tot het verwachte einde), met de opdracht ernaast en een regel **'Hierna …'**. Bij Kasuya, waar een giet op doorlopen wacht, staat er 'wacht' in een gestippelde amberkleurige ring zonder aftelling. De totale tijd blijft groot bovenaan, omdat de gietmomenten absolute tijden zijn. De ring is voor het oog (`aria-hidden`); de tekst ernaast is de statusmelding en verandert alleen per stap, niet elke 200 ms.
+- **Logica** (`core/timer.ts` → `stepGuide`): puur en getest (klaar, giet met aftelling en 'hierna', wachten op doorlopen, laatste giet, klaar).
+- **Gevonden door de toegankelijkheidstest:** het grijs van kleine tekst (`--text-3`) was in het lichte thema te zwak; donkerder gemaakt. Gedane stappen hebben geen doorzichtigheid meer.
+- **Niet gedaan:** gesproken aanwijzingen en geluid bij een nieuwe stap (nu trilling en scherm).

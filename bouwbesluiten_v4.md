@@ -1318,3 +1318,11 @@ Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine
 - **Bekeken in beeld** (licht en donker, 390 px): ticks, labels en tooltip botsen niet; het eindlabel van het sterkte-oordeel is een korte '0' (de woorden staan in tooltip en tabel).
 - **Gevonden door de toegankelijkheidstest:** het 'door jou'-badge had te weinig kleurcontrast in het lichte thema (accent op accent-vlak); nu in gewone tekstkleur. Dit zat al in het zakformulier; de eerdere test kwam dat veld niet tegen.
 - **Tests:** 2 kerntests (reeksen, pasvorm met drie hoge en drie lage waarderingen), 3 schermtests (met een via de kern gebouwd logboek dat via Meer → Gegevens wordt ingelezen) en axe op zakdetail en logboek in licht en donker. Totaal 65 app3-tests.
+
+### Frontend · ronde 1 en 1b: Zetten en Timer (6 nov 2026)
+
+- **Zetten:** op de telefoon klapt het formulier in tot één samenvattingsregel zodra het eerder gebruikt is (de eerste keer staat het open), met 'Wijzig'; de **startknop zit vast** boven de tabbalk. Op een laptop staan formulier en recept naast elkaar. Tests meten de plaats van de knop (binnen het scherm, niet onder de tabbalk) en de kolomindeling.
+- **Timer:** één stap tegelijk met een ring (aftelling tot de volgende giet of het verwachte einde), de opdracht en een regel 'Hierna …'. Wachten op doorlopen toont 'wacht' zonder aftelling. `stepGuide()` in `core/timer.ts` is puur en getest. De ring is `aria-hidden`; alleen de tekst ernaast is een statusmelding.
+- **Toegankelijkheid:** axe vond te weinig contrast voor `--text-3` in het lichte thema (nu `#665a4d`) en voor gedane stappen met doorzichtigheid (nu kleur). Axe draait nu ook op de timer in licht en donker.
+- **Testaanpassing:** de oude timertests zochten `.now`; ze controleren nu `.stepcard`. Een timingprobleem in een van de nieuwe tests (te snel lezen na een invoer) is robuust gemaakt; twee volledige runs achter elkaar slagen (70 tests).
+- Uitgebreid in `docs/engine3/18-frontend.md`.
