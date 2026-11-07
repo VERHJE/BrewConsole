@@ -10,6 +10,8 @@ import {
 import { formFromScan } from '../../core/beans.ts';
 import { BeanFormView } from '../BeanFormView.tsx';
 import { BeanInsights } from '../Insights.tsx';
+import { EmptyState } from '../EmptyState.tsx';
+import { IconBean } from '../icons.tsx';
 import { BagArt, useApp, useSnapshot } from '../store-context.tsx';
 import { cupRows } from '../../core/insights.ts';
 import { favFirst, matches, readFavs, restView, toggleFav } from '../../core/ronde2.ts';
@@ -22,7 +24,7 @@ function Meta({ row, today }: { row: BeanRow; today: string }): JSX.Element {
   return <small>{bits.join(' · ') || 'Nog geen details'}</small>;
 }
 
-function List(): JSX.Element {
+function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
   const { state } = useSnapshot();
   const { env } = useApp();
   const [q, setQ] = useState('');
@@ -37,9 +39,9 @@ function List(): JSX.Element {
   };
   return (
     <section>
-      <div class="head"><h1>Zakken</h1><a class="btn primary" href={href('zakken', 'nieuw')}>Zak toevoegen</a></div>
+      <div class="head">{activeId ? <h2 class="list-title">Zakken</h2> : <h1>Zakken</h1>}<a class="btn primary" href={href('zakken', 'nieuw')}>Zak toevoegen</a></div>
       {rows.length === 0
-        ? <div class="empty"><p>Nog geen zakken.</p><p>Plak de tekst van een zak of een webshoppagina, of scan de QR-code.</p></div>
+        ? <EmptyState icon={<IconBean />} title="Nog geen zakken" >Plak de tekst van een zak of een webshoppagina, of scan de QR-code.</EmptyState>
         : <>
           {all.length > 3 && <label class="field search"><span class="sr-only">Zoek in zakken</span><input type="search" name="zoek" placeholder="Zoek op naam, brander of land" value={q} onInput={e => setQ((e.currentTarget as HTMLInputElement).value)} /></label>}
           {top && (
@@ -55,9 +57,9 @@ function List(): JSX.Element {
               </span>
             </a>)}
           <ul class="list thumbs">{rows.map(r => (
-            <li key={r.id}><a class="item" href={href('zakken', r.id)}><span class="thumb"><BagArt beanId={r.id} name={r.name} /></span><span class="itext"><strong>{favs.has(r.id) && <span aria-label="Favoriet">★ </span>}{r.name}</strong><Meta row={r} today={today} /></span></a></li>
+            <li key={r.id}><a class="item" href={href('zakken', r.id)} aria-current={r.id === activeId ? 'true' : undefined}><span class="thumb"><BagArt beanId={r.id} name={r.name} /></span><span class="itext"><strong>{favs.has(r.id) && <span aria-label="Favoriet">★ </span>}{r.name}</strong><Meta row={r} today={today} /></span></a></li>
           ))}</ul>
-          {rows.length === 0 && <p class="muted" role="status">Geen zakken gevonden voor ‘{q}’.</p>}
+          {rows.length === 0 && <EmptyState compact title={`Geen zakken gevonden voor ‘${q}’`} />}
         </>}
     </section>
   );
@@ -82,7 +84,7 @@ function Detail({ beanId }: { beanId: string }): JSX.Element {
   return (
     <section class="detail">
       <div class="hero-photo"><BagArt beanId={beanId} name={d.name} large /></div>
-      <div class="head"><a class="btn" href={href('zakken')} aria-label="Terug naar zakken">Terug</a><button class="btn" type="button" aria-pressed={fav} onClick={() => setFav(toggleFav(localStorage, beanId))}>{fav ? '★ Favoriet' : '☆ Favoriet'}</button><a class="btn" href={href('zakken', beanId, 'bewerken')}>Bewerken</a></div>
+      <div class="head"><a class="btn back-narrow" href={href('zakken')} aria-label="Terug naar zakken">Terug</a><button class="btn" type="button" aria-pressed={fav} onClick={() => setFav(toggleFav(localStorage, beanId))}>{fav ? '★ Favoriet' : '☆ Favoriet'}</button><a class="btn" href={href('zakken', beanId, 'bewerken')}>Bewerken</a></div>
       {d.eyebrow && <small class="eyebrow">{d.eyebrow}</small>}
       <h1>{d.name}</h1>
       <p class="muted">{[d.roaster, age !== null ? `${age} d na branding` : null, d.cups ? `${d.cups} ${d.cups === 1 ? 'kop' : 'koppen'}` : null].filter(Boolean).join(' · ')}</p>
@@ -205,6 +207,6 @@ export function Zakken({ route }: { route: Route }): JSX.Element {
   const known = useMemo(() => (sub && sub !== 'nieuw' ? beanRows(state).some(r => r.id === sub) : true), [state, sub]);
   if (sub === 'nieuw') return <Editor key="nieuw" beanId={null} />;
   if (sub && route.parts[2] === 'bewerken') return known ? <Editor key={sub + 'e'} beanId={sub} /> : <section><h1>Zak niet gevonden</h1><a class="btn" href={href('zakken')}>Terug</a></section>;
-  if (sub) return known ? <Detail key={sub} beanId={sub} /> : <section><h1>Zak niet gevonden</h1><a class="btn" href={href('zakken')}>Terug</a></section>;
+  if (sub) return known ? <div class="split has-detail"><div class="split-list"><List activeId={sub} /></div><Detail key={sub} beanId={sub} /></div> : <section><h1>Zak niet gevonden</h1><a class="btn" href={href('zakken')}>Terug</a></section>;
   return <List />;
 }

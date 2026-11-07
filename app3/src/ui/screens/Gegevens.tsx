@@ -2,6 +2,8 @@ import type { JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { href } from '../../core/router.ts';
 import { base64ToBytes, bytesToBase64, exportLog, previewImport, type BackupPhoto, type ImportPreview } from '../../core/backup.ts';
+import { beanRows } from '../../core/beans.ts';
+import { cupRows } from '../../core/insights.ts';
 import { useApp, useSnapshot } from '../store-context.tsx';
 
 const KIND_LABEL: Record<string, string> = {
@@ -12,7 +14,9 @@ const LAST_EXPORT = 'brewconsole.lastExport';
 
 export function Gegevens(): JSX.Element {
   const { store, env, photos } = useApp();
-  const { events } = useSnapshot();
+  const { events, state } = useSnapshot();
+  const nBeans = beanRows(state).length;
+  const nCups = cupRows(state).length;
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [msg, setMsg] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -69,7 +73,7 @@ export function Gegevens(): JSX.Element {
   return (
     <section>
       <div class="head"><a class="btn" href={href('meer')}>Terug</a><h1>Gegevens</h1></div>
-      <p class="muted">{events.length} gebeurtenissen op dit toestel{store.storage.persistent ? '' : ' (tijdelijk: niet blijvend opgeslagen)'}.</p>
+      <p class="muted">Op dit toestel: {nBeans} {nBeans === 1 ? 'zak' : 'zakken'} en {nCups} {nCups === 1 ? 'kop' : 'koppen'}{store.storage.persistent ? '' : ' (tijdelijk: niet blijvend opgeslagen)'}.</p>
       {days !== null && days >= 14 && <p class="banner" role="status">Je laatste back-up is {days} dagen oud.</p>}
       {last === null && events.length > 0 && <p class="banner" role="status">Je hebt nog geen back-up gemaakt.</p>}
       {msg && <p class="banner" role="status">{msg}</p>}

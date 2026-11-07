@@ -23,7 +23,7 @@ for (const scheme of ['light', 'dark']) {
     await page.click('button:has-text("Volgende")');
     await page.waitForSelector('.q:has-text("lekker")');
     assert.equal(await page.locator('.liking-fine').count(), 0, 'eerst een hele ster kiezen');
-    await page.click('button.choice:has-text("4")');
+    await page.click('button.star[aria-label="4 sterren"]');
     await page.waitForSelector('.liking-fine');
     await page.click('button[aria-label="Een kwart ster hoger"]');
     await page.click('button[aria-label="Een kwart ster hoger"]');
