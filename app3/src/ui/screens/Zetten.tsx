@@ -11,6 +11,8 @@ import {
 import { useApp, useSnapshot } from '../store-context.tsx';
 import { Timer } from './Timer.tsx';
 import { Proeven } from './Proeven.tsx';
+import { Welkom } from '../Welkom.tsx';
+import { markeerWelkomGezien, toonWelkom, welkomGezien } from '../../core/welkom.ts';
 import { trialPlanEvent, type TrialArm } from '../../core/trials.ts';
 
 const KEY = 'brewconsole.zetten';
@@ -152,5 +154,13 @@ function Advice({ outcome, onStart, onTrial }: { outcome: Extract<ReturnType<typ
 export function Zetten({ route }: { route: Route }): JSX.Element {
   if (route.parts[0] === 'timer' && route.parts[1]) return <Timer brewId={route.parts[1]} />;
   if (route.parts[0] === 'proeven' && route.parts[1]) return <Proeven brewId={route.parts[1]} />;
+  return <Start />;
+}
+
+/** Eerste keer: welkomstkaart; daarna (of na wegklikken) het gewone zetscherm. */
+function Start(): JSX.Element {
+  const { events } = useSnapshot();
+  const [gezien, setGezien] = useState(() => welkomGezien(localStorage));
+  if (toonWelkom(events.length, gezien)) return <Welkom onSkip={() => { markeerWelkomGezien(localStorage); setGezien(true); }} />;
   return <Plan />;
 }

@@ -1398,3 +1398,10 @@ Tests: `herstel.ui.test.mjs` (rondjes en regels, lijst en notitie, effen achterg
 7. **Laptop (≥ 1100 px):** Zakken en Logboek tonen de lijst links (vast, scrolt zelf) en het gekozen detail rechts, de gekozen rij is gemarkeerd (`aria-current`); 'Terug' verdwijnt. Op een telefoon of smal venster blijft het één scherm per keer. Boven het detail staat de lijstkop als `h2`, zodat er één `h1` per pagina is.
 8. **Lege schermen:** één onderdeel (`EmptyState`): pictogram, korte kop, uitleg en één actie; zoeken zonder resultaat is dezelfde vorm in compacte versie.
 Tests: `ronde4.ui.test.mjs` (naast elkaar op laptop, één per keer op telefoon, lege schermen met axe, gegevenstekst, sterrenrij); tests voor het proeven gebruiken nu de sterknoppen. 106 app3-tests.
+
+### Eerste start (7 nov 2026)
+
+- **Welkomstkaart** op Zetten zolang er nog niets is vastgelegd (geen gebeurtenissen) en je hem niet hebt weggeklikt: korte uitleg in drie stappen (zak toevoegen, kop zetten, proeven en waarderen), de grote knop 'Voeg je eerste zak toe', 'Zonder zak beginnen' (onthoudt dat in `brewconsole.welkom`) en een kaart 'Kom je van de vorige versie?' met de knop naar `/oud/` en de uitleg over back-up en inlezen. Eronder: alles blijft op je toestel.
+- **Gedrag:** zodra er één gebeurtenis is (een zak of een inlezing) verdwijnt de kaart voorgoed; wegklikken werkt ook zonder gegevens en komt niet terug. Zonder werkende opslag komt de kaart bij elke start terug, maar blokkeert niets.
+- **Niet gedaan:** de oude app wordt niet automatisch herkend. Oude en nieuwe app delen een herkomst maar bewaren hun gegevens op een eigen plek, en een betrouwbare controle daarop is er niet; daarom staat de kaart altijd klaar met uitleg.
+- **Tests:** kern (`welkom.test.ts`), scherm (`welkom.ui.test.mjs`, licht en donker met axe) en één bestaande test die nu eerst doorklikt. 111 app3-tests.
