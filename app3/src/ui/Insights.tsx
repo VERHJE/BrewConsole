@@ -3,7 +3,7 @@ import type { JSX } from 'preact';
 import { href } from '../core/router.ts';
 import { clock, nl1 } from '../core/brew.ts';
 import { cupRows } from '../core/insights.ts';
-import { fitView, seriesOf, trendPoints, STRENGTH_WORD } from '../core/trends.ts';
+import { explainSeries, fitView, seriesOf, trendPoints, STRENGTH_WORD } from '../core/trends.ts';
 import { TrendChart } from './TrendChart.tsx';
 import { useSnapshot } from './store-context.tsx';
 
@@ -20,10 +20,10 @@ export function Trends({ beanId }: { beanId: string | null }): JSX.Element {
     <div>
       {points.length < 2 && <p class="muted">Na twee koppen verschijnt hier een lijn.</p>}
       <div class="charts">
-        <TrendChart series={s['dose']!} format={n => `${nl1(n)} g`} dateText={dateText} />
-        <TrendChart series={s['end']!} steps={[10, 15, 30, 60, 120]} format={clock} dateText={dateText} />
-        <TrendChart series={s['strength']!} domain={[-2.5, 2.5]} ticks={[-2, 0, 2]} format={v => STRENGTH_WORD[String(v)] ?? ordinal(v)} formatTick={ordinal} formatEnd={ordinal} reference={{ at: 0, label: 'goed' }} dateText={dateText} />
-        <TrendChart series={s['liking']!} domain={[0.5, 5.5]} ticks={[1, 3, 5]} format={v => `${formatLiking(v)} van 5`} formatTick={v => String(v)} dateText={dateText} />
+        <TrendChart explain={explainSeries(s['dose']!)} series={s['dose']!} format={n => `${nl1(n)} g`} dateText={dateText} />
+        <TrendChart explain={explainSeries(s['end']!)} series={s['end']!} steps={[10, 15, 30, 60, 120]} format={clock} dateText={dateText} />
+        <TrendChart explain={explainSeries(s['strength']!)} series={s['strength']!} domain={[-2.5, 2.5]} ticks={[-2, 0, 2]} format={v => STRENGTH_WORD[String(v)] ?? ordinal(v)} formatTick={ordinal} formatEnd={ordinal} reference={{ at: 0, label: 'goed' }} dateText={dateText} />
+        <TrendChart explain={explainSeries(s['liking']!)} series={s['liking']!} domain={[0.5, 5.5]} ticks={[1, 3, 5]} format={v => `${formatLiking(v)} van 5`} formatTick={v => String(v)} dateText={dateText} />
       </div>
       <p class="meta">Sterkte: onder 0 is te slap, boven 0 te sterk. Alleen afgeronde koppen; een kop zonder oordeel staat niet in die grafiek.</p>
     </div>

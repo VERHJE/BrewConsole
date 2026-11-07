@@ -1413,3 +1413,9 @@ Tests: `ronde4.ui.test.mjs` (naast elkaar op laptop, één per keer op telefoon,
 - **Voorkeuren** (Meer → Voorkeuren → Timer): geluid en trillen apart, standaard allebei **aan** (een timer die zwijgt is zelden de verwachting; uitzetten is één tik), opgeslagen per toestel (`brewconsole.cueSound`, `brewconsole.cueVibrate`), met een testknop. Het scherm bleef al aan tijdens een zetsel (wake lock).
 - **Vervangen:** de oude vaste trilling bij elke faseverandering is nu dit signaalsysteem en volgt de voorkeur.
 - **Tests:** kern (overgangen, tikken niet te vroeg/vaak, voorkeuren), scherm met een nagebootste AudioContext en `navigator.vibrate` (tikken, giet-signaal, trillen alleen bij de giet, alles uit = stil) en de instellingen met axe in licht en donker. `window.__cueLog` is een testhaak die alleen vult als een test hem aanmaakt. 118 app3-tests.
+
+### Uitleg boven de grafieken (7 nov 2026)
+
+- **Eén zin onder elke grafiektitel** (`explainSeries()` in `core/trends.ts`, puur): koffie per kop ('Steeds ongeveer 22 g' of 'Van 19,1 g naar 22 g'), klaar na (laatste kop, gemiddelde, en of de laatste drie koppen sneller of langzamer waren dan de eerdere), sterkte-oordeel (de laatste drie koppen: ongeveer goed, te slap of te sterk, met het gemiddelde) en waardering (gemiddelde, en of de laatste drie koppen lekkerder of minder lekker waren).
+- **Voorzichtig:** alleen wat uit de punten zelf volgt; met één kop geen zin; een vergelijking pas als er minstens twee koppen vóór de laatste drie zijn; verschillen kleiner dan 10 seconden (tijd) of 0,5 punt (waardering) heten 'ongeveer gelijk'. Er wordt niets verklaard of voorspeld.
+- **Tests:** zinnen met grensgevallen (kern), vier zinnen op het zakdetail en geen zinnen bij één kop (scherm, axe in licht en donker). 119 app3-tests.

@@ -21,6 +21,13 @@ test('zakdetail: pasvorm, vier grafieken met tooltip en tabel, kopgeschiedenis',
   assert.equal(await page.locator('.chart svg').count(), 4);
   assert.deepEqual(await page.locator('.chart h3').allInnerTexts(), ['Koffie per kop', 'Klaar na', 'Sterkte-oordeel', 'Waardering']);
   assert.match(await page.locator('.fit').innerText(), /Verwachte waardering/);
+  // één zin in gewone taal onder elke grafiek
+  const notes = await page.locator('.chart .chart-note').allInnerTexts();
+  assert.equal(notes.length, 4);
+  assert.match(notes[0], /^(Van \d+(,\d)? g naar|Steeds ongeveer)/);
+  assert.match(notes[1], /^Laatste kop klaar na \d+:\d\d, gemiddeld/);
+  assert.match(notes[2], /^Je vond de laatste 3 koppen/);
+  assert.match(notes[3], /^Gemiddeld \d(,\d+)? van 5 over 8 koppen/);
   // 8 koppen: 8 markeringen, een lijn, en een tooltip met kopnummer bij hover
   assert.equal(await page.locator('.chart >> nth=3 >> circle.dot').count(), 8);
   assert.equal(await page.locator('.chart >> nth=3 >> path.line').count(), 1);
@@ -46,6 +53,7 @@ test('geen grafieklijn bij één kop; logboek toont het verloop van alle koppen'
   await page.click(`.item:has-text("${SEED_BEAN}")`);
   await page.waitForSelector('.charts');
   assert.equal(await page.locator('path.line').count(), 0);
+  assert.equal(await page.locator('.chart-note').count(), 0, 'met één kop valt er niets te vergelijken');
   await page.waitForSelector('text=Na twee koppen verschijnt hier een lijn');
   await page.close();
 

@@ -6,6 +6,8 @@ const W = 320, H = 150, L = 34, R = 34, T = 12, B = 22;
 
 interface Props {
   readonly series: Series;
+  /** Eén zin in gewone taal onder de titel (core/trends.ts → explainSeries), of null. */
+  readonly explain?: string | null;
   /** Vaste onder- en bovengrens (waardering 1–5, sterkte −2…+2); anders volgt de as de data. */
   readonly domain?: readonly [number, number];
   readonly ticks?: readonly number[];
@@ -40,7 +42,7 @@ function niceDomain(vals: readonly number[]): [number, number] {
   return [lo - pad, hi + pad];
 }
 
-export function TrendChart({ series, domain, ticks, steps, format, formatEnd, formatTick, reference, dateText }: Props): JSX.Element {
+export function TrendChart({ explain, series, domain, ticks, steps, format, formatEnd, formatTick, reference, dateText }: Props): JSX.Element {
   const pts = series.points;
   const [active, setActive] = useState<number | null>(null);
   if (pts.length === 0) {
@@ -60,6 +62,7 @@ export function TrendChart({ series, domain, ticks, steps, format, formatEnd, fo
     <div class="chart" onPointerLeave={() => setActive(null)}>
       <h3>{series.title}</h3>
       <p class="sub">{series.unit ? `in ${series.unit}` : ' '}</p>
+      {explain && <p class="chart-note">{explain}</p>}
       <svg viewBox={`0 0 ${W} ${H}`} role="group" aria-label={summary}>
         {tickValues.map(t => (
           <g key={t}>
