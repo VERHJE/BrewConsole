@@ -57,6 +57,50 @@ export function seriesOf(points: readonly TrendPoint[]): Series[] {
   ];
 }
 
+// ───────────── één zin onder elke grafiek ─────────────
+
+const mean = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length;
+/** Voorzichtig: alleen wat uit de punten zelf volgt, en niets zeggen als er te weinig is om te vergelijken. */
+const RECENT = 3;
+
+/**
+ * Een korte uitleg in gewone taal bij een reeks, of null als er te weinig punten zijn.
+ * Vergelijkt de laatste drie koppen met de koppen daarvóór; kleine verschillen worden 'ongeveer gelijk' genoemd.
+ */
+export function explainSeries(series: Pick<Series, 'key' | 'points'>): string | null {
+  const ys = series.points.map(p => p.y);
+  const n = ys.length;
+  if (n < 2) return null;
+  const last = ys[n - 1]!;
+  const recent = ys.slice(-RECENT);
+  const before = ys.slice(0, -RECENT);
+  const canCompare = before.length >= 2;
+  switch (series.key) {
+    case 'dose': {
+      const lo = Math.min(...ys), hi = Math.max(...ys);
+      if (hi - lo < 0.5) return `Steeds ongeveer ${num1(last)} g.`;
+      return `Van ${num1(ys[0]!)} g naar ${num1(last)} g.`;
+    }
+    case 'end': {
+      const base = `Laatste kop klaar na ${clock(last)}, gemiddeld ${clock(mean(ys))} over ${n} koppen.`;
+      if (!canCompare) return base;
+      const d = mean(recent) - mean(before);
+      return Math.abs(d) < 10 ? `${base} De laatste koppen duren ongeveer even lang als de eerdere.` : `${base} De laatste koppen zijn ${Math.round(Math.abs(d))} seconden ${d < 0 ? 'sneller' : 'langzamer'} dan de eerdere.`;
+    }
+    case 'strength': {
+      const m = mean(recent);
+      const word = Math.abs(m) < 0.5 ? 'ongeveer goed' : m < 0 ? 'te slap' : 'te sterk';
+      return `Je vond de laatste ${recent.length} koppen ${word}${Math.abs(m) < 0.5 ? '' : ` (gemiddeld ${m > 0 ? '+' : ''}${num1(m)})`}.`;
+    }
+    case 'liking': {
+      const base = `Gemiddeld ${formatLiking(Math.round(mean(ys) * 100) / 100)} van 5 over ${n} koppen.`;
+      if (!canCompare) return base;
+      const d = mean(recent) - mean(before);
+      return Math.abs(d) < 0.5 ? `${base} De laatste koppen vond je ongeveer even lekker als de eerdere.` : `${base} De laatste koppen vond je ${d > 0 ? 'lekkerder' : 'minder lekker'} dan de eerdere (${formatLiking(Math.round(mean(recent) * 100) / 100)} tegen ${formatLiking(Math.round(mean(before) * 100) / 100)}).`;
+    }
+  }
+}
+
 // ───────────── pasvorm ─────────────
 
 export interface FitView {

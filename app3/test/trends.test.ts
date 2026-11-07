@@ -76,3 +76,26 @@ test('pasvorm: zonder waarderingen "te weinig"; met genoeg waarderingen een verw
   assert.ok(dark.expectedDelta !== null && dark.expectedDelta < 0);
   assert.match(dark.text, /onder je gemiddelde/);
 });
+
+import { explainSeries } from '../src/core/trends.ts';
+const ser = (key: 'dose' | 'end' | 'strength' | 'liking', ys: number[]) => ({ key, points: ys.map((y, i) => ({ n: i + 1, at: i, y, brewId: `b${i}`, note: '' })) });
+
+test('uitleg onder de grafieken: te weinig punten geeft niets; dosis, tijd, sterkte en waardering in gewone taal', () => {
+  for (const k of ['dose', 'end', 'strength', 'liking'] as const) { assert.equal(explainSeries(ser(k, [])), null); assert.equal(explainSeries(ser(k, [3])), null); }
+  assert.equal(explainSeries(ser('dose', [22, 22.1, 22])), 'Steeds ongeveer 22 g.');
+  assert.match(explainSeries(ser('dose', [19, 20, 22]))!, /Van 19 g naar 22 g/);
+  // tijd: met genoeg koppen een vergelijking, met weinig alleen de feiten
+  assert.equal(explainSeries(ser('end', [250, 240]))!, 'Laatste kop klaar na 4:00, gemiddeld 4:05 over 2 koppen.');
+  assert.match(explainSeries(ser('end', [250, 245, 240, 200, 195, 190]))!, /50 seconden sneller/);
+  assert.match(explainSeries(ser('end', [200, 205, 200, 203, 201, 202]))!, /ongeveer even lang/);
+  assert.match(explainSeries(ser('end', [180, 185, 180, 230, 235, 240]))!, /langzamer/);
+  // sterkte: laatste drie koppen
+  assert.equal(explainSeries(ser('strength', [-2, -1, 0, 0, 0]))!, 'Je vond de laatste 3 koppen ongeveer goed.');
+  assert.match(explainSeries(ser('strength', [0, -1, -1, -2]))!, /te slap \(gemiddeld -1,3\)/);
+  assert.match(explainSeries(ser('strength', [0, 1, 2, 1]))!, /te sterk \(gemiddeld \+1,3\)/);
+  // waardering: gemiddelde, en alleen een oordeel over 'lekkerder' bij een duidelijk verschil (≥ 0,5)
+  assert.equal(explainSeries(ser('liking', [3, 4]))!, 'Gemiddeld 3,5 van 5 over 2 koppen.');
+  assert.match(explainSeries(ser('liking', [2, 2, 3, 4, 5, 5]))!, /lekkerder dan de eerdere \(4,67 tegen 2,33\)/);
+  assert.match(explainSeries(ser('liking', [5, 5, 4, 3, 2, 2]))!, /minder lekker/);
+  assert.match(explainSeries(ser('liking', [4, 4, 4, 4.25, 4, 4]))!, /ongeveer even lekker/);
+});

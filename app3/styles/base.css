@@ -271,3 +271,6 @@ fieldset.field legend { padding: 0; margin-bottom: 4px; }
 .welkom-n { flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--accent-soft); color: var(--text); font-family: var(--head); font-size: 1.125rem; display: flex; align-items: center; justify-content: center; border: 1px solid var(--accent); }
 .welkom .btn { width: 100%; justify-content: center; }
 .welkom-oud { margin: 20px 0 12px; }
+
+/* Uitleg onder de grafiektitel */
+.chart-note { margin: 2px 0 8px; font-size: .9375rem; color: var(--text); }
