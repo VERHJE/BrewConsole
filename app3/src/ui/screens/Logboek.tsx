@@ -86,7 +86,7 @@ function Detail({ id }: { id: string }): JSX.Element {
       <div class="card"><strong>Schema</strong>
         <table class="plain"><tbody>{lines.map(l => <tr key={l.index}><td>{l.at}</td><td>{l.add}</td><td>→ {l.to}</td><td>{c.drainedAtSec.has(l.index) ? `erdoor ${clock(c.drainedAtSec.get(l.index)!)}` : ''}</td></tr>)}</tbody></table></div>
       <div class="card"><strong>Geproefd</strong>
-        {!t ? <p class="muted">Nog niet geproefd.</p> : (
+        {!t ? <EmptyState compact title="Nog niet geproefd">{c.status === 'complete' ? 'Leg vast hoe hij was; dat telt mee voor je volgende advies.' : undefined}</EmptyState> : (
           <dl class="kv">
             {t.strength !== null && <><dt>Sterkte</dt><dd>{STRENGTH_LABEL[t.strength]}</dd></>}
             {t.acidity && <><dt>Zuur</dt><dd>{ACIDITY_LABEL[t.acidity]}</dd></>}

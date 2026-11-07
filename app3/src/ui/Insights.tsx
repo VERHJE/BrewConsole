@@ -5,6 +5,7 @@ import { clock, nl1 } from '../core/brew.ts';
 import { cupRows } from '../core/insights.ts';
 import { explainSeries, fitView, seriesOf, trendPoints, STRENGTH_WORD } from '../core/trends.ts';
 import { TrendChart } from './TrendChart.tsx';
+import { EmptyState } from './EmptyState.tsx';
 import { useSnapshot } from './store-context.tsx';
 
 const dateText = (at: number): string => new Date(at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
@@ -15,7 +16,7 @@ export function Trends({ beanId }: { beanId: string | null }): JSX.Element {
   const { state } = useSnapshot();
   const points = trendPoints(state, beanId);
   const s = Object.fromEntries(seriesOf(points).map(x => [x.key, x]));
-  if (points.length === 0) return <p class="muted">Nog geen afgeronde koppen.</p>;
+  if (points.length === 0) return <EmptyState compact title="Nog geen afgeronde koppen">Na je eerste kop verschijnt hier het verloop.</EmptyState>;
   return (
     <div>
       {points.length < 2 && <p class="muted">Na twee koppen verschijnt hier een lijn.</p>}
@@ -48,7 +49,7 @@ export function BeanInsights({ beanId }: { beanId: string }): JSX.Element {
       <h2>Verloop</h2>
       <Trends beanId={beanId} />
       <h2>Koppen van deze zak</h2>
-      {cups.length === 0 ? <p class="muted">Nog geen koppen met deze zak.</p>
+      {cups.length === 0 ? <EmptyState compact title="Nog geen koppen met deze zak">Zet er een met “Zet deze zak”.</EmptyState>
         : <ul class="list">{cups.slice(0, 10).map(r => (
           <li key={r.id}><a class="item" href={href('logboek', r.id)}><strong>{new Date(r.at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}{r.liking ? ` · ${formatLiking(r.liking)} van 5` : ''}</strong>
             <small>{nl1(r.doseG)} g{r.click !== null ? ` · klik ${r.click}` : ''}{r.endSec !== null ? ` · ${clock(r.endSec)}` : ''}{r.status === 'complete' && !r.tasted ? ' · nog te proeven' : ''}</small></a></li>))}</ul>}

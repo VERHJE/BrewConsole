@@ -6,6 +6,8 @@ import { CATEGORIES } from '../../core/tasting.ts';
 import { STATUS_TEXT, grindView, profileOf } from '../../core/insights.ts';
 import { useEffect, useState } from 'preact/hooks';
 import { indexedDbSyncStorage } from '../../core/sync.ts';
+import { EmptyState } from '../EmptyState.tsx';
+import { IconBrew } from '../icons.tsx';
 import { useSnapshot } from '../store-context.tsx';
 import { Gegevens } from './Gegevens.tsx';
 import { Sync } from './Sync.tsx';
@@ -20,6 +22,14 @@ function Back(): JSX.Element { return <a class="btn" href={href('meer')}>Terug</
 function Profiel(): JSX.Element {
   const { state } = useSnapshot();
   const p = profileOf(state);
+  if (p.cups === 0) {
+    return (
+      <section>
+        <div class="head"><Back /><h1>Smaakprofiel</h1></div>
+        <EmptyState icon={<IconBrew />} title="Nog geen smaakprofiel" action={{ label: 'Zet een kop', href: href('zetten') }}>Het profiel groeit mee met elke kop die je proeft. Na een paar koppen zie je hier wat je opmerkt en waardeert.</EmptyState>
+      </section>
+    );
+  }
   return (
     <section>
       <div class="head"><Back /><h1>Smaakprofiel</h1></div>
@@ -39,11 +49,11 @@ function Profiel(): JSX.Element {
           </div>);
       })()}
       <h2>Notities die je herkent</h2>
-      {p.notes.length === 0 ? <p class="muted">Nog geen herkende notities.</p>
+      {p.notes.length === 0 ? <EmptyState compact title="Nog geen herkende notities">Je krijgt ze zodra je bij het proeven aangeeft welke notities van de zak je herkent.</EmptyState>
         : <ul class="list">{p.notes.slice(0, 12).map(n => <li key={n.note}><span class="item"><strong>{n.note}</strong><small>{n.yes}× ja · {n.bit}× een beetje · {n.no}× nee</small></span></li>)}</ul>}
       {p.vocabulary.length > 0 && <p class="meta">Je woordenschat: {p.vocabulary.join(', ')}</p>}
       <h2>Waardering</h2>
-      {p.liking.overall === null ? <p class="muted">Nog geen waarderingen.</p> : (
+      {p.liking.overall === null ? <EmptyState compact title="Nog geen waarderingen">Geef bij het proeven een aantal sterren, dan verschijnt hier wat je lekker vindt.</EmptyState> : (
         <div>
           <p>Gemiddeld {f1(p.liking.overall.mean)} van 5 over {p.liking.overall.n} koppen.</p>
           {[['Smaakgroep', p.liking.byCategory], ['Proces', p.liking.byProcess], ['Branding', p.liking.byRoast]].map(([label, stats]) => (
