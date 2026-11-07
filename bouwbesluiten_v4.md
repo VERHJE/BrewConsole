@@ -1426,3 +1426,9 @@ Tests: `ronde4.ui.test.mjs` (naast elkaar op laptop, één per keer op telefoon,
 - **Filteren:** Favorieten, Bijna op (minder dan twee koppen over volgens `stockView`) en Vers (hoogstens 21 dagen na branding). Meerdere filters tegelijk betekent: ze moeten allemaal kloppen. Zoeken werkt eroverheen.
 - **Scherm:** de bediening verschijnt vanaf 4 zakken (zoals het zoekveld), de keuze wordt per toestel onthouden (`brewconsole.zakkenlijst`), een regel 'N van M zakken' met 'Wis sorteren en filters' laat zien dat de lijst beperkt is, en zonder uitkomst staat er een lege toestand met dezelfde wisknop. De grote kaart bovenaan hoort bij de standaardvolgorde zonder filters en zonder zoekopdracht.
 - **Tests:** kern (alle sorteringen, grenzen van 'vers', onthouden met rommel in de opslag) en scherm (sorteren, filteren, herladen, wissen, favorieten, axe in licht en donker). 129 app3-tests.
+
+### Overige lege toestanden (7 nov 2026)
+
+- Alle plekken waar nu 'nog niets' staat gebruiken `EmptyState`: het **smaakprofiel** zonder een geproefde kop is één volledige lege toestand (pictogram, uitleg, knop 'Zet een kop'); 'Nog geen herkende notities' en 'Nog geen waarderingen' in het profiel, 'Nog geen afgeronde koppen' en 'Nog geen koppen met deze zak' in het zakdetail en 'Nog niet geproefd' in het kopdetail zijn de compacte vorm met een zin die zegt wat ervoor nodig is.
+- Hulptekst onder koppen (uitleg van een scherm) en statusmeldingen ('Geen verschillen in wat hier staat') blijven gewone tekst; alleen echte lege toestanden zijn omgezet.
+- Tests: `leeg.ui.test.mjs` (profiel leeg, compacte toestanden met koppen, zak zonder koppen; axe in licht en donker). 131 app3-tests.
