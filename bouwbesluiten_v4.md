@@ -1390,3 +1390,11 @@ Uit de screenshots van alle schermen (licht en donker, telefoon en laptop):
 3. **Kopdetail:** 'Advies van engine3 e3-2026.1' staat nu als kleine regel onderaan ('Advies gemaakt door …', versie blijft op één regel).
 4. **Vaste knop** ('Start zetsel', 'Zet deze zak'): effen achtergrond in plaats van een doorzichtige laag met blur. Dat was ook in strijd met de eigen eis 'geen glas over tekst'.
 Tests: `herstel.ui.test.mjs` (rondjes en regels, lijst en notitie, effen achtergrond), samen 101 app3-tests.
+
+### Ontwerpronde 5–8 (7 nov 2026)
+
+5. **Waardering:** één rij met vijf sterren (elk ≥ 56 px hoog, één tik; nogmaals tikken wist), met −¼/+¼ en de waarde eronder zodra er een ster gekozen is (`.starpick`).
+6. **Gegevens:** de regel bovenaan zegt 'Op dit toestel: 1 zak en 8 koppen' in plaats van een aantal gebeurtenissen.
+7. **Laptop (≥ 1100 px):** Zakken en Logboek tonen de lijst links (vast, scrolt zelf) en het gekozen detail rechts, de gekozen rij is gemarkeerd (`aria-current`); 'Terug' verdwijnt. Op een telefoon of smal venster blijft het één scherm per keer. Boven het detail staat de lijstkop als `h2`, zodat er één `h1` per pagina is.
+8. **Lege schermen:** één onderdeel (`EmptyState`): pictogram, korte kop, uitleg en één actie; zoeken zonder resultaat is dezelfde vorm in compacte versie.
+Tests: `ronde4.ui.test.mjs` (naast elkaar op laptop, één per keer op telefoon, lege schermen met axe, gegevenstekst, sterrenrij); tests voor het proeven gebruiken nu de sterknoppen. 106 app3-tests.

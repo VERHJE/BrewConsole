@@ -26,7 +26,7 @@ test('proeven: stappen in de juiste volgorde, blinde keuze vóór de zaknotities
   await page.click('.notehit >> nth=0 >> button:text-is("Ja")');
   await page.click('button:has-text("Volgende")');
   assert.match(await q(), /lekker/);
-  await page.click('button.choice:has-text("4")');
+  await page.click('button.star[aria-label="4 sterren"]');
   await page.click('button:has-text("Volgende")');
   assert.match(await q(), /echt gebruikt/);
   await page.fill('input[name=doseG]', '999');

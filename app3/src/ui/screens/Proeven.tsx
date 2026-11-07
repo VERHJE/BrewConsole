@@ -61,7 +61,11 @@ function Step({ id, ctx, d, set }: { id: StepId; ctx: TastingContext; d: Tasting
         ))}</div>);
     case 'liking':
       return (<div><p class="q">Hoe lekker vond je hem?</p>
-        <Single<Liking> label="Waardering" value={d.liking} onPick={v => set({ liking: v })} options={([1, 2, 3, 4, 5] as Liking[]).map(v => [v, `${v} ${'★'.repeat(v)}`] as const)} />
+        <div class="starpick" role="group" aria-label="Waardering">
+          {([1, 2, 3, 4, 5] as Liking[]).map(v => (
+            <button key={v} type="button" class={d.liking !== null && d.liking >= v ? 'star on' : 'star'} aria-pressed={d.liking === v}
+              aria-label={`${v} ${v === 1 ? 'ster' : 'sterren'}`} onClick={() => set({ liking: d.liking === v ? null : v })}>★</button>))}
+        </div>
         {d.liking !== null && (
           <div class="liking-fine">
             <button class="btn" type="button" aria-label="Een kwart ster lager" disabled={d.liking <= LIKING_MIN} onClick={() => set({ liking: nudgeLiking(d.liking!, -1) })}>−¼</button>
