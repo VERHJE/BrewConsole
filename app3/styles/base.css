@@ -274,3 +274,9 @@ fieldset.field legend { padding: 0; margin-bottom: 4px; }
 
 /* Uitleg onder de grafiektitel */
 .chart-note { margin: 2px 0 8px; font-size: .9375rem; color: var(--text); }
+
+/* Sorteren en filteren van zakken */
+.listtools { margin: 0 0 12px; }
+.listtools .field { margin-bottom: 8px; }
+.listtools .chips { margin-bottom: 4px; }
+.linklike { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: var(--accent); text-decoration: underline; cursor: pointer; min-height: 32px; }

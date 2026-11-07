@@ -1419,3 +1419,10 @@ Tests: `ronde4.ui.test.mjs` (naast elkaar op laptop, één per keer op telefoon,
 - **Eén zin onder elke grafiektitel** (`explainSeries()` in `core/trends.ts`, puur): koffie per kop ('Steeds ongeveer 22 g' of 'Van 19,1 g naar 22 g'), klaar na (laatste kop, gemiddelde, en of de laatste drie koppen sneller of langzamer waren dan de eerdere), sterkte-oordeel (de laatste drie koppen: ongeveer goed, te slap of te sterk, met het gemiddelde) en waardering (gemiddelde, en of de laatste drie koppen lekkerder of minder lekker waren).
 - **Voorzichtig:** alleen wat uit de punten zelf volgt; met één kop geen zin; een vergelijking pas als er minstens twee koppen vóór de laatste drie zijn; verschillen kleiner dan 10 seconden (tijd) of 0,5 punt (waardering) heten 'ongeveer gelijk'. Er wordt niets verklaard of voorspeld.
 - **Tests:** zinnen met grensgevallen (kern), vier zinnen op het zakdetail en geen zinnen bij één kop (scherm, axe in licht en donker). 119 app3-tests.
+
+### Zakken sorteren en filteren (7 nov 2026)
+
+- **Sorteren** (`core/zakkenlijst.ts`, puur): favorieten eerst en dan nieuwste (standaard), naam A–Z, vers gebrand eerst, hoogst gewaardeerd, meest gezet. Altijd volledig bepaald: bij gelijke waarde beslist de naam; een zak zonder brandingsdatum of waardering komt achteraan.
+- **Filteren:** Favorieten, Bijna op (minder dan twee koppen over volgens `stockView`) en Vers (hoogstens 21 dagen na branding). Meerdere filters tegelijk betekent: ze moeten allemaal kloppen. Zoeken werkt eroverheen.
+- **Scherm:** de bediening verschijnt vanaf 4 zakken (zoals het zoekveld), de keuze wordt per toestel onthouden (`brewconsole.zakkenlijst`), een regel 'N van M zakken' met 'Wis sorteren en filters' laat zien dat de lijst beperkt is, en zonder uitkomst staat er een lege toestand met dezelfde wisknop. De grote kaart bovenaan hoort bij de standaardvolgorde zonder filters en zonder zoekopdracht.
+- **Tests:** kern (alle sorteringen, grenzen van 'vers', onthouden met rommel in de opslag) en scherm (sorteren, filteren, herladen, wissen, favorieten, axe in licht en donker). 129 app3-tests.

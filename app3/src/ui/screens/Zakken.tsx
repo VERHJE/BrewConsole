@@ -14,7 +14,11 @@ import { EmptyState } from '../EmptyState.tsx';
 import { IconBean } from '../icons.tsx';
 import { BagArt, useApp, useSnapshot } from '../store-context.tsx';
 import { cupRows } from '../../core/insights.ts';
-import { favFirst, matches, readFavs, restView, toggleFav } from '../../core/ronde2.ts';
+import { matches, readFavs, restView, toggleFav } from '../../core/ronde2.ts';
+import {
+  FILTER_KEYS, FILTER_LABEL, SORT_LABEL, filterBeans, isDefault, readListPrefs, saveListPrefs, sortBeans,
+  type BeanFacts, type FilterKey, type ListPrefs, type SortMode
+} from '../../core/zakkenlijst.ts';
 
 const todayIso = (now: number): string => new Date(now).toISOString().slice(0, 10);
 
@@ -28,22 +32,45 @@ function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
   const { state } = useSnapshot();
   const { env } = useApp();
   const [q, setQ] = useState('');
+  const [prefs, setPrefs] = useState<ListPrefs>(() => readListPrefs(localStorage));
+  const change = (p: ListPrefs): void => { saveListPrefs(localStorage, p); setPrefs(p); };
   const favs = readFavs(localStorage);
-  const all = favFirst(beanRows(state), favs);
-  const rows = q.trim() ? all.filter(r => matches([r.name, r.roaster, r.country].filter(Boolean).join(' '), q)) : all;
   const today = todayIso(env.now());
-  const top = q.trim() ? undefined : rows[0];
-  const avg = (id: string): string | null => {
-    const l = cupRows(state, id).map(c => c.liking).filter((x): x is number => typeof x === 'number');
-    return l.length ? (l.reduce((a, b) => a + b, 0) / l.length).toFixed(1).replace('.', ',') : null;
-  };
+  const base = beanRows(state);
+  const facts = useMemo(() => {
+    const m = new Map<string, BeanFacts>();
+    for (const r of base) {
+      const l = cupRows(state, r.id).map(c => c.liking).filter((x): x is number => typeof x === 'number');
+      m.set(r.id, { fav: favs.has(r.id), low: stockView(state, r.id).low, avg: l.length ? l.reduce((a, b) => a + b, 0) / l.length : null });
+    }
+    return m;
+  }, [state, favs.size]);
+  const ctx = { facts, todayIso: today };
+  const all = sortBeans(base, prefs.sort, ctx);
+  const filtered = filterBeans(all, prefs.filters, ctx);
+  const rows = q.trim() ? filtered.filter(r => matches([r.name, r.roaster, r.country].filter(Boolean).join(' '), q)) : filtered;
+  const narrowed = !isDefault(prefs) || q.trim() !== '';
+  const top = narrowed ? undefined : rows[0];
+  const avg = (id: string): string | null => { const a = facts.get(id)?.avg; return a == null ? null : a.toFixed(1).replace('.', ','); };
+  const toggleFilter = (k: FilterKey): void => change({ ...prefs, filters: prefs.filters.includes(k) ? prefs.filters.filter(x => x !== k) : [...prefs.filters, k] });
   return (
     <section>
       <div class="head">{activeId ? <h2 class="list-title">Zakken</h2> : <h1>Zakken</h1>}<a class="btn primary" href={href('zakken', 'nieuw')}>Zak toevoegen</a></div>
-      {rows.length === 0
+      {base.length === 0
         ? <EmptyState icon={<IconBean />} title="Nog geen zakken" >Plak de tekst van een zak of een webshoppagina, of scan de QR-code.</EmptyState>
         : <>
           {all.length > 3 && <label class="field search"><span class="sr-only">Zoek in zakken</span><input type="search" name="zoek" placeholder="Zoek op naam, brander of land" value={q} onInput={e => setQ((e.currentTarget as HTMLInputElement).value)} /></label>}
+          {base.length > 3 && (
+            <div class="listtools">
+              <label class="field"><span>Sorteren</span>
+                <select name="sorteer" value={prefs.sort} onChange={e => change({ ...prefs, sort: (e.currentTarget as HTMLSelectElement).value as SortMode })}>
+                  {(Object.keys(SORT_LABEL) as SortMode[]).map(k => <option key={k} value={k}>{SORT_LABEL[k]}</option>)}
+                </select></label>
+              <div class="chips" role="group" aria-label="Filteren">
+                {FILTER_KEYS.map(k => <button key={k} type="button" class="chip" aria-pressed={prefs.filters.includes(k)} onClick={() => toggleFilter(k)}>{FILTER_LABEL[k]}</button>)}
+              </div>
+              {narrowed && <p class="meta" role="status">{rows.length} van {base.length} {base.length === 1 ? 'zak' : 'zakken'}{!isDefault(prefs) && <> · <button type="button" class="linklike" onClick={() => change({ sort: 'standaard', filters: [] })}>Wis sorteren en filters</button></>}</p>}
+            </div>)}
           {top && (
             <a class={rows.length > 1 ? 'hero stacked' : 'hero'} href={href('zakken', top.id)} aria-label={`Open ${top.name}`}>
               <BagArt beanId={top.id} name={top.name} large />
@@ -59,7 +86,7 @@ function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
           <ul class="list thumbs">{rows.map(r => (
             <li key={r.id}><a class="item" href={href('zakken', r.id)} aria-current={r.id === activeId ? 'true' : undefined}><span class="thumb"><BagArt beanId={r.id} name={r.name} /></span><span class="itext"><strong>{favs.has(r.id) && <span aria-label="Favoriet">★ </span>}{r.name}</strong><Meta row={r} today={today} /></span></a></li>
           ))}</ul>
-          {rows.length === 0 && <EmptyState compact title={`Geen zakken gevonden voor ‘${q}’`} />}
+          {rows.length === 0 && <EmptyState compact title={q.trim() ? `Geen zakken gevonden voor ‘${q}’` : 'Geen zakken met deze filters'}>{!isDefault(prefs) ? <button type="button" class="btn" onClick={() => change({ sort: 'standaard', filters: [] })}>Wis sorteren en filters</button> : undefined}</EmptyState>}
         </>}
     </section>
   );
