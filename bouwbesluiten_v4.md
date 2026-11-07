@@ -1432,3 +1432,9 @@ Tests: `ronde4.ui.test.mjs` (naast elkaar op laptop, één per keer op telefoon,
 - Alle plekken waar nu 'nog niets' staat gebruiken `EmptyState`: het **smaakprofiel** zonder een geproefde kop is één volledige lege toestand (pictogram, uitleg, knop 'Zet een kop'); 'Nog geen herkende notities' en 'Nog geen waarderingen' in het profiel, 'Nog geen afgeronde koppen' en 'Nog geen koppen met deze zak' in het zakdetail en 'Nog niet geproefd' in het kopdetail zijn de compacte vorm met een zin die zegt wat ervoor nodig is.
 - Hulptekst onder koppen (uitleg van een scherm) en statusmeldingen ('Geen verschillen in wat hier staat') blijven gewone tekst; alleen echte lege toestanden zijn omgezet.
 - Tests: `leeg.ui.test.mjs` (profiel leeg, compacte toestanden met koppen, zak zonder koppen; axe in licht en donker). 131 app3-tests.
+
+### Oude app opgeruimd (7 nov 2026)
+
+- **Besluit (Jelle):** alleen van de site halen; broncode en oude tests blijven als archief omdat Engine 3 er twee vergelijkingstests en generatiescripts aan heeft. Jelle bevestigde dat zijn gegevens al zijn overgezet.
+- **Gedaan:** `npm run build` bouwt alleen app3; `/oud/` is een melding met een opruim-worker (nagespeeld in een echte browser); links naar `/oud/` uit de app weg; `qa:dist` bouwt naar `dist-oud/` (genegeerd door git); Netlify-headers en comment bijgewerkt. Test: `app3/test/oud.test.mjs` (melding, geen oude bestanden, opruim-worker wist caches en haalt zichzelf weg).
+- **Terugdraaien:** de laatste gepubliceerde versie met de oude app op `/oud/` is `6e916d1`. Een tag kon vanuit deze omgeving niet worden gepusht.

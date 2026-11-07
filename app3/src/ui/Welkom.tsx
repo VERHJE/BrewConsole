@@ -14,9 +14,9 @@ export function Welkom({ onSkip }: { onSkip: () => void }): JSX.Element {
       <p><a class="btn primary" href={href('zakken', 'nieuw')}>Voeg je eerste zak toe</a></p>
       <p><button class="btn" type="button" onClick={onSkip}>Zonder zak beginnen</button></p>
       <div class="card welkom-oud">
-        <strong>Kom je van de vorige versie?</strong>
-        <p class="meta">Maak daar een back-up (Meer → Gegevens) en lees die hier in via Meer → Gegevens. Je zakken en koppen komen dan mee.</p>
-        <a class="btn" href="oud/">Open de oude app</a>
+        <strong>Heb je een back-up van de vorige versie?</strong>
+        <p class="meta">Lees die in via Meer → Gegevens. Je zakken en koppen komen dan mee.</p>
+        <a class="btn" href={href('meer', 'gegevens')}>Back-up inlezen</a>
       </div>
       <p class="meta">Alles blijft op je toestel. Er wordt niets verstuurd tenzij je zelf synchronisatie aanzet.</p>
     </section>

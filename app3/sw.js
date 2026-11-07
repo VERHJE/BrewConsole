@@ -1,6 +1,6 @@
 /* Brew Console (app3) · service worker.
-   Staat op de wortel van de site. De oude app staat sinds de overstap op /oud/ en heeft daar zijn eigen worker
-   (kleinere scope wint); navigaties naar /oud/ laat deze worker daarom met rust.
+   Staat op de wortel van de site. Op /oud/ staat alleen nog een melding met een opruim-worker (kleinere scope wint);
+   navigaties naar /oud/ laat deze worker daarom met rust.
    - Bij installatie gaat de hele app in een cache met een versie die uit de inhoud van de bestanden komt.
    - Navigaties binnen de scope krijgen index.html uit de cache (de app start dus ook zonder netwerk).
    - Overige verzoeken: cache eerst, anders netwerk; wat van een andere herkomst komt, blijft buiten beeld.

@@ -20,7 +20,8 @@ for (const scheme of ['light', 'dark']) {
     assert.equal(await page.locator('h1').innerText(), 'Welkom bij Brew Console');
     assert.equal(await page.locator('.welkom-steps li').count(), 3);
     assert.equal(await page.locator('select[name=bean]').count(), 0, 'nog geen formulier');
-    assert.equal(await page.locator('a:has-text("Open de oude app")').getAttribute('href'), 'oud/');
+    assert.equal(await page.locator('a:has-text("Back-up inlezen")').getAttribute('href'), '#/meer/gegevens');
+    assert.equal(await page.locator('a[href="oud/"]').count(), 0, 'de oude app bestaat niet meer');
     await page.evaluate(axeSource);
     const r = await page.evaluate(() => axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }));
     assert.deepEqual(r.violations.map(v => `${v.id}: ${v.nodes.slice(0, 3).map(n => n.target.join(' ')).join(' | ')}`), []);

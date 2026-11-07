@@ -94,9 +94,6 @@ function Over(): JSX.Element {
       <div class="head"><Back /><h1>Over</h1></div>
       <dl class="kv"><dt>Engine</dt><dd>{ENGINE3_VERSION}</dd><dt>Contract</dt><dd>{ENGINE3_CONTRACT_VERSION}</dd></dl>
       <p class="muted">Je gegevens staan op dit toestel. Er wordt niets verstuurd tenzij je synchronisatie aanzet.</p>
-      <h2>Oude app</h2>
-      <p class="muted">De vorige versie staat nog op een eigen adres. Maak daar een back-up (Meer → Gegevens) en lees die hier in via Meer → Gegevens om je zakken en koppen over te nemen.</p>
-      <a class="btn" href="oud/">Open de oude app</a>
     </section>
   );
 }

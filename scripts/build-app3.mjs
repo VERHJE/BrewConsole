@@ -36,6 +36,28 @@ for (const f of fs.readdirSync(path.join(ROOT, 'icons'))) fs.copyFileSync(path.j
 const EXTRA_PAGES = ['tokengenerator.html', 'toestelcheck.html'];
 if (AT_ROOT) for (const f of EXTRA_PAGES) fs.copyFileSync(path.join(ROOT, f), path.join(OUT, f));
 
+// De oude app is opgeruimd. Wie /oud/ nog opent (bladwijzer, geïnstalleerde kopie) ziet een korte melding, en de worker daar
+// wist zichzelf en zijn caches, zodat het toestel niet blijft hangen in de oude versie.
+if (AT_ROOT) {
+  const OUD = path.join(OUT, 'oud');
+  fs.mkdirSync(OUD, { recursive: true });
+  fs.writeFileSync(path.join(OUD, 'index.html'), `<!doctype html>
+<html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Brew Console · oude versie opgeruimd</title>
+<style>body{font:16px/1.5 system-ui,sans-serif;margin:0;padding:32px 20px;background:#f4efe4;color:#1d261c}main{max-width:32rem;margin:0 auto}a{display:inline-block;margin-top:12px;padding:14px 20px;border-radius:12px;background:#3f6b3c;color:#fff;text-decoration:none;font-weight:600}@media(prefers-color-scheme:dark){body{background:#120e0a;color:#f5ecdf}a{background:#d9a65a;color:#1a1108}}</style></head>
+<body><main><h1>De oude versie is opgeruimd</h1><p>Brew Console staat nu op één adres. Je zakken en koppen staan in de nieuwe app als je ze hebt overgezet via een back-up.</p><a href="../">Naar de nieuwe app</a></main>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){if(r.scope.indexOf('/oud/')>-1)r.unregister()})}).catch(function(){})}</script></body></html>
+`);
+  fs.writeFileSync(path.join(OUD, 'sw.js'), `/* Opruim-worker voor /oud/: wist alle caches, haalt zichzelf weg en laat open tabbladen opnieuw laden. */
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', e => e.waitUntil((async () => {
+  for (const k of await caches.keys()) await caches.delete(k);
+  await self.registration.unregister();
+  const clients = await self.clients.matchAll({ type: 'window' });
+  for (const c of clients) { try { c.navigate(c.url); } catch (e) { /* tabblad weg */ } }
+})()));
+`);
+}
+
 // Service worker: versie uit de inhoud van alle bestanden, lijst van wat vooraf in de cache gaat.
 const files = fs.readdirSync(OUT, { recursive: true }).map(String).filter(f => !f.startsWith('oud') && !EXTRA_PAGES.includes(f) && fs.statSync(path.join(OUT, f)).isFile() && f !== 'sw.js').sort();
 const hash = crypto.createHash('sha256');
