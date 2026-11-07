@@ -1405,3 +1405,11 @@ Tests: `ronde4.ui.test.mjs` (naast elkaar op laptop, één per keer op telefoon,
 - **Gedrag:** zodra er één gebeurtenis is (een zak of een inlezing) verdwijnt de kaart voorgoed; wegklikken werkt ook zonder gegevens en komt niet terug. Zonder werkende opslag komt de kaart bij elke start terug, maar blokkeert niets.
 - **Niet gedaan:** de oude app wordt niet automatisch herkend. Oude en nieuwe app delen een herkomst maar bewaren hun gegevens op een eigen plek, en een betrouwbare controle daarop is er niet; daarom staat de kaart altijd klaar met uitleg.
 - **Tests:** kern (`welkom.test.ts`), scherm (`welkom.ui.test.mjs`, licht en donker met axe) en één bestaande test die nu eerst doorklikt. 111 app3-tests.
+
+### Geluid en trillen in de timer (7 nov 2026)
+
+- **Signalen** (`core/cues.ts`, puur): `tick` in de laatste drie seconden voor een volgende giet (één per seconde), `pour` als een giet begint, `hold` als je 'Erdoor' moet tikken (Kasuya), `done` als het zetsel klaar is. Starten en hervatten geven zelf geen signaal (dat is jouw tik), en na pauze volgt er niets tot de klok loopt. Onderscheid tussen de signalen zit in het patroon (aantal tonen), niet alleen in toonhoogte.
+- **Geluid** (`ui/cues.ts`): korte sinustonen via Web Audio, zacht voor een tik. De AudioContext start na een tik op Start, Verder of het eerste tik op het scherm (nodig na herladen midden in een zetsel). **Trillen**: pour 200 ms, hold 120-80-120, done 300-100-300; tikken trillen niet. Trillen bestaat niet op een iPhone (Safari); dat staat bij de instelling.
+- **Voorkeuren** (Meer → Voorkeuren → Timer): geluid en trillen apart, standaard allebei **aan** (een timer die zwijgt is zelden de verwachting; uitzetten is één tik), opgeslagen per toestel (`brewconsole.cueSound`, `brewconsole.cueVibrate`), met een testknop. Het scherm bleef al aan tijdens een zetsel (wake lock).
+- **Vervangen:** de oude vaste trilling bij elke faseverandering is nu dit signaalsysteem en volgt de voorkeur.
+- **Tests:** kern (overgangen, tikken niet te vroeg/vaak, voorkeuren), scherm met een nagebootste AudioContext en `navigator.vibrate` (tikken, giet-signaal, trillen alleen bij de giet, alles uit = stil) en de instellingen met axe in licht en donker. `window.__cueLog` is een testhaak die alleen vult als een test hem aanmaakt. 118 app3-tests.
