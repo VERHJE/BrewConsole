@@ -1,3 +1,5 @@
+import { CUE_SOUND_KEY, CUE_VIBRATE_KEY, readCuePrefs, saveCuePref } from '../../core/cues.ts';
+import { playCue, unlockAudio } from '../cues.ts';
 import type { JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import type { WaterSetting } from '../../../../engine3/src/index.ts';
@@ -89,6 +91,8 @@ export function Voorkeuren(): JSX.Element {
   const s = settingsOf(state);
   const [theme, setTheme] = useState<ThemePref>(() => readTheme(localStorage));
   const [type, setType] = useState<TypePref>(() => readType(localStorage));
+  const [cues, setCues] = useState(() => readCuePrefs(localStorage));
+  const changeCue = (key: typeof CUE_SOUND_KEY | typeof CUE_VIBRATE_KEY, on: boolean): void => { saveCuePref(localStorage, key, on); setCues(readCuePrefs(localStorage)); };
   const change = (t: ThemePref, f: TypePref): void => {
     savePref(localStorage, THEME_KEY, t); savePref(localStorage, TYPE_KEY, f);
     applyPrefs(document.documentElement, t, f);
@@ -102,6 +106,17 @@ export function Voorkeuren(): JSX.Element {
       <Radios<ThemePref> name="theme" legend="Thema" value={theme} labels={THEME_LABEL} onPick={t => change(t, type)} />
       <Radios<TypePref> name="type" legend="Lettertype van koppen en namen" value={type} labels={TYPE_LABEL} onPick={f => change(theme, f)} />
       <p class="meta">Cijfers en teksten blijven in beide gevallen schreefloos. Deze keuze geldt voor dit toestel.</p>
+      <h2>Timer</h2>
+      <label class="choice" style="margin-top:8px">
+        <input type="checkbox" name="cueSound" checked={cues.sound} onChange={e => changeCue(CUE_SOUND_KEY, (e.currentTarget as HTMLInputElement).checked)} />
+        <span>Geluid bij elke giet en aan het einde</span>
+      </label>
+      <label class="choice" style="margin-top:8px">
+        <input type="checkbox" name="cueVibrate" checked={cues.vibrate} onChange={e => changeCue(CUE_VIBRATE_KEY, (e.currentTarget as HTMLInputElement).checked)} />
+        <span>Trillen bij een giet</span>
+      </label>
+      <p><button class="btn" type="button" name="cueTest" onClick={() => { unlockAudio(); playCue('pour', cues); }}>Test het signaal</button></p>
+      <p class="meta">Een tikje in de laatste drie seconden voor een giet, een dubbele piep als de giet begint, een aandachtssignaal als je “Erdoor” moet tikken en een stijgende toon als het klaar is. Trillen werkt niet op een iPhone; het scherm blijft wel aan tijdens het zetsel. Deze keuzes gelden voor dit toestel.</p>
       <h2>Proeven</h2>
       <label class="choice" style="margin-top:8px">
         <input type="checkbox" name="lighter" checked={s.brightLighter} onChange={e => { void store.append([brightLighterEvent(env, (e.currentTarget as HTMLInputElement).checked)]); }} />

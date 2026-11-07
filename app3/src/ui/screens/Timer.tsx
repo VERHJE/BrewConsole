@@ -1,11 +1,13 @@
 import type { JSX } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { factsOf } from '../../../../engine3/src/index.ts';
 import { href } from '../../core/router.ts';
 import { clock, pourLines, techniqueName } from '../../core/brew.ts';
 import {
   abandonTimer, drainedTap, drainedUndo, finishTimer, pauseTimer, resumeTimer, startTimer, stepGuide, timerEventsFor, timerView, type StepKind
 } from '../../core/timer.ts';
+import { cueFor, readCuePrefs, type CueState } from '../../core/cues.ts';
+import { playCue, unlockAudio } from '../cues.ts';
 import { useApp, useSnapshot } from '../store-context.tsx';
 
 /** Ring rond de tijd van de huidige stap. De getallen erin zijn voor het oog; de uitleg staat in de tekst ernaast. */
@@ -61,9 +63,22 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
   useWakeLock(running || view?.status === 'paused');
   const [confirmStop, setConfirmStop] = useState(false);
 
-  // Een korte trilling bij elke nieuwe giet-fase (waar de browser dat toestaat).
-  const phaseKey = view ? view.phases.join(',') : '';
-  useEffect(() => { if (running) { try { navigator.vibrate?.(200); } catch { /* geen trilling */ } } }, [phaseKey]);
+  // Signalen (geluid en trillen) bij een giet, een wacht-op-doorlopen, de laatste drie seconden voor een giet en het einde.
+  const prevCue = useRef<CueState | null>(null);
+  const cueGuide = recipe && view ? stepGuide(recipe, view, recipe.expectedEndSec?.mid ?? null) : null;
+  const cueNow: CueState | null = view && cueGuide ? { status: view.status, phaseKey: view.phases.join(','), kind: cueGuide.kind, remainingSec: cueGuide.remainingSec } : null;
+  useEffect(() => {
+    if (!cueNow) return;
+    const cue = cueFor(prevCue.current, cueNow);
+    prevCue.current = cueNow;
+    if (cue) playCue(cue, readCuePrefs(localStorage));
+  });
+  // Een AudioContext start pas na een tik; na herladen midden in een zetsel is de eerste tik op het scherm genoeg.
+  useEffect(() => {
+    const once = (): void => unlockAudio();
+    document.addEventListener('pointerdown', once, { once: true });
+    return () => document.removeEventListener('pointerdown', once);
+  }, []);
 
   if (!cup || !recipe || !view) return <section><h1>Zetsel niet gevonden</h1><a class="btn" href={href('zetten')}>Terug</a></section>;
   const lines = pourLines(recipe);
@@ -93,7 +108,7 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
         })}
       </ol>
 
-      {view.status === 'ready' && <button class="btn primary big" type="button" onClick={() => send(startTimer(env, brewId))}>Start</button>}
+      {view.status === 'ready' && <button class="btn primary big" type="button" onClick={() => { unlockAudio(); send(startTimer(env, brewId)); }}>Start</button>}
       {(view.status === 'running' || view.status === 'paused') && (
         <div>
           {view.status === 'running' && (view.current === lastIdx && view.phases[lastIdx] === 'go' && !view.allPoured
@@ -106,7 +121,7 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
           <div class="pair">
             {view.status === 'running'
               ? <button class="btn" type="button" onClick={() => send(pauseTimer(env, brewId, t))}>Pauze</button>
-              : <button class="btn primary" type="button" onClick={() => send(resumeTimer(env, brewId, t))}>Verder</button>}
+              : <button class="btn primary" type="button" onClick={() => { unlockAudio(); send(resumeTimer(env, brewId, t)); }}>Verder</button>}
             {confirmStop
               ? <button class="btn" type="button" onClick={() => send(abandonTimer(env, brewId, t))}>Echt stoppen</button>
               : <button class="btn" type="button" onClick={() => setConfirmStop(true)}>Stop</button>}
