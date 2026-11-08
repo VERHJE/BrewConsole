@@ -59,3 +59,18 @@ test('punt 4 en 5: logboek met één zak kopt op datum met pijltje; grote zakkaa
   assert.equal(await page.locator('.hero').count(), 0, 'één zak: geen dubbele kaart');
   await page.close();
 });
+
+test('punt 6 en 7: Meer in drie groepen; hero-foto op laptop volgt de kleur van de zak', async () => {
+  const page = await app.browser.newPage({ viewport: { width: 1280, height: 800 } });
+  await importLog(page, app.base, json);
+  await page.goto(app.base + '#/meer');
+  await page.waitForSelector('.group-h');
+  assert.deepEqual((await page.locator('.group-h').allTextContents()), ['Jouw koffie', 'Gedrag', 'Gegevens en app']);
+  assert.equal(await page.locator('.list .item.go').count(), 7);
+  await page.goto(app.base + '#/zakken');
+  await page.click(`.item:has-text("${SEED_BEAN}")`);
+  await page.waitForSelector('.hero-photo svg');
+  const bg = await page.locator('.hero-photo svg').evaluate(el => getComputedStyle(el).backgroundColor);
+  assert.notEqual(bg, 'rgba(0, 0, 0, 0)', 'de rand naast de tekening heeft dezelfde kleur als de achtergrond');
+  await page.close();
+});

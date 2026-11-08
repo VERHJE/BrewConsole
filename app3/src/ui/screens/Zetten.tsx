@@ -6,7 +6,7 @@ import { href } from '../../core/router.ts';
 import { beanRows } from '../../core/beans.ts';
 import {
   CUP_MAX, CUP_MIN, DEFAULT_FORM, FEEDBACK_LABEL, GOAL_LABEL, METHOD_LABEL, TECHNIQUE_OPTIONS,
-  bandText, brewPlanEvent, clock, nl1, planBrew, pourLines, techniqueName, type BrewForm
+  bandText, brewPlanEvent, clock, nl1, planBrew, pourLines, techniqueName, visibleWarnings, type BrewForm
 } from '../../core/brew.ts';
 import { useApp, useSnapshot } from '../store-context.tsx';
 import { Timer } from './Timer.tsx';
@@ -139,7 +139,7 @@ function Advice({ outcome, onStart, onTrial }: { outcome: Extract<ReturnType<typ
           ))}</tbody></table>
         {lines.some(l => l.wait) && <p class="meta">* begin pas als het bed bijna droog is, ook als dat later is dan de tijd.</p>}
       </div>
-      {advice.warnings.map(w => <p class="banner warn" key={w} role="status">{w}</p>)}
+      {visibleWarnings(advice.warnings).map(w => <p class="banner warn" key={w} role="status">{w}</p>)}
       {advice.reasons.length > 0 && (<div class="card"><strong>Waarom dit recept</strong><ul class="reasons">{advice.reasons.map(x => <li key={x.code + x.text}>{x.text}</li>)}</ul></div>)}
       {advice.trial && (
         <div class="card"><p><strong>Proef:</strong> {advice.trial.text}</p>

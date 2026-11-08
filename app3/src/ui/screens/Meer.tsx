@@ -124,14 +124,21 @@ export function Meer({ route }: { route: Route }): JSX.Element {
       return (
         <section>
           <h1>Meer</h1>
+          <h2 class="group-h">Jouw koffie</h2>
           <ul class="list">
-            <li><a class="item" href={href('meer', 'profiel')}><strong>Smaakprofiel</strong><small>Wat je opmerkt en waardeert</small></a></li>
-            <li><a class="item" href={href('meer', 'molen')}><strong>Molen</strong><small>Hoe jouw molen reageert</small></a></li>
-            <li><a class="item" href={href('meer', 'water')}><strong>Water</strong><small>Hardheid, alkaliniteit en verdunning</small></a></li>
-            <li><a class="item" href={href('meer', 'voorkeuren')}><strong>Voorkeuren</strong><small>Hoe proeven en vragen werken</small></a></li>
-            <li><a class="item" href={href('meer', 'gegevens')}><strong>Gegevens</strong><small>Back-up maken en terugzetten</small></a></li>
-            <li><a class="item" href={href('meer', 'sync')}><strong>Synchronisatie</strong><small>{syncLine}</small></a></li>
-            <li><a class="item" href={href('meer', 'over')}><strong>Over</strong><small>Versie en privacy</small></a></li>
+            <li><a class="item go" href={href('meer', 'profiel')}><strong>Smaakprofiel</strong><small>Wat je opmerkt en waardeert</small></a></li>
+            <li><a class="item go" href={href('meer', 'molen')}><strong>Molen</strong><small>Hoe jouw molen reageert</small></a></li>
+            <li><a class="item go" href={href('meer', 'water')}><strong>Water</strong><small>Hardheid, alkaliniteit en verdunning</small></a></li>
+          </ul>
+          <h2 class="group-h">Gedrag</h2>
+          <ul class="list">
+            <li><a class="item go" href={href('meer', 'voorkeuren')}><strong>Voorkeuren</strong><small>Hoe proeven, vragen en de timer werken</small></a></li>
+          </ul>
+          <h2 class="group-h">Gegevens en app</h2>
+          <ul class="list">
+            <li><a class="item go" href={href('meer', 'gegevens')}><strong>Gegevens</strong><small>Back-up maken en terugzetten</small></a></li>
+            <li><a class="item go" href={href('meer', 'sync')}><strong>Synchronisatie</strong><small>{syncLine}</small></a></li>
+            <li><a class="item go" href={href('meer', 'over')}><strong>Over</strong><small>Versie en privacy</small></a></li>
           </ul>
         </section>
       );

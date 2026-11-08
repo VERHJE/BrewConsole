@@ -83,3 +83,16 @@ export function brewPlanEvent(env: Env, advice: Advice, form: BrewForm, brewId?:
     data: { brewId: brewId ?? newId(env, 'brew'), beanId: form.beanId, goal: form.goal, engine: advice.engine, recipe: advice.recipe, trialId: advice.trial?.id ?? null, legacy: null }
   };
 }
+
+/**
+ * Waarschuwingen uit het advies, rustiger gemaakt voor weergave: een dosis die minder dan 1 g buiten het bereik van de brewer ligt
+ * (bijv. 22,3 g bij een maximum van 22 g) maakt niets uit en wordt niet getoond. Overige waarschuwingen blijven staan.
+ */
+export function visibleWarnings(warnings: readonly string[]): string[] {
+  return warnings.filter(w => {
+    const m = /\(([\d,.]+) g\) ligt buiten het bereik van de brewer .*het recept gebruikt ([\d,.]+) g/.exec(w);
+    if (!m) return true;
+    const num = (t: string): number => Number(t.replace(',', '.'));
+    return Math.abs(num(m[1]!) - num(m[2]!)) >= 1;
+  });
+}

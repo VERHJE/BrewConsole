@@ -292,3 +292,7 @@ fieldset.field legend { padding: 0; margin-bottom: 4px; }
 /* Logboek: een rij die je kunt openen heeft een pijltje. */
 .list .item.go { position: relative; padding-right: 32px; }
 .list .item.go::after { content: '›'; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 1.6rem; line-height: 1; color: var(--text-3); }
+
+/* Meer: groepen met een kopje. */
+.group-h { margin: 22px 0 8px; font-size: .95rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-3); }
+.group-h:first-of-type { margin-top: 8px; }

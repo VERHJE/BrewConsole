@@ -1453,3 +1453,11 @@ Uit een beoordeling van de schermen door vier rollen (interactie, visueel, toega
 - **Logboek:** met één zak kopt de datum de rij (zaknaam is dan ruis) en staat de rest eronder; met meerdere zakken blijft de zaknaam vooraan. Elke rij heeft een pijltje (`.item.go`) als tikaanwijzing.
 - **Zakken:** de grote kaart verschijnt pas bij drie of meer zakken (en niet bij zoeken, sorteren of filteren); met één of twee zakken zou hij dezelfde zak als de lijst tonen.
 - Tests aangepast (`foto`, `logboek`, `ronde2`) en uitgebreid (`panel1`). 136 app3-tests.
+
+### Panelronde 3: punt 6 en 7 (8 nov 2026)
+
+- **Meer** staat in drie groepen met een kopje: Jouw koffie (smaakprofiel, molen, water), Gedrag (voorkeuren) en Gegevens en app (gegevens, synchronisatie, over); elke rij heeft het pijltje. De naam 'Voorkeuren' bleek niet te botsen met een 'Instellingen'-titel (alleen de bestandsnaam heet zo); wel beschrijft de ondertitel nu ook de timer.
+- **Laptop:** de tekening van een zak vult het hele fotovlak (de rand naast de tekening heeft de achtergrondkleur van de zak). De waarschuwing 'dosis buiten het bereik van de brewer' verschijnt niet meer als de afwijking kleiner is dan 1 g (`visibleWarnings` in `core/brew.ts`; de engine blijft ongemoeid).
+- **Bewust niet aangepast:** de vaste startbalk op de laptop. Hij dekt alleen inhoud af tijdens het scrollen en staat aan het eind van de pagina vrij.
+- **Open:** de twee Kasuya-meldingen (giet pas als het bed bijna droog is; einde nog niet uit eigen zetsels geleerd) staan bij elk standaardrecept in amber. Het zijn uitleg, geen waarschuwing; kandidaat voor een rustiger stijl.
+- Tests: `warnings.test.ts`, `panel1.ui.test.mjs`. 139 app3-tests.
