@@ -21,7 +21,7 @@ function loadForm(): BrewForm {
 }
 const hasSavedForm = (): boolean => { try { return localStorage.getItem(KEY) !== null; } catch { return false; } };
 function saveForm(f: BrewForm): void {
-  try { localStorage.setItem(KEY, JSON.stringify({ beanId: f.beanId, method: f.method, cupG: f.cupG, goal: f.goal, technique: f.technique })); } catch { /* geen opslag: prima */ }
+  try { localStorage.setItem(KEY, JSON.stringify({ beanId: f.beanId, method: f.method, cupG: f.cupG, goal: f.goal, technique: f.technique, noBean: f.noBean === true })); } catch { /* geen opslag: prima */ }
 }
 
 function Plan(): JSX.Element {
@@ -33,11 +33,12 @@ function Plan(): JSX.Element {
   // Op een telefoon start het formulier ingeklapt zodra je het eerder gebruikte; op een laptop staat het altijd open.
   const [open, setOpen] = useState(() => !hasSavedForm());
   // Een zak die niet meer bestaat (archief, andere toestel) valt terug op 'geen zak'.
-  const beanId = form.beanId && rows.some(r => r.id === form.beanId) ? form.beanId : null;
+  // Zonder eigen keuze (nog niets bewust op 'geen zak' gezet) staat de nieuwste zak vooraf geselecteerd.
+  const beanId = form.beanId && rows.some(r => r.id === form.beanId) ? form.beanId : form.noBean || rows.length === 0 ? null : rows[0]!.id;
   const eff = useMemo(() => ({ ...form, beanId }), [form, beanId]);
   useEffect(() => saveForm(eff), [eff]);
   const outcome = useMemo(() => planBrew(engine, state, env, eff), [engine, revision, eff]);
-  const set = (p: Partial<BrewForm>): void => setForm({ ...eff, ...p });
+  const set = (p: Partial<BrewForm>): void => setForm({ ...eff, ...p, ...('beanId' in p ? { noBean: p.beanId === null } : {}) });
 
   const start = async (): Promise<void> => {
     if (!outcome.ok) return;

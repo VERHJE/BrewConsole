@@ -110,8 +110,8 @@ function Detail({ beanId }: { beanId: string }): JSX.Element {
   };
   return (
     <section class="detail">
-      <div class="hero-photo"><BagArt beanId={beanId} name={d.name} large /></div>
-      <div class="head"><a class="btn back-narrow" href={href('zakken')} aria-label="Terug naar zakken">Terug</a><button class="btn" type="button" aria-pressed={fav} onClick={() => setFav(toggleFav(localStorage, beanId))}>{fav ? '★ Favoriet' : '☆ Favoriet'}</button><a class="btn" href={href('zakken', beanId, 'bewerken')}>Bewerken</a></div>
+      <div class="hero-photo"><a class="btn back-narrow backtop" href={href('zakken')} aria-label="Terug naar zakken">Terug</a><BagArt beanId={beanId} name={d.name} large /></div>
+      <div class="head"><button class="btn" type="button" aria-pressed={fav} onClick={() => setFav(toggleFav(localStorage, beanId))}>{fav ? '★ Favoriet' : '☆ Favoriet'}</button><a class="btn" href={href('zakken', beanId, 'bewerken')}>Bewerken</a></div>
       {d.eyebrow && <small class="eyebrow">{d.eyebrow}</small>}
       <h1>{d.name}</h1>
       <p class="muted">{[d.roaster, age !== null ? `${age} d na branding` : null, d.cups ? `${d.cups} ${d.cups === 1 ? 'kop' : 'koppen'}` : null].filter(Boolean).join(' · ')}</p>

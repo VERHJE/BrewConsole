@@ -280,3 +280,11 @@ fieldset.field legend { padding: 0; margin-bottom: 4px; }
 .listtools .field { margin-bottom: 8px; }
 .listtools .chips { margin-bottom: 4px; }
 .linklike { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: var(--accent); text-decoration: underline; cursor: pointer; min-height: 32px; }
+
+/* Timer voor de start: geen tweede 'start', de knop zit onderaan op duimhoogte. */
+.timer.ready { display: flex; flex-direction: column; min-height: calc(100dvh - 40px); }
+.timer.ready .big { margin-top: auto; }
+
+/* Zakdetail op de telefoon: Terug staat boven de foto, niet tussen de inhoud. */
+.hero-photo { position: relative; }
+.backtop { position: absolute; top: 12px; left: 12px; z-index: 2; min-height: 44px; box-shadow: 0 1px 6px rgba(0,0,0,.25); }

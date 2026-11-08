@@ -35,15 +35,20 @@ export function BeanInsights({ beanId }: { beanId: string }): JSX.Element {
   const { state } = useSnapshot();
   const fit = fitView(state, beanId);
   const cups = cupRows(state, beanId);
+  // Geen kop-grote uitkomst als er niets te zeggen valt: dan alleen de zin, en de tabel ingeklapt.
+  const neutral = fit.expectedDelta === null || Math.abs(fit.expectedDelta) < 0.15;
   return (
     <div>
       <h2>Past bij je smaak</h2>
       <div class="card fit">
-        {fit.expectedDelta !== null && <p class="delta">{Math.abs(fit.expectedDelta) < 0.05 ? '±0' : `${fit.expectedDelta >= 0 ? '+' : ''}${nl1(fit.expectedDelta)}`} punt</p>}
-        <p>{fit.text}</p>
+        {fit.expectedDelta !== null && !neutral && <p class="delta">{`${fit.expectedDelta >= 0 ? '+' : ''}${nl1(fit.expectedDelta)}`} punt</p>}
+        <p>{neutral && fit.expectedDelta === null ? 'Nog te weinig koppen om te voorspellen of deze zak bij je smaak past.' : fit.text}</p>
         {fit.parts.length > 0 && (
-          <table class="plain"><thead><tr><th>Kenmerk</th><th class="n">Aantal</th><th class="n">Verschil</th></tr></thead>
-            <tbody>{fit.parts.map(p => <tr key={p.label}><td>{p.label}</td><td class="n">{p.n}</td><td class="n">{Math.abs(p.delta) < 0.05 ? '±0' : `${p.delta >= 0 ? '+' : ''}${nl1(p.delta)}`}</td></tr>)}</tbody></table>)}
+          <details open={!neutral}>
+            <summary>Waarop dit is gebaseerd</summary>
+            <table class="plain"><thead><tr><th>Kenmerk</th><th class="n">Aantal</th><th class="n">Verschil</th></tr></thead>
+              <tbody>{fit.parts.map(p => <tr key={p.label}><td>{p.label}</td><td class="n">{p.n}</td><td class="n">{Math.abs(p.delta) < 0.05 ? '±0' : `${p.delta >= 0 ? '+' : ''}${nl1(p.delta)}`}</td></tr>)}</tbody></table>
+          </details>)}
         <p class="meta">Dit laat alleen zien wat je eerder waardeerde. Het verandert je recept niet.</p>
       </div>
       <h2>Verloop</h2>

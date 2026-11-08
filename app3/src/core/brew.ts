@@ -14,6 +14,8 @@ export interface BrewForm {
   readonly goal: Goal | null;
   readonly technique: TechniqueId | null;
   readonly feedback: readonly FeedbackSignal[];
+  /** Bewust 'geen zak' gekozen: dan niet vooraf de nieuwste zak nemen. */
+  readonly noBean?: boolean;
 }
 
 export const DEFAULT_FORM: BrewForm = { beanId: null, method: 'v60', cupG: 250, goal: null, technique: null, feedback: [] };
