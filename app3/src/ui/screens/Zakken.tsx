@@ -50,7 +50,8 @@ function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
   const filtered = filterBeans(all, prefs.filters, ctx);
   const rows = q.trim() ? filtered.filter(r => matches([r.name, r.roaster, r.country].filter(Boolean).join(' '), q)) : filtered;
   const narrowed = !isDefault(prefs) || q.trim() !== '';
-  const top = narrowed ? undefined : rows[0];
+  // De grote kaart pas bij drie of meer zakken; anders toont hij dezelfde zak als de lijst eronder.
+  const top = narrowed || rows.length < 3 ? undefined : rows[0];
   const avg = (id: string): string | null => { const a = facts.get(id)?.avg; return a == null ? null : a.toFixed(1).replace('.', ','); };
   const toggleFilter = (k: FilterKey): void => change({ ...prefs, filters: prefs.filters.includes(k) ? prefs.filters.filter(x => x !== k) : [...prefs.filters, k] });
   return (

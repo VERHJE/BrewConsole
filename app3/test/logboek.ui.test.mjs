@@ -12,9 +12,10 @@ test('logboek: lijst, detail, verwijderen; Meer-schermen zonder fouten', async (
   page.on('pageerror', e => errors.push(e.message));
   await brewToEnd(page, app.base, 'Logzak');
   await page.goto(app.base + '#/logboek');
-  await page.waitForSelector('.item:has-text("Logzak")');
-  assert.match(await page.locator('.item').first().innerText(), /nog te proeven/);
-  await page.click('.item:has-text("Logzak")');
+  await page.waitForSelector('.item.go:has-text("nog te proeven")');
+  // één zak: de datum kopt de rij, de zaknaam staat er niet
+  assert.doesNotMatch(await page.locator('.item.go').first().innerText(), /Logzak/);
+  await page.click('.item.go');
   await page.waitForSelector('h1:has-text("Logzak")');
   assert.ok((await page.locator('table.plain tr').count()) >= 3);
   page.once('dialog', d => d.accept());

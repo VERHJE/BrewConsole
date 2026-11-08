@@ -1447,3 +1447,17 @@ Uit een beoordeling van de schermen door vier rollen (interactie, visueel, toega
 - **Zakdetail:** bij een neutrale pasvorm (geen uitkomst of < 0,15 punt) geen grote kop, één zin en de tabel ingeklapt onder 'Waarop dit is gebaseerd'. 'Terug' staat op de foto in plaats van tussen de inhoud.
 - **Timer voor de start:** geen ring met 'start' meer (die deed hetzelfde als de knop); de startknop zit onderaan het scherm.
 - Test: `panel1.ui.test.mjs`. 135 app3-tests.
+
+### Panelronde 2: punt 4 en 5 (8 nov 2026)
+
+- **Logboek:** met één zak kopt de datum de rij (zaknaam is dan ruis) en staat de rest eronder; met meerdere zakken blijft de zaknaam vooraan. Elke rij heeft een pijltje (`.item.go`) als tikaanwijzing.
+- **Zakken:** de grote kaart verschijnt pas bij drie of meer zakken (en niet bij zoeken, sorteren of filteren); met één of twee zakken zou hij dezelfde zak als de lijst tonen.
+- Tests aangepast (`foto`, `logboek`, `ronde2`) en uitgebreid (`panel1`). 136 app3-tests.
+
+### Panelronde 3: punt 6 en 7 (8 nov 2026)
+
+- **Meer** staat in drie groepen met een kopje: Jouw koffie (smaakprofiel, molen, water), Gedrag (voorkeuren) en Gegevens en app (gegevens, synchronisatie, over); elke rij heeft het pijltje. De naam 'Voorkeuren' bleek niet te botsen met een 'Instellingen'-titel (alleen de bestandsnaam heet zo); wel beschrijft de ondertitel nu ook de timer.
+- **Laptop:** de tekening van een zak vult het hele fotovlak (de rand naast de tekening heeft de achtergrondkleur van de zak). De waarschuwing 'dosis buiten het bereik van de brewer' verschijnt niet meer als de afwijking kleiner is dan 1 g (`visibleWarnings` in `core/brew.ts`; de engine blijft ongemoeid).
+- **Bewust niet aangepast:** de vaste startbalk op de laptop. Hij dekt alleen inhoud af tijdens het scrollen en staat aan het eind van de pagina vrij.
+- **Kasuya-meldingen (daarna opgelost):** uitleg bij een recept (zoals 'giet pas als het bed bijna droog is' en 'einde nog niet uit eigen zetsels geleerd') staat nu als rustige lijst onder het schema (`splitWarnings` in `core/brew.ts`, `ul.notes`); alleen echte aandachtspunten (zoals een giet zonder water, of een dosis ruim buiten het bereik) blijven een amberkleurige waarschuwing.
+- Tests: `warnings.test.ts`, `panel1.ui.test.mjs`. 141 app3-tests.

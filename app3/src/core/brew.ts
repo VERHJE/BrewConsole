@@ -83,3 +83,34 @@ export function brewPlanEvent(env: Env, advice: Advice, form: BrewForm, brewId?:
     data: { brewId: brewId ?? newId(env, 'brew'), beanId: form.beanId, goal: form.goal, engine: advice.engine, recipe: advice.recipe, trialId: advice.trial?.id ?? null, legacy: null }
   };
 }
+
+/**
+ * Waarschuwingen uit het advies, rustiger gemaakt voor weergave: een dosis die minder dan 1 g buiten het bereik van de brewer ligt
+ * (bijv. 22,3 g bij een maximum van 22 g) maakt niets uit en wordt niet getoond. Overige waarschuwingen blijven staan.
+ */
+export function visibleWarnings(warnings: readonly string[]): string[] {
+  return warnings.filter(w => {
+    const m = /\(([\d,.]+) g\) ligt buiten het bereik van de brewer .*het recept gebruikt ([\d,.]+) g/.exec(w);
+    if (!m) return true;
+    const num = (t: string): number => Number(t.replace(',', '.'));
+    return Math.abs(num(m[1]!) - num(m[2]!)) >= 1;
+  });
+}
+
+/** Meldingen die uitleg zijn en geen probleem: ze horen bij het recept, niet in een waarschuwingsbalk. */
+const INFO_WARNING = [
+  /^Kasuya: giet pas als het water bijna helemaal door het filter is/,
+  /nog niet uit eigen zetsels geleerd/,
+  /Nog geen doorlooptijden gelogd/,
+  /Voor deze techniek zijn nog geen doorlooptijden gelogd/,
+  /is een V60-techniek; op de Chemex/,
+  /geen schaalregel; hoeveelheden zijn op verhouding geschaald/,
+  /geen duidelijk betere klik/
+];
+
+/** Splitst de zichtbare meldingen in uitleg (rustig tonen) en echte aandachtspunten (waarschuwing). */
+export function splitWarnings(warnings: readonly string[]): { notes: string[]; cautions: string[] } {
+  const notes: string[] = [], cautions: string[] = [];
+  for (const w of visibleWarnings(warnings)) (INFO_WARNING.some(r => r.test(w)) ? notes : cautions).push(w);
+  return { notes, cautions };
+}

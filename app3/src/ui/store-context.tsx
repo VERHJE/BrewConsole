@@ -43,7 +43,7 @@ export function BagArt({ beanId, name, bump = 0, large = false }: { beanId: stri
   const { hue, hue2 } = bagPalette(name);
   const a = `hsl(${hue} 38% 38%)`; const b = `hsl(${hue2} 42% 26%)`;
   return (
-    <svg class={large ? 'bagart large' : 'bagart'} viewBox="-30 0 160 120" aria-hidden="true" focusable="false">
+    <svg class={large ? 'bagart large' : 'bagart'} viewBox="-30 0 160 120" style={`background:${b}`} aria-hidden="true" focusable="false">
       <rect x="-30" width="160" height="120" fill={b} />
       <path d="M26 30h48l6 12v62a6 6 0 0 1-6 6H26a6 6 0 0 1-6-6V42z" fill={a} />
       <path d="M26 30h48l6 12H20z" fill="rgb(255 255 255 / .18)" />

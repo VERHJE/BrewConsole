@@ -25,7 +25,7 @@ for (const scheme of ['light', 'dark']) {
     await page.waitForSelector('text=Foto klaar');
     await page.click('button:has-text("Opslaan")');
     await page.waitForSelector('ul.list .item strong:has-text("Fotozak")');
-    await page.waitForSelector('.hero img.photo');
+    await page.waitForSelector('.thumb img.photo');
     await page.waitForSelector('.thumb img.photo');
     await page.reload();
     await page.waitForSelector('.thumb img.photo');
