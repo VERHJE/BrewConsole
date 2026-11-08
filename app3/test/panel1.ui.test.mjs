@@ -14,6 +14,8 @@ test('zetten: de nieuwste zak staat vooraf gekozen; "geen zak" blijft een bewust
   await page.waitForSelector('select[name=bean]');
   assert.equal(await page.locator('select[name=bean] option:checked').innerText(), SEED_BEAN);
   await page.selectOption('select[name=bean]', '');
+  // de keuze wordt na het schilderen opgeslagen: wacht daarop voordat we herladen
+  await page.waitForFunction(() => (localStorage.getItem('brewconsole.zetten') ?? '').includes('"noBean":true'));
   await page.reload();
   await page.waitForSelector('select[name=bean]');
   assert.equal(await page.locator('select[name=bean]').inputValue(), '');
