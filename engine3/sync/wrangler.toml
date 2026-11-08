@@ -1,0 +1,18 @@
+# Synchronisatie-Worker voor Brew Console. Uitrollen: zie docs/engine3/08-synchronisatie.md.
+# Cloudflare bouwt dit via GitHub (Workers Builds) met root directory engine3/sync.
+name = "brewconsole-sync"
+main = "worker.ts"
+compatibility_date = "2026-10-01"
+
+[vars]
+# Het adres waar de app draait (alleen de herkomst, zonder pad). Zet hier jouw adres.
+ALLOW_ORIGIN = "https://dazzling-manatee-606398.netlify.app"
+
+# KV-opslag 'brewconsole-sync-blocks' (aangemaakt via de Cloudflare-connector, 5 nov 2026).
+[[kv_namespaces]]
+binding = "BLOCKS"
+id = "935776684dbd4127aa8fa6c739112d05"
+
+# Geheimen zet je in het Cloudflare-dashboard (Settings → Variables & Secrets), niet hier:
+#   TOKEN_HASHES       de SHA-256 van elk toestel-token, gescheiden door komma's (maak ze met tokengenerator.html)
+#   ANTHROPIC_API_KEY  alleen als je foto-herkenning wilt

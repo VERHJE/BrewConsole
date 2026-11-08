@@ -1053,3 +1053,411 @@ Jelle: "bouw de volgende stappen van Engine 2". Details staan in `docs/engine2.m
   - `tests/engine2.smoke.test.mjs`: 1 nieuwe browsertest, 12 in totaal.
 - **Jouw recept:** gelijk (15,8 g op 300 ml, 18,5 g op 350 ml).
 
+
+## Zakherkenning: alle gevonden fouten hersteld (keuze Jelle, nov 2026)
+
+Jelle leverde 8 voorbeeldzakken en webshopschermen aan (Coffee Roasting Man ×3, Blommers ×2, Zwarte Roes ×2, Wonder Beans) en koos "fix all". De zakken zijn de toetsset in `tests/bean-scan-zakken.test.mjs`. De analyse en het ontwerp voor de herbouw staan in het verslag (punt 3).
+
+- **Eerst velden, dan woorden** (`parseBeanText`, nieuw en zonder DOM, zodat het te testen is):
+  - smaak komt alleen nog uit regels die smaak kunnen zijn;
+  - regels met een ander veld (Process, Variety, Region, Origin …) tellen niet mee;
+  - is er een notitieveld (Notes/Taste/Smaak), dan tellen beschrijvende zinnen ook niet mee;
+  - een afgebroken notitieregel ("Apple | Tangerine |" + "Green Tea") hoort er nog bij.
+- **Proceswoorden zijn geen smaak meer:**
+  - double/lactic/anaerobic fermented, lactic bacteria en sugarcane decaf zijn weg;
+  - een kale "fermented" als smaak blijft wel.
+  - "Roasted red apple" geeft alleen appel, geen geroosterd. "Roasted hazelnut" blijft geroosterd.
+- **Semi-washed** wordt niet meer stilletjes washed. Het woord zat erin, en dat ging in tegen de eigen ontwerpregel. De controlekaart vraagt het nu.
+- **Experimenteel** herkent nu ook:
+  - experimental washed/natural/honey en experimental;
+  - double/triple fermented;
+  - lactic (fermented/fermentation);
+  - thermal shock en inoculated.
+- **Cafeïnevrij:**
+  - herkend: decaf, cafeïnevrij, Swiss Water, ethyl acetate;
+  - een eigen keuzeknop naast experimenteel;
+  - opgeslagen als `bean.decaf` en zichtbaar in de bonenlijst;
+  - de knop 'Experimenteel / dubbele fermentatie' heet nu 'Experimenteel proces' (de volle tekst staat in het schermlezerlabel), zodat beide knoppen op één regel passen en het formulier binnen 4 schermhoogtes blijft (VA-24);
+  - stuurt het recept niet.
+- **Gedeeld hoofdwoord:** "gedroogd & tropisch fruit" en "milk and dark chocolate" worden uitgeschreven.
+- **Smaakwoorden:**
+  - nieuw: magnolia (bloemig), green tea (nieuwe tag Groene thee), lime leaf en herbal (kruidig, niet limoen), spices;
+  - wat geen tag heeft (red fruit, fruity, aloe vera) wordt niet geraden, maar komt als eigen notitie in het notitieveld.
+- **Variëteit:** Aji Bourbon en Bourbon Aji worden 'Aji Bourbon' (Overig), niet meer rode Bourbon.
+- **Regio:**
+  - tikfouttolerantie alleen bij namen van 5+ letters (lime gaf eerder Limu);
+  - zonder bekende regio telt de waarde van het regioveld ("REGION ACEVEDO -FINCA LAS BRISAS" → Acevedo).
+- **Finca, hacienda, sitio, fazenda** worden ook zonder label herkend, met de OCR-ruis achteraan eraf.
+- **Naam en brander:**
+  - de naam was bij 6 van de 8 fout (land, brander of OCR-ruis);
+  - nu telt een veld "Name";
+  - een brander wordt herkend aan een slogan eronder ("… COFFEE"), een los woord in hoofdletters boven een landregel, of een webadres (www.blommers.coffee);
+  - een losse landregel krijgt de lotnaam of de finca erbij;
+  - algemene zakteksten, beschrijvende zinnen, smaakrijen en kopregels van het etiket zijn nooit de naam.
+- **Webshop:**
+  - "espresso prep" (een maalkeuze) telt niet als beoogd gebruik;
+  - noemt de zak espresso én filter, dan is het omni;
+  - meerdere zakmaten ("250g, 1KG") geven geen zakgrootte.
+- **Hoogte:** een bereik achter een label zonder eenheid ("ELEVATION 1580 - 1680") geeft het gemiddelde.
+- **Foto-voorbewerking**, gemeten met Tesseract 5.1.1 (eng+nld) op 6 aangeleverde afbeeldingen. Telling: kernwoorden gelezen van de 45:
+
+  | Voorbewerking | Gelezen |
+  |---|---|
+  | Oud: zwart-wit met één drempel (Otsu) | 28 |
+  | Kleur | 32 |
+  | Grijs met contraststrekking (1e–99e percentiel) | 33 |
+  | Grijs met contraststrekking én een tweede pas op kleur | 35 |
+
+  - De app doet nu twee passen: grijs eerst, dan kleur.
+  - In de browser kost dat 2–5 s per foto (headless Chromium).
+- **Herstelde opmerking:** Aroma Nativo is Luis Marcelino uit Pitalito, Huila (Colombia), niet Honduras. Het stond alleen in een opmerking.
+- **Toetsing:** `tests/bean-scan-zakken.test.mjs`, 18 tests (8 zakken, 9 losse regels, 1 voorbewerking). Alle bestaande tests blijven groen.
+- **Nog steeds zwak:** echte zakfoto's met een etiket in kolommen of kleine letters (Blommers, de rechterkolom van Wonder Beans). Dat zit in de OCR zelf. Voor de herbouw is gekozen voor een combinatie van QR-code, betere voorbewerking en een AI-lezer (met toestemming).
+
+## Engine 3: voorbereiding klaar (keuze Jelle, nov 2026)
+
+Jelle: "Analyseer alles tot in de puntjes, bereid alles voor om de nieuwe engine te bouwen", zonder directe rekening met de frontend. Alles staat in `docs/engine3/` en `engine3/`. De huidige app is niet veranderd.
+
+- **Toolchain:**
+  - TypeScript 7 strict (alleen wisbare syntax, zodat Node 22 de bestanden direct draait);
+  - esbuild voor de bouw;
+  - node:test en fast-check voor de tests;
+  - `npm run e3:check` draait in CI, als eigen stap na de QA-suite.
+- **Contract (concept 0.1):** `learn(logboek) → toestand` en `plan(toestand, vraag) → advies`, puur. Er zijn 12 vaste regels, waaronder de besluiten over Kasuya en dat sterkte persoonlijk is.
+- **Datamodel:** een logboek met 10 soorten gebeurtenissen, waar alleen aan wordt toegevoegd.
+  - Samenvoegen kan in elke volgorde (getoetst met fast-check).
+  - Een gebeurtenis intrekken en een zetsel verwijderen kunnen ook.
+- **Migratie** van backupVersion 3:
+  - deterministisch, zonder verzinnen en zonder weggooien (`legacy`);
+  - op Jelles back-up: 105 gebeurtenissen, 0 fouten, 12 van de 12 proeven over.
+- **Technieken en regeltabel als data:**
+  - de 8 technieken met bronklasse en de exacte getallen uit de bronnen; waar een tijd ontbreekt, staat een gemarkeerde plaatshouder;
+  - de regeltabel volgt het verslag;
+  - het smaakwiel wordt uit de app gegenereerd, en een test bewaakt dat het gelijk blijft.
+- **Meetopstelling:** een 'virtuele Jelle' met een voorkeur van 1,17 % TDS (uit Engine 2) en 6 werelden.
+  - Nulmeting, 200 herhalingen: Engine 2 scoort 46 % 'precies goed' tegen 52 % voor het orakel. Het vaste recept haalt 24 %.
+  - Sterkte is dus bijna verzadigd; de winst moet uit molen, tijd, techniek en smaak komen.
+- **Toestelcheck:** `toestelcheck.html` in de root test persist, IndexedDB, AES-GCM/PBKDF2, WebAssembly, BarcodeDetector, bestanden delen en Worker/OffscreenCanvas. Nog te draaien op de iPhone.
+- **Open punten** (`docs/engine3/07-open-punten.md`):
+  - Wendelboe past niet bij zijn rol;
+  - de temperatuur bij Hoffmann en Wendelboe ontbreekt;
+  - Osmotic Flow heeft geen schema;
+  - meetplan voor eigen data.
+
+### Engine 3 · besluiten van 5 nov 2026
+
+- **Wendelboe:** houdt de rol voor bloemige en theeachtige koffies, met zijn eigen recept (bloom roeren, doorlopend in rondjes). Geen 'lage agitatie'-variant; 'Serene pulse' en 'Nordic light' vervallen.
+- **Temperatuur:**
+  - Hoffmann: net van de kook (100 °C op de ketel; Hario USA 'the hotter, the better'). Donker 88 °C (klasse C).
+  - Wendelboe: 96 °C als aanname (klasse C). Zijn eigen gids noemt geen getal; zijn café zet AeroPress met 96 °C. Bij donkere branding Philocoffea (88/83 °C).
+- **Toestelcheck op de iPhone** (iOS 18.7, Safari 27.0.1, ook vanaf het beginscherm): alles werkt behalve `persist` (niet toegekend) en `BarcodeDetector` (niet aanwezig).
+  - De back-up blijft dus nodig.
+  - Engine 3 neemt een eigen QR-decoder mee.
+- **Meetplan voor eigen data:** later.
+
+### Engine 3 · synchronisatie in het bouwplan (5 nov 2026)
+
+- **Besluit:** de synchronisatie wordt bouwstap 0, vóór de rekenlogica. iOS geeft de app geen blijvende opslag, en rechtstreeks aan iCloud koppelen kan niet zonder betaald Apple-ontwikkelaarsaccount.
+- **Opzet:** een eigen, gratis Cloudflare Worker die alleen versleutelde blokken bewaart (AES-GCM, sleutel uit een wachtwoordzin via PBKDF2). De iCloud Drive-back-up via het deelmenu blijft de reserve.
+- **Ontwerp:** `docs/engine3/08-synchronisatie.md`.
+
+### Engine 3 · bouwplan en stap 0a–0c (5 nov 2026)
+
+- **Bouwplan:** `docs/engine3/09-bouwplan.md`, met poorten per stap (0 synchronisatie, 1 logboek→toestand, 2 recept, 3 sterkte, 4 tijd en molen, 5 techniekkeuze, 6 zakherkenning, 7 smaakprofiel, 8 samenstellen).
+- **Synchronisatie gebouwd** in `engine3/sync/`: versleutelde, onveranderlijke blokken (PBKDF2 600.000 rondes, AES-GCM, blok-id als gebonden gegeven), server als `Request → Response` met geheugen- en Cloudflare-KV-opslag, en een client met push, pull en opruimen. De engine zelf blijft zuiver; de synchronisatie staat ernaast.
+- **Getoetst:** 19 nieuwe tests (totaal 43), onder meer: verkeerde zin, gewijzigd of verwisseld blok worden geweigerd; twee toestellen komen in willekeurige volgorde op hetzelfde logboek uit; een gewiste app herstelt zonder conflict; de server bewaart geen leesbare tekst.
+- **Nog te doen door Jelle (stap 0d):** Cloudflare-account en uitrollen, zie `docs/engine3/08`.
+
+### Engine 3 · stap 1 klaar (5 nov 2026)
+
+- **`learnFacts()`** (`engine3/src/state.ts`, uitleg in `docs/engine3/10-toestand.md`): het effectieve logboek wordt per zak en per zetsel omgezet in feiten (werkelijk gebruikte waarden, tijden, 'erdoor' per giet, status, oordeel). Nog zonder model.
+- **Getoetst:** 10 nieuwe tests (totaal 54), onder meer dezelfde toestand bij elke volgorde en dubbeling. Op Jelles back-up: 105 gebeurtenissen, 5 zakken, 20 zetsels, 9 met sterkte, 0 met 'erdoor'-tik.
+
+### Engine 3 · stap 2 klaar (5 nov 2026)
+
+- **`buildRecipe()`** (`engine3/src/recipe.ts`, uitleg in `docs/engine3/11-recept.md`): techniek, dosis, water en branding in, gietschema met temperatuur, verwacht einde en meldingen uit.
+- **Besluiten verwerkt:** Hario-momenten bij elke hoeveelheid, Kasuya 40/60 met instelbare eerste verdeling (50+70, 40+80, 80+40), Kasuya-temperatuur per branding (93/88/83 °C, onbekend 92 °C), Hoffmann net van de kook, Wendelboe 96 °C als aanname.
+- **Gegevens:** `ReferencePour` heeft nu `waitForDrain` (Kasuya vanaf de tweede giet; ook de laatste gieten van Gagné en Rao).
+- **Getoetst:** 12 nieuwe tests (totaal 66), onder meer het exacte brongetal per techniek bij de referentiehoeveelheid en een eigenschapstest over 120–800 g.
+
+### Engine 3 · stap 3 klaar (5 nov 2026)
+
+- **`strengthPlan()`** (`engine3/src/strength.ts`, uitleg in `docs/engine3/12-sterkte.md`): de sterktemodule, voorlopig dezelfde rekenkunde als Engine 2 (e2-2026.5), gelezen uit het logboek. De nulmeting laat weinig ruimte zien (46 van 52 %); verbeteren kan later met de meetopstelling als scheidsrechter.
+- **Poort gehaald:** in alle zes werelden zijn alle vijf maatstaven gelijk aan Engine 2 (200 herhalingen). Een test eist bovendien dezelfde dosis bij elke kop. 'Tegen het oordeel in' blijft 0 %.
+- **Kleine wijzigingen:** `FactState.trials` bewaart nu het moment van elke proef, en `CupFacts` heeft `dilutionG`.
+- **Getoetst:** 14 nieuwe tests (totaal 80), onder meer een eigenschapstest dat de dosis nooit tegen het oordeel in gaat.
+
+### Engine 3 · stap 4 klaar (5 nov 2026)
+
+- **`grindPlan()`** (`engine3/src/grind.ts`, uitleg in `docs/engine3/13-tijd-en-molen.md`): Bayesiaanse regressie van ln(doorloop na de laatste giet) op techniek, klik, hoeveelheid en zak, met de natuurkundige verwachting (−11 % per klik) als prior. Geeft het verwachte einde met band, de kans dat het in de band valt, en zo nodig een klikadvies (hooguit 4 klikken, binnen klik 8–25).
+- **Molen:** BrewTuner en Beean bevestigen de C3S Pro, maar noemen geen micron per klik; andere bronnen geven 83 en 20 micron. Daarom rekent de engine niet met microns; het effect van een klik leert hij uit jouw zetsels (`engine3/src/data/grinder.ts`).
+- **Meetopstelling:** acht werelden, in alle werelden minstens 97 % op tijd (vaste klik 16: 15–99 %), met een gemiddelde klikstap onder 0,1.
+- **Eén afwijking van Engine 2 in stap 3:** de afwijking per zak gaat nooit tegen het laatste antwoord in. Daardoor 0 % in plaats van 0,05–0,23 % stappen tegen het oordeel in, tegen maximaal 0,24 punt 'precies goed'.
+- **Nog niet getoetst op eigen tikken:** de back-up bevat geen 'erdoor'-tikken en maar twee naburige klikstanden (16 en 17); het meetplan in 07 moet het klikeffect zichtbaar maken.
+
+### Engine 3 · stap 5 klaar (5 nov 2026)
+
+- **`chooseTechnique()`** (`engine3/src/technique.ts`, uitleg in `docs/engine3/14-techniekkeuze.md`): volgorde zelf gekozen → jouw gewonnen proef → vergelijkbare zakken → regeltabel → Kasuya. Een afwijking van Kasuya is altijd een paar-proef met Kasuya als controle; alleen Chemex → Hoffmann is een direct besluit. `trialProposalFor()` maakt de twee recepten.
+- **Bewaking:** pas na 2 geproefde Kasuya-koppen van de zak, nooit twee proeven tegelijk, een afkoelperiode van twee koppen, geen herhaling van een variant die al is geprobeerd, en nooit Osmotic Flow (geen schema).
+- **Vergelijkbare zakken:** zelfde proces, brandingklasse en minstens één gedeelde smaakcategorie; twee netto gewonnen proeven maken een techniek de standaard.
+- **Meetopstelling** (`engine3/eval/technique-sim.ts`): nergens meer spijt dan altijd Kasuya, minder dan twee proeven per zak; bij 80 % juiste regels daalt de spijt van 0,74 naar 0,37.
+- **Frontend moet:** de proef kunnen aanbieden, blind laten kiezen en vastleggen als `pair.trial` met `kind: 'technique'`, en 'ongelijk doorlopen' meegeven als `feedback`.
+
+### Engine 3 · stap 8 klaar (5 nov 2026)
+
+- **`createEngine()`** (`engine3/src/engine.ts`, uitleg in `docs/engine3/15-samenstellen.md`): `learn()` en `plan()` zetten techniek, water uit de kopgrootte, sterkte, recept, molen en proef achter elkaar en leggen per module uit waarom. Contract `e3-contract-1.0`: `PlanRequest` kreeg het optionele veld `feedback`. Doel (helder, gebalanceerd, rond) zet bij Kasuya de eerste giet.
+- **Dosisgrenzen:** V60 15–22 g (uit de oude app, geschat), Chemex geen grens; daarbuiten wordt begrensd met een waarschuwing.
+- **Molen:** zonder gelogde doorlooptijden voor een techniek zet het advies hooguit 1 klik verschil, daarna 2, 3, 4 (de natuurkundige verwachting is een beginpunt, geen bewijs). Meetopstelling opnieuw gedraaid: minstens 97 % op tijd in alle werelden.
+- **Poort:** op jouw koppen (lokaal) gelijk aan Engine 2: 3 goede kant, 1 verkeerde, 5 geen richting. De vijf vaste regels uit het contract zijn eigenschapstests op `plan()`. `npm run e3:check` bouwt de bundel en draait er een rooktest op.
+- **Niet gedaan:** een schakelaar in de oude app. De frontend wordt later opnieuw gebouwd rond `createEngine()`.
+
+### Engine 3 · stap 6 klaar (5 nov 2026)
+
+- **Tekst:** `parseBeanText` (en alles eromheen: naam, brander, zakgrootte, branddatum, smaaknotities, hoogte, boerderij) is overgezet naar strikte TypeScript (`engine3/src/bean/text.ts`). De woordenlijsten worden uit de app gegenereerd (`gen-bean-scan-data.mjs`). Een differentiële test eist dezelfde uitkomst als de app, op alle app-testteksten (inclusief de 8 voorbeeldzakken) en 600 willekeurige etiketten.
+- **Boonvelden:** `scanBeanText()` maakt er velden van volgens het datamodel: proces in drie assen, hoogte als bereik (de app middelde), notities in drie lijsten, bron per veld. Niets geraden; fuzzy treffers en webshoptekst worden gemarkeerd.
+- **QR:** jsQR 1.4.0 (Apache-2.0) in een aparte bundel (`engine3/qr`, de iPhone heeft geen `BarcodeDetector`) en `readQrPayload()` voor webadres, JSON, sleutel-waarde en tekst. Geen eigen decoder: een beproefd pakket is betrouwbaarder.
+- **AI:** `POST /scan` op de Worker, alleen met toestemming per scan en een API-sleutel als geheim; vast model, limiet van 30 per dag, geen foto bewaard, antwoord is een voorstel dat eerst `validateAiScan()` doorloopt.
+- **Aangepaste poort:** de meting '35 van 45 trefwoorden' op de foto's is niet te herhalen zonder die foto's; vervangen door de differentiële toets met de app.
+- **Nieuwe devDependencies:** `jsqr` (in de QR-bundel), `qrcode` en `@types/qrcode` (alleen tests), alle drie exact vastgezet.
+
+### Engine 3 · stap 7 klaar (5 nov 2026)
+
+- **`tasteProfile()` en `beanFit()`** (`engine3/src/profile.ts`, uitleg in `docs/engine3/17-smaakprofiel.md`): gevoeligheid per smaakcategorie uit de blinde keuzevakjes (treffers en valse alarmen tegenover de notities van de zak), herkende notities en een woordenschat, waardering per categorie, proces en brandingklasse (kleine aantallen bijgetrokken), tendensen, en hoe goed een zak bij je smaak past.
+- **Stuurt het recept niet:** een test eist hetzelfde `plan()`-advies met en zonder keuzevakjes, herkende notities, waardering en notitie.
+- **Contract:** `tasting` kreeg het optionele veld `cataAsked` (is de keuzevraag gesteld), zodat 'niets aangevinkt' te onderscheiden is van 'niet gevraagd'. Bestaande gebeurtenissen blijven geldig; de frontend schrijft het zodra de vraag getoond is.
+- **Alle stappen van het bouwplan zijn nu af** (0 t/m 8). Open blijft: stap 0d (uitrollen van de Worker), eigen metingen voor het klikeffect, en de frontend.
+
+### Hulppagina's in de gebouwde map (5 nov 2026)
+
+- **Probleem:** een gesleepte map naar Netlify wordt gebouwd (`npm run build` → `dist/`), en `dist/` bevatte alleen de app. `tokengenerator.html` en `toestelcheck.html` ontbraken daardoor. Daarnaast liet de service worker élke navigatie op dit adres de app-shell tonen, dus op een toestel waar de app al staat zou elke losse pagina toch de app tonen (aangetoond in een echte browser: `/tokengenerator.html` gaf 'Brew Console 2.0').
+- **Herstel:** `scripts/build.mjs` kopieert beide pagina's naar `dist/`; `sw.js` serveert de app-shell alleen voor de hoofdmap en `index.html`, andere pagina's gaan naar het netwerk. Tests: `tests/sw-navigation.test.mjs` (nieuw) en de bouwtest eist de bestanden. In een echte browser met actieve worker tonen `/tokengenerator.html` en `/toestelcheck.html` nu hun eigen pagina.
+
+### Besluit: geen AI-foto-herkenning voorlopig (5 nov 2026)
+
+- Besluit Jelle: de AI-foto-herkenning (`POST /scan`, Anthropic-API) is het enige onderdeel dat geld kost; dat doen we niet, of in ieder geval nog niet.
+- Gevolg: geen `ANTHROPIC_API_KEY` op de Worker; `/scan` geeft dan 404. Synchronisatie (gratis Cloudflare-plan), tekst, OCR, QR en het smaakprofiel blijven gratis werken. Code en tests blijven staan.
+
+### Frontend · plan en F0 klaar (5 nov 2026)
+
+- **Besluit Jelle:** de hele frontend wordt opnieuw opgebouwd rond `createEngine()`; layout en kleuren van de oude app hoeven niet behouden te blijven. Plan, schermen en stappen F0–F7: `docs/engine3/18-frontend.md`.
+- **Naast de oude app:** de nieuwe app staat in `app3/` en wordt gebouwd naar `dist/app3/` (bereikbaar op `/app3/`). `npm run build` bouwt nu beide. De oude app verandert niet; omschakelen is stap F7.
+- **Techniek:** TypeScript strict, Preact 10.29.8 (exact vastgezet) met esbuild, eigen CSS-tokens (licht/donker), IndexedDB voor het logboek. Geen router- of staatbibliotheek.
+- **F0:** `app3/src/core/` (zonder DOM: `storage.ts`, `store.ts`, `router.ts`, `ids.ts`) met 5 kerntests; `app3/src/ui/` met schil, tabbalk (Zetten · Zakken · Logboek · Meer) en lege schermen; Playwright-schermtests (start, opslag overleeft herladen, 320 px zonder horizontale scroll). `npm run app3:check` draait in CI.
+- **Store-regel:** eerst opslaan, dan het geheugen bijwerken; mislukt opslaan laat het logboek ongewijzigd. Ongeldige gebeurtenissen worden geweigerd (`validateEvent`).
+- **Inspiratie:** Beanconqueror en Timer.Coffee bekeken; Filtru, BeanBench en Coffee Book waren niet op te halen en zijn dus niet beoordeeld (zie 18).
+
+### Frontend · F1 klaar: Zakken (5 nov 2026)
+
+- **Kern** (`app3/src/core/beans.ts`, 5 tests): lijst uit `FactState`, formulier als zuivere functies (`scanText`, `editForm`, `validateForm`, `beanUpsert`, `beanArchive`). Elk veld houdt zijn herkomst; een aangepast veld wordt bron 'user', een onaangeraakt veld houdt zijn bron. Proces en notities behouden hun detail (gisting, tags) zolang het veld niet is aangepast.
+- **Scherm:** zakkenlijst (naam, brander, land, branding, dagen sinds branding, aantal koppen), toevoegen via plakken en/of QR-foto, controlekaart met herkomst per veld en waarschuwingen (gelijkenis, niet-eenduidig proces, webshop), bewerken, archiveren. De QR-lezer (jsQR) wordt pas geladen bij gebruik (codesplitsing).
+- **Poort:** een geplakte tekst geeft dezelfde velden als `scanBeanText`; elk veld toont zijn herkomst. Playwright: plakken → opslaan → herladen, foutmelding zonder naam, QR-PNG (gemaakt met `qrcode`) wordt gelezen, bewerken en archiveren.
+- **Bekend:** foto-OCR is er niet in de browser (staat niet in het plan; AI-foto is uit). Tekst plakken en QR zijn de routes.
+
+### Frontend · F2 en F3 klaar: Zetten, recept en timer (5 nov 2026)
+
+- **Zetten** (`core/brew.ts`, scherm `Zetten.tsx`): zak, kopgrootte (100–700 g), doel, methode, techniek en 'over de vorige kop' (de drie `FeedbackSignal`'s) → `plan()`. Het scherm toont dosis, water, temperatuur, klik, verwacht einde, het gietschema (met `*` voor 'wacht op doorlopen'), de redenen, de onzekerheid (banden) en waarschuwingen van de engine, plus een voorgestelde proef. Er wordt niets bijgerekend: een test eist dat `planBrew()` exact `plan()` teruggeeft. Een fout van de engine (`RecipeError`) of een kopgrootte buiten bereik wordt een melding, geen crash. De laatste keuzes (zak, kop, doel, methode, techniek) worden per toestel onthouden; de klachten niet.
+- **Timer** (`core/timer.ts`, scherm `Timer.tsx`): de klok wordt **altijd afgeleid** uit de `brew.timer`-gebeurtenissen en de tijd van nu (anker = laatste start/pauze/verder), nooit uit een lopende teller. Daardoor houdt de klok de tijd bij vergrendelen, herladen of op een tweede toestel. Fases per giet: komt nog, wacht op doorlopen (`waitForDrain`, tot 'Erdoor' getikt is) of aan de beurt. 'Alles doorgelopen — klaar' schrijft erdoor, bed droog en klaar als drie gebeurtenissen met oplopende tijd (1 ms verschil) zodat de volgorde vastligt. Pauze, verder, 'Erdoor' ongedaan maken en stoppen (met bevestiging; een afgebroken zetsel telt niet mee). Wake lock en een korte trilling bij een nieuwe giet waar de browser dat toestaat; de tabbalk verdwijnt tijdens het zetsel.
+- **Poort F3:** `learn()` geeft na het tikken dezelfde `endSec`, `bedDrySec`, `drainedAtSec` en `startedAtSec` als getikt (test). Playwright met nagebootste klok doorloopt zak → advies → timer → klaar, en laadt midden in het zetsel opnieuw met de juiste klok.
+- **Bekend:** de engine rekent `lastDrainSec` vanaf de geplande tijd van de laatste giet (niet de werkelijke start). Bij Kasuya, waar giet 2 t/m 5 op doorlopen wachten, kan dat het eindtijdsmodel iets optrekken; dat is een engine-vraag voor de eigen metingen, geen scherm-vraag.
+
+### Frontend · F4 klaar: Proeven (5 nov 2026)
+
+- **Vragenlijst** (`core/tasting.ts`, scherm `Proeven.tsx`): één vraag per stap met voortgang. Volgorde met reden: sterkte, zuur en afdronk → **blinde** keuze van de negen smaakgroepen → pas daarna de notities van de zak (herkennen: ja/een beetje/nee) → waardering en notitie → doel (alleen met een doel), 'wat miste je' (alleen als het doel niet gehaald is) en 'ten opzichte van de vorige kop' (alleen met een vorige geproefde kop van dezelfde zak) → werkelijke waarden.
+- **Contract:** `tasting` krijgt altijd `cataAsked: true` (ook bij een lege keuze), `minutesAfter` uit het 'klaar'-moment en `late` vanaf 120 min. Werkelijke waarden worden alleen als `brew.actuals` geschreven als er iets is ingevuld; niet ingevulde velden nemen het plan over. Waarden buiten het redelijke bereik blokkeren het opslaan met een melding.
+- **Bewerken:** opnieuw proeven laadt de eerdere antwoorden; de laatste gebeurtenis wint (zoals de engine voorschrijft).
+- **Poort:** een oordeel 'iets slap' verschijnt in het volgende advies als 'sterker' (Playwright, gehele stroom zak → timer → proeven → nieuw advies); `learn()` en `tasteProfile()` verwerken de uitvoer (kerntests).
+- **Nog niet:** het vastleggen van een proef (`pair.trial`: welke van de twee was beter) — dat vraagt dat een voorgestelde proef als twee koppen gezet kan worden. Dat komt als F4b.
+
+### Frontend · F4b klaar: proeven A tegen B (5 nov 2026)
+
+- Stelt de engine een proef voor (`Advice.trial`), dan toont Zetten twee knoppen: kop 1 (controle) en kop 2 (variant). Elk zet een `brew.plan` met het recept en het `trialId` uit het voorstel, ongewijzigd. 'Zet gewoon dit recept' blijft mogelijk.
+- Na het proeven van de tweede kop vraagt het scherm welke beter was (kop 1, kop 2, geen verschil) en schrijft een `pair.trial` (`kind: 'technique'`, dosis, techniek en klik van beide kanten). Daarna ziet de engine de uitkomst en stelt dezelfde proef niet opnieuw voor (kerntest met een bloemige zak: 2 Kasuya-koppen → voorstel → 2 proefkoppen → keuze → geen nieuw voorstel met hetzelfde id).
+- **Bug onderweg:** een zak-id bevat zelf `:`; het proef-id (`tech:<zak>:<variant>:<n>`) moet van achteren gelezen worden. Vastgelegd in `core/trials.ts` en de test.
+- **Niet getest in de browser:** de proefkaart zelf (er zijn daarvoor twee volledige zetsels met proeven nodig); de kernlogica is wel getest.
+
+### Frontend · F5 klaar: Logboek en inzicht (5 nov 2026)
+
+- **Logboek** (`core/insights.ts`, `Logboek.tsx`): koppen nieuwste eerst met zak, techniek, dosis, klik, tijd en waardering; 'nog te proeven' bij een klaar zetsel zonder proeverij. Detail met recept, werkelijke tijden (erdoor per giet), proeverij en verwijderen (`brew.delete`, met bevestiging; de kop verdwijnt uit de toestand en dus uit het advies).
+- **Meer → Smaakprofiel:** gevoeligheid per smaakgroep (treffers en valse alarmen met de status uit `tasteProfile()`), herkende notities en woordenschat, waardering per groep/proces/branding (alleen betrouwbare groepen), met de zin dat het profiel het recept niet stuurt. Bij te weinig data staat er 'nog te weinig zakken om iets te zeggen', geen gok.
+- **Meer → Molen:** effect per klik uit `fitGrind`/`perClickEffect`, of dat uit eigen metingen komt of de startwaarde is, en het aantal bruikbare metingen; met de aanwijzing hoe je meer metingen krijgt.
+- **Regel:** geen getal op deze schermen wordt in de frontend berekend wat de engine ook geeft.
+- **Nog niet:** verloopgrafieken en de pasvorm van een zak (`beanFit`) in het zakdetail; beide kunnen later zonder de engine aan te raken.
+
+### Frontend · F6 klaar: Gegevens en synchronisatie (5 nov 2026)
+
+- **Gegevens** (`core/backup.ts`, `Gegevens.tsx`): back-up als één bestand (`brewconsole-log`, deelblad op iPhone, anders download), terugzetten met voorbeeld (wat zit erin, hoeveel nieuw, hoeveel al aanwezig, waarschuwingen) voor zowel een eigen back-up als die van de oude app (`migrateBackupV3`, dezelfde tellingen als de migratietest), en alles wissen na het typen van WISSEN. Herinnering als de laatste back-up 14 dagen of ouder is, of ontbreekt.
+- **Synchronisatie** (`core/sync.ts`, `Sync.tsx`): adres, token en wachtwoordzin → zout ophalen of maken → sleutel afleiden → eerste synchronisatie. Bewaard worden adres, token, voortgang en de **afgeleide, niet-uitleesbare sleutel** (IndexedDB); de wachtwoordzin niet. Foutmeldingen in gewone taal: geen verbinding (alles blijft bewaard), token geweigerd, verkeerde wachtwoordzin (blokken niet te openen). Het adres moet `https://` zijn (localhost mag voor ontwikkeling).
+- **Poort F6:** import van de eigen back-up geeft de verwachte tellingen; twee toestellen komen via de echte servercode (in-process) op hetzelfde logboek uit, ook als elk de helft had; verkeerde wachtwoordzin en verkeerd token worden herkend en laten het logboek ongemoeid; offline laat het logboek ongemoeid.
+- **Nog niet getest:** een echte rondgang naar de Cloudflare-Worker (dat is stap 0d van het bouwplan en ligt bij Jelle: token en `TOKEN_HASHES`); automatisch synchroniseren op de achtergrond (nu handmatig via de knop); rollende automatische back-up.
+
+### Frontend · F7 grotendeels klaar: afwerking (5 nov 2026)
+
+- **PWA:** eigen service worker voor `/app3/` (scope los van de oude app; de oude houdt zijn worker). Versie = hash van alle bestanden, vooraf in de cache, navigaties binnen de scope krijgen de app uit de cache, een nieuwe versie wacht op een tik op 'Vernieuwen' (niet tijdens een zetsel; alleen herladen bij vervanging van een bestaande worker, niet bij de eerste installatie). Manifest en iconen horen bij de app. Test: na de eerste keer start de app offline en de gegevens staan er nog.
+- **Toegankelijkheid:** axe-core 4.10.3 (exact vastgezet, alleen tests) op alle hoofdschermen in licht en donker, WCAG 2 A/AA en 2.1 A/AA: geen overtredingen (inclusief kleurcontrast).
+- **CI:** de `app3:check`-stap draait na de bestaande stappen; de tijdslimiet van de job is van 15 naar 25 minuten gegaan, omdat de installatie van Playwright eerder (PR #43) al bijna 14 minuten kostte.
+- **Niet gedaan, bewust:** `/` naar de nieuwe app laten wijzen. Dat vraagt een besluit van Jelle (blijft de oude app bestaan?), zie 18. De nieuwe app is bereikbaar op `/app3/`.
+
+### Publicatie via Netlify en GitHub (5 nov 2026)
+
+- `netlify.toml` (repo-root): bouwcommando `npm run build`, publicatiemap `dist` (oude app op `/`, nieuwe app op `/app3/`), Node 22, geen Playwright-browser, en `no-cache` voor beide service workers en `app3/index.html` zodat een nieuwe versie niet blijft hangen.
+- De koppeling Netlify ↔ GitHub zelf wordt in het Netlify-dashboard gelegd (Add new site → Import from Git); dat kan niet vanuit de repo.
+
+### Frontend · instellingen voor water en molen (6 nov 2026)
+
+- **Water** (`core/settings.ts`, `Instellingen.tsx`): hardheid (mg/L CaCO3), alkaliniteit (CaCO3 of HCO3, ×0,82 omgerekend), verdunning kraan:demi (1:0, 2:1, 1:1; demiwater telt als 0) en de snelkeuzes uit de oude app (R-12: Dunea, Waternet, PWN Andijk met hun bron, plus de SCA-richtwaarde 68/40). Het scherm toont wat er na verdunning in de kop zit en zet dat tegen de SCA-richtwaarden (hardheid 50–175, alkaliniteit 40–70 mg/L). Onmogelijke waarden (buiten 0–600) blokkeren het opslaan.
+- **Water stuurt het recept niet** — zelfde besluit als in de oude app (er is geen gevalideerde omrekening naar temperatuur of maling). Een test eist hetzelfde `plan()`-advies met en zonder water-, molen- en voorkeursinstellingen.
+- **Molen:** 'nulpunt zojuist gecontroleerd' (`zeroCheckedAt`), met uitleg en hoeveel dagen geleden. Het modelnummer staat vast (Timemore C3S Pro).
+- **Voorkeuren:** `brightLighter` aan zet na een A-tegen-B-keuze de vraag 'welke was helderder?' erbij (`pair.trial.brighter`). Standaard uit. **Niet in een browser getest** (dat vraagt twee volledige proefkoppen); de aan/uit-schakelaar zelf wel.
+- Alles zijn `setting`-gebeurtenissen: de laatste wint, en ze gaan mee met back-up en synchronisatie.
+
+### Frontend · verloopgrafieken en pasvorm van een zak (6 nov 2026)
+
+- **Pasvorm** (`core/trends.ts` → `fitView`, zakdetail): 'Past bij je smaak' uit `beanFit()`: verwacht verschil met je gemiddelde waardering, plus de kenmerken (smaakgroep, proces, branding) waarop dat rust, elk met aantal waarderingen en verschil. Onder de drempel (3 waarderingen per kenmerk) staat er 'nog te weinig om iets te zeggen', geen gok. De tekst zegt dat het alleen toont en het recept niet verandert.
+- **Verloop** (`core/trends.ts` → `trendPoints`/`seriesOf`, `TrendChart.tsx`): vier kleine grafieken op één as per grafiek: koffie per kop, klaar na (min:sec), sterkte-oordeel (−2…+2, nullijn 'goed') en waardering (1–5). Alleen afgeronde koppen; afgebroken koppen en koppen zonder oordeel tellen in die reeks niet mee. In het zakdetail per zak, in het Logboek (ingeklapt) voor alle koppen. Geen getal wordt zelf gemodelleerd.
+- **Opmaak** volgens de dataviz-regels: één reeks per grafiek, dus één kleur (het accent) en geen legenda; lijn 2 px, markeringen met 2 px ring in de vlakkleur, haarlijnen, alleen het laatste punt direct gelabeld; ronde ticks (stappen 1/2/5, bij seconden 10/15/30/60); tekst in tekstkleur, nooit in de datakleur. Hover én toetsenbordfocus geven dezelfde tooltip (kopnummer, datum, waarde, toelichting); elke grafiek heeft een tabelweergave. Met één kop staat er alleen een punt en de tekst 'Na twee koppen verschijnt hier een lijn'.
+- **Bekeken in beeld** (licht en donker, 390 px): ticks, labels en tooltip botsen niet; het eindlabel van het sterkte-oordeel is een korte '0' (de woorden staan in tooltip en tabel).
+- **Gevonden door de toegankelijkheidstest:** het 'door jou'-badge had te weinig kleurcontrast in het lichte thema (accent op accent-vlak); nu in gewone tekstkleur. Dit zat al in het zakformulier; de eerdere test kwam dat veld niet tegen.
+- **Tests:** 2 kerntests (reeksen, pasvorm met drie hoge en drie lage waarderingen), 3 schermtests (met een via de kern gebouwd logboek dat via Meer → Gegevens wordt ingelezen) en axe op zakdetail en logboek in licht en donker. Totaal 65 app3-tests.
+
+### Frontend · ronde 1 en 1b: Zetten en Timer (6 nov 2026)
+
+- **Zetten:** op de telefoon klapt het formulier in tot één samenvattingsregel zodra het eerder gebruikt is (de eerste keer staat het open), met 'Wijzig'; de **startknop zit vast** boven de tabbalk. Op een laptop staan formulier en recept naast elkaar. Tests meten de plaats van de knop (binnen het scherm, niet onder de tabbalk) en de kolomindeling.
+- **Timer:** één stap tegelijk met een ring (aftelling tot de volgende giet of het verwachte einde), de opdracht en een regel 'Hierna …'. Wachten op doorlopen toont 'wacht' zonder aftelling. `stepGuide()` in `core/timer.ts` is puur en getest. De ring is `aria-hidden`; alleen de tekst ernaast is een statusmelding.
+- **Toegankelijkheid:** axe vond te weinig contrast voor `--text-3` in het lichte thema (nu `#665a4d`) en voor gedane stappen met doorzichtigheid (nu kleur). Axe draait nu ook op de timer in licht en donker.
+- **Testaanpassing:** de oude timertests zochten `.now`; ze controleren nu `.stepcard`. Een timingprobleem in een van de nieuwe tests (te snel lezen na een invoer) is robuust gemaakt; twee volledige runs achter elkaar slagen (70 tests).
+- Uitgebreid in `docs/engine3/18-frontend.md`.
+
+### Frontend · ronde 3: ontwerpcombinatie (6 nov 2026)
+
+- **Thema's:** licht = Organic Light (crème, rustig groen), donker = Quiet Luxury (warm bruin, goud); keuze licht / donker / volg toestel in Voorkeuren (`core/prefs.ts`, `data-theme` op `<html>`, vroeg script tegen flits). Koppen in Fraunces (eigen bestand, OFL, licentie meegeleverd) met een schakelaar naar alles-schreefloos; cijfers en lopende tekst altijd schreefloos.
+- **Zetten en Timer** in Minimal Pro-stijl: vier grote getallen in twee kolommen, tweeregelige startknop ('klaar rond …'), ring-timer met stapkaart.
+- **Foto per zak** (`core/photos.ts`, `ui/photo-encode.ts`): optioneel, lange zijde 1080 px, WebP (JPEG als terugval), kwaliteitstrap tot ≲150 kB; opgeslagen in een eigen IndexedDB-database (`brewconsole-app3-photos`), dus **niet** in het logboek, niet in synchronisatieblokken en (nog) niet in de back-up. Dat staat ook bij het veld. Zonder foto: een getekende zak in kleuren die bij de naam passen.
+- **Zakken:** kaartstapel (nieuwste zak groot, met sterren/koppen) plus lijst met miniaturen. **Zakdetail** is redactioneel (foto, bovenregel proces · branding, naam, smaaktags, feitenraster, pasvorm, verloop, koppen) met een vaste knop 'Zet deze zak' die de zak op het zetscherm kiest. Het formulier staat nu op `#/zakken/:id/bewerken`.
+- **Tests:** 82 app3-tests groen (nieuw: photos-kern, foto-UI in licht en donker met axe, thema, prefs). De zetten-layouttest had een race (herladen vóór het opslaan van de keuze) en wacht nu op de opslag.
+
+### Frontend · ronde 2 (6 nov 2026)
+
+- **Zoeken** (`core/ronde2.ts` → `matches`): alle woorden moeten voorkomen, zonder hoofdletters en accenten. Zoekveld in Zakken (vanaf 4 zakken) en Logboek (vanaf 6 koppen).
+- **Maandweergave:** het logboek groepeert per kalendermaand met aantal koppen.
+- **Favorieten:** ster in het zakdetail; favorieten staan bovenaan en de eerste is de grote kaart. Alleen op dit toestel (`brewconsole.favs`), niet in het logboek of de sync: het is een voorkeur, geen brouwfeit.
+- **Rustdagen:** zakdetail toont 'Nog jong / Bijna op dreef / Op dreef / Nog goed / Oud' met een korte uitleg. Vuistregel voor filterkoffie, geen harde grens en geen invloed op het advies.
+- **Twee koppen vergelijken:** in het kopdetail kies je een andere afgeronde kop van dezelfde zak; een tabel markeert wat anders is (techniek, dosis, water, klik, temperatuur, tijd, sterkte, waardering).
+- **Synchronisatiestatus** zichtbaar in het Meer-menu (verbonden / laatst gesynchroniseerd).
+- **Niet gedaan:** kwartsterren. De engine kent waarderingen als 1–5 (contract), dus dat vraagt een contractwijziging; eerst jouw beslissing. 'Opnieuw kopen' is niet gebouwd omdat er geen winkeladres per zak wordt bewaard.
+- **Tests:** 89 app3-tests groen (nieuw: ronde2-kern en ronde2-UI met axe in licht en donker).
+
+### Overstap `/` → app3 (6 nov 2026)
+
+- **Besluit:** app3 staat op `/`, de oude app op `/oud/`. `npm run build`: `build.mjs dist/oud` + `build-app3.mjs dist --root`; `qa:dist` wijst naar `dist/oud/index.html`. Netlify: `/app3/*` → `/` (301), no-cache voor beide workers en index-pagina's.
+- **Service worker:** app3-worker laat `/oud/` met rust en geeft de app-schil alleen aan `/` en `/index.html`, zodat `tokengenerator.html` en `toestelcheck.html` (nu ook op `/`) hun eigen pagina tonen. De voorgecachete lijst bevat `oud/` en die hulppagina's niet.
+- **Controle:** upgradepad nagespeeld in Chromium (oude site met actieve worker → nieuwe site): na één herlaadbeurt app3, geen foutmelding, `/oud/` en `/tokengenerator.html` werken. app3: 89 tests; volledige QA-suite: 1120 tests groen.
+- **Let op voor de gebruiker:** gegevens uit de oude app moeten via back-up en inlezen mee (Meer → Over wijst ernaar).
+
+### Kwartsterren (6 nov 2026) · contract e3-contract-1.1
+
+- **Besluit:** waardering is 1–5 sterren in stappen van een kwart (17 waarden). Uitbreiding, geen breuk: hele sterren uit oudere logboeken en back-ups blijven geldig, en een toestel met de nieuwe app kan nog steeds met oude blokken samenvoegen.
+- **Engine:** `Liking` is nu `number`; `engine3/src/liking.ts` (`isLiking`, `normaliseLiking`, `nudgeLiking`, `LIKING_*`), `validateEvent` weigert alles buiten 1–5 in kwarten (0, 0,75, 5,25, 3,3, tekst). Het profiel rekent al met gemiddelden en verschillen, dus geen verandering in rekenregels. Rooktest en versiecheck op 1.1.
+- **App:** snel blijft snel: eerst één tik op een hele ster, daarna verschijnen −¼ en +¼ met de waarde ('4,25 van 5') als statusmelding. In lijsten en detail staat een rij sterren met een gedeeltelijk gevulde laatste ster (`Stars.tsx`, voor schermlezers 'x van 5'); verloopgrafiek, vergelijken en koppenlijst gebruiken dezelfde opmaak (`formatLiking`, Nederlandse komma).
+- **Tests:** engine 171 (nieuw: validatie van kwarten, afronden/begrenzen/bijstellen), app3 91 (nieuw: kwartsterren-flow in licht en donker met axe).
+
+### Opnieuw kopen (6 nov 2026) · contract e3-contract-1.2
+
+- **Besluit:** het winkeladres hoort bij de zak en reist dus mee in logboek, back-up en synchronisatie. `BeanFields.shopUrl` is een optioneel veld (geen breuk: bestaande zakken en code blijven werken). `engine3/src/shopurl.ts`: alleen `http(s)`, hoogstens 500 tekens; `normaliseShopUrl('brander.nl/zak')` → `https://brander.nl/zak`; `javascript:`, `data:` en `ftp:` worden geweigerd, ook in `validateEvent` (bij binnenkomst via sync of import).
+- **Formulier:** veld 'Waar koop je hem'; een QR-code met een webadres vult het veld (bron 'QR'). Leeg laten wist een eerder adres.
+- **Voorraad:** `stockView()`: zakgrootte min de dosis van alle afgeronde koppen; 'ongeveer N koppen' met de laatste dosis; minder dan twee koppen = 'Bijna op'. Een schatting, geen weegschaal.
+- **Zakdetail:** 'Voorraad nog ± x g'; knop 'Opnieuw kopen' opent het adres in een nieuw tabblad (`noopener noreferrer`), opvallend (primair) bij 'Bijna op'; bijna op zonder adres geeft een hint naar Bewerken.
+- **Tests:** engine 172 (winkeladres), app3 94 (formulier, voorraad, scherm met formulierfout en wissen).
+
+### Velden leegmaken (6 nov 2026)
+
+- **Probleem:** een zak bewerken en een veld leegmaken liet de oude waarde staan, omdat opslaan nieuwe velden over de oude heen legt en een leeg veld niet werd meegestuurd.
+- **Herstel:** `validateForm` stuurt nu voor elk veld van het formulier een expliciete leegwaarde mee (tekstvelden, branding, datum, zakgrootte en winkeladres `null`; proces 'onbekend'; notities leeg), met bron 'jij'. Alleen de velden in het formulier; wat de formulier niet toont (producent, hoogte, oogstjaar …) blijft zoals het was. De naam blijft verplicht.
+- **Test:** zak met alle velden → leegmaken → opnieuw lezen: alles leeg, land en naam blijven. app3: 95 tests groen.
+
+### Foto's in de back-up (6 nov 2026)
+
+- **Besluit:** de back-up wordt versie 2 met een extra lijst `photos` (`{ beanId, type, data }`, base64). Oudere back-ups (versie 1, zonder het veld) lezen gewoon in; een versie-1-lezer negeert het extra veld. Foto's blijven **buiten** het logboek en **buiten** de synchronisatie (grootte; blokken blijven onder ±900 kB).
+- **Maken:** per zak met een foto wordt de foto (al ≲150 kB) meegenomen; de melding noemt het aantal. **Terugzetten:** alleen foto's van bekende zakken (uit de back-up of al aanwezig), type webp/jpeg/png, geldige base64, hoogstens 400 kB per foto en 300 foto's; wat niet past wordt overgeslagen met een melding. Een foto die al op dit toestel staat blijft staan.
+- **Alles wissen** wist nu ook de foto's (voorheen bleven ze achter).
+- **Teksten:** bij het fotoveld staat nu 'staat in je back-up; niet in de synchronisatie' (dit vervangt de eerdere vermelding 'niet in de back-up').
+- **Tests:** app3 97 (kern: base64 heen en terug, filter op onbekende zak/type/kapotte data/te groot/dubbel, versie 1; scherm: maken → wissen → terugzetten).
+
+### Herstel na de schermencontrole (6 nov 2026)
+
+Uit de screenshots van alle schermen (licht en donker, telefoon en laptop):
+1. **Voorkeuren:** de keuzerondjes erfden de regel voor invoervelden (volle breedte) en stonden blauw met woorden die midden in het woord braken. Nu 22 px, accentkleur, tekst vult de rest, geen afbreken; geen rand om de groep.
+2. **Smaakprofiel:** de tabel met vier kolommen is een lijst geworden (naam, beeld, treffers en valse alarmen in gewone zinnen). Groepen waar nog te weinig voor is staan als één regel onderaan.
+3. **Kopdetail:** 'Advies van engine3 e3-2026.1' staat nu als kleine regel onderaan ('Advies gemaakt door …', versie blijft op één regel).
+4. **Vaste knop** ('Start zetsel', 'Zet deze zak'): effen achtergrond in plaats van een doorzichtige laag met blur. Dat was ook in strijd met de eigen eis 'geen glas over tekst'.
+Tests: `herstel.ui.test.mjs` (rondjes en regels, lijst en notitie, effen achtergrond), samen 101 app3-tests.
+
+### Ontwerpronde 5–8 (7 nov 2026)
+
+5. **Waardering:** één rij met vijf sterren (elk ≥ 56 px hoog, één tik; nogmaals tikken wist), met −¼/+¼ en de waarde eronder zodra er een ster gekozen is (`.starpick`).
+6. **Gegevens:** de regel bovenaan zegt 'Op dit toestel: 1 zak en 8 koppen' in plaats van een aantal gebeurtenissen.
+7. **Laptop (≥ 1100 px):** Zakken en Logboek tonen de lijst links (vast, scrolt zelf) en het gekozen detail rechts, de gekozen rij is gemarkeerd (`aria-current`); 'Terug' verdwijnt. Op een telefoon of smal venster blijft het één scherm per keer. Boven het detail staat de lijstkop als `h2`, zodat er één `h1` per pagina is.
+8. **Lege schermen:** één onderdeel (`EmptyState`): pictogram, korte kop, uitleg en één actie; zoeken zonder resultaat is dezelfde vorm in compacte versie.
+Tests: `ronde4.ui.test.mjs` (naast elkaar op laptop, één per keer op telefoon, lege schermen met axe, gegevenstekst, sterrenrij); tests voor het proeven gebruiken nu de sterknoppen. 106 app3-tests.
+
+### Eerste start (7 nov 2026)
+
+- **Welkomstkaart** op Zetten zolang er nog niets is vastgelegd (geen gebeurtenissen) en je hem niet hebt weggeklikt: korte uitleg in drie stappen (zak toevoegen, kop zetten, proeven en waarderen), de grote knop 'Voeg je eerste zak toe', 'Zonder zak beginnen' (onthoudt dat in `brewconsole.welkom`) en een kaart 'Kom je van de vorige versie?' met de knop naar `/oud/` en de uitleg over back-up en inlezen. Eronder: alles blijft op je toestel.
+- **Gedrag:** zodra er één gebeurtenis is (een zak of een inlezing) verdwijnt de kaart voorgoed; wegklikken werkt ook zonder gegevens en komt niet terug. Zonder werkende opslag komt de kaart bij elke start terug, maar blokkeert niets.
+- **Niet gedaan:** de oude app wordt niet automatisch herkend. Oude en nieuwe app delen een herkomst maar bewaren hun gegevens op een eigen plek, en een betrouwbare controle daarop is er niet; daarom staat de kaart altijd klaar met uitleg.
+- **Tests:** kern (`welkom.test.ts`), scherm (`welkom.ui.test.mjs`, licht en donker met axe) en één bestaande test die nu eerst doorklikt. 111 app3-tests.
+
+### Geluid en trillen in de timer (7 nov 2026)
+
+- **Signalen** (`core/cues.ts`, puur): `tick` in de laatste drie seconden voor een volgende giet (één per seconde), `pour` als een giet begint, `hold` als je 'Erdoor' moet tikken (Kasuya), `done` als het zetsel klaar is. Starten en hervatten geven zelf geen signaal (dat is jouw tik), en na pauze volgt er niets tot de klok loopt. Onderscheid tussen de signalen zit in het patroon (aantal tonen), niet alleen in toonhoogte.
+- **Geluid** (`ui/cues.ts`): korte sinustonen via Web Audio, zacht voor een tik. De AudioContext start na een tik op Start, Verder of het eerste tik op het scherm (nodig na herladen midden in een zetsel). **Trillen**: pour 200 ms, hold 120-80-120, done 300-100-300; tikken trillen niet. Trillen bestaat niet op een iPhone (Safari); dat staat bij de instelling.
+- **Voorkeuren** (Meer → Voorkeuren → Timer): geluid en trillen apart, standaard allebei **aan** (een timer die zwijgt is zelden de verwachting; uitzetten is één tik), opgeslagen per toestel (`brewconsole.cueSound`, `brewconsole.cueVibrate`), met een testknop. Het scherm bleef al aan tijdens een zetsel (wake lock).
+- **Vervangen:** de oude vaste trilling bij elke faseverandering is nu dit signaalsysteem en volgt de voorkeur.
+- **Tests:** kern (overgangen, tikken niet te vroeg/vaak, voorkeuren), scherm met een nagebootste AudioContext en `navigator.vibrate` (tikken, giet-signaal, trillen alleen bij de giet, alles uit = stil) en de instellingen met axe in licht en donker. `window.__cueLog` is een testhaak die alleen vult als een test hem aanmaakt. 118 app3-tests.
+
+### Uitleg boven de grafieken (7 nov 2026)
+
+- **Eén zin onder elke grafiektitel** (`explainSeries()` in `core/trends.ts`, puur): koffie per kop ('Steeds ongeveer 22 g' of 'Van 19,1 g naar 22 g'), klaar na (laatste kop, gemiddelde, en of de laatste drie koppen sneller of langzamer waren dan de eerdere), sterkte-oordeel (de laatste drie koppen: ongeveer goed, te slap of te sterk, met het gemiddelde) en waardering (gemiddelde, en of de laatste drie koppen lekkerder of minder lekker waren).
+- **Voorzichtig:** alleen wat uit de punten zelf volgt; met één kop geen zin; een vergelijking pas als er minstens twee koppen vóór de laatste drie zijn; verschillen kleiner dan 10 seconden (tijd) of 0,5 punt (waardering) heten 'ongeveer gelijk'. Er wordt niets verklaard of voorspeld.
+- **Tests:** zinnen met grensgevallen (kern), vier zinnen op het zakdetail en geen zinnen bij één kop (scherm, axe in licht en donker). 119 app3-tests.
+
+### Zakken sorteren en filteren (7 nov 2026)
+
+- **Sorteren** (`core/zakkenlijst.ts`, puur): favorieten eerst en dan nieuwste (standaard), naam A–Z, vers gebrand eerst, hoogst gewaardeerd, meest gezet. Altijd volledig bepaald: bij gelijke waarde beslist de naam; een zak zonder brandingsdatum of waardering komt achteraan.
+- **Filteren:** Favorieten, Bijna op (minder dan twee koppen over volgens `stockView`) en Vers (hoogstens 21 dagen na branding). Meerdere filters tegelijk betekent: ze moeten allemaal kloppen. Zoeken werkt eroverheen.
+- **Scherm:** de bediening verschijnt vanaf 4 zakken (zoals het zoekveld), de keuze wordt per toestel onthouden (`brewconsole.zakkenlijst`), een regel 'N van M zakken' met 'Wis sorteren en filters' laat zien dat de lijst beperkt is, en zonder uitkomst staat er een lege toestand met dezelfde wisknop. De grote kaart bovenaan hoort bij de standaardvolgorde zonder filters en zonder zoekopdracht.
+- **Tests:** kern (alle sorteringen, grenzen van 'vers', onthouden met rommel in de opslag) en scherm (sorteren, filteren, herladen, wissen, favorieten, axe in licht en donker). 129 app3-tests.
+
+### Overige lege toestanden (7 nov 2026)
+
+- Alle plekken waar nu 'nog niets' staat gebruiken `EmptyState`: het **smaakprofiel** zonder een geproefde kop is één volledige lege toestand (pictogram, uitleg, knop 'Zet een kop'); 'Nog geen herkende notities' en 'Nog geen waarderingen' in het profiel, 'Nog geen afgeronde koppen' en 'Nog geen koppen met deze zak' in het zakdetail en 'Nog niet geproefd' in het kopdetail zijn de compacte vorm met een zin die zegt wat ervoor nodig is.
+- Hulptekst onder koppen (uitleg van een scherm) en statusmeldingen ('Geen verschillen in wat hier staat') blijven gewone tekst; alleen echte lege toestanden zijn omgezet.
+- Tests: `leeg.ui.test.mjs` (profiel leeg, compacte toestanden met koppen, zak zonder koppen; axe in licht en donker). 131 app3-tests.
+
+### Oude app opgeruimd (7 nov 2026)
+
+- **Besluit (Jelle):** alleen van de site halen; broncode en oude tests blijven als archief omdat Engine 3 er twee vergelijkingstests en generatiescripts aan heeft. Jelle bevestigde dat zijn gegevens al zijn overgezet.
+- **Gedaan:** `npm run build` bouwt alleen app3; `/oud/` is een melding met een opruim-worker (nagespeeld in een echte browser); links naar `/oud/` uit de app weg; `qa:dist` bouwt naar `dist-oud/` (genegeerd door git); Netlify-headers en comment bijgewerkt. Test: `app3/test/oud.test.mjs` (melding, geen oude bestanden, opruim-worker wist caches en haalt zichzelf weg).
+- **Terugdraaien:** de laatste gepubliceerde versie met de oude app op `/oud/` is `6e916d1`. Een tag kon vanuit deze omgeving niet worden gepusht.
+
+### Panelronde 1: punt 1–3 (8 nov 2026)
+
+Uit een beoordeling van de schermen door vier rollen (interactie, visueel, toegankelijkheid, koffie):
+
+- **Zetten:** zolang je niet bewust 'Geen zak' koos (`noBean` in `brewconsole.zetten`), staat de nieuwste zak vooraf gekozen.
+- **Zakdetail:** bij een neutrale pasvorm (geen uitkomst of < 0,15 punt) geen grote kop, één zin en de tabel ingeklapt onder 'Waarop dit is gebaseerd'. 'Terug' staat op de foto in plaats van tussen de inhoud.
+- **Timer voor de start:** geen ring met 'start' meer (die deed hetzelfde als de knop); de startknop zit onderaan het scherm.
+- Test: `panel1.ui.test.mjs`. 135 app3-tests.
+
+### Panelronde 2: punt 4 en 5 (8 nov 2026)
+
+- **Logboek:** met één zak kopt de datum de rij (zaknaam is dan ruis) en staat de rest eronder; met meerdere zakken blijft de zaknaam vooraan. Elke rij heeft een pijltje (`.item.go`) als tikaanwijzing.
+- **Zakken:** de grote kaart verschijnt pas bij drie of meer zakken (en niet bij zoeken, sorteren of filteren); met één of twee zakken zou hij dezelfde zak als de lijst tonen.
+- Tests aangepast (`foto`, `logboek`, `ronde2`) en uitgebreid (`panel1`). 136 app3-tests.
+
+### Panelronde 3: punt 6 en 7 (8 nov 2026)
+
+- **Meer** staat in drie groepen met een kopje: Jouw koffie (smaakprofiel, molen, water), Gedrag (voorkeuren) en Gegevens en app (gegevens, synchronisatie, over); elke rij heeft het pijltje. De naam 'Voorkeuren' bleek niet te botsen met een 'Instellingen'-titel (alleen de bestandsnaam heet zo); wel beschrijft de ondertitel nu ook de timer.
+- **Laptop:** de tekening van een zak vult het hele fotovlak (de rand naast de tekening heeft de achtergrondkleur van de zak). De waarschuwing 'dosis buiten het bereik van de brewer' verschijnt niet meer als de afwijking kleiner is dan 1 g (`visibleWarnings` in `core/brew.ts`; de engine blijft ongemoeid).
+- **Bewust niet aangepast:** de vaste startbalk op de laptop. Hij dekt alleen inhoud af tijdens het scrollen en staat aan het eind van de pagina vrij.
+- **Kasuya-meldingen (daarna opgelost):** uitleg bij een recept (zoals 'giet pas als het bed bijna droog is' en 'einde nog niet uit eigen zetsels geleerd') staat nu als rustige lijst onder het schema (`splitWarnings` in `core/brew.ts`, `ul.notes`); alleen echte aandachtspunten (zoals een giet zonder water, of een dosis ruim buiten het bereik) blijven een amberkleurige waarschuwing.
+- Tests: `warnings.test.ts`, `panel1.ui.test.mjs`. 141 app3-tests.

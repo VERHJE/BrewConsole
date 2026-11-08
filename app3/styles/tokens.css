@@ -1,0 +1,31 @@
+/* Licht = Organic Light (crème en rustig groen). Donker = Quiet Luxury (warm bruin en goud).
+   Beide zijn eigen thema's, geen omgekeerde versie van elkaar. Keuze: Meer → Voorkeuren (licht, donker, volg toestel). */
+:root {
+  --bg: #f4efe4; --surface: #fcfaf4; --surface-2: #ece6d6; --line: #dcd4c0;
+  --text: #1d261c; --text-2: #4d594a; --text-3: #5a6657;
+  --accent: #3f6b3c; --accent-ink: #ffffff; --accent-soft: #dde8d3;
+  --ok: #2f6b3f; --warn: #8a5a00; --bad: #a3322b;
+  --radius: 18px; --radius-s: 12px; --tap: 48px; --gutter: 16px;
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --head: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #120e0a; --surface: #211911; --surface-2: #2b2117; --line: #3b2f22;
+    --text: #f5ecdf; --text-2: #cdbda6; --text-3: #a99b87;
+    --accent: #d9a65a; --accent-ink: #1a1108; --accent-soft: #3a2a17;
+    --ok: #8fcf9d; --warn: #e2b04d; --bad: #f08a80;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #120e0a; --surface: #211911; --surface-2: #2b2117; --line: #3b2f22;
+  --text: #f5ecdf; --text-2: #cdbda6; --text-3: #a99b87;
+  --accent: #d9a65a; --accent-ink: #1a1108; --accent-soft: #3a2a17;
+  --ok: #8fcf9d; --warn: #e2b04d; --bad: #f08a80;
+  color-scheme: dark;
+}
+/* Koppen in schreefloos als je dat kiest (Meer → Voorkeuren). */
+:root[data-type="sans"] { --head: var(--font); }

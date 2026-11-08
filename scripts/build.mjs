@@ -157,7 +157,8 @@ export function build(outDir){
   fs.rmSync(outDir, { recursive: true, force: true });
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'index.html'), built);
-  for (const f of ['sw.js', 'manifest.webmanifest']) fs.copyFileSync(path.join(ROOT, f), path.join(outDir, f));
+  // Losse hulppagina's naast de app (Engine 3): toestelcheck en de generator voor toegangstokens.
+  for (const f of ['sw.js', 'manifest.webmanifest', 'toestelcheck.html', 'tokengenerator.html']) fs.copyFileSync(path.join(ROOT, f), path.join(outDir, f));
   copyDir(path.join(ROOT, 'icons'), path.join(outDir, 'icons'));
   copyDir(path.join(ROOT, 'photos'), path.join(outDir, 'photos'));
   return { before: Buffer.byteLength(html), after: Buffer.byteLength(built) };
