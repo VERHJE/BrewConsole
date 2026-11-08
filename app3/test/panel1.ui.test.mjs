@@ -74,3 +74,13 @@ test('punt 6 en 7: Meer in drie groepen; hero-foto op laptop volgt de kleur van 
   assert.notEqual(bg, 'rgba(0, 0, 0, 0)', 'de rand naast de tekening heeft dezelfde kleur als de achtergrond');
   await page.close();
 });
+
+test('zetten: de Kasuya-uitleg staat als rustige lijst, niet als waarschuwing', async () => {
+  const page = await app.browser.newPage({ viewport: { width: 1280, height: 800 } });
+  await importLog(page, app.base, json);
+  await page.goto(app.base + '#/zetten');
+  await page.waitForSelector('ul.notes');
+  assert.match(await page.locator('ul.notes').innerText(), /Kasuya: giet pas/);
+  assert.equal(await page.locator('.banner.warn:has-text("Kasuya")').count(), 0);
+  await page.close();
+});

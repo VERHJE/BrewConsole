@@ -96,3 +96,21 @@ export function visibleWarnings(warnings: readonly string[]): string[] {
     return Math.abs(num(m[1]!) - num(m[2]!)) >= 1;
   });
 }
+
+/** Meldingen die uitleg zijn en geen probleem: ze horen bij het recept, niet in een waarschuwingsbalk. */
+const INFO_WARNING = [
+  /^Kasuya: giet pas als het water bijna helemaal door het filter is/,
+  /nog niet uit eigen zetsels geleerd/,
+  /Nog geen doorlooptijden gelogd/,
+  /Voor deze techniek zijn nog geen doorlooptijden gelogd/,
+  /is een V60-techniek; op de Chemex/,
+  /geen schaalregel; hoeveelheden zijn op verhouding geschaald/,
+  /geen duidelijk betere klik/
+];
+
+/** Splitst de zichtbare meldingen in uitleg (rustig tonen) en echte aandachtspunten (waarschuwing). */
+export function splitWarnings(warnings: readonly string[]): { notes: string[]; cautions: string[] } {
+  const notes: string[] = [], cautions: string[] = [];
+  for (const w of visibleWarnings(warnings)) (INFO_WARNING.some(r => r.test(w)) ? notes : cautions).push(w);
+  return { notes, cautions };
+}
