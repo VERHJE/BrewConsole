@@ -1438,3 +1438,12 @@ Tests: `ronde4.ui.test.mjs` (naast elkaar op laptop, één per keer op telefoon,
 - **Besluit (Jelle):** alleen van de site halen; broncode en oude tests blijven als archief omdat Engine 3 er twee vergelijkingstests en generatiescripts aan heeft. Jelle bevestigde dat zijn gegevens al zijn overgezet.
 - **Gedaan:** `npm run build` bouwt alleen app3; `/oud/` is een melding met een opruim-worker (nagespeeld in een echte browser); links naar `/oud/` uit de app weg; `qa:dist` bouwt naar `dist-oud/` (genegeerd door git); Netlify-headers en comment bijgewerkt. Test: `app3/test/oud.test.mjs` (melding, geen oude bestanden, opruim-worker wist caches en haalt zichzelf weg).
 - **Terugdraaien:** de laatste gepubliceerde versie met de oude app op `/oud/` is `6e916d1`. Een tag kon vanuit deze omgeving niet worden gepusht.
+
+### Panelronde 1: punt 1–3 (8 nov 2026)
+
+Uit een beoordeling van de schermen door vier rollen (interactie, visueel, toegankelijkheid, koffie):
+
+- **Zetten:** zolang je niet bewust 'Geen zak' koos (`noBean` in `brewconsole.zetten`), staat de nieuwste zak vooraf gekozen.
+- **Zakdetail:** bij een neutrale pasvorm (geen uitkomst of < 0,15 punt) geen grote kop, één zin en de tabel ingeklapt onder 'Waarop dit is gebaseerd'. 'Terug' staat op de foto in plaats van tussen de inhoud.
+- **Timer voor de start:** geen ring met 'start' meer (die deed hetzelfde als de knop); de startknop zit onderaan het scherm.
+- Test: `panel1.ui.test.mjs`. 135 app3-tests.

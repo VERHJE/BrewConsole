@@ -90,10 +90,10 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
   const center = guide.kind === 'ready' ? 'start' : guide.kind === 'done' ? 'klaar' : guide.kind === 'hold' ? 'wacht' : guide.remainingSec !== null ? clock(guide.remainingSec) : 'droog?';
 
   return (
-    <section class="timer" aria-label="Timer">
+    <section class={view.status === 'ready' ? 'timer ready' : 'timer'} aria-label="Timer">
       <div class="clock" aria-label={`Totale tijd ${clock(Math.floor(t))}`}>{clock(Math.floor(t))}<small>totaal</small></div>
       <div class={`stepcard ${guide.kind}`}>
-        <Ring fraction={guide.fraction} kind={guide.kind} label={center} />
+        {guide.kind !== 'ready' && <Ring fraction={guide.fraction} kind={guide.kind} label={center} />}
         <div class="stepcopy" role="status">
           <h2 class="stepname">{guide.title}</h2>
           <p class="stepaction">{guide.action}</p>
