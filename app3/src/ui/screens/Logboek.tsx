@@ -16,11 +16,13 @@ import { useApp, useSnapshot } from '../store-context.tsx';
 const STATUS: Record<string, string> = { planned: 'Niet gestart', brewing: 'Bezig', complete: 'Klaar', abandoned: 'Afgebroken' };
 const dateText = (ms: number): string => new Date(ms).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-function Row({ r, active }: { r: ReturnType<typeof cupRows>[number]; active: boolean }): JSX.Element {
+function Row({ r, active, multi }: { r: ReturnType<typeof cupRows>[number]; active: boolean; multi: boolean }): JSX.Element {
+  // Met één zak is de naam ruis: dan kopt de datum de rij en staat de rest eronder.
+  const extra = `${techniqueName(r.technique)} · ${nl1(r.doseG)} g${r.click !== null ? ` · klik ${r.click}` : ''}${r.endSec !== null ? ` · ${clock(r.endSec)}` : ''}${r.status !== 'complete' ? ` · ${STATUS[r.status]}` : ''}${r.status === 'complete' && !r.tasted ? ' · nog te proeven' : ''}`;
   return (
-    <li><a class="item" href={href('logboek', r.id)} aria-current={active ? 'true' : undefined}>
-      <strong>{r.beanName ?? 'Zonder zak'} <Stars value={r.liking} /></strong>
-      <small>{dateText(r.at)} · {techniqueName(r.technique)} · {nl1(r.doseG)} g{r.click !== null ? ` · klik ${r.click}` : ''}{r.endSec !== null ? ` · ${clock(r.endSec)}` : ''}{r.status !== 'complete' ? ` · ${STATUS[r.status]}` : ''}{r.status === 'complete' && !r.tasted ? ' · nog te proeven' : ''}</small>
+    <li><a class="item go" href={href('logboek', r.id)} aria-current={active ? 'true' : undefined}>
+      <strong>{multi ? (r.beanName ?? 'Zonder zak') : dateText(r.at)} <Stars value={r.liking} /></strong>
+      <small>{multi ? `${dateText(r.at)} · ${extra}` : extra}</small>
     </a></li>
   );
 }
@@ -29,6 +31,7 @@ function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
   const { state } = useSnapshot();
   const [q, setQ] = useState('');
   const all = cupRows(state);
+  const multi = new Set(all.map(r => r.beanName)).size > 1;
   const rows = q.trim() ? all.filter(r => matches(`${r.beanName ?? ''} ${techniqueName(r.technique)} ${dateText(r.at)}`, q)) : all;
   return (
     <section>
@@ -39,7 +42,7 @@ function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
         : rows.length === 0 ? <EmptyState compact title={`Geen koppen gevonden voor ‘${q}’`} />
         : groupByMonth(rows).map(g => (
           <div key={g.label} class="month"><h2 class="month-h">{g.label} <small>{g.rows.length} {g.rows.length === 1 ? 'kop' : 'koppen'}</small></h2>
-            <ul class="list">{g.rows.map(r => <Row key={r.id} r={r} active={r.id === activeId} />)}</ul></div>))}
+            <ul class="list">{g.rows.map(r => <Row key={r.id} r={r} active={r.id === activeId} multi={multi} />)}</ul></div>))}
     </section>
   );
 }

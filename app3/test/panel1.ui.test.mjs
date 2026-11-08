@@ -44,3 +44,16 @@ test('zakdetail: neutrale pasvorm krijgt geen grote kop en een ingeklapte tabel;
   assert.equal(await page.locator('.hero-photo a:has-text("Terug")').count(), 1);
   await page.close();
 });
+
+test('punt 4 en 5: logboek met één zak kopt op datum met pijltje; grote zakkaart pas vanaf drie zakken', async () => {
+  const page = await app.browser.newPage({ viewport: { width: 390, height: 844 } });
+  await importLog(page, app.base, json);
+  await page.goto(app.base + '#/logboek');
+  await page.waitForSelector('.item.go');
+  assert.doesNotMatch(await page.locator('.item.go').first().innerText(), new RegExp(SEED_BEAN));
+  assert.equal(await page.locator('.item.go').count() > 0, true);
+  await page.goto(app.base + '#/zakken');
+  await page.waitForSelector('ul.thumbs .item');
+  assert.equal(await page.locator('.hero').count(), 0, 'één zak: geen dubbele kaart');
+  await page.close();
+});

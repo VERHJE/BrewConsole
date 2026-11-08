@@ -47,7 +47,6 @@ test('favoriet: aan in het detail, ster en kop in de lijst, blijft na herladen; 
   await page.click('button:has-text("Favoriet")');
   assert.equal(await page.locator('button:has-text("Favoriet")').getAttribute('aria-pressed'), 'true');
   await page.goto(app.base + '#/zakken');
-  await page.waitForSelector('.hero .eyebrow:has-text("Favoriet")');
   await page.waitForSelector('.item strong:has-text("★")');
   await page.goto(app.base + '#/meer');
   await page.waitForSelector('text=Twee toestellen gelijk houden');
