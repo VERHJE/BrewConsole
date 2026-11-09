@@ -7,6 +7,8 @@ export const IconBean = (): JSX.Element => (<svg {...base}><path d="M12 3c-4.5 0
 export const IconLog = (): JSX.Element => (<svg {...base}><path d="M5 4h14v16H5z" /><path d="M8 9h8M8 13h8M8 17h5" /></svg>);
 export const IconMore = (): JSX.Element => (<svg {...base}><circle cx="5" cy="12" r="1.3" /><circle cx="12" cy="12" r="1.3" /><circle cx="19" cy="12" r="1.3" /></svg>);
 
+export const IconFilter = (): JSX.Element => (<svg {...base}><path d="M4 6h16M7 12h10M10 18h4" /></svg>);
+
 /** Lijnillustratie voor de welkomstkaart: een kop met stoom. */
 export const CupSteam = (): JSX.Element => (
   <svg viewBox="0 0 120 96" width="120" height="96" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

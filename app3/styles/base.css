@@ -469,3 +469,22 @@ details.tech-note .engine-note { margin: 0 0 8px; }
 .welkom-lead { text-align: center; }
 @media (prefers-reduced-motion: no-preference) { .welkom-art .steam { animation: drift 5s ease-in-out infinite; } }
 @keyframes drift { 50% { transform: translateY(-3px); opacity: .45; } }
+
+/* Ronde 6 · fase C: iconen, beweging, foto-kaart */
+.filterbtn svg { width: 18px; height: 18px; margin-right: 6px; flex: none; }
+.filterbtn { display: inline-flex; align-items: center; }
+
+/* Beweging: alleen zachte overgangen (geen fades of kleurovergangen: axe en gebruikers meten contrast midden in de overgang); 'verminder beweging' zet alles uit (regel bovenaan). */
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .chip, .choice, .item, .star, .tabbar a { transition: box-shadow .15s, transform .1s; }
+  .btn:active, .chip:active, .choice:active { transform: scale(.98); }
+  .item:hover { box-shadow: var(--shadow-2); }
+  .progress > i, .meter > i, .stack i { transition: width .3s ease; }
+}
+
+/* Foto eerst: op brede schermen krijgt een zak met foto een kaart met de foto bovenaan. */
+@media (min-width: 900px) {
+  .wide-list ul.thumbs .item.withphoto { flex-direction: column; align-items: stretch; gap: 0; padding: 0; overflow: hidden; }
+  .wide-list ul.thumbs .item.withphoto .thumb { width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: 0; box-shadow: none; }
+  .wide-list ul.thumbs .item.withphoto .itext { padding: 12px 14px 14px; }
+}

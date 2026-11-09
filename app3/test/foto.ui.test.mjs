@@ -88,3 +88,19 @@ test('foto in de back-up: maken, alles wissen, terugzetten', async () => {
   assert.deepEqual(errors, []);
   await page.close();
 });
+
+test('foto eerst: op een laptop wordt een zak met foto een kaart met de foto bovenaan; zonder foto blijft het een rij', async () => {
+  const png = await QRCode.toBuffer('foto', { margin: 4, scale: 12 });
+  const page = await app.browser.newPage({ viewport: { width: 1280, height: 800 } });
+  await page.goto(app.base + '#/zakken/nieuw');
+  await page.fill('input[name=name]', 'Kaartzak');
+  await page.setInputFiles('input[name=photo]', { name: 'zak.png', mimeType: 'image/png', buffer: png });
+  await page.waitForSelector('text=Foto klaar');
+  await page.click('button:has-text("Opslaan")');
+  await page.waitForSelector('.item.withphoto');
+  const box = await page.locator('.item.withphoto .thumb').boundingBox();
+  const card = await page.locator('.item.withphoto').boundingBox();
+  assert.ok(box.width > 200 && Math.abs(box.width - card.width) < 4, `foto vult de kaart (${box.width} van ${card.width})`);
+  assert.ok(box.y < card.y + 4, 'foto staat bovenaan');
+  await page.close();
+});

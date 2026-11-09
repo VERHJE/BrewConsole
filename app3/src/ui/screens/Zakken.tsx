@@ -11,8 +11,8 @@ import { formFromScan } from '../../core/beans.ts';
 import { BeanFormView } from '../BeanFormView.tsx';
 import { BeanInsights } from '../Insights.tsx';
 import { EmptyState } from '../EmptyState.tsx';
-import { IconBean } from '../icons.tsx';
-import { BagArt, useApp, useSnapshot } from '../store-context.tsx';
+import { IconBean, IconFilter } from '../icons.tsx';
+import { BagArt, usePhoto, useApp, useSnapshot } from '../store-context.tsx';
 import { cupRows } from '../../core/insights.ts';
 import { matches, readFavs, restView, toggleFav } from '../../core/ronde2.ts';
 import {
@@ -64,7 +64,7 @@ function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
           {base.length > 3 && (
             <div class="listbar">
               <label class="field search"><span class="sr-only">Zoek in zakken</span><input type="search" name="zoek" placeholder="Zoek op naam, brander of land" value={q} onInput={e => setQ((e.currentTarget as HTMLInputElement).value)} /></label>
-              <button type="button" class="btn filterbtn" aria-expanded={panel} aria-controls="filterpanel" onClick={() => setPanel(!panel)}>Filter{activeCount > 0 && <span class="count" aria-label={`${activeCount} actief`}>{activeCount}</span>}</button>
+              <button type="button" class="btn filterbtn" aria-expanded={panel} aria-controls="filterpanel" onClick={() => setPanel(!panel)}><IconFilter />Filter{activeCount > 0 && <span class="count" aria-label={`${activeCount} actief`}>{activeCount}</span>}</button>
             </div>)}
           {base.length > 3 && panel && (
             <div class="listtools" id="filterpanel">
@@ -77,12 +77,18 @@ function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
               </div>
             </div>)}
           {base.length > 3 && narrowed && <p class="meta" role="status">{rows.length} van {base.length} {base.length === 1 ? 'zak' : 'zakken'}{!isDefault(prefs) && <> · <button type="button" class="linklike" onClick={() => change({ sort: 'standaard', filters: [] })}>Wis sorteren en filters</button></>}</p>}
-          <ul class="list thumbs">{rows.map(r => (
-            <li key={r.id}><a class="item" href={href('zakken', r.id)} aria-current={r.id === activeId ? 'true' : undefined}><span class="thumb"><BagArt beanId={r.id} name={r.name} /></span><span class="itext"><strong>{favs.has(r.id) && <span aria-label="Favoriet">★ </span>}{r.name}</strong><Meta row={r} today={today} stock={facts.st.get(r.id)} /></span></a></li>
-          ))}</ul>
+          <ul class="list thumbs">{rows.map(r => <BagRow key={r.id} r={r} activeId={activeId} fav={favs.has(r.id)} today={today} stock={facts.st.get(r.id)} />)}</ul>
           {rows.length === 0 && <EmptyState compact title={q.trim() ? `Geen zakken gevonden voor ‘${q}’` : 'Geen zakken met deze filters'}>{!isDefault(prefs) ? <button type="button" class="btn" onClick={() => change({ sort: 'standaard', filters: [] })}>Wis sorteren en filters</button> : undefined}</EmptyState>}
         </>}
     </section>
+  );
+}
+
+/** Eén rij in de lijst; heeft de zak een foto, dan wordt het (op brede schermen) een kaart waar de foto de hoofdrol speelt. */
+function BagRow({ r, activeId, fav, today, stock }: { r: BeanRow; activeId: string | null; fav: boolean; today: string; stock: StockView | undefined }): JSX.Element {
+  const hasPhoto = usePhoto(r.id) !== null;
+  return (
+    <li><a class={hasPhoto ? 'item withphoto' : 'item'} href={href('zakken', r.id)} aria-current={r.id === activeId ? 'true' : undefined}><span class="thumb"><BagArt beanId={r.id} name={r.name} /></span><span class="itext"><strong>{fav && <span aria-label="Favoriet">★ </span>}{r.name}</strong><Meta row={r} today={today} stock={stock} /></span></a></li>
   );
 }
 
