@@ -13,6 +13,9 @@ ALLOW_ORIGIN = "https://dazzling-manatee-606398.netlify.app"
 binding = "BLOCKS"
 id = "935776684dbd4127aa8fa6c739112d05"
 
-# Geheimen zet je in het Cloudflare-dashboard (Settings → Variables & Secrets), niet hier:
-#   TOKEN_HASHES       de SHA-256 van elk toestel-token, gescheiden door komma's (maak ze met tokengenerator.html)
+# Geheimen zet je in het Cloudflare-dashboard (Settings → Variables & Secrets), niet hier.
+# Kies bij het aanmaken het type 'Secret': een gewone 'Text'-variabele die niet in dit bestand staat wordt bij de volgende
+# build gewist, een Secret blijft staan.
+#   TOKEN_HASHES       de SHA-256 van elk toestel-token, gescheiden door komma's, zonder spaties (maak ze met tokengenerator.html;
+#                      het token en de hash moeten van dezelfde tik op 'Nieuw token maken' komen)
 #   ANTHROPIC_API_KEY  alleen als je foto-herkenning wilt
