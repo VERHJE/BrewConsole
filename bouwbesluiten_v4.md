@@ -1498,3 +1498,5 @@ Jelle liet een extern UX/UI-verbeterplan ('Brew Console 2.1') beoordelen; wat al
 - **App:** 'Brewer' als keuzeknoppen bovenaan het zetscherm (de Methode-keuze onder 'Meer opties' is vervallen), 'Portie' (1 kop / 2 koppen / Hele kan) bij de Chemex, techniekenlijst per brewer (V60-technieken op de Chemex in een eigen groep), plaatshouders als rustige uitleg.
 - **Niet gedaan:** bonen-specifieke Chemex-keuze en proeven tussen Chemex-recepten (te weinig eigen koppen); Blue Bottle/Onyx/Barefoot zijn via Prima Coffee, niet via de eigen pagina's van de roasters.
 - Tests: engine3 `data.test.ts` (+2), `engine.test.ts`, `technique.test.ts`, `recipe.test.ts`; app3 `chemex.ui.test.mjs` (licht en donker, axe). 179 engine3-tests, 170 app3-tests.
+
+- **Sterktevoorkeur per brewer (9 nov 2026, keuze Jelle):** `strengthPlan` filtert de waarnemingen op de gevraagde brewer; V60- en Chemex-koppen beïnvloeden elkaars dosisadvies niet. Test in `strength.test.ts`; 180 engine3-tests.

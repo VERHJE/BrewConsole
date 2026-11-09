@@ -419,7 +419,9 @@ export function strengthPlan(facts: FactState, req: StrengthRequest): StrengthPl
   const retention = retentionFor(facts, req.method);
   const eyModel = eyModelFor(facts, req.method, retention.value);
   const ey = eyModel.n >= EY_MIN_N && eyModel.eyMean !== null ? eyModel.eyMean : EY_NOMINAL;
-  const obs = observationsOf(facts);
+  // De sterktevoorkeur wordt per brewer geleerd: een Chemex smaakt bij dezelfde dosis anders dan een V60.
+  // Proeven zonder brewer (oude logboeken) horen bij de V60.
+  const obs = observationsOf(facts).filter(o => (o.method ?? 'v60') === req.method);
   const baseTds = tdsOf(req.baselineDoseG, req.waterG, retention.value, ey);
   if (baseTds === null) return null;
   const dec = decide(obs, Math.log(baseTds));

@@ -179,3 +179,17 @@ test('bijna gelijk aan Engine 2: dezelfde dosis kop voor kop, behalve waar de za
   }
   assert.ok(differ / total <= 0.03, `${differ} van ${total} wijken af`);
 });
+test('de sterktevoorkeur wordt per brewer geleerd: V60-koppen beïnvloeden de Chemex niet, en omgekeerd', () => {
+  const v60 = [...cup('a', null, AT0, 18.8, 2), ...cup('b', null, AT0 + 1000, 17, 2), ...cup('c', null, AT0 + 2000, 16, 2)];
+  const ask = (events: EngineEvent[], method: 'v60' | 'chemex') => strengthPlan(learnFacts(events), { method, waterG: W, beanId: null, baselineDoseG: 18.8 })!;
+  // De V60 heeft geleerd dat het te sterk was; de Chemex staat nog op de startdosis.
+  assert.ok(ask(v60, 'v60').doseG < 18.8 - 0.5);
+  const cx = ask(v60, 'chemex');
+  assert.equal(cx.doseG, 18.8);
+  assert.equal(cx.n, 0);
+  // Omgekeerd: Chemex-koppen veranderen niets aan het V60-advies.
+  const chemexCups = (id: string, at: number): EngineEvent[] => cup(id, null, at, 18.8, -2).map(e => e.kind === 'brew.plan' ? { ...e, data: { ...e.data, recipe: { ...e.data.recipe, method: 'chemex' as const } } } : e) as EngineEvent[];
+  const mixed = [...chemexCups('x', AT0), ...chemexCups('y', AT0 + 500), ...v60];
+  assert.equal(ask(mixed, 'v60').doseG, ask(v60, 'v60').doseG);
+  assert.ok(ask(mixed, 'chemex').doseG > 18.8);
+});

@@ -69,4 +69,5 @@ Zes recepten uit `onderzoek_chemex.md`, als data in `engine3/src/data/chemex-tec
 - **Portie:** de regels kijken naar de kopgrootte (`minCupG`/`maxCupG`); de app biedt '1 kop' (250 g), '2 koppen' (500 g) en 'Hele kan' (650 g).
 - **Dosisgrens:** 15–57 g (laagste en hoogste dosis in de brongegeven recepten, klasse C). Boven 800 g water volgt een melding dat het dicht bij de rand van een 6-kops Chemex komt (885 ml).
 - **Molen:** beginklik 24 (BrewTuner, klasse C), adviesvenster 17–31. Het doorloopmodel start voor de Chemex bij het eindmoment van het recept (aanname, breed), niet bij de V60-waarden; klikken van de V60 tellen niet mee voor de Chemex.
+- **Sterktevoorkeur per brewer:** `strengthPlan` leert alleen van koppen en proeven van dezelfde brewer (oude logboeken zonder brewer tellen als V60). Een Chemex begint dus op de startdosis tot er Chemex-koppen geproefd zijn. Klachten per zak (zuur, droog) tellen nog voor beide brewers.
 - **Nog niet:** leren van eigen Chemex-koppen (proeven tussen Chemex-recepten) volgt zodra er koppen gelogd zijn; er is geen Chemex-proefkandidaat en geen keuze per boon.
