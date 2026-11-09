@@ -97,7 +97,8 @@ test('timer: welke giet het is en tot welk gewicht, in een grote regel', async (
   assert.equal(await page.locator('.pdots .d').count(), total);
   assert.equal(await page.locator('.pdots .d.now').count(), 1);
   assert.match(await page.locator('.steptarget b').innerText(), /^tot \d+ g$/);
-  assert.match(await page.locator('.steptarget span').innerText(), /^\+\d+ g · in (spiraal|rondjes|het midden)$/);
+  // Kasuya: de bronnen noemen geen gietpatroon, dus alleen de hoeveelheid
+  assert.match(await page.locator('.steptarget span').innerText(), /^\+\d+ g$/);
   await page.clock.fastForward(50_000);
   await page.waitForFunction(() => /Giet [2-9] van/.test(document.querySelector('.pprog')?.getAttribute('aria-label') ?? ''));
   assert.deepEqual(errors, []);

@@ -1481,3 +1481,12 @@ Jelle liet een extern UX/UI-verbeterplan ('Brew Console 2.1') beoordelen; wat al
 - **Zakformulier:** naam, brander, land, branddatum en zakgrootte staan altijd open; 'Meer over de herkomst en het proces' en 'Smaaknotities en winkel' zijn dicht zolang ze leeg zijn, gaan open zodra een herkenning ze vult (of er een fout is) en gaan daarna nooit onder je vingers dicht. Het hulptekstje bij de foto zegt nu dat ze meegaat met de synchronisatie.
 - **Logboek:** onder elke geproefde kop een korte regel: je eigen notitie (afgekapt op 60 tekens), anders de herkende notities met sterkte, zuur en afdronk (`tasteLine` in `core/insights.ts`).
 - Tests: `ronde5.test.ts`, `ronde5.ui.test.mjs` (licht en donker, axe), uitbreiding van `timer.test.ts`; `proeven.ui.test.mjs` opent het uitleg-blok eerst. 158 app3-tests.
+
+### Gietaanwijzingen op de timer (9 nov 2026)
+
+- **Aanleiding (Jelle):** bij Hoffmann Ultimate stonden 'swirl' en 'roeren' in het recept, maar tijdens het zetten kwamen ze niet terug. Gevraagd: controleren of dat bij andere recepten ook zo is, en ook of rustig of krachtig en wel of niet in een spiraal gegoten moet worden.
+- **Gecontroleerd:** alle bronnen met een webadres opnieuw gelezen (zie `docs/engine3/05-technieken.md`, 'Gietaanwijzingen'). Belangrijkste bevindingen: Kasuya en Hoffmann noemen **geen** gietpatroon (de app toonde 'in spiraal' als feit); Hedrick's hoofdgiet is een spiraal met energie dicht bij het midden (niet 'in het midden'); Wendelboe's cirkelbeweging staat alleen bij de hoofdgiet; veel aanwijzingen (kuiltje, tempo, hoe lang roeren, uitlopen) stonden alleen in notities.
+- **Data:** `ReferencePour` kreeg optioneel `styleGiven: false`, `tip` en `after`; de referentie kreeg `prep` en `finish`. Het recept en het contract van de engine zijn niet veranderd (de app zoekt de aanwijzingen op bij techniek en giet; een eigen of oud recept valt terug op wat het zelf zegt).
+- **Timer:** per giet het doelgewicht, het patroon (alleen als de bron er een noemt) en de tip; een blok 'Daarna: swirl de V60 / roer / Rao-spin' met de uitleg zolang die giet loopt; voor de start 'Voor je begint'; bij de laatste giet 'Na de laatste giet'. In het schema staat per giet kort wat er daarna gebeurt.
+- **Receptscherm:** 'Voor je begint' en 'Na de laatste giet' onder het schema, en een inklapbaar blok 'Aanwijzingen per giet'.
+- Tests: engine3 `data.test.ts` (+1), `gieten.test.ts` (kern, 8), `gieten.ui.test.mjs` (Hoffmann van recept tot laatste giet, licht en donker, axe). 168 app3-tests, 176 engine3-tests.

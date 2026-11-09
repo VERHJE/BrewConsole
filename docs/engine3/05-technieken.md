@@ -41,3 +41,20 @@ Eigen uitkomsten gaan altijd boven deze tabel. Een gewonnen proef wint, voor die
    - **Hoffmann:** Hario USA: 'the hotter, the better (especially with lighter roasts)'. Secundaire gidsen zeggen eensgezind 'net van de kook'. Licht en medium: 100 °C op de ketel. Donker: 88 °C, alleen uit een secundaire bron (klasse C).
    - **Wendelboe:** zijn eigen gids zegt alleen 'hot water'. Er is geen primair getal te vinden. Het beste alternatief is 96 °C (klasse C, aanname): zijn café zet de AeroPress met 96 °C uit de boiler, en recepten-sites die zijn gids overnemen noemen 96 °C. Bij donkere branding geldt de Philocoffea-regel (88/83 °C) als terugval.
    - Een eigen proef (96 tegen 100 °C) kan de aanname bij Wendelboe vervangen.
+
+## Gietaanwijzingen, gecontroleerd tegen de bronnen (9 nov 2026)
+
+De recepten kenden per giet alleen tijd, gewicht, patroon en swirl/roeren. Wat de bronnen verder zeggen (tempo, hoogte, kuiltje, hoe en hoelang roeren, wat na de laatste giet) stond alleen als losse notitie en kwam tijdens het zetten nergens terug. Alle zeven bronnen met een webadres zijn opnieuw gelezen; per giet staan nu optioneel `tip` (hoe), `after` (wat daarna), en per techniek `prep` (voor de start) en `finish` (na de laatste giet) in `data/techniques.ts`. De app laat ze zien op het receptscherm en, op het juiste moment, op de timer (`app3/src/core/gieten.ts`).
+
+| Techniek | Gevonden bij het controleren | Aangepast |
+|---|---|---|
+| Kasuya 4:6 | Philocoffea en Hario noemen **geen gietpatroon**, tempo of hoogte; alleen 'giet pas als het water bijna doorgelopen is' en 'filter eraf op 3:30'. | 'In spiraal' staat er niet meer (`styleGiven: false`); 'haal de V60 eraf op 3:30' erbij. |
+| Hoffmann Ultimate | Hario USA noemt **geen gietpatroon**; wel: swirl na de bloem (beter dan een lepel), laatste giet 'iets langzamer, niet te fel', daarna één keer met en één keer tegen de klok in roeren, even laten zakken en zacht swirlen; filter spoelen en een kuiltje maken; klaar voor 3:30. | Alle genoemde aanwijzingen per giet en voor/na; geen 'in spiraal' meer. |
+| Gagné | Bloem 'gelijkmatig en wat snel vanuit het kuiltje', Rao-spin direct erna (15–20 s); spiralen alleen bij de eerste hoofdgiet; Rao-spin bij tweederde hoogte en een laatste als het water laag is; bed niet laten droogvallen; filter spoelen, bed vlak schudden, kuiltje; uitlopen 2:30–3:30, swirl voor het drinken. | Alles toegevoegd; patroon alleen nog bij de eerste hoofdgiet. |
+| Wendelboe | Bloem roeren met een theelepel; **cirkelbeweging alleen bij de hoofdgiet** (2–2,5 min), daarna ± 1 min uitlopen en roeren voor het serveren. | Patroon bij bloem en tweede giet weggehaald; voor/na toegevoegd. |
+| Hedrick | Hoofdgiet is **'in een spiraal, met energie, de straal dicht bij het midden'** (~10 g/s, 13 s), niet 'in het midden'; bloemen ~7,5 g/s en niet roeren of swirlen; kleine swirl alleen als het te snel doorloopt. | Hoofdgiet van 'midden' naar 'spiraal' met tip; 'niet roeren' bij beide bloemen. |
+| Rao | Bloem direct stevig draaien, daarna heel zacht (< 1 s, net genoeg om de groeven te vullen); laag, bijna verticaal en rondbewegend gieten, steeds op dezelfde hoogte; vogelnestje; laatste giet bij ± 70 % doorgelopen. Geen vast patroon genoemd. | Aanwijzingen toegevoegd; patroon bij de bloem weggehaald. |
+| April | Webadres ontbreekt; niet opnieuw gecontroleerd. | Ongewijzigd (met een notitie). |
+| Osmotic Flow | Geen schema. | — |
+
+Bijeffect: waar een bron geen patroon noemt, toont de app er niets over in plaats van een aanname als feit.
