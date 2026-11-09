@@ -324,3 +324,21 @@ details.fold[open] > summary { margin-bottom: 4px; }
 
 /* Logboekrij: een korte regel over hoe de kop was, onder de techniek. */
 .item small.taste { display: block; margin-top: 2px; color: var(--text); font-style: italic; overflow-wrap: anywhere; }
+
+/* Timer: hoe je de giet doet en wat er daarna gebeurt, op het moment dat het nodig is. */
+.steptip { margin: 6px 0 0; color: var(--text-2); font-size: 1rem; line-height: 1.35; }
+.stepafter { text-align: left; margin: 8px 0; padding: 12px 14px; border-radius: var(--radius-s); background: var(--accent-soft); display: grid; gap: 4px; }
+.stepafter strong { font-size: 1.1rem; }
+.stepafter span { color: var(--text-2); font-size: .95rem; line-height: 1.35; }
+.stepprep { text-align: left; margin: 8px 0; padding: 12px 14px; border-radius: var(--radius-s); background: var(--surface-2); }
+.stepprep ul { margin: 6px 0 0; padding-left: 1.1rem; color: var(--text-2); font-size: .95rem; line-height: 1.4; }
+.timer ol.steps li { flex-wrap: wrap; }
+.timer ol.steps li small { flex-basis: 100%; padding-left: 0; font-size: .85rem; font-weight: 400; color: var(--text-3); }
+.timer ol.steps li.go small { color: var(--text-2); }
+@media (max-height: 560px) and (orientation: landscape) { .stepprep, .steptip { display: none; } }
+
+/* Receptscherm: voorbereiding, afronding en aanwijzing per giet. */
+.aprep { margin-top: 10px; }
+.aprep .alist { margin: 4px 0 0; padding-left: 18px; color: var(--text-2); font-size: .92rem; line-height: 1.4; }
+.pournotes { margin: 0; padding-left: 1.2rem; display: grid; gap: 10px; }
+.pournotes li span { display: block; color: var(--text-2); font-size: .95rem; line-height: 1.35; }

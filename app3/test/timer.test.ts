@@ -114,7 +114,10 @@ test('stap per stap: klaar → giet met aftelling en "hierna" → wachten op doo
   assert.deepEqual(g1.progress, { index: 1, count: pours.length });
   assert.equal(g1.target!.toG, pours[0]!.toG);
   assert.equal(g1.target!.addG, pours[0]!.addG);
-  assert.match(g1.target!.how, /spiraal|rondjes|midden/);
+  // Kasuya: de bronnen noemen geen gietpatroon, dus de timer zegt er niets over
+  assert.equal(g1.target!.how, null);
+  assert.equal(g1.after, null);
+  assert.deepEqual(g1.prep, []);
 
   // Aftelling daalt, fractie stijgt, binnen 0..1
   const a = guide(t0 + 20_000), b = guide(t0 + 30_000);
@@ -142,7 +145,7 @@ test('stap per stap: klaar → giet met aftelling en "hierna" → wachten op doo
   assert.equal(gl.kind, 'drain');
   assert.equal(gl.title, `Giet ${last + 1}`);
   assert.deepEqual(gl.progress, { index: last + 1, count: pours.length });
-  assert.match(gl.target!.how, /doorlopen/);
+  assert.deepEqual(gl.finish, ['Haal de V60 eraf op 3:30.']);
   assert.match(gl.next!, /Alles doorgelopen/);
 
   await s.store.append(finishTimer(env, s.brewId, pours[last]!.atSec + 60, last));

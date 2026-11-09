@@ -9,6 +9,7 @@ import {
   bandText, brewPlanEvent, clock, nl1, planBrew, pourLines, splitWarnings, techniqueName, type BrewForm
 } from '../../core/brew.ts';
 import { BagArt, useApp, useSnapshot } from '../store-context.tsx';
+import { finishLines, pourNotes, prepLines } from '../../core/gieten.ts';
 import { Timer } from './Timer.tsx';
 import { Proeven } from './Proeven.tsx';
 import { Welkom } from '../Welkom.tsx';
@@ -125,6 +126,7 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
   const tdsB = advice.uncertainty.targetTds;
   const tdsN = (n: number): string => n.toFixed(2).replace('.', ',');
   const lines = pourLines(r);
+  const prep = prepLines(r), finish = finishLines(r), notesPerPour = pourNotes(r);
   return (
     <div>
       <div class="advhead">
@@ -147,7 +149,15 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
             <tr key={l.index}><td>{l.at}{l.wait ? '*' : ''}</td><td>{l.add}</td><td>{l.to}</td><td>{l.how}</td></tr>
           ))}</tbody></table>
         {lines.some(l => l.wait) && <p class="meta">* begin pas als het bed bijna droog is, ook als dat later is dan de tijd.</p>}
+        {prep.length > 0 && <div class="aprep"><strong>Voor je begint</strong><ul class="alist">{prep.map(t => <li key={t}>{t}</li>)}</ul></div>}
+        {finish.length > 0 && <div class="aprep"><strong>Na de laatste giet</strong><ul class="alist">{finish.map(t => <li key={t}>{t}</li>)}</ul></div>}
       </div>
+      {notesPerPour.length > 0 && (
+        <details class="card fold"><summary>Aanwijzingen per giet</summary>
+          <ol class="pournotes">{notesPerPour.map(n => (
+            <li key={n.index}><b>Giet {n.index + 1} ({lines[n.index]!.at})</b>{n.tip && <span>{n.tip}</span>}{n.after && <span>Daarna: {n.after}</span>}</li>
+          ))}</ol>
+        </details>)}
       {cautions.map(w => <p class="banner warn" key={w} role="status">{w}</p>)}
       {notes.length > 0 && <ul class="notes" aria-label="Goed om te weten">{notes.map(w => <li key={w}>{w}</li>)}</ul>}
       {advice.reasons.length > 0 && (<details class="card fold"><summary>Waarom dit recept?</summary><ul class="reasons">{advice.reasons.map(x => <li key={x.code + x.text}>{x.text}</li>)}</ul></details>)}

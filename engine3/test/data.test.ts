@@ -50,3 +50,29 @@ test('de engine-bronbestanden gebruiken geen DOM, opslag, netwerk of klok', () =
     }
   }
 });
+
+test('gietaanwijzingen: elke swirl of roerbeurt heeft een uitleg, prep en finish zijn gewone tekst, en waar de bron geen patroon noemt staat dat vast', () => {
+  const withSchedule = TECHNIQUES.filter(t => t.reference.pours);
+  for (const t of withSchedule) {
+    for (const [i, p] of t.reference.pours!.entries()) {
+      if (p.agitationAfter !== 'none') assert.ok((p.after ?? '').length > 10, `${t.id} giet ${i + 1}: roeren of swirlen zonder uitleg`);
+      for (const text of [p.tip, p.after]) if (text !== undefined) assert.ok(text.length > 5 && text === text.trim(), `${t.id} giet ${i + 1}: lege of ongepoetste tekst`);
+    }
+    for (const line of [...(t.reference.prep ?? []), ...(t.reference.finish ?? [])]) assert.ok(line.length > 5 && line === line.trim(), `${t.id}: ${line}`);
+  }
+  // Gecontroleerd tegen de bronnen op 9 nov 2026: Kasuya en Hoffmann noemen geen gietpatroon.
+  for (const id of ['kasuya_46', 'hoffmann_ultimate'] as const) {
+    for (const p of TECHNIQUE_BY_ID.get(id)!.reference.pours!) assert.equal(p.styleGiven, false, id);
+  }
+  // Hedrick: de hoofdgiet is een spiraal met energie dicht bij het midden (niet 'in het midden').
+  const hed = TECHNIQUE_BY_ID.get('hedrick_one_and_done')!.reference.pours!;
+  assert.equal(hed[2]!.style, 'spiral');
+  assert.match(hed[2]!.tip!, /midden/);
+  assert.match(hed[0]!.after!, /Niet roeren/);
+  // Hoffmann: swirl na de bloem, roeren na de laatste giet, laatste giet iets langzamer.
+  const hof = TECHNIQUE_BY_ID.get('hoffmann_ultimate')!.reference;
+  assert.equal(hof.pours![0]!.agitationAfter, 'swirl');
+  assert.equal(hof.pours![2]!.agitationAfter, 'stir');
+  assert.match(hof.pours![2]!.tip!, /langzamer/);
+  assert.match(hof.pours![2]!.after!, /met de klok mee/);
+});

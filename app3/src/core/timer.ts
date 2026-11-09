@@ -6,6 +6,7 @@ import {
   type BrewTimerEvent, type EngineEvent, type Recipe, type Seconds, type TimerType
 } from '../../../engine3/src/index.ts';
 import { newId, type Env } from './ids.ts';
+import { finishLines, pourGuide, prepLines } from './gieten.ts';
 
 export type TimerStatus = 'ready' | 'running' | 'paused' | 'complete' | 'abandoned';
 
@@ -94,8 +95,14 @@ export interface StepGuide {
   readonly next: string | null;
   /** Welke giet het is, bijvoorbeeld 2 van 5; null buiten een giet (voor de start, klaar, afgebroken). */
   readonly progress: { readonly index: number; readonly count: number } | null;
-  /** Bij een lopende giet: wat erbij moet, tot welk gewicht, en hoe. Anders null. */
-  readonly target: { readonly addG: number; readonly toG: number; readonly how: string } | null;
+  /** Bij een lopende giet: wat erbij moet, tot welk gewicht, en hoe (patroon en tip uit de bron; null als de bron niets noemt). Anders null. */
+  readonly target: { readonly addG: number; readonly toG: number; readonly how: string | null; readonly tip: string | null } | null;
+  /** Wat er na deze giet gebeurt (swirlen, roeren, ...) en de uitleg erbij. Blijft zichtbaar zolang deze giet loopt. */
+  readonly after: { readonly todo: string | null; readonly detail: string | null } | null;
+  /** Voor de start: wat de bron zegt dat je eerst doet (filter spoelen, kuiltje maken, ...). */
+  readonly prep: readonly string[];
+  /** Na de laatste giet: uitlopen, roeren voor het serveren, ... */
+  readonly finish: readonly string[];
 }
 
 const g0 = (n: number): string => String(Math.round(n));
@@ -109,11 +116,11 @@ export function stepGuide(recipe: Recipe, v: TimerView, expectedEndSec: number |
   const pours = recipe.pours;
   const last = pours.length - 1;
   const first = pours[0];
-  if (v.status === 'complete') return { kind: 'done', title: 'Klaar', remainingSec: null, fraction: 1, action: 'Proef de koffie en leg vast hoe hij was.', next: null, progress: null, target: null };
-  if (v.status === 'abandoned') return { kind: 'done', title: 'Afgebroken', remainingSec: null, fraction: null, action: 'Dit zetsel telt niet mee voor het advies.', next: null, progress: null, target: null };
+  if (v.status === 'complete') return { kind: 'done', title: 'Klaar', remainingSec: null, fraction: 1, action: 'Proef de koffie en leg vast hoe hij was.', next: null, progress: null, target: null, after: null, prep: [], finish: [] };
+  if (v.status === 'abandoned') return { kind: 'done', title: 'Afgebroken', remainingSec: null, fraction: null, action: 'Dit zetsel telt niet mee voor het advies.', next: null, progress: null, target: null, after: null, prep: [], finish: [] };
   if (v.status === 'ready' || !first) {
     return { kind: 'ready', title: 'Klaar om te starten', remainingSec: null, fraction: 0,
-      action: first ? `Eerste giet: ${g0(first.addG)} g.` : 'Start de timer bij het eerste water.', next: pours[1] ? `Daarna giet 2 om ${mmss(pours[1].atSec)}.` : null, progress: null, target: null };
+      action: first ? `Eerste giet: ${g0(first.addG)} g.` : 'Start de timer bij het eerste water.', next: pours[1] ? `Daarna giet 2 om ${mmss(pours[1].atSec)}.` : null, progress: null, target: null, after: null, prep: prepLines(recipe), finish: [] };
   }
   const t = v.elapsedSec;
   const holdIdx = v.phases.findIndex(p => p === 'hold');
@@ -124,11 +131,12 @@ export function stepGuide(recipe: Recipe, v: TimerView, expectedEndSec: number |
     const p = pours[holdIdx]!;
     return { kind: 'hold', title: 'Wacht op doorlopen', remainingSec: null, fraction: null,
       action: `Tik “Erdoor” zodra het bed bijna droog is. Dan giet ${holdIdx + 1}: ${g0(p.addG)} g tot ${g0(p.toG)} g.`,
-      next: holdIdx < last ? `Daarna ${nextPourText(holdIdx + 1)}.` : 'Daarna: laat doorlopen.', progress: { index: holdIdx + 1, count: pours.length }, target: null };
+      next: holdIdx < last ? `Daarna ${nextPourText(holdIdx + 1)}.` : 'Daarna: laat doorlopen.', progress: { index: holdIdx + 1, count: pours.length }, target: null, after: null, prep: [], finish: [] };
   }
   if (v.current >= 0 && !v.allPoured) {
     const i = v.current;
     const p = pours[i]!;
+    const pg = pourGuide(recipe, i);
     const start = p.atSec;
     const endAt = upcoming ? pours[upcoming.index]!.atSec : expectedEndSec;
     const remaining = endAt === null ? null : Math.max(0, endAt - t);
@@ -136,18 +144,18 @@ export function stepGuide(recipe: Recipe, v: TimerView, expectedEndSec: number |
     if (i === last) {
       return { kind: 'drain', title: `Giet ${i + 1}`, remainingSec: remaining, fraction,
         action: `${g0(p.addG)} g tot ${g0(p.toG)} g, daarna laten doorlopen.`, next: 'Tik “Alles doorgelopen” zodra het bed droog is.',
-        progress: { index: i + 1, count: pours.length }, target: { addG: p.addG, toG: p.toG, how: 'daarna laten doorlopen' } };
+        progress: { index: i + 1, count: pours.length }, target: { addG: p.addG, toG: p.toG, how: pg.style, tip: pg.tip }, after: pg.after, prep: [], finish: finishLines(recipe) };
     }
     const nx = upcoming ? pours[upcoming.index]! : null;
     return { kind: 'pour', title: `Giet ${i + 1}`, remainingSec: remaining, fraction,
       action: `${g0(p.addG)} g tot ${g0(p.toG)} g${p.style === 'spiral' ? ', in spiraal' : p.style === 'circles' ? ', in rondjes' : ', in het midden'}.`,
       next: nx && upcoming ? `Hierna ${nextPourText(upcoming.index)}.` : null,
-      progress: { index: i + 1, count: pours.length }, target: { addG: p.addG, toG: p.toG, how: p.style === 'spiral' ? 'in spiraal' : p.style === 'circles' ? 'in rondjes' : 'in het midden' } };
+      progress: { index: i + 1, count: pours.length }, target: { addG: p.addG, toG: p.toG, how: pg.style, tip: pg.tip }, after: pg.after, prep: [], finish: [] };
   }
   if (upcoming) {
     const p = pours[upcoming.index]!;
     return { kind: 'wait', title: `Giet ${upcoming.index + 1} komt`, remainingSec: upcoming.inSec, fraction: null,
-      action: `${g0(p.addG)} g tot ${g0(p.toG)} g.`, next: null, progress: { index: upcoming.index + 1, count: pours.length }, target: null };
+      action: `${g0(p.addG)} g tot ${g0(p.toG)} g.`, next: null, progress: { index: upcoming.index + 1, count: pours.length }, target: null, after: null, prep: [], finish: [] };
   }
-  return { kind: 'drain', title: 'Laat doorlopen', remainingSec: null, fraction: null, action: 'Tik “Alles doorgelopen” als alles doorgelopen is.', next: null, progress: { index: pours.length, count: pours.length }, target: null };
+  return { kind: 'drain', title: 'Laat doorlopen', remainingSec: null, fraction: null, action: 'Tik “Alles doorgelopen” als alles doorgelopen is.', next: null, progress: { index: pours.length, count: pours.length }, target: null, after: null, prep: [], finish: finishLines(recipe) };
 }

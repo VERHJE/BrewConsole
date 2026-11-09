@@ -102,16 +102,26 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
         <div class="stepcopy" role="status">
           <h2 class="stepname">{guide.title}</h2>
           {guide.target
-            ? <p class="steptarget"><b>tot {Math.round(guide.target.toG)} g</b><span>+{Math.round(guide.target.addG)} g · {guide.target.how}</span></p>
+            ? <p class="steptarget"><b>tot {Math.round(guide.target.toG)} g</b><span>+{Math.round(guide.target.addG)} g{guide.target.how ? ` · ${guide.target.how}` : ''}</span></p>
             : <p class="stepaction">{guide.action}</p>}
+          {guide.target?.tip && <p class="steptip">{guide.target.tip}</p>}
         </div>
       </div>
+      {guide.after && (
+        <div class="stepafter" role="note">
+          <strong>Daarna{guide.after.todo ? `: ${guide.after.todo}` : ''}</strong>
+          {guide.after.detail && <span>{guide.after.detail}</span>}
+        </div>)}
+      {guide.prep.length > 0 && (
+        <div class="stepprep"><strong>Voor je begint</strong><ul>{guide.prep.map(t => <li key={t}>{t}</li>)}</ul></div>)}
+      {guide.finish.length > 0 && (
+        <div class="stepprep"><strong>Na de laatste giet</strong><ul>{guide.finish.map(t => <li key={t}>{t}</li>)}</ul></div>)}
       {guide.next && <p class="stepnext">{guide.next}</p>}
       <ol class="steps" aria-label="Gietschema">
         {lines.map((l, i) => {
           const ph = view.phases[i]!;
           const cls = ph === 'hold' ? 'hold' : ph === 'go' && i === view.current ? 'go' : view.drained.has(i) ? 'past' : '';
-          return <li key={i} class={cls}><span>{l.at}</span><span>{l.add}</span><span>→ {l.to}</span></li>;
+          return <li key={i} class={cls}><span>{l.at}</span><span>{l.add}</span><span>→ {l.to}</span>{l.how && <small>{l.how}</small>}</li>;
         })}
       </ol>
 

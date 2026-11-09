@@ -2,10 +2,11 @@
 
 import {
   TECHNIQUE_BY_ID, TECHNIQUES, RecipeError, ms, g,
-  type Advice, type Agitation, type Band, type Engine, type EngineState, type FeedbackSignal, type Goal, type Method,
-  type PlanRequest, type Pour, type PourStyle, type Recipe, type TechniqueId, type BrewPlanEvent
+  type Advice, type Band, type Engine, type EngineState, type FeedbackSignal, type Goal, type Method,
+  type PlanRequest, type Pour, type Recipe, type TechniqueId, type BrewPlanEvent
 } from '../../../engine3/src/index.ts';
 import { newId, type Env } from './ids.ts';
+import { AGITATION_SHORT, pourGuide } from './gieten.ts';
 
 export interface BrewForm {
   readonly beanId: string | null;
@@ -60,15 +61,13 @@ export const nl1 = (n: number): string => (Math.round(n * 10) / 10).toString().r
 export const bandText = (b: Band | null, unit: string, fmt: (n: number) => string = nl1): string | null =>
   b ? `${fmt(b.lo)}–${fmt(b.hi)} ${unit}`.trim() : null;
 
-const STYLE: Readonly<Record<PourStyle, string>> = { spiral: 'in spiraal', center: 'in het midden', circles: 'in rondjes' };
-const AGITATION: Readonly<Record<Agitation, string>> = { none: '', swirl: 'swirl', gentle_swirl: 'zacht swirlen', stir: 'roeren', rao_spin: 'Rao-spin' };
 
 export interface PourLine { readonly index: number; readonly at: string; readonly add: string; readonly to: string; readonly how: string; readonly wait: boolean }
 
 export function pourLines(recipe: Recipe): PourLine[] {
   return recipe.pours.map((p: Pour, i) => ({
     index: i, at: clock(p.atSec), add: `+${Math.round(p.addG)} g`, to: `${Math.round(p.toG)} g`,
-    how: [STYLE[p.style], p.agitationAfter !== 'none' ? AGITATION[p.agitationAfter] : ''].filter(Boolean).join(', '),
+    how: [pourGuide(recipe, i).style, p.agitationAfter !== 'none' ? AGITATION_SHORT[p.agitationAfter] : ''].filter(Boolean).join(', '),
     wait: p.waitForDrain
   }));
 }
