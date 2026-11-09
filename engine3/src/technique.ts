@@ -13,7 +13,7 @@
 
 import { SELECTION_RULES, type SelectionRule } from './data/selection-rules.ts';
 import { TAG_CATEGORY } from './data/flavor-wheel.ts';
-import { TECHNIQUE_BY_ID } from './data/techniques.ts';
+import { TECHNIQUE_BY_ID, fitsMethod } from './data/techniques.ts';
 import { buildRecipe } from './recipe.ts';
 import type { CupFacts, FactState, TrialFacts } from './state.ts';
 import type { FeedbackSignal, Method, Reason, Recipe, RoastLevel, TechniqueId, TechniqueRef, TrialProposal, WheelCategory } from './types.ts';
@@ -119,6 +119,7 @@ function ruleMatches(r: SelectionRule, req: TechniqueRequest, p: BeanProfile, fb
   if (w.noteCategoryAny !== undefined && !w.noteCategoryAny.some(c => p.categories.includes(c))) return false;
   if (w.feedbackAny !== undefined && !w.feedbackAny.some(f => fb.has(f))) return false;
   if (w.maxCupG !== undefined && !(req.cupG !== null && req.cupG <= w.maxCupG)) return false;
+  if (w.minCupG !== undefined && !(req.cupG !== null && req.cupG >= w.minCupG)) return false;
   return true;
 }
 
@@ -141,6 +142,8 @@ function outcomesOf(trials: Iterable<TrialFacts>, beanFilter: (beanId: string | 
 }
 
 const schedulable = (t: TechniqueId): boolean => TECHNIQUE_BY_ID.get(t)?.reference.pours != null;
+/** Een techniek met gietschema die bij deze brewer hoort (Chemex-recepten niet op de V60 en omgekeerd). */
+const usable = (t: TechniqueId, method: Method): boolean => { const d = TECHNIQUE_BY_ID.get(t); return d !== undefined && d.reference.pours !== null && fitsMethod(d, method); };
 
 /** Welke regels gelden voor deze zak en deze vraag, op volgorde van prioriteit (voor uitleg en tests). */
 export function matchedRulesFor(facts: FactState, req: TechniqueRequest): SelectionRule[] {
@@ -152,7 +155,7 @@ export function matchedRulesFor(facts: FactState, req: TechniqueRequest): Select
 
 /** De eerste techniek ≠ Kasuya met een gietschema uit de gevonden regels, of null. */
 export function ruleCandidateFor(facts: FactState, req: TechniqueRequest): TechniqueId | null {
-  for (const r of matchedRulesFor(facts, req)) for (const t of r.suggest) if (t !== KASUYA && schedulable(t)) return t;
+  for (const r of matchedRulesFor(facts, req)) for (const t of r.suggest) if (t !== KASUYA && usable(t, req.method)) return t;
   return null;
 }
 
@@ -185,7 +188,7 @@ export function chooseTechnique(facts: FactState, req: TechniqueRequest): Techni
   const own = outcomesOf(facts.trials.values(), b => b === req.beanId);
   const decisiveOwn = own.filter(o => o.decisive);
   const latestWin = decisiveOwn[decisiveOwn.length - 1];
-  if (latestWin && latestWin.winner && !String(latestWin.winner).startsWith('legacy:') && schedulable(latestWin.winner as TechniqueId)) {
+  if (latestWin && latestWin.winner && !String(latestWin.winner).startsWith('legacy:') && usable(latestWin.winner as TechniqueId, req.method)) {
     const t = latestWin.winner as TechniqueId;
     reasons.push(reason('technique.won_trial', `${nameOf(t)} won jouw proef met deze zak.`));
     return finish(t, 'won_trial', null, null, null);
@@ -202,7 +205,7 @@ export function chooseTechnique(facts: FactState, req: TechniqueRequest): Techni
     if (o.loser) net.set(String(o.loser), (net.get(String(o.loser)) ?? 0) - 1);
   }
   let similarBest: { t: TechniqueId; n: number } | null = null;
-  for (const [t, n] of net) if (!t.startsWith('legacy:') && n > 0 && schedulable(t as TechniqueId) && (!similarBest || n > similarBest.n)) similarBest = { t: t as TechniqueId, n };
+  for (const [t, n] of net) if (!t.startsWith('legacy:') && n > 0 && usable(t as TechniqueId, req.method) && (!similarBest || n > similarBest.n)) similarBest = { t: t as TechniqueId, n };
   if (similarBest && similarBest.n >= SIMILAR_NET_WINS_DEFAULT && !tried.has(similarBest.t) && similarBest.t !== KASUYA) {
     reasons.push(reason('technique.similar_wins', `${nameOf(similarBest.t)} won ${similarBest.n}× vaker dan het verloor bij vergelijkbare zakken (zelfde proces en branding, gedeelde smaak).`));
     return finish(similarBest.t, 'similar_wins', null, null, null);
@@ -238,7 +241,7 @@ export function chooseTechnique(facts: FactState, req: TechniqueRequest): Techni
     for (const r of matched) {
       if (cand) break;
       for (const t of r.suggest) {
-        if (t === KASUYA || tried.has(t) || !schedulable(t)) continue;
+        if (t === KASUYA || tried.has(t) || !usable(t, req.method)) continue;
         cand = { t, basis: 'rule', ruleId: r.id };
         break;
       }

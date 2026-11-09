@@ -15,7 +15,7 @@ import type { Band, Celsius, Clicks, EpochMs, EyFraction, Grams, IsoDate, Metres
 
 export type Method = 'v60' | 'chemex';
 
-/** De acht technieken uit het verslag ('Technieken: de keuze voor de herbouw'). */
+/** De acht V60-technieken uit het verslag ('Technieken: de keuze voor de herbouw') en de zes Chemex-recepten uit het onderzoek. */
 export type TechniqueId =
   | 'kasuya_46'
   | 'hoffmann_ultimate'
@@ -24,7 +24,13 @@ export type TechniqueId =
   | 'osmotic_flow'
   | 'april'
   | 'hedrick_one_and_done'
-  | 'rao';
+  | 'rao'
+  | 'chemex_verve'
+  | 'chemex_pull_pour'
+  | 'chemex_barefoot'
+  | 'chemex_stumptown'
+  | 'chemex_blue_bottle'
+  | 'chemex_onyx';
 
 /** Oude of onbekende technieknamen uit de huidige app blijven bewaard als tekst. */
 export type TechniqueRef = TechniqueId | `legacy:${string}`;

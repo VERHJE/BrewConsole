@@ -16,8 +16,9 @@
 
 import { GRIND_PRIORS, GRINDER_C3S_PRO } from './data/grinder.ts';
 import { phi } from './strength.ts';
+import { TECHNIQUE_BY_ID } from './data/techniques.ts';
 import type { FactState } from './state.ts';
-import type { Method, TechniqueRef } from './types.ts';
+import type { Method, TechniqueId, TechniqueRef } from './types.ts';
 import type { Band } from './units.ts';
 
 export const GRIND_MODEL_VERSION = 'e3-grind-0.1';
@@ -89,6 +90,24 @@ function cholSolve(L: number[][], b: number[]): number[] {
 
 // ───────────────────────────── het model ─────────────────────────────
 
+/**
+ * Referentiepunt van het doorloopmodel per brewer en techniek. V60: de vaste waarden van het molenmodel.
+ * Chemex: er zijn geen eigen zetsels om op te steunen, dus de bronnen bepalen het beginpunt: de BrewTuner-klik (24)
+ * en een doorloop na de laatste giet die het eindmoment van het recept haalt (aanname, breed: sd 0,5).
+ */
+function refFor(method: Method, technique: string): { click: number; waterG: number; interceptLn: number; sd: number } {
+  if (method === 'chemex') {
+    const d = TECHNIQUE_BY_ID.get(technique as TechniqueId);
+    const ps = d?.reference.pours, e = d?.reference.endSec;
+    if (d && ps && e) {
+      const tail = Math.max(30, (e.lo + e.hi) / 2 - ps[ps.length - 1]!.atSec);
+      return { click: GRINDER_C3S_PRO.chemex.defaultStartClick, waterG: d.reference.waterG, interceptLn: Math.log(tail), sd: P.interceptSdOther };
+    }
+    return { click: GRINDER_C3S_PRO.chemex.defaultStartClick, waterG: P.refWaterG, interceptLn: P.interceptLn, sd: P.interceptSdOther };
+  }
+  return { click: P.refClick, waterG: P.refWaterG, interceptLn: P.interceptLn, sd: technique === 'kasuya_46' ? P.interceptSdKasuya : P.interceptSdOther };
+}
+
 export interface GrindFit {
   readonly method: Method;
   /** Waarnemingen die meedoen (deze brewer). */
@@ -121,7 +140,7 @@ function solveGrind(obs: readonly TailObs[], method: Method, technique: Techniqu
   const priorSd = new Array<number>(dim).fill(1);
   prior[0] = noClickEffect ? 0 : P.perClickLn; priorSd[0] = noClickEffect ? 1e-6 : P.perClickSd;
   prior[1] = P.waterLnMean; priorSd[1] = P.waterLnSd;
-  for (const [t, i] of techs) { prior[i] = P.interceptLn; priorSd[i] = t === 'kasuya_46' ? P.interceptSdKasuya : P.interceptSdOther; }
+  for (const [t, i] of techs) { const r = refFor(method, t); prior[i] = r.interceptLn; priorSd[i] = r.sd; }
   for (const i of beans.values()) { prior[i] = 0; priorSd[i] = P.beanSd; }
 
   const A = Array.from({ length: dim }, (_, i) => Array.from({ length: dim }, (_, j) => (i === j ? 1 / (priorSd[i]! ** 2) : 0)));
@@ -131,8 +150,9 @@ function solveGrind(obs: readonly TailObs[], method: Method, technique: Techniqu
   sorted.forEach((o, k) => {
     const w = Math.pow(0.5, (sorted.length - 1 - k) / P.forgetHalfLife);
     const x = new Array<number>(dim).fill(0);
-    x[0] = o.click - P.refClick;
-    x[1] = Math.log(o.waterG / P.refWaterG);
+    const ro = refFor(method, o.technique);
+    x[0] = o.click - ro.click;
+    x[1] = Math.log(o.waterG / ro.waterG);
     x[techs.get(o.technique)!] = 1;
     if (o.beanId) x[beans.get(o.beanId)!] = 1;
     const y = Math.log(o.tailSec);
@@ -151,8 +171,9 @@ export interface TailPrediction { readonly muLn: number; readonly sdLn: number; 
 export function predictTail(fit: GrindFit, q: { technique: TechniqueRef; beanId: string | null; click: number; waterG: number }): TailPrediction {
   const dim = fit.mean.length;
   const x = new Array<number>(dim).fill(0);
-  x[0] = q.click - P.refClick;
-  x[1] = Math.log(q.waterG / P.refWaterG);
+  const rq = refFor(fit.method, q.technique);
+  x[0] = q.click - rq.click;
+  x[1] = Math.log(q.waterG / rq.waterG);
   x[fit.index.technique.get(q.technique)!] = 1;
   const bi = q.beanId ? fit.index.bean.get(q.beanId) : undefined;
   if (bi !== undefined) x[bi] = 1;
@@ -231,21 +252,22 @@ function pInBand(pred: TailPrediction, lastPourAt: number, lo: number, hi: numbe
   return Math.max(0, upper - lower);
 }
 
-export function currentClickFor(facts: FactState, technique: TechniqueRef, beanId: string | null, planned: number | null | undefined): { click: number; source: GrindPlan['clickSource'] } {
+export function currentClickFor(facts: FactState, technique: TechniqueRef, beanId: string | null, planned: number | null | undefined, method: Method = 'v60'): { click: number; source: GrindPlan['clickSource'] } {
   if (typeof planned === 'number') return { click: planned, source: 'planned' };
-  const cups = facts.cupOrder.map(id => facts.cups.get(id)!).filter(c => c.grindClick !== null);
+  // Een klik van de V60 zegt niets over de Chemex (en omgekeerd): alleen koppen van dezelfde brewer tellen.
+  const cups = facts.cupOrder.map(id => facts.cups.get(id)!).filter(c => c.grindClick !== null && c.method === method);
   const byBean = beanId ? cups.filter(c => c.beanId === beanId) : [];
   if (byBean.length) return { click: byBean[byBean.length - 1]!.grindClick!, source: 'bean' };
   const byTech = cups.filter(c => c.technique === technique);
   if (byTech.length) return { click: byTech[byTech.length - 1]!.grindClick!, source: 'technique' };
   if (cups.length) return { click: cups[cups.length - 1]!.grindClick!, source: 'last' };
-  return { click: GRINDER_C3S_PRO.defaultStartClick, source: 'default' };
+  return { click: method === 'chemex' ? GRINDER_C3S_PRO.chemex.defaultStartClick : GRINDER_C3S_PRO.defaultStartClick, source: 'default' };
 }
 
 export function grindPlan(facts: FactState, req: GrindRequest): GrindPlan {
   const obs = tailObservationsOf(facts);
   const fit = fitGrind(obs, req.method, req.technique, req.beanId);
-  const { click: cur, source } = currentClickFor(facts, req.technique, req.beanId, req.currentClick);
+  const { click: cur, source } = currentClickFor(facts, req.technique, req.beanId, req.currentClick, req.method);
   const at = (click: number): TailPrediction => predictTail(fit, { technique: req.technique, beanId: req.beanId, click, waterG: req.waterG });
   const now = at(cur);
   const pNow = pInBand(now, req.lastPourAtSec, req.targetEnd.lo, req.targetEnd.hi);
@@ -257,7 +279,7 @@ export function grindPlan(facts: FactState, req: GrindRequest): GrindPlan {
   let advice: GrindAdvice | null = null;
   if (pNow < KEEP_P_IN_BAND || Math.abs(endMid - req.targetEnd.mid) > KEEP_NEAR_TARGET_SEC) {
     code = endMid > req.targetEnd.mid ? 'too_slow' : 'too_fast';
-    const win = GRINDER_C3S_PRO.adviceWindow;
+    const win = req.method === 'chemex' ? GRINDER_C3S_PRO.chemex.adviceWindow : GRINDER_C3S_PRO.adviceWindow;
     let best: { click: number; p: number; dist: number; band: Band<number> } | null = null;
     // Zolang er voor deze techniek weinig doorlooptijden zijn, zetten we kleinere stappen: 1 klik bij de eerste kop,
     // daarna 2, 3 en hooguit 4. De natuurkundige verwachting is een beginpunt, geen bewijs.

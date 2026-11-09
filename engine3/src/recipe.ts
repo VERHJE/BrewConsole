@@ -10,7 +10,7 @@
 //     schalen op verhouding met het water. Dat is een aanname en staat in `warnings`.
 //   - Niets verzinnen: waar de bron geen temperatuur of einde noemt, blijft het null of een gemarkeerde terugval.
 
-import { TECHNIQUE_BY_ID, type TechniqueDef } from './data/techniques.ts';
+import { TECHNIQUE_BY_ID, fitsMethod, type TechniqueDef } from './data/techniques.ts';
 import type { Method, Pour, Recipe, RoastLevel, TechniqueId } from './types.ts';
 import type { Band, Celsius, Clicks, Grams, Seconds } from './units.ts';
 
@@ -39,6 +39,9 @@ export class RecipeError extends Error {
   readonly code: 'no_schedule' | 'bad_input';
   constructor(code: RecipeError['code'], message: string) { super(message); this.name = 'RecipeError'; this.code = code; }
 }
+
+/** Een 6-kops Chemex houdt 30 oz (885 ml); boven dit water komt het niveau te dicht bij de rand (aanname, klasse C). */
+export const CHEMEX_6CUP_SAFE_WATER_G = 800;
 
 /** Hario-voorbeeld: 50 van de eerste 120 g. */
 export const KASUYA_DEFAULT_FIRST_SHARE = 50 / 120;
@@ -119,7 +122,8 @@ export function buildRecipe(input: RecipeInput): RecipeBuild {
   const bloomG = pours[0]!.toG;
   if (bloomG < 2 * input.doseG) warnings.push(`De eerste giet (${bloomG} g) is kleiner dan 2 × de dosis: mogelijk blijft koffie droog.`);
   if (pours.some((p, i) => i > 0 && p.addG <= 0)) warnings.push('Een giet heeft geen water toegevoegd gekregen; controleer de hoeveelheden.');
-  if (input.method === 'chemex') warnings.push(`${def.name} is een V60-techniek; op de Chemex loopt het dikkere filter trager door.`);
+  if (input.method === 'chemex' && !fitsMethod(def, 'chemex')) warnings.push(`${def.name} is een V60-techniek; op de Chemex loopt het dikkere filter trager door.`);
+  if (input.method === 'chemex' && W > CHEMEX_6CUP_SAFE_WATER_G) warnings.push(`Let op: ${W} g water komt dicht bij de rand van een 6-kops Chemex (885 ml); giet laag en houd het niveau onder de rand.`);
   const placeholders = def.open.filter(o => /plaatshouder|aanname/i.test(o));
   for (const o of placeholders) warnings.push(o);
   if (def.id === 'kasuya_46' && pours.slice(1).some(p => p.waitForDrain)) warnings.push('Kasuya: giet pas als het water bijna helemaal door het filter is; de klok is een richtlijn.');

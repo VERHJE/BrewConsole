@@ -93,12 +93,23 @@ test('regel 4: de dosis blijft binnen de grenzen van de V60, voor elke kopgroott
   const small = ask([bean()], { cupG: 100 as never });
   assert.ok(small.warnings.some(w => /buiten het bereik van de brewer/.test(w)));
 });
-test('Chemex: Hoffmann direct, geen dosisgrens, V60-melding', () => {
-  const a = ask([bean()], { method: 'chemex' as Method, cupG: 500 as never });
-  assert.equal(a.recipe.technique, 'hoffmann_ultimate');
-  assert.equal(a.recipe.method, 'chemex');
-  assert.ok(a.warnings.some(w => /V60-techniek/.test(w)));
-  assert.ok(!a.warnings.some(w => /buiten het bereik/.test(w)));
+test('Chemex: eigen recept per portie, eigen dosisgrens, geen V60-melding, Chemex-klik en -eindtijd', () => {
+  const pick = (cupG: number, technique: TechniqueId | null = null) => ask([bean()], { method: 'chemex' as Method, cupG: cupG as never, technique });
+  assert.equal(pick(250).recipe.technique, 'chemex_verve');
+  assert.equal(pick(400).recipe.technique, 'chemex_pull_pour');
+  assert.equal(pick(650).recipe.technique, 'chemex_barefoot');
+  for (const c of [250, 400, 650]) {
+    const a = pick(c);
+    assert.equal(a.recipe.method, 'chemex');
+    assert.ok(!a.warnings.some(w => /V60-techniek/.test(w)), `${c} g`);
+    assert.equal(a.recipe.grindClick, 24, 'beginklik Chemex (BrewTuner)');
+    assert.ok(a.recipe.doseG >= 15 && a.recipe.doseG <= 57, `${c} g → ${a.recipe.doseG} g`);
+    assert.ok(a.recipe.expectedEndSec!.hi >= 210, 'eindtijd van de Chemex, niet van de V60');
+  }
+  // Een V60-techniek op de Chemex (zelf gekozen) krijgt de melding nog wel.
+  assert.ok(pick(500, 'hoffmann_ultimate' as TechniqueId).warnings.some(w => /V60-techniek/.test(w)));
+  // Een Chemex-recept op de V60 wordt nooit zelf gekozen.
+  assert.notEqual(ask([bean()], { cupG: 250 as never }).recipe.technique.startsWith('chemex_'), true);
 });
 test('zelf gekozen techniek en doel: Kasuya volgt het doel in de eerste giet', () => {
   const april = ask([bean()], { technique: 'april' as TechniqueId });
