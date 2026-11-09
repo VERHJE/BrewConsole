@@ -11,7 +11,7 @@ a { color: var(--accent); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 .app { min-height: 100dvh; display: flex; flex-direction: column; }
-.main { flex: 1; width: 100%; max-width: 760px; margin: 0 auto; padding: var(--gutter); padding-bottom: calc(var(--tap) + 2 * var(--gutter) + env(safe-area-inset-bottom)); overflow-wrap: anywhere; }
+.main { flex: 1; width: 100%; max-width: 760px; margin: 0 auto; padding: var(--gutter); padding-left: max(var(--gutter), env(safe-area-inset-left)); padding-right: max(var(--gutter), env(safe-area-inset-right)); padding-bottom: calc(var(--tap) + 2 * var(--gutter) + env(safe-area-inset-bottom)); overflow-wrap: anywhere; }
 .main.focused { padding-bottom: calc(var(--gutter) + env(safe-area-inset-bottom)); }
 .muted { color: var(--text-2); }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--gutter); margin: 0 0 12px; }
@@ -24,7 +24,7 @@ a { color: var(--accent); }
 .btn:active { transform: translateY(1px); }
 .btn[disabled] { opacity: .5; cursor: default; }
 
-.tabbar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); z-index: 5; }
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); z-index: 5; }
 .tabbar a { flex: 1; min-height: var(--tap); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: .75rem; color: var(--text-2); text-decoration: none; padding: 6px 0; }
 .tabbar a[aria-current="page"] { color: var(--accent); font-weight: 600; }
 .tabbar svg { width: 24px; height: 24px; }
@@ -33,6 +33,8 @@ a { color: var(--accent); }
   .tabbar { position: sticky; top: 0; bottom: auto; height: 100dvh; width: 96px; flex-direction: column; justify-content: flex-start; border-top: 0; border-right: 1px solid var(--line); padding-top: 12px; }
   .main { padding-bottom: var(--gutter); margin: 0; max-width: none; }
   .main > * { max-width: 760px; }
+  /* Timer en proeven (zonder zijbalk): de kolom in het midden, niet links met een lege rechterkant. */
+  .main.focused > * { margin-inline: auto; }
 }
 .banner { background: var(--accent-soft); border: 1px solid var(--line); border-radius: var(--radius-s); padding: 10px 12px; margin-bottom: 12px; }
 .banner.warn { color: var(--warn); }
@@ -106,10 +108,40 @@ table.pours th, table.pours td { padding: 8px 6px; border-bottom: 1px solid var(
 .timer ol.steps li.hold { background: var(--surface-2); color: var(--warn); }
 .timer ol.steps li.past { color: var(--text-3); text-decoration: line-through; text-decoration-color: var(--line); }
 @media (max-width: 360px) { .ring { width: 96px; height: 96px; } .ringtext { font-size: 1.25rem; } .stepcard { gap: 12px; padding: 12px 0; } }
+/* De timer heeft drie blokken: nu (klok en huidige giet), plan (voorbereiding, rest van het schema) en knoppen.
+   Staand en smal: onder elkaar in de oude volgorde (display: contents). Liggend of breed: twee kolommen. */
+.timer .tnow, .timer .tplan, .timer .tctl { display: contents; }
 @media (max-height: 560px) and (orientation: landscape) {
+  .main.focused > .timer { max-width: none; }
+  .main .timer, .main .timer.ready { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "now plan" "now ctl"; column-gap: 20px; align-content: start; }
+  .timer .tnow { display: block; grid-area: now; }
+  .timer .tplan { display: block; grid-area: plan; }
+  .timer .tctl { display: block; grid-area: ctl; align-self: end; }
   .timer .clock { font-size: 3rem; margin: 0 0 4px; }
   .ring { width: 88px; height: 88px; } .ringtext { font-size: 1.2rem; }
   .timer ol.steps { display: none; }
+  .timer .stepprep, .timer .stepafter { margin: 0 0 8px; }
+  .timer .big { min-height: 60px; }
+  .main .timer.ready { min-height: 0; } .main .timer.ready .big { margin-top: 0; }
+}
+/* Iets breeds en hoog genoeg (iPad, MacBook): grote klok en huidige giet links, schema en voorbereiding rechts, knoppen onder de klok. */
+@media (min-width: 900px) and (min-height: 600px) {
+  .main.focused > .timer { max-width: 1180px; }
+  .main .timer, .main .timer.ready { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-template-areas: "now plan" "ctl plan"; column-gap: 40px; align-content: start; align-items: start; }
+  .timer .tnow { display: block; grid-area: now; }
+  .timer .tplan { display: block; grid-area: plan; padding-top: 12px; }
+  .timer .tctl { display: block; grid-area: ctl; }
+  .timer .clock { font-size: clamp(5rem, 9vw, 8rem); }
+  .timer .clock small { font-size: 1rem; }
+  .ring { width: 200px; height: 200px; } .ringtext { font-size: 2.8rem; }
+  .stepname { font-size: 2rem; }
+  .steptarget b { font-size: 3.4rem; }
+  .steptarget span, .steptip, .stepaction { font-size: 1.25rem; }
+  .stepafter strong { font-size: 1.3rem; } .stepafter span { font-size: 1.1rem; }
+  .stepprep ul, .stepnext { font-size: 1.1rem; }
+  .timer ol.steps li { font-size: 1.2rem; padding: 12px 14px; }
+  .timer .big { min-height: 84px; }
+  .main .timer.ready { min-height: 0; } .main .timer.ready .big { margin-top: 0; }
 }
 
 /* proeven */
@@ -142,7 +174,7 @@ table.plain td.n, table.plain th.n { text-align: right; font-variant-numeric: ta
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
 .chart .grid { stroke: var(--line); stroke-width: 1; }
 .chart .zero { stroke: var(--text-3); stroke-width: 1; }
-.chart .ax { fill: var(--text-3); font-size: 10px; font-variant-numeric: tabular-nums; }
+.chart .ax { fill: var(--text-3); font-size: 12px; font-variant-numeric: tabular-nums; }
 .chart .endlabel { fill: var(--text); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .chart .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .chart .dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
@@ -154,7 +186,7 @@ table.plain td.n, table.plain th.n { text-align: right; font-variant-numeric: ta
 .chart .tip b { display: block; font-size: 1rem; font-variant-numeric: tabular-nums; }
 .chart .tip span { color: var(--text-2); display: block; }
 .chart details { margin-top: 4px; font-size: .8rem; }
-.chart details summary { cursor: pointer; color: var(--text-2); min-height: 32px; display: flex; align-items: center; }
+.chart details summary { cursor: pointer; color: var(--text-2); min-height: var(--tap); display: flex; align-items: center; }
 .fit .delta { font-size: 1.25rem; font-weight: 600; }
 table.plain th { white-space: nowrap; }
 
@@ -320,6 +352,8 @@ fieldset.field legend { padding: 0; margin-bottom: 4px; }
 .advtitle .eyebrow { display: block; text-transform: none; letter-spacing: 0; font-size: .9rem; color: var(--text-2); overflow-wrap: anywhere; }
 details.fold > summary { font-weight: 600; cursor: pointer; min-height: var(--tap); display: flex; align-items: center; }
 details.fold[open] > summary { margin-bottom: 4px; }
+/* Uitklappers zonder kaart (bijv. 'Meer opties'): ook een volwaardig tikdoel (44 pt op iOS). */
+details:not(.fold) > summary { cursor: pointer; min-height: var(--tap); padding-block: 11px; }
 .itext small { display: block; }
 
 /* Logboekrij: een korte regel over hoe de kop was, onder de techniek. */
@@ -335,7 +369,7 @@ details.fold[open] > summary { margin-bottom: 4px; }
 .timer ol.steps li { flex-wrap: wrap; }
 .timer ol.steps li small { flex-basis: 100%; padding-left: 0; font-size: .85rem; font-weight: 400; color: var(--text-3); }
 .timer ol.steps li.go small { color: var(--text-2); }
-@media (max-height: 560px) and (orientation: landscape) { .stepprep, .steptip { display: none; } }
+/* Liggend op een telefoon blijven de tips en de voorbereiding zichtbaar (twee kolommen, zie de timer hierboven). */
 
 /* Receptscherm: voorbereiding, afronding en aanwijzing per giet. */
 .aprep { margin-top: 10px; }

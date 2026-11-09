@@ -67,10 +67,10 @@ export function TrendChart({ explain, series, domain, ticks, steps, format, form
         {tickValues.map(t => (
           <g key={t}>
             <line class="grid" x1={L} x2={W - R} y1={y(t)} y2={y(t)} />
-            <text class="ax" x={L - 6} y={y(t) + 3} text-anchor="end">{(formatTick ?? format)(t)}</text>
+            <text class="ax" x={L - 6} y={y(t) + 4} text-anchor="end">{(formatTick ?? format)(t)}</text>
           </g>
         ))}
-        {reference && (<g><line class="zero" x1={L} x2={W - R} y1={y(reference.at)} y2={y(reference.at)} /><text class="ax" x={W - R + 4} y={y(reference.at) + 3}>{reference.label}</text></g>)}
+        {reference && (<g><line class="zero" x1={L} x2={W - R} y1={y(reference.at)} y2={y(reference.at)} /><text class="ax" x={W - R + 4} y={y(reference.at) + 4}>{reference.label}</text></g>)}
         {cur && <line class="cross" x1={x(cur.n)} x2={x(cur.n)} y1={T} y2={H - B} />}
         {pts.length > 1 && <path class="line" d={path} />}
         {pts.map((p, i) => <circle key={p.brewId} class={active === i ? 'dot on' : 'dot'} cx={x(p.n)} cy={y(p.y)} r={4} />)}
