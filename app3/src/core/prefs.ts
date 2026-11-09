@@ -29,4 +29,4 @@ export function savePref(s: PrefStorage | null, key: string, value: string): voi
 }
 
 /** De kleur voor de statusbalk van de browser bij het gekozen thema (de achtergrond van het thema). */
-export const themeColor = (theme: ThemePref, systemDark: boolean): string => (theme === 'dark' || (theme === 'system' && systemDark) ? '#120e0a' : '#f4efe4');
+export const themeColor = (theme: ThemePref, systemDark: boolean): string => (theme === 'dark' || (theme === 'system' && systemDark) ? '#120e0a' : '#f6f1e7');

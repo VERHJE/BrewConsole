@@ -43,7 +43,7 @@ if (AT_ROOT) {
   fs.mkdirSync(OUD, { recursive: true });
   fs.writeFileSync(path.join(OUD, 'index.html'), `<!doctype html>
 <html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Brew Console · oude versie opgeruimd</title>
-<style>body{font:16px/1.5 system-ui,sans-serif;margin:0;padding:32px 20px;background:#f4efe4;color:#1d261c}main{max-width:32rem;margin:0 auto}a{display:inline-block;margin-top:12px;padding:14px 20px;border-radius:12px;background:#3f6b3c;color:#fff;text-decoration:none;font-weight:600}@media(prefers-color-scheme:dark){body{background:#120e0a;color:#f5ecdf}a{background:#d9a65a;color:#1a1108}}</style></head>
+<style>body{font:16px/1.5 system-ui,sans-serif;margin:0;padding:32px 20px;background:#f6f1e7;color:#231a12}main{max-width:32rem;margin:0 auto}a{display:inline-block;margin-top:12px;padding:14px 20px;border-radius:12px;background:#2a1f15;color:#f6f1e7;text-decoration:none;font-weight:600}@media(prefers-color-scheme:dark){body{background:#120e0a;color:#f5ecdf}a{background:#d9a65a;color:#1a1108}}</style></head>
 <body><main><h1>De oude versie is opgeruimd</h1><p>Brew Console staat nu op één adres. Je zakken en koppen staan in de nieuwe app als je ze hebt overgezet via een back-up.</p><a href="../">Naar de nieuwe app</a></main>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){if(r.scope.indexOf('/oud/')>-1)r.unregister()})}).catch(function(){})}</script></body></html>
 `);

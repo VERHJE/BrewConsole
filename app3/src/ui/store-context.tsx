@@ -3,7 +3,7 @@ import { useContext, useEffect, useState } from 'preact/hooks';
 import type { Engine } from '../../../engine3/src/index.ts';
 import type { Env } from '../core/ids.ts';
 import type { Snapshot, Store } from '../core/store.ts';
-import { bagPalette, type PhotoStore } from '../core/photos.ts';
+import { labelTint, monogram, type PhotoStore } from '../core/photos.ts';
 import type { PhotoSyncRun } from '../core/photosync.ts';
 import type { JSX } from 'preact';
 
@@ -37,19 +37,24 @@ export function usePhoto(beanId: string | null, bump = 0): string | null {
   return url;
 }
 
-/** Foto of, zonder foto, een getekende zak in kleuren die bij de naam passen. */
-export function BagArt({ beanId, name, bump = 0, large = false }: { beanId: string; name: string; bump?: number; large?: boolean }): JSX.Element {
+/**
+ * Foto of, zonder foto, een etiket in tekst: klein een monogram in een omlijst vlak, groot (zakdetail) met brander, naam en herkomst in serif.
+ * De tint volgt de naam maar blijft donker en ingetogen; ivoor tekst en een dunne messing lijn.
+ */
+export function BagArt({ beanId, name, bump = 0, large = false, roaster = null, meta = null }: { beanId: string; name: string; bump?: number; large?: boolean; roaster?: string | null; meta?: string | null }): JSX.Element {
   const url = usePhoto(beanId, bump);
   if (url) return <img class={large ? 'bagart photo large' : 'bagart photo'} src={url} alt="" />;
-  const { hue, hue2 } = bagPalette(name);
-  const a = `hsl(${hue} 38% 38%)`; const b = `hsl(${hue2} 42% 26%)`;
+  const [t1, t2] = labelTint(name);
+  const style = `--l1:${t1};--l2:${t2}`;
+  if (!large) return <span class="bagart label" style={style} aria-hidden="true"><span class="mono">{monogram(name)}</span></span>;
   return (
-    <svg class={large ? 'bagart large' : 'bagart'} viewBox="-30 0 160 120" style={`background:${b}`} aria-hidden="true" focusable="false">
-      <rect x="-30" width="160" height="120" fill={b} />
-      <path d="M26 30h48l6 12v62a6 6 0 0 1-6 6H26a6 6 0 0 1-6-6V42z" fill={a} />
-      <path d="M26 30h48l6 12H20z" fill="rgb(255 255 255 / .18)" />
-      <rect x="34" y="62" width="32" height="26" rx="3" fill="rgb(255 255 255 / .88)" />
-      <path d="M50 66c5 4 5 12 0 18-5-6-5-14 0-18z" fill={b} />
-    </svg>
+    <span class="bagart label large" style={style} aria-hidden="true">
+      <span class="l-frame">
+        {roaster && <span class="l-roaster">{roaster}</span>}
+        <span class="l-rule" />
+        <span class="l-name">{name}</span>
+        {meta && <span class="l-meta">{meta}</span>}
+      </span>
+    </span>
   );
 }

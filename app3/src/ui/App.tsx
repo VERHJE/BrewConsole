@@ -43,6 +43,7 @@ export function App({ persistent }: { persistent: boolean }): JSX.Element {
     <div class="app">
       {!route.focused && (
         <nav class="tabbar" aria-label="Hoofdmenu">
+          <span class="brandmark" aria-hidden="true">Brew<br />Console</span>
           {(Object.keys(TAB_LABEL) as Tab[]).map(t => {
             const Icon = TAB_ICON[t];
             return (<a key={t} href={href(t)} aria-current={route.tab === t ? 'page' : undefined}><Icon />{TAB_LABEL[t]}</a>);

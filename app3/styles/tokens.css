@@ -1,11 +1,15 @@
-/* Licht = Organic Light (crème en rustig groen). Donker = Quiet Luxury (warm bruin en goud).
-   Beide zijn eigen thema's, geen omgekeerde versie van elkaar. Keuze: Meer → Voorkeuren (licht, donker, volg toestel). */
+/* Licht = Ivoor en espresso met messing. Donker = Quiet Luxury (warm bruin en goud).
+   Beide zijn eigen thema's, geen omgekeerde versie van elkaar. Keuze: Meer → Voorkeuren (licht, donker, volg toestel).
+   --accent: kleur voor tekst, ring en actieve onderdelen; --primary: vlak van de hoofdknop (licht: espresso, donker: goud). */
 :root {
-  --bg: #f4efe4; --surface: #fcfaf4; --surface-2: #ece6d6; --line: #dcd4c0;
-  --text: #1d261c; --text-2: #4d594a; --text-3: #5a6657;
-  --accent: #3f6b3c; --accent-ink: #ffffff; --accent-soft: #dde8d3;
-  --ok: #2f6b3f; --warn: #8a5a00; --bad: #a3322b;
-  --radius: 18px; --radius-s: 12px; --tap: 48px; --gutter: 16px;
+  --bg: #f6f1e7; --surface: #fffdf8; --surface-2: #efe7d6; --line: #e3d9c4;
+  --text: #231a12; --text-2: #55483a; --text-3: #62544a;
+  --accent: #80540e; --accent-ink: #fffdf8; --accent-soft: #f0e3c6;
+  --primary: #2a1f15; --primary-ink: #f6f1e7; --star: #a9741a;
+  --ok: #2f6b3f; --warn: #9a4a00; --bad: #a3322b;
+  --shadow-1: 0 1px 2px rgb(60 40 15 / .06), 0 4px 14px rgb(60 40 15 / .05);
+  --shadow-2: 0 2px 4px rgb(60 40 15 / .08), 0 14px 34px rgb(60 40 15 / .12);
+  --radius: 20px; --radius-s: 12px; --tap: 48px; --gutter: 16px;
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --head: 'Fraunces', Georgia, 'Times New Roman', serif;
   --mono: ui-monospace, 'SF Mono', Menlo, monospace;
@@ -16,7 +20,10 @@
     --bg: #120e0a; --surface: #211911; --surface-2: #2b2117; --line: #3b2f22;
     --text: #f5ecdf; --text-2: #cdbda6; --text-3: #a99b87;
     --accent: #d9a65a; --accent-ink: #1a1108; --accent-soft: #3a2a17;
+    --primary: #d9a65a; --primary-ink: #1a1108; --star: #d9a65a;
     --ok: #8fcf9d; --warn: #e2b04d; --bad: #f08a80;
+    --shadow-1: 0 1px 2px rgb(0 0 0 / .35), 0 6px 18px rgb(0 0 0 / .3);
+    --shadow-2: 0 2px 4px rgb(0 0 0 / .4), 0 16px 36px rgb(0 0 0 / .45);
     color-scheme: dark;
   }
 }
@@ -24,7 +31,10 @@
   --bg: #120e0a; --surface: #211911; --surface-2: #2b2117; --line: #3b2f22;
   --text: #f5ecdf; --text-2: #cdbda6; --text-3: #a99b87;
   --accent: #d9a65a; --accent-ink: #1a1108; --accent-soft: #3a2a17;
+  --primary: #d9a65a; --primary-ink: #1a1108; --star: #d9a65a;
   --ok: #8fcf9d; --warn: #e2b04d; --bad: #f08a80;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / .35), 0 6px 18px rgb(0 0 0 / .3);
+  --shadow-2: 0 2px 4px rgb(0 0 0 / .4), 0 16px 36px rgb(0 0 0 / .45);
   color-scheme: dark;
 }
 /* Koppen in schreefloos als je dat kiest (Meer → Voorkeuren). */

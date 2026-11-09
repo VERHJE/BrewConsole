@@ -52,19 +52,22 @@ function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
   const filtered = filterBeans(all, prefs.filters, ctx);
   const rows = q.trim() ? filtered.filter(r => matches([r.name, r.roaster, r.country].filter(Boolean).join(' '), q)) : filtered;
   const narrowed = !isDefault(prefs) || q.trim() !== '';
-  // De grote kaart pas bij drie of meer zakken; anders toont hij dezelfde zak als de lijst eronder.
-  const top = narrowed || rows.length < 3 ? undefined : rows[0];
-  const avg = (id: string): string | null => { const a = facts.m.get(id)?.avg; return a == null ? null : a.toFixed(1).replace('.', ','); };
+  const activeCount = prefs.filters.length + (prefs.sort !== 'standaard' ? 1 : 0);
+  const [panel, setPanel] = useState(false);
   const toggleFilter = (k: FilterKey): void => change({ ...prefs, filters: prefs.filters.includes(k) ? prefs.filters.filter(x => x !== k) : [...prefs.filters, k] });
   return (
-    <section>
+    <section class={activeId ? undefined : 'wide-list'}>
       <div class="head">{activeId ? <h2 class="list-title">Zakken</h2> : <h1>Zakken</h1>}<a class="btn primary" href={href('zakken', 'nieuw')}>Zak toevoegen</a></div>
       {base.length === 0
         ? <EmptyState icon={<IconBean />} title="Nog geen zakken" >Plak de tekst van een zak of een webshoppagina, of scan de QR-code.</EmptyState>
         : <>
-          {all.length > 3 && <label class="field search"><span class="sr-only">Zoek in zakken</span><input type="search" name="zoek" placeholder="Zoek op naam, brander of land" value={q} onInput={e => setQ((e.currentTarget as HTMLInputElement).value)} /></label>}
           {base.length > 3 && (
-            <div class="listtools">
+            <div class="listbar">
+              <label class="field search"><span class="sr-only">Zoek in zakken</span><input type="search" name="zoek" placeholder="Zoek op naam, brander of land" value={q} onInput={e => setQ((e.currentTarget as HTMLInputElement).value)} /></label>
+              <button type="button" class="btn filterbtn" aria-expanded={panel} aria-controls="filterpanel" onClick={() => setPanel(!panel)}>Filter{activeCount > 0 && <span class="count" aria-label={`${activeCount} actief`}>{activeCount}</span>}</button>
+            </div>)}
+          {base.length > 3 && panel && (
+            <div class="listtools" id="filterpanel">
               <label class="field"><span>Sorteren</span>
                 <select name="sorteer" value={prefs.sort} onChange={e => change({ ...prefs, sort: (e.currentTarget as HTMLSelectElement).value as SortMode })}>
                   {(Object.keys(SORT_LABEL) as SortMode[]).map(k => <option key={k} value={k}>{SORT_LABEL[k]}</option>)}
@@ -72,20 +75,8 @@ function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
               <div class="chips" role="group" aria-label="Filteren">
                 {FILTER_KEYS.map(k => <button key={k} type="button" class="chip" aria-pressed={prefs.filters.includes(k)} onClick={() => toggleFilter(k)}>{FILTER_LABEL[k]}</button>)}
               </div>
-              {narrowed && <p class="meta" role="status">{rows.length} van {base.length} {base.length === 1 ? 'zak' : 'zakken'}{!isDefault(prefs) && <> · <button type="button" class="linklike" onClick={() => change({ sort: 'standaard', filters: [] })}>Wis sorteren en filters</button></>}</p>}
             </div>)}
-          {top && (
-            <a class={rows.length > 1 ? 'hero stacked' : 'hero'} href={href('zakken', top.id)} aria-label={`Open ${top.name}`}>
-              <BagArt beanId={top.id} name={top.name} large />
-              <span class="hero-text">
-                <small class="eyebrow">{favs.has(top.id) ? 'Favoriet' : 'Nieuwste zak'}</small>
-                <strong>{top.name}</strong>
-                <span class="chips">
-                  {[top.country, daysSinceRoast(top.roastDate, today) !== null ? `${daysSinceRoast(top.roastDate, today)} d na branding` : null, avg(top.id) ? `★ ${avg(top.id)} · ${top.cups} ${top.cups === 1 ? 'kop' : 'koppen'}` : null]
-                    .filter(Boolean).map(c => <span class="tag" key={c}>{c}</span>)}
-                </span>
-              </span>
-            </a>)}
+          {base.length > 3 && narrowed && <p class="meta" role="status">{rows.length} van {base.length} {base.length === 1 ? 'zak' : 'zakken'}{!isDefault(prefs) && <> · <button type="button" class="linklike" onClick={() => change({ sort: 'standaard', filters: [] })}>Wis sorteren en filters</button></>}</p>}
           <ul class="list thumbs">{rows.map(r => (
             <li key={r.id}><a class="item" href={href('zakken', r.id)} aria-current={r.id === activeId ? 'true' : undefined}><span class="thumb"><BagArt beanId={r.id} name={r.name} /></span><span class="itext"><strong>{favs.has(r.id) && <span aria-label="Favoriet">★ </span>}{r.name}</strong><Meta row={r} today={today} stock={facts.st.get(r.id)} /></span></a></li>
           ))}</ul>
@@ -113,7 +104,7 @@ function Detail({ beanId }: { beanId: string }): JSX.Element {
   };
   return (
     <section class="detail">
-      <div class="hero-photo"><a class="btn back-narrow backtop" href={href('zakken')} aria-label="Terug naar zakken">Terug</a><BagArt beanId={beanId} name={d.name} large /></div>
+      <div class="hero-photo"><a class="btn back-narrow backtop" href={href('zakken')} aria-label="Terug naar zakken">Terug</a><BagArt beanId={beanId} name={d.name} large roaster={d.roaster} meta={[d.facts.find(f => f.label === 'Land')?.value, d.eyebrow].filter(Boolean).join(' · ') || null} /></div>
       <div class="head"><button class="btn" type="button" aria-pressed={fav} onClick={() => setFav(toggleFav(localStorage, beanId))}>{fav ? '★ Favoriet' : '☆ Favoriet'}</button><a class="btn" href={href('zakken', beanId, 'bewerken')}>Bewerken</a></div>
       {d.eyebrow && <small class="eyebrow">{d.eyebrow}</small>}
       <h1>{d.name}</h1>

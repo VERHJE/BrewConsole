@@ -2,7 +2,7 @@ import type { JSX } from 'preact';
 import { factsOf } from '../../../../engine3/src/index.ts';
 import type { Route } from '../../core/router.ts';
 import { href } from '../../core/router.ts';
-import { clock, nl1, pourLines, techniqueName } from '../../core/brew.ts';
+import { METHOD_LABEL, clock, nl1, pourLines, techniqueName } from '../../core/brew.ts';
 import { cupRows, brewDeleteEvent } from '../../core/insights.ts';
 import { EmptyState } from '../EmptyState.tsx';
 import { IconLog } from '../icons.tsx';
@@ -14,16 +14,28 @@ import { Trends } from '../Insights.tsx';
 import { useApp, useSnapshot } from '../store-context.tsx';
 
 const STATUS: Record<string, string> = { planned: 'Niet gestart', brewing: 'Bezig', complete: 'Klaar', abandoned: 'Afgebroken' };
+const BREWER_SHORT = { v60: 'V60', chemex: 'Chemex' } as const;
 const dateText = (ms: number): string => new Date(ms).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
+/**
+ * Een rij heeft vaste plekken: links de datum als blokje, in het midden de titel met de waardering, een regel met brewer, techniek en
+ * cijfers, en (als je die hebt) een regel over hoe de kop was. Met één zak is de zaknaam ruis: dan is de techniek de titel.
+ */
 function Row({ r, active, multi }: { r: ReturnType<typeof cupRows>[number]; active: boolean; multi: boolean }): JSX.Element {
-  // Met één zak is de naam ruis: dan kopt de datum de rij en staat de rest eronder.
-  const extra = `${techniqueName(r.technique)} · ${nl1(r.doseG)} g${r.click !== null ? ` · klik ${r.click}` : ''}${r.endSec !== null ? ` · ${clock(r.endSec)}` : ''}${r.status !== 'complete' ? ` · ${STATUS[r.status]}` : ''}${r.status === 'complete' && !r.tasted ? ' · nog te proeven' : ''}`;
+  const d = new Date(r.at);
+  const day = d.toLocaleString('nl-NL', { day: 'numeric' });
+  const mon = d.toLocaleString('nl-NL', { month: 'short' }).replace('.', '');
+  const time = d.toLocaleString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  const facts = [time, `${nl1(r.doseG)} g`, r.click !== null ? `klik ${r.click}` : null, r.endSec !== null ? clock(r.endSec) : null, r.status !== 'complete' ? STATUS[r.status] : null, r.status === 'complete' && !r.tasted ? 'nog te proeven' : null].filter(Boolean).join(' · ');
   return (
-    <li><a class="item go" href={href('logboek', r.id)} aria-current={active ? 'true' : undefined}>
-      <strong>{multi ? (r.beanName ?? 'Zonder zak') : dateText(r.at)} <Stars value={r.liking} /></strong>
-      <small>{multi ? `${dateText(r.at)} · ${extra}` : extra}</small>
-      {r.taste && <small class="taste">{r.taste}</small>}
+    <li><a class="item go logrow" href={href('logboek', r.id)} aria-current={active ? 'true' : undefined}>
+      <span class="logdate" aria-hidden="true"><b>{day}</b><small>{mon}</small></span>
+      <span class="logbody">
+        <strong>{multi ? (r.beanName ?? 'Zonder zak') : techniqueName(r.technique)} <Stars value={r.liking} /></strong>
+        <small class="logmeta"><span class="brewer">{BREWER_SHORT[r.method]}</span>{multi && <> {techniqueName(r.technique)}</>}</small>
+        <small class="lognums"><span class="sr-only">{dateText(r.at)}. </span>{facts}</small>
+        {r.taste && <small class="taste">{r.taste}</small>}
+      </span>
     </a></li>
   );
 }
@@ -79,7 +91,7 @@ function Detail({ id }: { id: string }): JSX.Element {
       <div class="head"><a class="btn back-narrow" href={href('logboek')}>Terug</a><h1>{bean?.fields.name ?? 'Kop'}</h1></div>
       <p class="meta">{dateText(c.at)} · {STATUS[c.status]}</p>
       <dl class="kv">
-        <dt>Techniek</dt><dd>{techniqueName(c.technique)}</dd>
+        <dt>Brewer</dt><dd>{METHOD_LABEL[c.method]}</dd><dt>Techniek</dt><dd>{techniqueName(c.technique)}</dd>
         <dt>Koffie</dt><dd>{nl1(c.doseG)} g</dd><dt>Water</dt><dd>{Math.round(c.waterG)} g{c.bypassG > 0 ? ` + ${Math.round(c.bypassG)} g bypass` : ''}</dd>
         {c.grindClick !== null && <><dt>Klik</dt><dd>{c.grindClick}</dd></>}
         {c.planned.tempC !== null && <><dt>Temperatuur</dt><dd>{c.planned.tempC} °C</dd></>}
@@ -108,7 +120,7 @@ function Detail({ id }: { id: string }): JSX.Element {
             <option value="">Kies een kop…</option>
             {others.map(o => <option key={o.id} value={o.id}>{dateText(o.at)}{o.liking ? ` · ${formatLiking(o.liking)} van 5` : ''}</option>)}
           </select></label>)}
-      <p class="engine-note">Advies gemaakt door <span>{c.engine.name} {c.engine.version}</span></p>
+      <details class="tech-note"><summary>Over dit advies</summary><p class="engine-note">Gemaakt door <span>{c.engine.name} {c.engine.version}</span></p></details>
       <div class="actions"><button class="btn" type="button" onClick={del}>Kop verwijderen</button></div>
     </section>
   );

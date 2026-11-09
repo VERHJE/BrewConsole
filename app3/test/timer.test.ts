@@ -89,7 +89,9 @@ test('afbreken zet de status op abandoned', async () => {
   const s = await setup();
   await s.store.append(startTimer(env, s.brewId));
   await s.store.append(abandonTimer(env, s.brewId, 20));
-  assert.equal(factsOf(s.store.snapshot().state).cups.get(s.brewId)!.status, 'abandoned');
+  const f = factsOf(s.store.snapshot().state);
+  assert.equal(f.abandoned.get(s.brewId)!.status, 'abandoned');
+  assert.equal(f.cups.has(s.brewId), false, 'een afgebroken zetsel telt nergens mee');
   assert.equal(view(s, now + 99_000).status, 'abandoned');
 });
 

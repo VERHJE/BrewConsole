@@ -68,7 +68,10 @@ export interface TrialFacts {
 
 export interface FactState extends EngineState {
   readonly beans: ReadonlyMap<string, BeanFacts>;
+  /** Alleen zetsels die niet zijn afgebroken: een afgebroken zetsel telt nergens mee (besluit Jelle, 9 nov 2026). */
   readonly cups: ReadonlyMap<string, CupFacts>;
+  /** De afgebroken zetsels, alleen voor het scherm van de timer zelf; ze doen niet mee aan advies, voorraad of logboek. */
+  readonly abandoned: ReadonlyMap<string, CupFacts>;
   /** Zetsels op tijd (plan-moment), voor 'de laatste kop' en 'de vorige kop van deze zak'. */
   readonly cupOrder: readonly string[];
   readonly trials: ReadonlyMap<string, TrialFacts>;
@@ -141,6 +144,7 @@ export function learnFacts(events: readonly EngineEvent[]): FactState {
   }
 
   const cups = new Map<string, CupFacts>();
+  const abandoned = new Map<string, CupFacts>();
   for (const [brewId, plan] of plans) {
     const p = plan.data;
     const a = actuals.get(brewId)?.data ?? null;
@@ -149,7 +153,8 @@ export function learnFacts(events: readonly EngineEvent[]): FactState {
     const lastIndex = p.recipe.pours.length - 1;
     const lastPour = p.recipe.pours[lastIndex];
     const lastDrainAt = drained.get(lastIndex);
-    cups.set(brewId, {
+    const target = status === 'abandoned' ? abandoned : cups;
+    target.set(brewId, {
       brewId,
       beanId: p.beanId,
       at: plan.at,
@@ -178,7 +183,8 @@ export function learnFacts(events: readonly EngineEvent[]): FactState {
     });
     if (p.beanId) {
       const b = beans.get(p.beanId);
-      if (b) b.brewIds.push(brewId); else notes.push(`zetsel ${brewId} verwijst naar onbekende zak ${p.beanId}`);
+      if (!b) notes.push(`zetsel ${brewId} verwijst naar onbekende zak ${p.beanId}`);
+      else if (status !== 'abandoned') b.brewIds.push(brewId);
     }
   }
 
@@ -189,6 +195,7 @@ export function learnFacts(events: readonly EngineEvent[]): FactState {
     __engineState: true,
     beans,
     cups,
+    abandoned,
     cupOrder,
     trials,
     settings: { water, grinder, brightLighter },
