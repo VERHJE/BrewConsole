@@ -75,7 +75,10 @@ test('timer: erdoor per giet, ongedaan maken, einde en laatste doorlooptijd', ()
 });
 test('afgebroken en nog niet gestarte zetsels hebben de juiste status', () => {
   const st = learnFacts([plan('c1', null, 1), plan('c2', null, 2), timer('c2', 3, 'start', 0), plan('c3', null, 4), timer('c3', 5, 'start', 0), timer('c3', 6, 'abandon', 20)]);
-  assert.deepEqual(['c1', 'c2', 'c3'].map(id => st.cups.get(id)!.status), ['planned', 'brewing', 'abandoned']);
+  assert.deepEqual(['c1', 'c2'].map(id => st.cups.get(id)!.status), ['planned', 'brewing']);
+  // Een afgebroken zetsel staat apart en telt niet mee (besluit Jelle, 9 nov 2026).
+  assert.equal(st.cups.has('c3'), false);
+  assert.equal(st.abandoned.get('c3')!.status, 'abandoned');
 });
 test('werkelijke waarden gaan boven het plan; zonder actuals geldt het plan', () => {
   const st = learnFacts([

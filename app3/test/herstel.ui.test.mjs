@@ -33,9 +33,10 @@ test('smaakprofiel als lijst zonder afgebroken woorden; kopdetail met het advies
   assert.equal(long, true);
   await page.goto(app.base + '#/logboek');
   await page.click('.item >> nth=0');
+  await page.click('summary:has-text("Over dit advies")');
   await page.waitForSelector('.engine-note');
   assert.equal(await page.locator('dt:has-text("Advies van")').count(), 0);
-  assert.match(await page.locator('.engine-note').innerText(), /Advies gemaakt door engine3/);
+  assert.match(await page.locator('.engine-note').innerText(), /Gemaakt door engine3/);
   await page.close();
 });
 

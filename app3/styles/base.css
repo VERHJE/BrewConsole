@@ -14,13 +14,13 @@ a { color: var(--accent); }
 .main { flex: 1; width: 100%; max-width: 760px; margin: 0 auto; padding: var(--gutter); padding-left: max(var(--gutter), env(safe-area-inset-left)); padding-right: max(var(--gutter), env(safe-area-inset-right)); padding-bottom: calc(var(--tap) + 2 * var(--gutter) + env(safe-area-inset-bottom)); overflow-wrap: anywhere; }
 .main.focused { padding-bottom: calc(var(--gutter) + env(safe-area-inset-bottom)); }
 .muted { color: var(--text-2); }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--gutter); margin: 0 0 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--gutter); margin: 0 0 12px; box-shadow: var(--shadow-1); }
 .row { display: flex; gap: 12px; align-items: center; }
 .row.wrap { flex-wrap: wrap; }
 .spacer { flex: 1; }
 
 .btn { min-height: var(--tap); padding: 0 18px; border-radius: var(--radius-s); border: 1px solid var(--line); background: var(--surface); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; color: var(--text); }
-.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+.btn.primary { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); font-weight: 700; }
 .btn:active { transform: translateY(1px); }
 .btn[disabled] { opacity: .5; cursor: default; }
 
@@ -43,7 +43,8 @@ a { color: var(--accent); }
 /* lijsten, formulieren */
 .list { list-style: none; margin: 0; padding: 0; }
 .list li { margin: 0 0 8px; }
-.item { display: block; text-decoration: none; color: inherit; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; min-height: var(--tap); }
+.item { display: block; text-decoration: none; color: inherit; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; min-height: var(--tap); box-shadow: var(--shadow-1); transition: box-shadow .15s ease, transform .15s ease; }
+.item:hover { box-shadow: var(--shadow-2); }
 .item strong { display: block; }
 .item small, .meta { color: var(--text-2); font-size: .875rem; }
 .head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
@@ -67,7 +68,7 @@ a { color: var(--accent); }
 /* zetten */
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { min-height: var(--tap); padding: 0 14px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; }
-.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.chip[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); font-weight: 600; }
 .stepper { display: flex; align-items: center; gap: 8px; }
 .stepper input { text-align: center; width: 96px; }
 .numbers { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; margin: 0 0 8px; }
@@ -103,10 +104,16 @@ table.pours th, table.pours td { padding: 8px 6px; border-bottom: 1px solid var(
 .timer .big { min-height: 72px; font-size: 1.25rem; width: 100%; }
 .timer .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
 .timer ol.steps { text-align: left; padding-left: 0; list-style: none; margin: 8px 0 12px; }
-.timer ol.steps li { display: flex; gap: 14px; padding: 9px 12px; border-radius: var(--radius-s); color: var(--text-3); font-size: 1rem; font-variant-numeric: tabular-nums; }
+.timer ol.steps li { position: relative; display: flex; align-items: baseline; flex-wrap: nowrap; gap: 14px; padding: 10px 12px 10px 38px; border-radius: var(--radius-s); color: var(--text-3); font-size: 1rem; font-variant-numeric: tabular-nums; }
+.timer ol.steps li::before { content: ''; position: absolute; left: 14px; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%; border: 1.5px solid var(--text-3); }
 .timer ol.steps li.go { background: var(--accent-soft); color: var(--text); font-weight: 600; }
+.timer ol.steps li.go::before { background: var(--accent); border-color: var(--accent); }
 .timer ol.steps li.hold { background: var(--surface-2); color: var(--warn); }
-.timer ol.steps li.past { color: var(--text-3); text-decoration: line-through; text-decoration-color: var(--line); }
+.timer ol.steps li.hold::before { border-color: var(--warn); border-style: dashed; }
+.timer ol.steps li.past { color: var(--text-3); }
+.timer ol.steps li.past::before { content: '✓'; width: auto; height: auto; margin-top: -.6em; border: 0; color: var(--ok); font-size: 1rem; line-height: 1.2; font-weight: 700; }
+.timer ol.steps li small { margin-left: auto; flex: none; padding: 0; font-size: .85rem; font-weight: 400; color: var(--text-3); text-align: right; }
+.timer ol.steps li.go small { color: var(--text-2); }
 @media (max-width: 360px) { .ring { width: 96px; height: 96px; } .ringtext { font-size: 1.25rem; } .stepcard { gap: 12px; padding: 12px 0; } }
 /* De timer heeft drie blokken: nu (klok en huidige giet), plan (voorbereiding, rest van het schema) en knoppen.
    Staand en smal: onder elkaar in de oude volgorde (display: contents). Liggend of breed: twee kolommen. */
@@ -138,8 +145,8 @@ table.pours th, table.pours td { padding: 8px 6px; border-bottom: 1px solid var(
   .steptarget b { font-size: 3.4rem; }
   .steptarget span, .steptip, .stepaction { font-size: 1.25rem; }
   .stepafter strong { font-size: 1.3rem; } .stepafter span { font-size: 1.1rem; }
-  .stepprep ul, .stepnext { font-size: 1.1rem; }
-  .timer ol.steps li { font-size: 1.2rem; padding: 12px 14px; }
+  .stepprep ul, .stepprep ol, .stepnext { font-size: 1.1rem; }
+  .timer ol.steps li { font-size: 1.2rem; padding: 12px 14px 12px 42px; }
   .timer .big { min-height: 84px; }
   .main .timer.ready { min-height: 0; } .main .timer.ready .big { margin-top: 0; }
 }
@@ -158,7 +165,7 @@ table.pours th, table.pours td { padding: 8px 6px; border-bottom: 1px solid var(
 .notehit .chips { margin-top: 6px; }
 
 /* logboek, inzicht */
-.stars { color: var(--accent); letter-spacing: 1px; }
+.stars { color: var(--star); letter-spacing: 1px; }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0 0 12px; }
 .kv dt { color: var(--text-2); }
 .kv dd { margin: 0; font-variant-numeric: tabular-nums; }
@@ -168,7 +175,7 @@ table.plain td.n, table.plain th.n { text-align: right; font-variant-numeric: ta
 
 /* grafieken */
 .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 0 0 12px; }
-.chart { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 12px 8px; position: relative; }
+.chart { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 12px 8px; position: relative; box-shadow: var(--shadow-1); }
 .chart h3 { font-size: .95rem; margin: 0; font-weight: 600; }
 .chart .sub { color: var(--text-2); font-size: .8rem; margin: 0 0 4px; }
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
@@ -213,12 +220,6 @@ table.plain th { white-space: nowrap; }
 .bagart { display: block; width: 100%; height: 100%; object-fit: cover; }
 .tag { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border-radius: 99px; background: var(--accent-soft); color: var(--text); font-size: .8125rem; }
 .eyebrow { display: block; color: var(--text-2); font-size: .8125rem; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
-.hero { display: block; position: relative; margin: 0 0 22px; border-radius: calc(var(--radius) + 4px); background: var(--surface); border: 1px solid var(--line); text-decoration: none; color: inherit; overflow: visible; }
-.hero.stacked::before, .hero.stacked::after { content: ''; position: absolute; left: 14px; right: 14px; bottom: -8px; height: 14px; border-radius: 0 0 var(--radius) var(--radius); background: var(--surface-2); border: 1px solid var(--line); border-top: 0; z-index: -1; }
-.hero.stacked::after { left: 28px; right: 28px; bottom: -15px; opacity: .6; }
-.hero .bagart { aspect-ratio: 4 / 3; height: auto; border-radius: calc(var(--radius) + 3px) calc(var(--radius) + 3px) 0 0; }
-.hero-text { display: block; padding: 14px 16px 16px; }
-.hero-text strong { display: block; font-family: var(--head); font-size: 1.5rem; line-height: 1.2; margin: 2px 0 8px; }
 .list.thumbs .item { display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 8px; }
 .thumb { flex: none; width: 56px; height: 56px; border-radius: var(--radius-s); overflow: hidden; background: var(--surface-2); }
 .itext { min-width: 0; }
@@ -248,7 +249,7 @@ table.plain th { white-space: nowrap; }
 /* Kwartsterren */
 .starrow { position: relative; display: inline-block; line-height: 1; letter-spacing: 1px; white-space: nowrap; vertical-align: middle; }
 .starrow-bg { color: var(--line); }
-.starrow-fg { position: absolute; left: 0; top: 0; overflow: hidden; color: var(--accent); }
+.starrow-fg { position: absolute; left: 0; top: 0; overflow: hidden; color: var(--star); }
 .liking-fine { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; }
 .liking-fine .btn { min-width: 64px; }
 .liking-val { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
@@ -277,7 +278,7 @@ fieldset.field legend { padding: 0; margin-bottom: 4px; }
 /* Waardering: één rij met vijf sterren */
 .starpick { display: flex; gap: 6px; margin: 8px 0 12px; }
 .star { flex: 1; min-height: 56px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--surface); color: var(--text-3); font-size: 1.75rem; line-height: 1; cursor: pointer; }
-.star.on { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
+.star.on { color: var(--star); background: var(--accent-soft); border-color: var(--accent); }
 .star[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 /* Lijst en detail naast elkaar op een breed scherm; op een telefoon of smal venster één per keer */
@@ -287,7 +288,6 @@ fieldset.field legend { padding: 0; margin-bottom: 4px; }
   .main > .split { max-width: none; }
   .split.has-detail { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 760px); gap: 28px; align-items: start; }
   .split.has-detail > .split-list { position: sticky; top: 12px; max-height: calc(100dvh - 24px); overflow-y: auto; padding-right: 4px; }
-  .split.has-detail .split-list .hero { display: none; }
   .back-narrow { display: none; }
   .hero-photo { margin: 0 0 16px; border-radius: var(--radius); }
 }
@@ -366,8 +366,6 @@ details:not(.fold) > summary { cursor: pointer; min-height: var(--tap); padding-
 .stepafter span { color: var(--text-2); font-size: .95rem; line-height: 1.35; }
 .stepprep { text-align: left; margin: 8px 0; padding: 12px 14px; border-radius: var(--radius-s); background: var(--surface-2); }
 .stepprep ul { margin: 6px 0 0; padding-left: 1.1rem; color: var(--text-2); font-size: .95rem; line-height: 1.4; }
-.timer ol.steps li { flex-wrap: wrap; }
-.timer ol.steps li small { flex-basis: 100%; padding-left: 0; font-size: .85rem; font-weight: 400; color: var(--text-3); }
 .timer ol.steps li.go small { color: var(--text-2); }
 /* Liggend op een telefoon blijven de tips en de voorbereiding zichtbaar (twee kolommen, zie de timer hierboven). */
 
@@ -376,3 +374,61 @@ details:not(.fold) > summary { cursor: pointer; min-height: var(--tap); padding-
 .aprep .alist { margin: 4px 0 0; padding-left: 18px; color: var(--text-2); font-size: .92rem; line-height: 1.4; }
 .pournotes { margin: 0; padding-left: 1.2rem; display: grid; gap: 10px; }
 .pournotes li span { display: block; color: var(--text-2); font-size: .95rem; line-height: 1.35; }
+
+/* ───── Ronde 6 · ivoor, espresso en messing: etiket, lijsten, schil ───── */
+
+/* Etiket voor een zak zonder foto: tekst, geen tekening. Klein een monogram, groot brander, naam en herkomst. */
+.bagart.label { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background: linear-gradient(150deg, var(--l1), var(--l2)); color: #f3e7cf; font-family: var(--head); overflow: hidden; }
+.bagart.label::before { content: ''; position: absolute; inset: 5px; border: 1px solid rgb(217 179 106 / .55); border-radius: 9px; pointer-events: none; }
+.bagart.label .mono { font-size: 1.6rem; font-weight: 500; line-height: 1; color: #f3e7cf; }
+.bagart.label.large { aspect-ratio: auto; }
+.bagart.label.large::before { inset: 14px; border-radius: 14px; }
+.l-frame { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 28px 34px; max-width: 100%; }
+.l-roaster { font-family: var(--font); font-size: .72rem; letter-spacing: .22em; text-transform: uppercase; color: #dcb872; }
+.l-rule { width: 44px; height: 1px; background: #dcb872; opacity: .7; }
+.l-name { font-size: clamp(1.4rem, 5.2vw, 2.1rem); line-height: 1.12; font-weight: 500; overflow-wrap: anywhere; }
+.l-meta { font-family: var(--font); font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; color: rgb(243 231 207 / .85); }
+
+/* Zakken: zoeken en één Filter-knop, compacte rijen, op een breed scherm een raster. */
+.listbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; margin: 0 0 12px; }
+.listbar .search { margin: 0; }
+.filterbtn { gap: 8px; }
+.filterbtn .count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px; background: var(--primary); color: var(--primary-ink); font-size: .75rem; font-weight: 700; }
+.list.thumbs .itext strong { font-family: var(--head); font-size: 1.1rem; font-weight: 600; letter-spacing: -.005em; }
+.thumb .bagart.label .mono { font-size: 1.45rem; }
+.thumb { box-shadow: 0 0 0 1px rgb(0 0 0 / .06); }
+@media (min-width: 900px) {
+  .main > * { margin-inline: auto; }
+  .main > .wide-list { max-width: 1100px; }
+  .wide-list ul.thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+  .wide-list ul.thumbs li { margin: 0; }
+  .wide-list ul.thumbs .item { height: 100%; }
+}
+
+/* Logboek: vaste plekken per rij. */
+.logrow { display: flex; align-items: center; gap: 14px; padding: 12px 36px 12px 12px; }
+.logdate { flex: none; width: 48px; text-align: center; padding-right: 12px; border-right: 1px solid var(--line); font-family: var(--head); }
+.logdate b { display: block; font-size: 1.5rem; line-height: 1; font-weight: 600; }
+.logdate small { display: block; margin-top: 3px; font-family: var(--font); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-2); }
+.logbody { min-width: 0; flex: 1; }
+.logbody strong { font-family: var(--head); font-size: 1.05rem; font-weight: 600; }
+.logmeta { display: block; margin-top: 3px; }
+.lognums { display: block; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.brewer { display: inline-block; padding: 0 8px; border-radius: 99px; background: var(--accent-soft); color: var(--text); font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; vertical-align: 1px; }
+details.tech-note { margin-top: 8px; }
+details.tech-note summary { color: var(--text-2); font-size: .875rem; }
+details.tech-note .engine-note { margin: 0 0 8px; }
+
+/* Voorbereiding bij de timer: genummerde stappen. */
+.stepprep ol { margin: 6px 0 0; padding-left: 1.4rem; color: var(--text-2); font-size: .95rem; line-height: 1.4; }
+.stepprep ol li { padding-left: 2px; }
+.stepprep ol li + li { margin-top: 4px; }
+.stepprep ol li::marker { color: var(--accent); font-weight: 700; }
+
+/* Schil op een breed scherm: kleine woordmerk bovenaan, de vier onderdelen dicht bij elkaar. */
+.brandmark { display: none; }
+@media (min-width: 900px) {
+  .brandmark { display: block; width: 100%; padding: 6px 6px 14px; margin-bottom: 8px; border-bottom: 1px solid var(--line); text-align: center; font-family: var(--head); font-size: .95rem; line-height: 1.15; font-weight: 600; color: var(--accent); letter-spacing: .01em; }
+  .tabbar { align-items: stretch; gap: 4px; }
+  .tabbar a { flex: 0 0 auto; width: 100%; min-height: 68px; font-size: .8rem; }
+}

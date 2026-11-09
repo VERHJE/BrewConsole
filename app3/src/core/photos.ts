@@ -73,3 +73,23 @@ export function bagPalette(name: string): { hue: number; hue2: number } {
   const hue = Math.abs(h) % 360;
   return { hue, hue2: (hue + 28) % 360 };
 }
+
+/** Zes ingetogen, donkere tinten voor het etiket van een zak zonder foto (vast per naam). Altijd donker genoeg voor ivoor tekst. */
+export const LABEL_TINTS: ReadonlyArray<readonly [string, string]> = [
+  ['#2c2118', '#43321f'], // espresso
+  ['#33402a', '#46573a'], // mos
+  ['#4a2a2a', '#633838'], // oxbloed
+  ['#2b3540', '#3d4c5f'], // leisteen
+  ['#3d2b36', '#55394a'], // pruim
+  ['#24403d', '#33605a']  // diep teal
+];
+export function labelTint(name: string): readonly [string, string] {
+  let h = 2166136261;
+  for (let i = 0; i < name.length; i++) { h ^= name.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return LABEL_TINTS[Math.abs(h) % LABEL_TINTS.length]!;
+}
+/** Eerste letter (hoofdletter) van de naam voor het monogram; '·' zonder naam. */
+export function monogram(name: string): string {
+  const ch = Array.from(name.trim().replace(/^[^\p{L}\p{N}]+/u, ''))[0];
+  return ch ? ch.toLocaleUpperCase('nl-NL') : '·';
+}

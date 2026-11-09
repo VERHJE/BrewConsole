@@ -61,7 +61,7 @@ test('foto-synchronisatie tussen twee toestellen in de echte app: maken, ophalen
   await a.click('a:has-text("Bewerken")');
   await a.click('button:has-text("Foto verwijderen")');
   await a.click('button:has-text("Opslaan")');
-  await a.waitForSelector('.thumb svg.bagart');
+  await a.waitForSelector('.thumb .bagart.label');
   await a.goto(app.base + '#/meer/sync');
   await a.click('button:has-text("Nu synchroniseren")');
   await a.waitForSelector('.banner:has-text("Foto’s: 1 verstuurd")', { timeout: 60_000 });
@@ -69,7 +69,7 @@ test('foto-synchronisatie tussen twee toestellen in de echte app: maken, ophalen
   await b.click('button:has-text("Nu synchroniseren")');
   await b.waitForSelector('.banner:has-text("Foto’s: 1 verwijderd")', { timeout: 60_000 });
   await b.goto(app.base + '#/zakken');
-  await b.waitForSelector('.item:has-text("Syncfotozak") .thumb svg.bagart');
+  await b.waitForSelector('.item:has-text("Syncfotozak") .thumb .bagart.label');
   assert.equal(await b.locator('img.photo').count(), 0);
   assert.deepEqual(errors, []);
   await ctxA.close(); await ctxB.close();

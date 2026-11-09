@@ -1519,3 +1519,13 @@ Jelle liet een extern UX/UI-verbeterplan ('Brew Console 2.1') beoordelen; wat al
 - **Niet getest:** echte Safari (safe-area-inzetstukken van de notch en de homebalk, dynamische adresbalk), donkere modus op elk formaat (axe-tests dekken licht en donker op één formaat).
 
 - **Timer in twee kolommen (9 nov 2026, keuze Jelle):** (1) op brede schermen (≥ 900 × 600: iPad Pro, MacBook) links een grote klok (tot 8 rem), de huidige giet met een ring van 200 px, doelgewicht in 3,4 rem en de knoppen eronder; rechts de voorbereiding en het hele schema; (2) liggend op een telefoon (hoogte ≤ 560 px) ook twee kolommen: links klok en huidige giet met de **tip** (die was in liggend verborgen), rechts de voorbereiding en de knoppen; (3) staand en smal blijft zoals het was (de blokken `tnow`, `tplan` en `tctl` staan met `display: contents` in de oude volgorde). De timer heeft daarvoor drie blokken in `Timer.tsx`. Verder: de zij-inzetstukken van de notch (`env(safe-area-inset-left/right)`) in de hoofdkolom en de tabbalk. De responsive-test controleert nu ook de kolommen, dat de hoofdknop in beeld blijft en dat de tip zichtbaar is. 180 app3-tests.
+
+## Ronde 6 · fase A: ontwerp (keuze Jelle, nov 2026)
+
+- **Palet**: licht thema is nu ivoor, espresso en messing (primaire knop espresso, accent messing `#80540e`, ster `#a9741a`); donker blijft "Quiet Luxury" met goud. Reden: het donkere thema en het app-icoon waren al bruin en goud, groen was de uitzondering. Contrast gemeten; axe (WCAG A/AA) slaagt licht en donker.
+- **Zonder foto**: een typografisch etiket (tint per zaknaam uit zes donkere aardetinten, ivoren tekst, messing lijn, monogram in lijsten, groot etiket met brander, naam en meta in het detail).
+- **Zakken**: geen paarse kop meer; zoekveld en één Filter-knop op één rij; kaartenraster op brede schermen.
+- **Logboek**: rijen met datumblok, titel, brewer-badge (CHEMEX/V60), cijfers in één regel; "Over dit advies" staat ingeklapt.
+- **Timer**: gedane stappen krijgen een vinkje in plaats van doorhalen, stappen op één regel, genummerde voorbereiding.
+- **Desktop**: gecentreerde inhoud, compacte zijbalk met woordmerk.
+- **Regel: afgebroken zetsels tellen niet mee.** `FactState.abandoned` bewaart ze apart; ze komen niet in `cups`, `cupOrder` of de zak, en beïnvloeden dus geen klik, proef, laatste kop of voorraad. Ze verschijnen niet in het logboek.

@@ -43,7 +43,7 @@ for (const scheme of ['light', 'dark']) {
     await page.click('a:has-text("Bewerken")');
     await page.click('button:has-text("Foto verwijderen")');
     await page.click('button:has-text("Opslaan")');
-    await page.waitForSelector('.thumb svg.bagart');
+    await page.waitForSelector('.thumb .bagart.label');
     assert.equal(await page.locator('img.photo').count(), 0);
     assert.deepEqual(errors, []);
     await page.close();

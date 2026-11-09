@@ -27,6 +27,6 @@ test('toepassen: attributen alleen bij een bewuste keuze', () => {
 });
 
 test('themakleur volgt de gekozen of de systeemkleur', () => {
-  assert.equal(themeColor('dark', false), '#120e0a'); assert.equal(themeColor('light', true), '#f4efe4');
-  assert.equal(themeColor('system', true), '#120e0a'); assert.equal(themeColor('system', false), '#f4efe4');
+  assert.equal(themeColor('dark', false), '#120e0a'); assert.equal(themeColor('light', true), '#f6f1e7');
+  assert.equal(themeColor('system', true), '#120e0a'); assert.equal(themeColor('system', false), '#f6f1e7');
 });

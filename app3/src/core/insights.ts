@@ -11,6 +11,7 @@ export interface CupRow {
   readonly at: number;
   readonly beanName: string | null;
   readonly technique: string;
+  readonly method: 'v60' | 'chemex';
   readonly doseG: number;
   readonly waterG: number;
   readonly click: number | null;
@@ -54,7 +55,7 @@ export function cupRows(state: EngineState, beanId: string | null = null): CupRo
     const c = facts.cups.get(id)!;
     if (beanId !== null && c.beanId !== beanId) continue;
     rows.push({
-      id: c.brewId, at: c.at, beanName: c.beanId ? facts.beans.get(c.beanId)?.fields.name ?? null : null, technique: c.technique,
+      id: c.brewId, at: c.at, beanName: c.beanId ? facts.beans.get(c.beanId)?.fields.name ?? null : null, technique: c.technique, method: c.method,
       doseG: c.doseG, waterG: c.waterG, click: c.grindClick, endSec: c.endSec, status: c.status,
       strength: c.tasting?.strength ?? null, liking: c.tasting?.liking ?? null, tasted: c.tasting !== null, taste: tasteLine(c.tasting)
     });

@@ -54,7 +54,8 @@ function useWakeLock(active: boolean): void {
 export function Timer({ brewId }: { brewId: string }): JSX.Element {
   const { store, env } = useApp();
   const { state, events } = useSnapshot();
-  const cup = factsOf(state).cups.get(brewId);
+  const facts = factsOf(state);
+  const cup = facts.cups.get(brewId) ?? facts.abandoned.get(brewId);
   const timerEvents = timerEventsFor(events, brewId);
   const recipe = cup?.planned;
   const view = recipe ? timerView(recipe, timerEvents, env.now()) : null;
@@ -116,14 +117,14 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
       </div>
       <div class="tplan">
       {guide.prep.length > 0 && (
-        <div class="stepprep"><strong>Voor je begint</strong><ul>{guide.prep.map(t => <li key={t}>{t}</li>)}</ul></div>)}
+        <div class="stepprep"><strong>Voor je begint</strong><ol>{guide.prep.map(t => <li key={t}>{t}</li>)}</ol></div>)}
       {guide.finish.length > 0 && (
-        <div class="stepprep"><strong>Na de laatste giet</strong><ul>{guide.finish.map(t => <li key={t}>{t}</li>)}</ul></div>)}
+        <div class="stepprep"><strong>Na de laatste giet</strong><ol>{guide.finish.map(t => <li key={t}>{t}</li>)}</ol></div>)}
       {guide.next && <p class="stepnext">{guide.next}</p>}
       <ol class="steps" aria-label="Gietschema">
         {lines.map((l, i) => {
           const ph = view.phases[i]!;
-          const cls = ph === 'hold' ? 'hold' : ph === 'go' && i === view.current ? 'go' : view.drained.has(i) ? 'past' : '';
+          const cls = view.status === 'complete' ? 'past' : ph === 'hold' ? 'hold' : ph === 'go' && i === view.current ? 'go' : view.drained.has(i) ? 'past' : '';
           return <li key={i} class={cls}><span>{l.at}</span><span>{l.add}</span><span>→ {l.to}</span>{l.how && <small>{l.how}</small>}</li>;
         })}
       </ol>

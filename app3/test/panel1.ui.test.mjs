@@ -69,9 +69,11 @@ test('punt 6 en 7: Meer in drie groepen; hero-foto op laptop volgt de kleur van 
   assert.equal(await page.locator('.list .item.go').count(), 7);
   await page.goto(app.base + '#/zakken');
   await page.click(`.item:has-text("${SEED_BEAN}")`);
-  await page.waitForSelector('.hero-photo svg');
-  const bg = await page.locator('.hero-photo svg').evaluate(el => getComputedStyle(el).backgroundColor);
-  assert.notEqual(bg, 'rgba(0, 0, 0, 0)', 'de rand naast de tekening heeft dezelfde kleur als de achtergrond');
+  await page.waitForSelector('.hero-photo .bagart.label.large');
+  const tint = await page.locator('.hero-photo .bagart.label').evaluate(el => [getComputedStyle(el).getPropertyValue('--l1').trim(), getComputedStyle(el).backgroundImage]);
+  assert.match(tint[0], /^#[0-9a-f]{6}$/i, 'het etiket heeft een vaste, donkere tint per zaknaam');
+  assert.match(tint[1], /gradient/);
+  assert.match(await page.locator('.hero-photo .l-name').innerText(), new RegExp(SEED_BEAN));
   await page.close();
 });
 
