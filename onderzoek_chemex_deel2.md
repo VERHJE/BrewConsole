@@ -81,3 +81,21 @@ Niet doen: de 96 °C of de recepten aanpassen op basis van de warmteverlies-clai
 - Of Barefoots felle giet en de zachte gietadviezen elkaar echt tegenspreken of dat dit afhangt van de boon.
 
 **Verwerkt (9 nov 2026):** het Howell-recept voor één kop staat in de app als voorstel voor '1 kop' (340 g); zie `docs/engine3/05-technieken.md`.
+
+## 6. Aanvulling: James Hoffmann, video over de Chemex (door Jelle aangeleverd, 9 nov 2026)
+
+Bron: transcript van Hoffmanns video over de Chemex (klasse A: de maker van het V60-recept zelf; geen aanpassing door een derde). Het transcript is **afgebroken** bij "6. One…", dus alles wat daarna in de video komt, ontbreekt hier.
+
+**Wat hij zegt**
+- **Filter:** een Chemex-filter weegt net geen 4,5 g, een Hario-filter voor twee kopjes ongeveer 1,5 g: "drie keer zoveel papier", met aan de ene kant drie lagen. Dat is een **gewichtsmeting van Hoffmann zelf**; het vervangt de "20 tot 30 % dikker"-claim van de maker niet, maar zegt wel iets anders (het gewicht omvat ook het grotere vel). Spoel het filter altijd.
+- **Maling:** "niet te veel compenseren voor de extra weerstand." Bij dezelfde maling, dosis en giettechniek liep de Chemex veel langzamer dan de V60. Dat is volgens hem prima: **4 tot 5 minuten bij een halve liter** en dan nog goede koffie. Mensen die te grof malen om 3 tot 3,5 minuut te halen, krijgen een zwakkere kop.
+- **Dosis:** blijf bij **60 g per liter** (1:16,7); wie sterker wil, past dat aan. Hij waarschuwt voor een **spiraal van meer koffie en onderextractie** (meer koffie nemen omdat de kop dun is, terwijl te grof malen de oorzaak is).
+- **Bloem:** hetzelfde als bij de V60, **2 tot 3 keer de dosis** (60 tot 90 g bij 30 g koffie), **minstens 45 seconden**.
+- **Gieten:** "een vergelijkbare giettechniek, in fases, als in de V60-video", aan het eind **even roeren en dan swirlen** voor een vlak bed.
+- **Luchtslot:** de dikke kant van het filter hoort bij de tuit; het papier mag na het spoelen de opening niet dichtplakken. Noodoplossing: een stokje (liefst metaal) in de kan. Beter: let op de opening.
+
+**Wat dit verandert**
+1. De **maling:** de app begint op klik 24 (6 klikken grover dan de V60). Hoffmann raadt juist aan niet veel grover te gaan, en een andere bron zei al "één of twee standen fijner dan de V60". Samen met de lijst die 17 tot 19 noemt, wijst alles op een **lagere beginklik dan 24**. Nog steeds geen meting, maar nu twee onafhankelijke aanwijzingen tegen één.
+2. De **eindtijd:** bij Hoffmann hoort bij 500 g een tijd van 4 tot 5 minuten. Onze Chemex-recepten staan op 3:30 tot 4:00 (Howell, Verve, Pull & Pour) en de V60-variant van Hoffmann op de Chemex op 3:30. Die laatste is dus te kort als je Hoffmanns eigen Chemex-advies volgt.
+3. Een **Hoffmann-Chemex-recept** is nu mogelijk uit zijn eigen woorden: 60 g/l, bloem 2 tot 3 keer, minstens 45 s, fases als de V60, aan het eind roeren en swirlen, klaar in 4 tot 5 minuten. **Ontbreekt:** de gietmomenten en gewichten per fase voor de Chemex (die staan in het afgebroken deel of in zijn V60-video).
+4. De **filteraanwijzingen** (dikke kant bij de tuit, opening vrijhouden, altijd spoelen) staan al bij de recepten; het luchtslot kan als tip erbij.
