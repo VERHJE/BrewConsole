@@ -145,6 +145,7 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
   const prep = prepLines(r), finish = finishLines(r), notesPerPour = pourNotes(r);
   return (
     <div>
+      <div class="card recipe">
       <div class="advhead">
         {beanId && beanName && <span class="advthumb"><BagArt beanId={beanId} name={beanName} /></span>}
         <div class="advtitle">
@@ -159,7 +160,7 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
         {r.grindClick !== null && <div class="num"><b>klik {r.grindClick}</b><small>Timemore C3S Pro</small></div>}
       </div>
       {endB && <p class="meta">Verwacht klaar tussen {clock(endB.lo)} en {clock(endB.hi)}.</p>}
-      <div class="card">
+      <div class="recipe-body">
         <table class="pours"><thead><tr><th>Tijd</th><th>Giet</th><th>Totaal</th><th>Hoe</th></tr></thead>
           <tbody>{lines.map(l => (
             <tr key={l.index}><td>{l.at}{l.wait ? '*' : ''}</td><td>{l.add}</td><td>{l.to}</td><td>{l.how}</td></tr>
@@ -167,6 +168,8 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
         {lines.some(l => l.wait) && <p class="meta">* begin pas als het bed bijna droog is, ook als dat later is dan de tijd.</p>}
         {prep.length > 0 && <div class="aprep"><strong>Voor je begint</strong><ul class="alist">{prep.map(t => <li key={t}>{t}</li>)}</ul></div>}
         {finish.length > 0 && <div class="aprep"><strong>Na de laatste giet</strong><ul class="alist">{finish.map(t => <li key={t}>{t}</li>)}</ul></div>}
+      </div>
+      <div class="startbar"><button class="btn primary" type="button" onClick={onStart}><span>{advice.trial ? 'Zet gewoon dit recept' : 'Start zetsel'}</span>{end && <small>klaar rond {end}</small>}</button></div>
       </div>
       {notesPerPour.length > 0 && (
         <details class="card fold"><summary>Aanwijzingen per giet</summary>
@@ -191,7 +194,6 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
             <button class="btn" type="button" onClick={() => onTrial('control')}>Zet kop 1: {techniqueName(advice.trial.control.technique)}</button>
             <button class="btn" type="button" onClick={() => onTrial('variant')}>Zet kop 2: {techniqueName(advice.trial.variant.technique)}</button>
           </div></div>)}
-      <div class="startbar"><button class="btn primary" type="button" onClick={onStart}><span>{advice.trial ? 'Zet gewoon dit recept' : 'Start zetsel'}</span>{end && <small>klaar rond {end}</small>}</button></div>
     </div>
   );
 }
