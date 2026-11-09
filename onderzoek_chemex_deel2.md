@@ -117,3 +117,7 @@ Ter vergelijking, dezelfde zak op de V60 (Kasuya, 300 g, klik 15): bed droog na 
 - Een kop van 22,8 g op 403 g was "juist" qua sterkte: de engine leert nu uit die eigen koppen een lagere dosis dan Howells 26,5 g op 390 g (zie de berekening: ongeveer 21 g op 380 g).
 
 **Besluit:** beginklik voor de Chemex 15 (daarna de klik van je laatste Chemex-kop), venster 11 tot 22.
+
+## 8. Bron voor later: Blue Bottle, eigen transcript
+
+Jelle leverde op 9 nov 2026 het transcript van Blue Bottles eigen Chemex-video aan (klasse A, 4 gietbeurten, 700 g; echte gietmomenten 0:00, 0:45, 1:50, 3:10). Uitgewerkt in `bronnen/blue_bottle_chemex.md`, inclusief wat er in het recept `chemex_blue_bottle` aangepast moet worden. Nog niet verwerkt in de app.
