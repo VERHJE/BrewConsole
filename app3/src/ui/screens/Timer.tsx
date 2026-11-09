@@ -91,6 +91,7 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
 
   return (
     <section class={view.status === 'ready' ? 'timer ready' : 'timer'} aria-label="Timer">
+      <div class="tnow">
       <div class="clock" aria-label={`Totale tijd ${clock(Math.floor(t))}`}>{clock(Math.floor(t))}<small>totaal</small></div>
       {guide.progress && (
         <div class="pprog" role="group" aria-label={`Giet ${guide.progress.index} van ${guide.progress.count}`}>
@@ -112,6 +113,8 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
           <strong>Daarna{guide.after.todo ? `: ${guide.after.todo}` : ''}</strong>
           {guide.after.detail && <span>{guide.after.detail}</span>}
         </div>)}
+      </div>
+      <div class="tplan">
       {guide.prep.length > 0 && (
         <div class="stepprep"><strong>Voor je begint</strong><ul>{guide.prep.map(t => <li key={t}>{t}</li>)}</ul></div>)}
       {guide.finish.length > 0 && (
@@ -124,7 +127,9 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
           return <li key={i} class={cls}><span>{l.at}</span><span>{l.add}</span><span>→ {l.to}</span>{l.how && <small>{l.how}</small>}</li>;
         })}
       </ol>
+      </div>
 
+      <div class="tctl">
       {view.status === 'ready' && <button class="btn primary big" type="button" onClick={() => { unlockAudio(); send(startTimer(env, brewId)); }}>Start</button>}
       {(view.status === 'running' || view.status === 'paused') && (
         <div>
@@ -147,6 +152,7 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
       )}
       {view.status === 'complete' && <a class="btn primary big" href={href('proeven', brewId)}>Proeven</a>}
       {view.status === 'abandoned' && <a class="btn big" href={href('zetten')}>Terug</a>}
+      </div>
     </section>
   );
 }

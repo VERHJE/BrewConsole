@@ -39,7 +39,16 @@ const MEASURE = () => {
   }
   const t = document.querySelector('.timer');
   const tr = t ? t.getBoundingClientRect() : null;
-  return { hscroll: document.documentElement.scrollWidth > vw + 1, overflow, small, timerOff: tr ? Math.abs(tr.left - (vw - tr.right)) : null };
+  const now = document.querySelector('.tnow')?.getBoundingClientRect(), plan = document.querySelector('.tplan')?.getBoundingClientRect();
+  const big = document.querySelector('.tctl .big')?.getBoundingClientRect();
+  const tip = document.querySelector('.steptip');
+  return {
+    hscroll: document.documentElement.scrollWidth > vw + 1, overflow, small, timerOff: tr ? Math.abs(tr.left - (vw - tr.right)) : null,
+    // Met display: contents heeft een blok geen eigen vlak: dan staan ze onder elkaar.
+    sideBySide: now && plan ? now.width > 0 && plan.width > 0 && plan.left >= now.right - 1 : null,
+    bigBottom: big ? big.bottom : null, vh: window.innerHeight,
+    tipShown: tip ? getComputedStyle(tip).display !== 'none' && tip.getBoundingClientRect().height > 0 : null
+  };
 };
 
 for (const v of VIEWPORTS) {
@@ -77,6 +86,13 @@ for (const v of VIEWPORTS) {
     await page.click('button:has-text("Start")'); await page.waitForSelector('.pprog'); await page.clock.fastForward(50_000);
     const run = await check('timer-lopend');
     if (v.w >= 900) for (const [n, m] of [['klaar', ready], ['lopend', run]]) if (m.timerOff !== null && m.timerOff > 2) problems.push(`timer-${n}: niet gecentreerd (${Math.round(m.timerOff)} px verschil)`);
+    // Twee kolommen op brede (≥ 900 × 600) en liggende telefoonschermen; staand en smal onder elkaar.
+    const landscapePhone = v.h <= 560 && v.w > v.h, wide = v.w >= 900 && v.h >= 600;
+    for (const [n, m] of [['klaar', ready], ['lopend', run]]) {
+      if (m.sideBySide !== (landscapePhone || wide)) problems.push(`timer-${n}: kolommen ${m.sideBySide ? 'naast' : 'onder'} elkaar, verwacht ${landscapePhone || wide ? 'naast' : 'onder'}`);
+      if ((landscapePhone || wide) && m.bigBottom !== null && m.bigBottom > m.vh + 1) problems.push(`timer-${n}: hoofdknop valt onder het scherm (${Math.round(m.bigBottom)} > ${m.vh})`);
+    }
+    if (run.tipShown === false) problems.push('timer-lopend: de tip bij de giet is verborgen');
     await ctx.close();
     assert.deepEqual(errors, []);
     assert.deepEqual(problems, []);
