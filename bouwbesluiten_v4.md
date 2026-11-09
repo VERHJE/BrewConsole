@@ -1469,3 +1469,15 @@ Uit een beoordeling van de schermen door vier rollen (interactie, visueel, toega
 - **App:** `core/photosync.ts` (markeringen per zak, omhulsel om de fotoruimte, synchronisatie), `Sync.tsx` toont een regel 'Foto's: x verstuurd, y opgehaald, z verwijderd'.
 - **Uitrol:** de Worker moet eerst de nieuwe versie draaien (automatisch na de merge via Cloudflare), daarna de app op beide toestellen bijwerken.
 - Tests: 5 nieuwe servertests, 10 kerntests, 1 browsertest met twee toestellen. 151 app3-tests.
+
+### Ronde 5: uit het verbeterplan 2.1 (9 nov 2026)
+
+Jelle liet een extern UX/UI-verbeterplan ('Brew Console 2.1') beoordelen; wat al gebouwd was, bleef; het volgende is gebouwd (punt 1 t/m 6 van de beoordeling). Niet overgenomen: water als vijfde tab, 'Zakken' hernoemen naar 'Bonen', een wizard met vier stappen en concept opslaan, timerknoppen met alleen een pictogram (en 'Erdoor' weglaten), de groene startknop en de beeldtaal uit de gegenereerde mockups.
+
+- **Receptscherm:** 'Waarom dit recept?' is een inklapbaar blok; de onzekerheid staat in gewone taal ('Verwacht klaar tussen 3:15 en 3:41.') met de marges van dosis en sterkte onder 'Hoe zeker is dit recept?'. Waarschuwingen en de rustige uitleg uit ronde 3 blijven zoals ze waren.
+- **Zak bij het recept:** de foto van de gekozen zak (of de getekende zak) staat klein naast de zaknaam boven het recept.
+- **Timer:** 'Giet 2 van 5' met een rij stippen (klaar, nu, nog te doen) en het doelgewicht als grote regel ('tot 117 g', '+68 g · in spiraal'). `stepGuide` levert daarvoor `progress` en `target`; de bestaande teksten en 'Erdoor' blijven.
+- **Zakkenlijst:** elke rij heeft dezelfde twee regels: herkomst (brander · land, of 'Herkomst onbekend') en branding · dagen na branding · voorraad · koppen ('Branddatum onbekend' en 'Nog niet gezet' waar iets ontbreekt); 'Bijna op' als tekstlabel. `rowLines` in `core/beans.ts`.
+- **Zakformulier:** naam, brander, land, branddatum en zakgrootte staan altijd open; 'Meer over de herkomst en het proces' en 'Smaaknotities en winkel' zijn dicht zolang ze leeg zijn, gaan open zodra een herkenning ze vult (of er een fout is) en gaan daarna nooit onder je vingers dicht. Het hulptekstje bij de foto zegt nu dat ze meegaat met de synchronisatie.
+- **Logboek:** onder elke geproefde kop een korte regel: je eigen notitie (afgekapt op 60 tekens), anders de herkende notities met sterkte, zuur en afdronk (`tasteLine` in `core/insights.ts`).
+- Tests: `ronde5.test.ts`, `ronde5.ui.test.mjs` (licht en donker, axe), uitbreiding van `timer.test.ts`; `proeven.ui.test.mjs` opent het uitleg-blok eerst. 158 app3-tests.

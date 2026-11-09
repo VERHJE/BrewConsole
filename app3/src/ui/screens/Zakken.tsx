@@ -4,8 +4,8 @@ import { encodePhoto } from '../photo-encode.ts';
 import type { Route } from '../../core/router.ts';
 import { href } from '../../core/router.ts';
 import {
-  ROAST_LABEL, beanArchive, beanDetail, stockView, beanRows, beanUpsert, daysSinceRoast, emptyForm, formFromBean, scanText, validateForm,
-  type BeanForm, type FormKey, type BeanRow
+  ROAST_LABEL, beanArchive, beanDetail, rowLines, stockView, beanRows, beanUpsert, daysSinceRoast, emptyForm, formFromBean, scanText, validateForm,
+  type BeanForm, type FormKey, type BeanRow, type StockView
 } from '../../core/beans.ts';
 import { formFromScan } from '../../core/beans.ts';
 import { BeanFormView } from '../BeanFormView.tsx';
@@ -22,10 +22,9 @@ import {
 
 const todayIso = (now: number): string => new Date(now).toISOString().slice(0, 10);
 
-function Meta({ row, today }: { row: BeanRow; today: string }): JSX.Element {
-  const age = daysSinceRoast(row.roastDate, today);
-  const bits = [row.roaster, row.country, row.roastLevel ? ROAST_LABEL[row.roastLevel] : null, age !== null ? `${age} d na branding` : null, row.cups ? `${row.cups} ${row.cups === 1 ? 'kop' : 'koppen'}` : null].filter(Boolean);
-  return <small>{bits.join(' · ') || 'Nog geen details'}</small>;
+function Meta({ row, today, stock }: { row: BeanRow; today: string; stock: StockView | undefined }): JSX.Element {
+  const l = rowLines(row, stock, today);
+  return <><small>{l.origin}</small><small>{l.facts}{l.low && <> · <span class="tag warn">Bijna op</span></>}</small></>;
 }
 
 function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
@@ -39,20 +38,23 @@ function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
   const base = beanRows(state);
   const facts = useMemo(() => {
     const m = new Map<string, BeanFacts>();
+    const st = new Map<string, StockView>();
     for (const r of base) {
       const l = cupRows(state, r.id).map(c => c.liking).filter((x): x is number => typeof x === 'number');
-      m.set(r.id, { fav: favs.has(r.id), low: stockView(state, r.id).low, avg: l.length ? l.reduce((a, b) => a + b, 0) / l.length : null });
+      const sv = stockView(state, r.id);
+      st.set(r.id, sv);
+      m.set(r.id, { fav: favs.has(r.id), low: sv.low, avg: l.length ? l.reduce((a, b) => a + b, 0) / l.length : null });
     }
-    return m;
+    return { m, st };
   }, [state, favs.size]);
-  const ctx = { facts, todayIso: today };
+  const ctx = { facts: facts.m, todayIso: today };
   const all = sortBeans(base, prefs.sort, ctx);
   const filtered = filterBeans(all, prefs.filters, ctx);
   const rows = q.trim() ? filtered.filter(r => matches([r.name, r.roaster, r.country].filter(Boolean).join(' '), q)) : filtered;
   const narrowed = !isDefault(prefs) || q.trim() !== '';
   // De grote kaart pas bij drie of meer zakken; anders toont hij dezelfde zak als de lijst eronder.
   const top = narrowed || rows.length < 3 ? undefined : rows[0];
-  const avg = (id: string): string | null => { const a = facts.get(id)?.avg; return a == null ? null : a.toFixed(1).replace('.', ','); };
+  const avg = (id: string): string | null => { const a = facts.m.get(id)?.avg; return a == null ? null : a.toFixed(1).replace('.', ','); };
   const toggleFilter = (k: FilterKey): void => change({ ...prefs, filters: prefs.filters.includes(k) ? prefs.filters.filter(x => x !== k) : [...prefs.filters, k] });
   return (
     <section>
@@ -85,7 +87,7 @@ function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
               </span>
             </a>)}
           <ul class="list thumbs">{rows.map(r => (
-            <li key={r.id}><a class="item" href={href('zakken', r.id)} aria-current={r.id === activeId ? 'true' : undefined}><span class="thumb"><BagArt beanId={r.id} name={r.name} /></span><span class="itext"><strong>{favs.has(r.id) && <span aria-label="Favoriet">★ </span>}{r.name}</strong><Meta row={r} today={today} /></span></a></li>
+            <li key={r.id}><a class="item" href={href('zakken', r.id)} aria-current={r.id === activeId ? 'true' : undefined}><span class="thumb"><BagArt beanId={r.id} name={r.name} /></span><span class="itext"><strong>{favs.has(r.id) && <span aria-label="Favoriet">★ </span>}{r.name}</strong><Meta row={r} today={today} stock={facts.st.get(r.id)} /></span></a></li>
           ))}</ul>
           {rows.length === 0 && <EmptyState compact title={q.trim() ? `Geen zakken gevonden voor ‘${q}’` : 'Geen zakken met deze filters'}>{!isDefault(prefs) ? <button type="button" class="btn" onClick={() => change({ sort: 'standaard', filters: [] })}>Wis sorteren en filters</button> : undefined}</EmptyState>}
         </>}
@@ -211,7 +213,7 @@ function Editor({ beanId }: { beanId: string | null }): JSX.Element {
           : photoBlob === 'remove' ? <BagArt beanId="x" name={form.values.name || 'zak'} bump={bump} /> : <BagArt beanId={beanId ?? 'nieuw'} name={form.values.name || 'zak'} bump={bump} />}</div>
         <div class="photo-actions">
           <strong>Foto van de zak</strong>
-          <span class="meta">Blijft op dit toestel en staat in je back-up; niet in de synchronisatie.</span>
+          <span class="meta">Staat in je back-up en gaat mee met de synchronisatie, als die aanstaat.</span>
           <div class="row wrap">
             <label class="btn">Foto kiezen<input class="sr-only" type="file" name="photo" accept="image/*" onChange={onPhoto} /></label>
             {(photoBlob && photoBlob !== 'remove' || beanId) && <button class="btn" type="button" onClick={() => { setPhotoBlob('remove'); setBump(bump + 1); setPhotoMsg('Foto wordt verwijderd bij opslaan.'); }}>Foto verwijderen</button>}

@@ -100,6 +100,8 @@ test('stap per stap: klaar → giet met aftelling en "hierna" → wachten op doo
   const t0 = now;
   assert.equal(guide(t0).kind, 'ready');
   assert.match(guide(t0).action, /Eerste giet/);
+  assert.equal(guide(t0).progress, null, 'voor de start geen voortgang');
+  assert.equal(guide(t0).target, null);
   await s.store.append(startTimer(env, s.brewId));
 
   const g1 = guide(t0 + 10_000);
@@ -108,6 +110,11 @@ test('stap per stap: klaar → giet met aftelling en "hierna" → wachten op doo
   assert.equal(Math.round(g1.remainingSec!), Math.round(pours[1]!.atSec - 10));
   assert.ok(g1.fraction! > 0 && g1.fraction! < 0.5);
   assert.match(g1.next!, /Hierna giet 2/);
+  // voortgang en doel: welke giet het is en tot welk gewicht
+  assert.deepEqual(g1.progress, { index: 1, count: pours.length });
+  assert.equal(g1.target!.toG, pours[0]!.toG);
+  assert.equal(g1.target!.addG, pours[0]!.addG);
+  assert.match(g1.target!.how, /spiraal|rondjes|midden/);
 
   // Aftelling daalt, fractie stijgt, binnen 0..1
   const a = guide(t0 + 20_000), b = guide(t0 + 30_000);
@@ -134,6 +141,8 @@ test('stap per stap: klaar → giet met aftelling en "hierna" → wachten op doo
   const gl = guide(lastAt);
   assert.equal(gl.kind, 'drain');
   assert.equal(gl.title, `Giet ${last + 1}`);
+  assert.deepEqual(gl.progress, { index: last + 1, count: pours.length });
+  assert.match(gl.target!.how, /doorlopen/);
   assert.match(gl.next!, /Alles doorgelopen/);
 
   await s.store.append(finishTimer(env, s.brewId, pours[last]!.atSec + 60, last));

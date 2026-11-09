@@ -238,3 +238,26 @@ export function stockView(state: EngineState, beanId: string): StockView {
   const cupsLeft = Math.floor(remainingG / typical);
   return { remainingG, cupsLeft, low: cupsLeft < 2 };
 }
+
+// ───────────── vaste rij in de zakkenlijst ─────────────
+
+export interface RowLines {
+  /** Eerste regel onder de naam: brander en land, of 'Herkomst onbekend'. */
+  readonly origin: string;
+  /** Tweede regel, altijd in dezelfde volgorde: branding, leeftijd, voorraad, koppen. */
+  readonly facts: string;
+  /** 'Bijna op' als tekstlabel (niet alleen kleur). */
+  readonly low: boolean;
+}
+
+/** Elke zak heeft dezelfde twee regels, in dezelfde volgorde; ontbrekende gegevens staan er als 'onbekend' of worden overgeslagen. */
+export function rowLines(row: BeanRow, stock: StockView | undefined, today: string): RowLines {
+  const age = daysSinceRoast(row.roastDate, today);
+  const parts = [
+    row.roastLevel ? ROAST_LABEL[row.roastLevel] : null,
+    age !== null ? `${age} d na branding` : 'Branddatum onbekend',
+    stock && stock.remainingG !== null && !stock.low ? `${stock.remainingG} g over` : null,
+    row.cups ? `${row.cups} ${row.cups === 1 ? 'kop' : 'koppen'}` : 'Nog niet gezet'
+  ].filter((x): x is string => x !== null);
+  return { origin: [row.roaster, row.country].filter(Boolean).join(' · ') || 'Herkomst onbekend', facts: parts.join(' · '), low: !!stock?.low };
+}
