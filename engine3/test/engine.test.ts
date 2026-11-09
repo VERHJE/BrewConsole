@@ -95,10 +95,10 @@ test('regel 4: de dosis blijft binnen de grenzen van de V60, voor elke kopgroott
 });
 test('Chemex: eigen recept per portie, eigen dosisgrens, geen V60-melding, Chemex-klik en -eindtijd', () => {
   const pick = (cupG: number, technique: TechniqueId | null = null) => ask([bean()], { method: 'chemex' as Method, cupG: cupG as never, technique });
-  assert.equal(pick(250).recipe.technique, 'chemex_verve');
-  assert.equal(pick(400).recipe.technique, 'chemex_pull_pour');
-  assert.equal(pick(650).recipe.technique, 'chemex_barefoot');
-  for (const c of [250, 400, 650]) {
+  assert.equal(pick(340).recipe.technique, 'chemex_howell_cup');
+  assert.equal(pick(500).recipe.technique, 'chemex_stumptown');
+  assert.equal(pick(680).recipe.technique, 'chemex_barefoot');
+  for (const c of [340, 500, 680]) {
     const a = pick(c);
     assert.equal(a.recipe.method, 'chemex');
     assert.ok(!a.warnings.some(w => /V60-techniek/.test(w)), `${c} g`);

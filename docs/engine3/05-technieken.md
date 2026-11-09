@@ -21,9 +21,9 @@ Perger 80/20 is een beslisregel, geen recept.
 
 | Prioriteit | Als | Voorstel → proef | Kasuya eerste giet | Bewijs |
 |---|---|---|---|---|
-| 102 | Chemex, kop ≤ 300 g (1 kop) | Chemex Verve → Pull & Pour | — | besluit |
-| 101 | Chemex, kop 301–450 g | Chemex Pull & Pour → Stumptown | — | besluit |
-| 100 | Chemex, kop ≥ 451 g (2 koppen tot hele kan) | Chemex Barefoot → Stumptown, Blue Bottle, Onyx | — | besluit |
+| 102 | Chemex, kop ≤ 400 g (1 kop = 340 g) | Chemex Howell (1 kop) → Pull & Pour | — | besluit |
+| 101 | Chemex, kop 401–550 g | Chemex Stumptown → Barefoot | — | besluit |
+| 100 | Chemex, kop ≥ 551 g (2 koppen = 680 g) | Chemex Barefoot → Stumptown, Blue Bottle, Onyx | — | besluit |
 | 90 | licht/light-medium, en herhaald zuur of hol | Gagné → Kasuya | — | E3 |
 | 85 | ongelijk doorlopen of droge afdronk | Rao → Kasuya | — | E3 |
 | 60 | bloemige of theenotities | Wendelboe (eigen recept) → Kasuya | — | E3; besluit |
@@ -72,3 +72,9 @@ Zes recepten uit `onderzoek_chemex.md`, als data in `engine3/src/data/chemex-tec
 - **Sterktevoorkeur per brewer:** `strengthPlan` leert alleen van koppen en proeven van dezelfde brewer (oude logboeken zonder brewer tellen als V60). Een Chemex begint dus op de startdosis tot er Chemex-koppen geproefd zijn. Klachten per zak (zuur, droog) tellen nog voor beide brewers.
 - **Leren op de Chemex:** het recept van de portieregel is zelf de controle (Kasuya is dat alleen op de V60). Na twee geproefde koppen daarvan met deze zak volgt een blinde proef met het volgende recept uit de regel; de winnaar wordt de keuze voor die zak. Een winnaar van de V60 telt niet voor de Chemex en omgekeerd.
 - **Nog niet:** een keuze per boon (branding, proces) voor de Chemex; daarvoor zijn eerst eigen koppen nodig.
+
+### Chemex Howell, één kop (9 nov 2026)
+
+George Howell publiceert in zijn eigen PDF een recept 'Chemex six cup, brew for one': 25 tot 28 g koffie op 390 g water (340 g in de kop), 201 tot 205 °F, drie gietbeurten (130 g in 20 s, 1:00 naar 260 g, 2:00 naar 390 g, elk in concentrische cirkels vanuit het midden), klaar na 3:30 tot 4:00. Klasse A. Dosis 26,5 g (midden van de band) en 95 °C (midden van 94 tot 96 °C) zijn de referentie. Het is nu het voorstel voor '1 kop' (340 g, de maat van het recept); Verve (15/225) blijft beschikbaar voor een kleinere Chemex. De portieknoppen zijn '1 kop' (340 g) en '2 koppen' (680 g); 'Hele kan' is vervallen, want twee koppen zijn bij 6-kops vrijwel de hele kan.
+
+Het doorloopmodel stelt de maalstand voor een Chemex-recept niet bij zolang er voor dat recept geen eigen doorlooptijd is gelogd (het beginpunt is zelf een aanname); eerder gaf elke Chemex-brew de melding dat het einde afweek.

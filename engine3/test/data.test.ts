@@ -6,9 +6,9 @@ import { SELECTION_RULES } from '../src/data/selection-rules.ts';
 import { FLAVOR_WHEEL } from '../src/data/flavor-wheel.ts';
 import { loadApp } from '../../tests/load-app.mjs';
 
-test('veertien recepten (acht V60, zes Chemex), elk met een bron en een rol', () => {
-  assert.equal(TECHNIQUES.length, 14);
-  assert.equal(TECHNIQUES.filter(t => t.methods?.includes('chemex')).length, 6);
+test('vijftien recepten (acht V60, zeven Chemex), elk met een bron en een rol', () => {
+  assert.equal(TECHNIQUES.length, 15);
+  assert.equal(TECHNIQUES.filter(t => t.methods?.includes('chemex')).length, 7);
   for (const t of TECHNIQUES) {
     assert.ok(t.sources.length > 0, t.id);
     assert.ok(t.role.length > 0, t.id);
@@ -87,6 +87,8 @@ test('Chemex-recepten: bron, Chemex-eindtijd, plaatshouders staan in `open`, V60
     assert.ok(t.reference.pours!.every(p => p.tip), `${t.id}: tip per giet`);
     assert.ok(t.reference.tempC !== null, t.id);
   }
+  // Howell (eigen PDF): 130 g in 20 s, 1:00 naar 260 g, 2:00 naar 390 g.
+  assert.deepEqual(TECHNIQUE_BY_ID.get('chemex_howell_cup')!.reference.pours!.map(p => [p.atSec, p.toG]), [[0, 130], [60, 260], [120, 390]]);
   // Barefoot: bloem 75 g, daarna 750 g; Onyx: vier keer 200 g op 0:45, 1:30, 2:30, 3:30 (Prima).
   assert.deepEqual(TECHNIQUE_BY_ID.get('chemex_barefoot')!.reference.pours!.map(p => p.toG), [75, 750]);
   assert.deepEqual(TECHNIQUE_BY_ID.get('chemex_onyx')!.reference.pours!.map(p => p.atSec), [0, 45, 90, 150, 210]);

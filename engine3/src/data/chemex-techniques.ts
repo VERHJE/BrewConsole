@@ -9,6 +9,32 @@ import type { TechniqueDef } from './techniques.ts';
 
 export const CHEMEX_TECHNIQUES: readonly TechniqueDef[] = [
   {
+    id: 'chemex_howell_cup',
+    name: 'Chemex Howell (1 kop)',
+    author: 'George Howell Coffee',
+    sourceClass: 'A',
+    methods: ['chemex'],
+    sources: [{ title: 'George Howell Coffee, Chemex brew guide (PDF): "Chemex six cup, brew for one"', url: 'https://cdn.shopify.com/s/files/1/0550/4119/6267/files/ChemexCombined_1125.pdf', readPrimary: true }],
+    axes: { agitation: 'low', structure: 'equal_pulses', extraction: 'normal' },
+    reference: {
+      doseG: 26.5, waterG: 390,
+      tempC: 95, tempNote: 'Howell: 201 tot 205 °F (94 tot 96 °C); 95 °C is het midden van die band.',
+      grind: 'drip-medium (bron); op jouw molen grover dan de V60',
+      pours: [
+        { atSec: 0, toG: 130, style: 'circles', agitationAfter: 'none', waitForDrain: false, drainCue: null, tip: 'Binnen 20 seconden. Begin in het midden en werk in concentrische cirkels naar buiten.' },
+        { atSec: 60, toG: 260, style: 'circles', agitationAfter: 'none', waitForDrain: false, drainCue: null, tip: 'Binnen 20 seconden, weer in concentrische cirkels vanuit het midden. Richt op de donkere (droge) plekken; zijn alle plekken nat, giet dan midden in het bed om te roeren.' },
+        { atSec: 120, toG: 390, style: 'circles', agitationAfter: 'none', waitForDrain: false, drainCue: null, tip: 'Binnen 20 seconden, op dezelfde manier.' }
+      ],
+      prep: ['Spoel het filter met heet gefilterd water tot het glas warm is; gooi dat water weg.', 'De kant met drie lagen zit tegen de tuit; het papier sluit aan tegen de wand, zonder luchtbellen.', 'Schud het bed vlak en zet de weegschaal op nul.'],
+      finish: ['Het bed loopt na ongeveer 3:30 tot 4:00 door; haal het filter eruit en serveer.'],
+      endSec: { lo: 210, hi: 240 },
+      notes: ['Recept van de maker (klasse A) voor één kop van 340 g in een 6-kops Chemex: 25 tot 28 g koffie op 390 g water (ratio 1:14 tot 1:15,6).', 'De dosis 26,5 g is het midden van 25 tot 28 g.', 'Te sterk of bitter: iets grover malen; te zwak of zuur: iets fijner (Howell).']
+    },
+    scaling: 'De bron geeft 25 tot 28 g op 390 g water voor één kop (340 g) en 50 tot 57 g op 780 g voor twee.',
+    role: 'Eén kop in de 6-kops Chemex: genoeg koffie voor een bruikbare laag.',
+    open: []
+  },
+  {
     id: 'chemex_verve',
     name: 'Chemex Verve (1 kop)',
     author: 'Verve Coffee Roasters',

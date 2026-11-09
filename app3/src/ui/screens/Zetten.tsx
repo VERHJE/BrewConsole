@@ -86,7 +86,7 @@ function Plan(): JSX.Element {
           </div>
         </div>
         {eff.method === 'chemex' && (
-          <div class="field"><span id="portion-l">Portie (een kop is 250 g)</span>
+          <div class="field"><span id="portion-l">Portie (een kop is 340 g)</span>
             <div class="chips" role="group" aria-labelledby="portion-l">
               {CHEMEX_PORTIONS.map(p => <button key={p.id} type="button" class="chip" aria-pressed={portion === p.id} onClick={() => set({ cupG: p.cupG })}>{p.label}</button>)}
             </div>

@@ -37,7 +37,7 @@ const req = (beanId: string | null, o: Partial<TechniqueRequest> = {}): Techniqu
 const choose = (events: EngineEvent[], r: TechniqueRequest) => chooseTechnique(learnFacts(events), r);
 
 test('Chemex: recept per portie als besluit, direct en zonder proef', () => {
-  const want: ReadonlyArray<[number, TechniqueId]> = [[250, 'chemex_verve'], [300, 'chemex_verve'], [350, 'chemex_pull_pour'], [450, 'chemex_pull_pour'], [500, 'chemex_barefoot'], [650, 'chemex_barefoot']];
+  const want: ReadonlyArray<[number, TechniqueId]> = [[250, 'chemex_howell_cup'], [340, 'chemex_howell_cup'], [400, 'chemex_howell_cup'], [450, 'chemex_stumptown'], [550, 'chemex_stumptown'], [680, 'chemex_barefoot']];
   for (const [cupG, t] of want) {
     const c = choose([bean('z')], req('z', { method: 'chemex', cupG }));
     assert.equal(c.technique, t, `${cupG} g`);
@@ -46,14 +46,14 @@ test('Chemex: recept per portie als besluit, direct en zonder proef', () => {
   }
 });
 test('Chemex: na twee geproefde koppen volgt een proef tussen twee Chemex-recepten; de winnaar wordt de keuze voor die zak', () => {
-  const ccup = (id: string): EngineEvent[] => cup(id, 'z', { tech: 'chemex_verve' });
-  const r = req('z', { method: 'chemex', cupG: 250 });
+  const ccup = (id: string): EngineEvent[] => cup(id, 'z', { tech: 'chemex_howell_cup' });
+  const r = req('z', { method: 'chemex', cupG: 340 });
   assert.equal(choose([bean('z'), ...ccup('a')], r).trial, null);
   const c = choose([bean('z'), ...ccup('a'), ...ccup('b')], r);
-  assert.equal(c.technique, 'chemex_verve');
-  assert.deepEqual([c.trial?.control, c.trial?.variant], ['chemex_verve', 'chemex_pull_pour']);
+  assert.equal(c.technique, 'chemex_howell_cup');
+  assert.deepEqual([c.trial?.control, c.trial?.variant], ['chemex_howell_cup', 'chemex_pull_pour']);
   // Gewonnen proef: de winnaar wint, ook als er een V60-proef van dezelfde zak bestaat.
-  const won = [bean('z'), ...ccup('a'), ...ccup('b'), trial('t1', 'z', 'chemex_verve', 'chemex_pull_pour', 'variant')];
+  const won = [bean('z'), ...ccup('a'), ...ccup('b'), trial('t1', 'z', 'chemex_howell_cup', 'chemex_pull_pour', 'variant')];
   assert.equal(choose(won, r).technique, 'chemex_pull_pour');
   const mixed = [...won, trial('t2', 'z', 'kasuya_46', 'gagne', 'variant')];
   assert.equal(choose(mixed, r).technique, 'chemex_pull_pour');
