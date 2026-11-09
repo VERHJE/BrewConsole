@@ -121,3 +121,7 @@ Ter vergelijking, dezelfde zak op de V60 (Kasuya, 300 g, klik 15): bed droog na 
 ## 8. Bron voor later: Blue Bottle, eigen transcript
 
 Jelle leverde op 9 nov 2026 het transcript van Blue Bottles eigen Chemex-video aan (klasse A, 4 gietbeurten, 700 g; echte gietmomenten 0:00, 0:45, 1:50, 3:10). Uitgewerkt in `bronnen/blue_bottle_chemex.md`, inclusief wat er in het recept `chemex_blue_bottle` aangepast moet worden. Nog niet verwerkt in de app.
+
+## 9. Bron voor later: vijf extra transcripten
+
+Jelle leverde op 9 nov 2026 transcripten van Hedrick, Stumptown, Ox Coffee, Onyx (director's cut) en Gagné (podcast afl. 350) aan. Uitgewerkt, met wat er later in de app aangepast kan worden, in `bronnen/chemex_transcripten_9nov.md`. Nog niet verwerkt in de app. Hedricks eigen Chemex-recept (40 g op 650 g) vult een gat uit sectie 5: er is nu wel een Chemex-recept van Hedrick.
