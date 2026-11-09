@@ -1529,3 +1529,13 @@ Jelle liet een extern UX/UI-verbeterplan ('Brew Console 2.1') beoordelen; wat al
 - **Timer**: gedane stappen krijgen een vinkje in plaats van doorhalen, stappen op één regel, genummerde voorbereiding.
 - **Desktop**: gecentreerde inhoud, compacte zijbalk met woordmerk.
 - **Regel: afgebroken zetsels tellen niet mee.** `FactState.abandoned` bewaart ze apart; ze komen niet in `cups`, `cupOrder` of de zak, en beïnvloeden dus geen klik, proef, laatste kop of voorraad. Ze verschijnen niet in het logboek.
+
+## Ronde 6 · fase B: typografie en schermen (keuze Jelle, nov 2026)
+
+- **Typeschaal**: vijf maten (`--fs-xs/s/m/l/xl` = 12, 14, 16, 20, 28 px) en een ruimteschaal (`--sp-1…6`). Alle lettergroottes in `base.css` zijn naar de schaal gebracht (alleen de grote timercijfers blijven eigen waarden).
+- **Cijfers in de serif** (recept, timerdoel, datum); labels onder de cijfers in kapitalen met letterruimte.
+- **Zetten**: één receptkaart met kop, getallen, giettabel, voorbereiding en Start-knop; de knop is lager en blijft plakken op de telefoon.
+- **Proeven**: sterkte als schaal van vijf in één rij, smaakgroepen in twee kolommen, op de laatste stap een samenvatting.
+- **Welkom**: lijnillustratie (kop met stoom, rustige beweging, uit bij "verminder beweging") en woordmerk.
+- **Smaakprofiel**: balkje per smaakgroep (herkend) en gestapeld balkje per notitie (ja, een beetje, nee); de tekst blijft erbij.
+- **Molen** krijgt geen balkje: er is geen vaste schaal voor "genoeg metingen", en die verzin ik niet.

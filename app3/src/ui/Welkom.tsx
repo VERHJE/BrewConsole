@@ -1,9 +1,12 @@
 import type { JSX } from 'preact';
 import { href } from '../core/router.ts';
+import { CupSteam } from './icons.tsx';
 
 export function Welkom({ onSkip }: { onSkip: () => void }): JSX.Element {
   return (
     <section class="welkom">
+      <div class="welkom-art"><CupSteam /></div>
+      <p class="welkom-mark" aria-hidden="true">Brew Console</p>
       <h1>Welkom bij Brew Console</h1>
       <p class="welkom-lead">Je zet koffie stap voor stap, met een timer, en de app leert van wat je proeft.</p>
       <ol class="welkom-steps">

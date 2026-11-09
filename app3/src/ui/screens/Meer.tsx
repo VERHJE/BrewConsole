@@ -44,13 +44,14 @@ function Profiel(): JSX.Element {
             {known.length > 0 && <ul class="sens">{known.map(s => (
               <li key={s.category}><strong>{catName(s.category)}</strong>
                 <div>{STATUS_TEXT[s.status]}</div>
+                <div class="meter" role="img" aria-label={`${s.hits} van ${s.nExpected} herkend`}><i style={`width:${s.nExpected > 0 ? Math.round((s.hits / s.nExpected) * 100) : 0}%`} /></div>
                 <div class="stat">{s.hits} van {s.nExpected} herkend · {s.falseAlarms} van {s.nNotExpected} aangevinkt zonder dat de zak het noemt</div></li>))}</ul>}
             {unknown.length > 0 && <p class="sens-empty">Nog te weinig zakken om iets te zeggen over: {unknown.map(s => catName(s.category)).join(', ')}.</p>}
           </div>);
       })()}
       <h2>Notities die je herkent</h2>
       {p.notes.length === 0 ? <EmptyState compact title="Nog geen herkende notities">Je krijgt ze zodra je bij het proeven aangeeft welke notities van de zak je herkent.</EmptyState>
-        : <ul class="list">{p.notes.slice(0, 12).map(n => <li key={n.note}><span class="item"><strong>{n.note}</strong><small>{n.yes}× ja · {n.bit}× een beetje · {n.no}× nee</small></span></li>)}</ul>}
+        : <ul class="list">{p.notes.slice(0, 12).map(n => <li key={n.note}><span class="item"><strong>{n.note}</strong><NoteBar yes={n.yes} bit={n.bit} no={n.no} /></span></li>)}</ul>}
       {p.vocabulary.length > 0 && <p class="meta">Je woordenschat: {p.vocabulary.join(', ')}</p>}
       <h2>Waardering</h2>
       {p.liking.overall === null ? <EmptyState compact title="Nog geen waarderingen">Geef bij het proeven een aantal sterren, dan verschijnt hier wat je lekker vindt.</EmptyState> : (
@@ -67,6 +68,18 @@ function Profiel(): JSX.Element {
       <h2>Tendensen</h2>
       <p class="meta">Laat geproefd: {pct(p.tendencies.lateShare)}</p>
     </section>
+  );
+}
+
+/** Eén gestapeld balkje per notitie: ja, een beetje, nee. De tekst eronder blijft voor wie liever leest. */
+function NoteBar({ yes, bit, no }: { yes: number; bit: number; no: number }): JSX.Element {
+  const total = Math.max(1, yes + bit + no);
+  const w = (n: number): string => `width:${(n / total) * 100}%`;
+  return (
+    <span class="notebar">
+      <span class="stack" aria-hidden="true"><i class="y" style={w(yes)} /><i class="b" style={w(bit)} /><i class="n" style={w(no)} /></span>
+      <small>{yes}× ja · {bit}× een beetje · {no}× nee</small>
+    </span>
   );
 }
 

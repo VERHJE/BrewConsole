@@ -16,17 +16,17 @@ import { settingsOf } from '../../core/settings.ts';
 import type { PairArm } from '../../../../engine3/src/index.ts';
 import { useApp, useSnapshot } from '../store-context.tsx';
 
-function Single<T extends string | number>({ value, options, onPick, label }: { value: T | null; options: ReadonlyArray<readonly [T, string]>; onPick: (v: T | null) => void; label: string }): JSX.Element {
+function Single<T extends string | number>({ value, options, onPick, label, cls = '' }: { value: T | null; options: ReadonlyArray<readonly [T, string]>; onPick: (v: T | null) => void; label: string; cls?: string }): JSX.Element {
   return (
-    <div class="choices" role="group" aria-label={label}>
+    <div class={`choices ${cls}`.trim()} role="group" aria-label={label}>
       {options.map(([v, text]) => <button key={String(v)} type="button" class="choice" aria-pressed={value === v} onClick={() => onPick(value === v ? null : v)}>{text}</button>)}
     </div>
   );
 }
 
-function Multi<T extends string>({ values, options, onToggle, label }: { values: readonly T[]; options: ReadonlyArray<readonly [T, string]>; onToggle: (v: T) => void; label: string }): JSX.Element {
+function Multi<T extends string>({ values, options, onToggle, label, cls = '' }: { values: readonly T[]; options: ReadonlyArray<readonly [T, string]>; onToggle: (v: T) => void; label: string; cls?: string }): JSX.Element {
   return (
-    <div class="choices" role="group" aria-label={label}>
+    <div class={`choices ${cls}`.trim()} role="group" aria-label={label}>
       {options.map(([v, text]) => (
         <button key={v} type="button" role="checkbox" class="choice" aria-checked={values.includes(v)} onClick={() => onToggle(v)}><span class="box" aria-hidden="true" />{text}</button>
       ))}
@@ -41,7 +41,7 @@ function Step({ id, ctx, d, set }: { id: StepId; ctx: TastingContext; d: Tasting
   switch (id) {
     case 'strength':
       return (<div><p class="q">Hoe sterk was de koffie?</p>
-        <Single<StrengthOrd> label="Sterkte" value={d.strength} onPick={v => set({ strength: v })} options={([-2, -1, 0, 1, 2] as StrengthOrd[]).map(v => [v, STRENGTH_LABEL[v]] as const)} /></div>);
+        <Single<StrengthOrd> cls="scale" label="Sterkte" value={d.strength} onPick={v => set({ strength: v })} options={([-2, -1, 0, 1, 2] as StrengthOrd[]).map(v => [v, STRENGTH_LABEL[v]] as const)} /></div>);
     case 'taste':
       return (<div><p class="q">Zuurgraad</p>
         <Single<Acidity> label="Zuurgraad" value={d.acidity} onPick={v => set({ acidity: v })} options={entries(ACIDITY_LABEL)} />
@@ -50,7 +50,7 @@ function Step({ id, ctx, d, set }: { id: StepId; ctx: TastingContext; d: Tasting
     case 'blind':
       return (<div><p class="q">Welke smaakgroepen proef je?</p>
         <p class="hint">Vink aan wat je proeft, zonder naar de zak te kijken. Niets aanvinken mag ook.</p>
-        <Multi<WheelCategory> label="Smaakgroepen" values={d.cata} onToggle={v => set({ cata: toggle(d.cata, v) })} options={CATEGORIES.map(c => [c.key, c.name] as const)} /></div>);
+        <Multi<WheelCategory> cls="two" label="Smaakgroepen" values={d.cata} onToggle={v => set({ cata: toggle(d.cata, v) })} options={CATEGORIES.map(c => [c.key, c.name] as const)} /></div>);
     case 'notes':
       return (<div><p class="q">Dit staat op de zak. Herken je het?</p>
         {ctx.bagNotes.map(n => (
@@ -95,6 +95,18 @@ function Step({ id, ctx, d, set }: { id: StepId; ctx: TastingContext; d: Tasting
         {num('cupG', 'Koffie in de kop (g)', '')}{num('tdsPct', 'TDS (%) als je gemeten hebt', '')}</div>);
     }
   }
+}
+
+/** Op de laatste stap: wat je tot nu toe hebt ingevuld, in één blik. */
+function Recap({ d }: { d: TastingDraft }): JSX.Element | null {
+  const parts: string[] = [];
+  if (d.strength !== null) parts.push(`Sterkte: ${STRENGTH_LABEL[d.strength].toLowerCase()}`);
+  if (d.acidity) parts.push(`Zuurgraad: ${ACIDITY_LABEL[d.acidity].toLowerCase()}`);
+  if (d.finish.length) parts.push(`Afdronk: ${d.finish.map(f => FINISH_LABEL[f].toLowerCase()).join(', ')}`);
+  if (d.cata.length) parts.push(`Smaak: ${d.cata.map(c => CATEGORIES.find(x => x.key === c)?.name.toLowerCase() ?? c).join(', ')}`);
+  if (d.liking !== null) parts.push(`Waardering: ${formatLiking(d.liking)} van 5`);
+  if (parts.length === 0) return null;
+  return (<div class="recap" aria-label="Samenvatting"><strong>Samenvatting</strong><ul>{parts.map(x => <li key={x}>{x}</li>)}</ul></div>);
 }
 
 export function Proeven({ brewId }: { brewId: string }): JSX.Element {
@@ -157,6 +169,7 @@ export function Proeven({ brewId }: { brewId: string }): JSX.Element {
       <p class="meta">{techniqueName(ctx.cup.technique)} · {Math.round(ctx.cup.doseG)} g · klik {ctx.cup.grindClick ?? '?'}{ctx.cup.endSec !== null ? ` · klaar in ${clock(ctx.cup.endSec)}` : ''}</p>
       <div class="progress" role="progressbar" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={i + 1} aria-label="Voortgang"><i style={`width:${((i + 1) / steps.length) * 100}%`} /></div>
       <Step id={step} ctx={ctx} d={d} set={set} />
+      {last && <Recap d={d} />}
       {problems.map(p => <p class="banner warn" key={p} role="alert">{p}</p>)}
       {err && <p class="banner warn" role="alert">{err}</p>}
       <div class="actions">
