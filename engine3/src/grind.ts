@@ -95,13 +95,23 @@ function cholSolve(L: number[][], b: number[]): number[] {
  * Chemex: er zijn geen eigen zetsels om op te steunen, dus de bronnen bepalen het beginpunt: de BrewTuner-klik (24)
  * en een doorloop na de laatste giet die het eindmoment van het recept haalt (aanname, breed: sd 0,5).
  */
+/** Beginklik voor de Chemex bij een dosis: 15 bij 22 g, 9 klikken grover per verdubbeling (zie grinder.ts). */
+export function chemexClickForDose(doseG: number, baseClick: number = GRINDER_C3S_PRO.chemex.defaultStartClick, baseDoseG: number = GRINDER_C3S_PRO.chemex.refDoseG): number {
+  if (!(doseG > 0)) return baseClick;
+  const c = Math.round(baseClick + GRINDER_C3S_PRO.chemex.clicksPerDoubling * Math.log2(doseG / baseDoseG));
+  const w = GRINDER_C3S_PRO.chemex.adviceWindow;
+  return Math.max(w.lo, Math.min(w.hi, c));
+}
+
 function refFor(method: Method, technique: string): { click: number; waterG: number; interceptLn: number; sd: number } {
   if (method === 'chemex') {
     const d = TECHNIQUE_BY_ID.get(technique as TechniqueId);
     const ps = d?.reference.pours, e = d?.reference.endSec;
     if (d && ps && e) {
       const tail = Math.max(30, (e.lo + e.hi) / 2 - ps[ps.length - 1]!.atSec);
-      return { click: GRINDER_C3S_PRO.chemex.defaultStartClick, waterG: d.reference.waterG, interceptLn: Math.log(tail), sd: P.interceptSdOther };
+      const sc = d.reference.startClick;
+      const click = sc ? sc.click : chemexClickForDose(d.reference.doseG);
+      return { click, waterG: d.reference.waterG, interceptLn: Math.log(tail), sd: P.interceptSdOther };
     }
     return { click: GRINDER_C3S_PRO.chemex.defaultStartClick, waterG: P.refWaterG, interceptLn: P.interceptLn, sd: P.interceptSdOther };
   }
@@ -203,6 +213,8 @@ export interface GrindRequest {
   readonly waterG: number;
   /** Geplande start van de laatste giet (s). */
   readonly lastPourAtSec: number;
+  /** Dosis van dit zetsel (g); op de Chemex schaalt de beginklik hiermee mee. */
+  readonly doseG?: number;
   /** Gewenst einde (bed droog): ondergrens, doel en bovengrens in s. */
   readonly targetEnd: Band<number>;
   /** De klik die nu gepland staat; zonder: de laatste klik van deze zak, anders van deze techniek, anders de standaard. */
@@ -224,7 +236,7 @@ export interface GrindAdvice {
 export interface GrindPlan {
   readonly version: string;
   readonly currentClick: number;
-  readonly clickSource: 'planned' | 'bean' | 'technique' | 'last' | 'default';
+  readonly clickSource: 'planned' | 'bean' | 'technique' | 'recipe' | 'last' | 'default';
   readonly n: number;
   readonly nTechnique: number;
   readonly nBean: number;
@@ -252,8 +264,9 @@ function pInBand(pred: TailPrediction, lastPourAt: number, lo: number, hi: numbe
   return Math.max(0, upper - lower);
 }
 
-export function currentClickFor(facts: FactState, technique: TechniqueRef, beanId: string | null, planned: number | null | undefined, method: Method = 'v60'): { click: number; source: GrindPlan['clickSource'] } {
+export function currentClickFor(facts: FactState, technique: TechniqueRef, beanId: string | null, planned: number | null | undefined, method: Method = 'v60', doseG?: number | null): { click: number; source: GrindPlan['clickSource'] } {
   if (typeof planned === 'number') return { click: planned, source: 'planned' };
+  if (method === 'chemex') return chemexCurrentClick(facts, technique, beanId, doseG ?? null);
   // Een klik van de V60 zegt niets over de Chemex (en omgekeerd): alleen koppen van dezelfde brewer tellen.
   const cups = facts.cupOrder.map(id => facts.cups.get(id)!).filter(c => c.grindClick !== null && c.method === method);
   const byBean = beanId ? cups.filter(c => c.beanId === beanId) : [];
@@ -261,13 +274,43 @@ export function currentClickFor(facts: FactState, technique: TechniqueRef, beanI
   const byTech = cups.filter(c => c.technique === technique);
   if (byTech.length) return { click: byTech[byTech.length - 1]!.grindClick!, source: 'technique' };
   if (cups.length) return { click: cups[cups.length - 1]!.grindClick!, source: 'last' };
-  return { click: method === 'chemex' ? GRINDER_C3S_PRO.chemex.defaultStartClick : GRINDER_C3S_PRO.defaultStartClick, source: 'default' };
+  return { click: GRINDER_C3S_PRO.defaultStartClick, source: 'default' };
+}
+
+/**
+ * Chemex: de maling hangt sterk van de dosis af (bedhoogte). Een klik uit een eerder zetsel wordt daarom meegeschaald met de dosisverhouding.
+ * Volgorde: zelfde recept (zelfde zak eerst), de beginklik van het recept zelf (bron), zelfde zak met ander recept, laatste Chemex-zetsel, standaard.
+ */
+function chemexCurrentClick(facts: FactState, technique: TechniqueRef, beanId: string | null, doseG: number | null): { click: number; source: GrindPlan['clickSource'] } {
+  const C = GRINDER_C3S_PRO.chemex;
+  const cups = facts.cupOrder.map(id => facts.cups.get(id)!).filter(c => c.grindClick !== null && c.method === 'chemex');
+  const scaled = (c: { grindClick: number | null; doseG: number }): number => {
+    const base = c.grindClick!;
+    if (!(doseG && doseG > 0) || !(c.doseG > 0)) return base;
+    return Math.max(C.adviceWindow.lo, Math.min(C.adviceWindow.hi, Math.round(base + C.clicksPerDoubling * Math.log2(doseG / c.doseG))));
+  };
+  const last = <T>(a: T[]): T | undefined => a[a.length - 1];
+  const sameTech = cups.filter(c => c.technique === technique);
+  const sameBoth = beanId ? sameTech.filter(c => c.beanId === beanId) : [];
+  const t = last(sameBoth) ?? last(sameTech);
+  if (t) return { click: scaled(t), source: 'technique' };
+  const def = TECHNIQUE_BY_ID.get(technique as TechniqueId);
+  const sc = def?.reference.startClick;
+  if (def && sc) {
+    const c = doseG && doseG > 0 ? Math.round(sc.click + C.clicksPerDoubling * Math.log2(doseG / def.reference.doseG)) : sc.click;
+    return { click: Math.max(C.adviceWindow.lo, Math.min(C.adviceWindow.hi, c)), source: 'recipe' };
+  }
+  const b = beanId ? last(cups.filter(c => c.beanId === beanId)) : undefined;
+  if (b) return { click: scaled(b), source: 'bean' };
+  const l = last(cups);
+  if (l) return { click: scaled(l), source: 'last' };
+  return { click: doseG && doseG > 0 ? chemexClickForDose(doseG) : C.defaultStartClick, source: 'default' };
 }
 
 export function grindPlan(facts: FactState, req: GrindRequest): GrindPlan {
   const obs = tailObservationsOf(facts);
   const fit = fitGrind(obs, req.method, req.technique, req.beanId);
-  const { click: cur, source } = currentClickFor(facts, req.technique, req.beanId, req.currentClick, req.method);
+  const { click: cur, source } = currentClickFor(facts, req.technique, req.beanId, req.currentClick, req.method, req.doseG);
   const at = (click: number): TailPrediction => predictTail(fit, { technique: req.technique, beanId: req.beanId, click, waterG: req.waterG });
   const now = at(cur);
   const pNow = pInBand(now, req.lastPourAtSec, req.targetEnd.lo, req.targetEnd.hi);

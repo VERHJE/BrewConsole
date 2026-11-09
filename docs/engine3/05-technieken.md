@@ -21,9 +21,9 @@ Perger 80/20 is een beslisregel, geen recept.
 
 | Prioriteit | Als | Voorstel → proef | Kasuya eerste giet | Bewijs |
 |---|---|---|---|---|
-| 102 | Chemex, kop ≤ 400 g (1 kop = 340 g) | Chemex Howell (1 kop) → Pull & Pour | — | besluit |
+| 102 | Chemex, kop ≤ 400 g (1 kop = 340 g) | Chemex Howell (1 kop) → Ox Coffee, Pull & Pour | — | besluit |
 | 101 | Chemex, kop 401–550 g | Chemex Stumptown → Barefoot | — | besluit |
-| 100 | Chemex, kop ≥ 551 g (2 koppen = 680 g) | Chemex Barefoot → Stumptown, Blue Bottle, Onyx | — | besluit |
+| 100 | Chemex, kop ≥ 551 g (2 koppen = 680 g) | Chemex Barefoot → Stumptown, Hedrick, Blue Bottle, Onyx | — | besluit |
 | 90 | licht/light-medium, en herhaald zuur of hol | Gagné → Kasuya | — | E3 |
 | 85 | ongelijk doorlopen of droge afdronk | Rao → Kasuya | — | E3 |
 | 60 | bloemige of theenotities | Wendelboe (eigen recept) → Kasuya | — | E3; besluit |
@@ -68,7 +68,7 @@ Zes recepten uit `onderzoek_chemex.md`, als data in `engine3/src/data/chemex-tec
 - **Brewer:** `fitsMethod(def, method)`; een recept zonder `methods` is een V60-recept. De techniekkeuze (`chooseTechnique`) kiest een Chemex-recept nooit voor de V60 en omgekeerd, ook niet via een gewonnen proef of vergelijkbare zakken. Zelf kiezen blijft altijd kunnen: een V60-techniek op de Chemex krijgt de melding dat het dikkere filter trager doorloopt.
 - **Portie:** de regels kijken naar de kopgrootte (`minCupG`/`maxCupG`); de app biedt '1 kop' (250 g), '2 koppen' (500 g) en 'Hele kan' (650 g).
 - **Dosisgrens:** 15–57 g (laagste en hoogste dosis in de brongegeven recepten, klasse C). Boven 800 g water volgt een melding dat het dicht bij de rand van een 6-kops Chemex komt (885 ml).
-- **Molen:** beginklik 24 (BrewTuner, klasse C), adviesvenster 17–31. Het doorloopmodel start voor de Chemex bij het eindmoment van het recept (aanname, breed), niet bij de V60-waarden; klikken van de V60 tellen niet mee voor de Chemex.
+- **Molen:** de beginklik schaalt met de dosis (zie 'Chemex-maling' hieronder), adviesvenster 11–30. Eerst stond dit op 24 (BrewTuner, klasse C), maar dat is relatief aan hun V60 van 18 en een andere lijst noemt 17–19; Jelles eigen Chemex-zetsels (klik 14, 400 g) liepen door in 3:24 en 3:41. Het doorloopmodel start voor de Chemex bij het eindmoment van het recept (aanname, breed), niet bij de V60-waarden; klikken van de V60 tellen niet mee voor de Chemex.
 - **Sterktevoorkeur per brewer:** `strengthPlan` leert alleen van koppen en proeven van dezelfde brewer (oude logboeken zonder brewer tellen als V60). Een Chemex begint dus op de startdosis tot er Chemex-koppen geproefd zijn. Klachten per zak (zuur, droog) tellen nog voor beide brewers.
 - **Leren op de Chemex:** het recept van de portieregel is zelf de controle (Kasuya is dat alleen op de V60). Na twee geproefde koppen daarvan met deze zak volgt een blinde proef met het volgende recept uit de regel; de winnaar wordt de keuze voor die zak. Een winnaar van de V60 telt niet voor de Chemex en omgekeerd.
 - **Nog niet:** een keuze per boon (branding, proces) voor de Chemex; daarvoor zijn eerst eigen koppen nodig.
@@ -78,3 +78,23 @@ Zes recepten uit `onderzoek_chemex.md`, als data in `engine3/src/data/chemex-tec
 George Howell publiceert in zijn eigen PDF een recept 'Chemex six cup, brew for one': 25 tot 28 g koffie op 390 g water (340 g in de kop), 201 tot 205 °F, drie gietbeurten (130 g in 20 s, 1:00 naar 260 g, 2:00 naar 390 g, elk in concentrische cirkels vanuit het midden), klaar na 3:30 tot 4:00. Klasse A. Dosis 26,5 g (midden van de band) en 95 °C (midden van 94 tot 96 °C) zijn de referentie. Het is nu het voorstel voor '1 kop' (340 g, de maat van het recept); Verve (15/225) blijft beschikbaar voor een kleinere Chemex. De portieknoppen zijn '1 kop' (340 g) en '2 koppen' (680 g); 'Hele kan' is vervallen, want twee koppen zijn bij 6-kops vrijwel de hele kan.
 
 Het doorloopmodel stelt de maalstand voor een Chemex-recept niet bij zolang er voor dat recept geen eigen doorlooptijd is gelogd (het beginpunt is zelf een aanname); eerder gaf elke Chemex-brew de melding dat het einde afweek.
+
+### Chemex-recepten uit de aangeleverde transcripten verwerkt (9 nov 2026)
+
+Jelle leverde transcripten van eigen video's van Blue Bottle, Hedrick, Stumptown, Onyx en Ox Coffee aan (bronnen in `bronnen/`). Verwerkt:
+- **Blue Bottle** is nu klasse A met de echte gietmomenten (0:00, 0:45, 1:50, 3:10; 100/300/500/700 g), 205 tot 210 °F (97 °C is het midden) en 'iets fijner dan French press'; geen plaatshouders meer.
+- **Onyx:** totalen 110/300/500/700/900 g (de bron noemt 300/500/700/900), tips per giet (in het midden gieten, het bed met een stokje laten leunen), de bron is klasse A (transcript op ondertitels, niet op audio gecontroleerd).
+- **Stumptown:** tips voor het slurry-niveau en de glazen bel op 4:00.
+- **Nieuw: `chemex_hedrick`** (40/650; twee bloemen, agressieve derde giet, kuiltje en stokje, de laatste giet zachter; de momenten 2:00 en 3:00 zijn afgeleid en als plaatshouder gemarkeerd) en **`chemex_ox`** (22/360, klasse B, tweede keuze voor één kop).
+- **Luchtopening bij de tuit** (Hoffmann, Hedrick) staat bij elk Chemex-recept onder 'Voor je begint'.
+- **Dunne of diepe laag:** een melding bij een dosis onder 22 g (Rao; de laagste dosis in de 6-kops-bronnen) of boven 50 g (Gagné); beide aannames, als rustige uitleg getoond.
+- **Water:** de waterpagina verwijst naar Gagné (bicarbonaat dempt het zuur).
+- Niet verwerkt: het micron-anker van Hedrick (900 µm bij 30 klikken Comandante C40; de micron per klik van de C3S Pro is nog onbekend) en de filterhacks (twee en twee lagen, siliconen) als regel; ze staan wel als optionele tip bij het Hedrick-recept. Contract: `e3-contract-1.4`.
+
+### Chemex-maling: schalen met de dosis, Hedricks 900 µm omgerekend (9 nov 2026)
+
+- **Converters voor Hedricks maling** (30 klikken Comandante C40, ongeveer 900 µm): Beean en Brewfolio 21 klikken, Coffeemaster 23 klikken op de Timemore C3S Pro. Hedrick-recept krijgt als beginklik 22 bij 40 g (`reference.startClick`, klasse C).
+- **Waarom 24 (BrewTuner) en 14 (Jelles zetsels) elkaar niet tegenspreken:** de maling hangt van de bedhoogte af, dus van de dosis. Natuurkundig gaat de doorlooptijd met bedhoogte gedeeld door korreldiameter in het kwadraat; voor gelijke tijd moet de maling bij dubbele dosis √2 grover, ongeveer 9 tot 13 klikken per verdubbeling. Jelles twee punten (21 tot 23 g op klik 14, Hedrick 40 g op klik 22) geven ongeveer 9.
+- **Regel (aanname):** beginklik = 15 bij 22 g, plus 9 klikken per verdubbeling van de dosis (`chemexClickForDose`), begrensd op 11 tot 30. Een eerder Chemex-zetsel (zelfde recept, anders zelfde zak, anders het laatste) wordt met dezelfde regel meegeschaald naar de dosis van nu; het recept zelf (Hedrick) gaat voor een algemene klik. Het doorloopmodel gebruikt dezelfde klik als referentiepunt per recept.
+- **Micron per klik:** de bronnen zeggen 83 of 20; Coffeemaster noemt voor de V60/Chemex-zone (klik 16 tot 21) ongeveer 50 µm per klik, niet lineair (ongeveer 15 rond klik 11 tot 13). Bij 83 µm zou Jelles V60 op klik 15 ongeveer 400 µm zijn (te fijn voor een filter); bij 50 µm is klik 21 ongeveer 900 µm (Hedrick) en klik 16 ongeveer 650 µm. Aanwijzing, niet gebruikt in de berekening.
+- **Controle met Coffeemaster (9 nov 2026):** hun gids (ring van 0 tot 25, 0 = messen raken) zet de V60 op 16 tot 17 en de Chemex op 19 tot 20 voor 30 g op 500 ml (3:30 tot 4:30), dus ongeveer 3 klikken grover. Onze dosisregel geeft voor 30 g klik 19 (test in `grind.test.ts`) en Jelles V60 staat op 15 tot 17: dat komt overeen, onafhankelijk van de BrewTuner-cijfers.

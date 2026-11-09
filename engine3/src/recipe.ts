@@ -43,6 +43,11 @@ export class RecipeError extends Error {
 /** Een 6-kops Chemex houdt 30 oz (885 ml); boven dit water komt het niveau te dicht bij de rand (aanname, klasse C). */
 export const CHEMEX_6CUP_SAFE_WATER_G = 800;
 
+/** Laagste dosis in de 6-kops-bronnen (Ox Coffee 22 g, Howell 25 g): daaronder wordt het bed dun (Rao: kans op kanalen en astringentie). Aanname. */
+export const CHEMEX_THIN_BED_G = 22;
+/** Boven deze dosis wordt het bed diep (Gagné: dieper dan 4 tot 5 cm geeft problemen); de bronnen gaan tot 57 g. Aanname. */
+export const CHEMEX_DEEP_BED_G = 50;
+
 /** Hario-voorbeeld: 50 van de eerste 120 g. */
 export const KASUYA_DEFAULT_FIRST_SHARE = 50 / 120;
 /** Eindtijdbewaking uit Gota: buiten 2:50–4:10 is de maalgraad fout. */
@@ -124,6 +129,8 @@ export function buildRecipe(input: RecipeInput): RecipeBuild {
   if (pours.some((p, i) => i > 0 && p.addG <= 0)) warnings.push('Een giet heeft geen water toegevoegd gekregen; controleer de hoeveelheden.');
   if (input.method === 'chemex' && !fitsMethod(def, 'chemex')) warnings.push(`${def.name} is een V60-techniek; op de Chemex loopt het dikkere filter trager door.`);
   if (input.method === 'chemex' && W > CHEMEX_6CUP_SAFE_WATER_G) warnings.push(`Let op: ${W} g water komt dicht bij de rand van een 6-kops Chemex (885 ml); giet laag en houd het niveau onder de rand.`);
+  if (input.method === 'chemex' && input.doseG < CHEMEX_THIN_BED_G) warnings.push(`Chemex: dunne laag (${Math.round(input.doseG * 10) / 10} g). De 6-kops-bronnen gebruiken 22 g of meer (Ox Coffee 22 g, Howell 25 tot 28 g); bij een dunne laag is er meer kans op kanalen en een droge, bittere kop (Rao).`);
+  else if (input.method === 'chemex' && input.doseG > CHEMEX_DEEP_BED_G) warnings.push(`Chemex: diepe laag (${Math.round(input.doseG * 10) / 10} g). Een bed dieper dan 4 tot 5 cm loopt trager en wordt ongelijk nat (Gagné); zorg voor een goede bloem en een kuiltje.`);
   const placeholders = def.open.filter(o => /plaatshouder|aanname/i.test(o));
   for (const o of placeholders) warnings.push(o);
   if (def.id === 'kasuya_46' && pours.slice(1).some(p => p.waitForDrain)) warnings.push('Kasuya: giet pas als het water bijna helemaal door het filter is; de klok is een richtlijn.');

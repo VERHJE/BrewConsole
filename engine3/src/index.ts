@@ -1,6 +1,6 @@
 // Engine 3 · publieke ingang. Nog zonder rekenlogica: dit is het contract waar de bouw aan moet
 // voldoen, plus de onderdelen die al klaar zijn (eenheden, logboek, migratie, techniekdata).
-export const ENGINE3_CONTRACT_VERSION = 'e3-contract-1.3' as const;
+export const ENGINE3_CONTRACT_VERSION = 'e3-contract-1.4' as const;
 
 export type * from './types.ts';
 export { EVENT_SCHEMA_VERSION } from './types.ts';

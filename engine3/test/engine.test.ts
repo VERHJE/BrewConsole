@@ -102,10 +102,16 @@ test('Chemex: eigen recept per portie, eigen dosisgrens, geen V60-melding, Cheme
     const a = pick(c);
     assert.equal(a.recipe.method, 'chemex');
     assert.ok(!a.warnings.some(w => /V60-techniek/.test(w)), `${c} g`);
-    assert.equal(a.recipe.grindClick, 24, 'beginklik Chemex (BrewTuner)');
+    assert.ok(a.recipe.grindClick! >= 15 && a.recipe.grindClick! <= 30, `beginklik Chemex ${a.recipe.grindClick}`);
     assert.ok(a.recipe.doseG >= 15 && a.recipe.doseG <= 57, `${c} g → ${a.recipe.doseG} g`);
     assert.ok(a.recipe.expectedEndSec!.hi >= 210, 'eindtijd van de Chemex, niet van de V60');
   }
+  // De beginklik schaalt met de dosis: groter bed, grovere maling.
+  const clicks = [340, 500, 680].map(c => pick(c).recipe.grindClick!);
+  assert.ok(clicks[0]! < clicks[1]! && clicks[1]! < clicks[2]!, clicks.join(','));
+  // Hedrick heeft een eigen beginklik uit de bron (22 bij 40 g).
+  const hed = pick(680, 'chemex_hedrick' as TechniqueId);
+  assert.equal(hed.recipe.grindClick, Math.round(22 + 9 * Math.log2(hed.recipe.doseG / 40)), `Hedrick ${hed.recipe.grindClick} bij ${hed.recipe.doseG} g`);
   // Een V60-techniek op de Chemex (zelf gekozen) krijgt de melding nog wel.
   assert.ok(pick(500, 'hoffmann_ultimate' as TechniqueId).warnings.some(w => /V60-techniek/.test(w)));
   // Een Chemex-recept op de V60 wordt nooit zelf gekozen.

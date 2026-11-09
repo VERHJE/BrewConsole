@@ -37,7 +37,7 @@ for (const scheme of ['light', 'dark']) {
       await page.waitForSelector(`h2:has-text("${naam}")`);
     };
     await pick('1 kop', 'Chemex Howell');
-    assert.match(await text(page, '.numbers'), /klik 24/);
+    assert.match(await text(page, '.numbers'), /klik 17/);
     assert.equal(await page.locator('button.chip:has-text("1 kop")').getAttribute('aria-pressed'), 'true');
     // twee koppen (680 g): Barefoot is het voorstel
     await pick('2 koppen', 'Chemex Barefoot');

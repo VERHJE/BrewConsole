@@ -126,7 +126,8 @@ const INFO_WARNING = [
   /is een V60-techniek; op de Chemex/,
   /geen schaalregel; hoeveelheden zijn op verhouding geschaald/,
   /geen duidelijk betere klik/,
-  /^Plaatshouder:/
+  /^Plaatshouder:/,
+  /^Chemex: (dunne|diepe) laag/
 ];
 
 /** Splitst de zichtbare meldingen in uitleg (rustig tonen) en echte aandachtspunten (waarschuwing). */

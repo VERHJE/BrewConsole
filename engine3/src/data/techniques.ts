@@ -60,6 +60,8 @@ export interface TechniqueDef {
     /** Tekst uit de bron als er geen getal is ('hoe heter hoe beter'). */
     readonly tempNote: string | null;
     readonly grind: string | null;
+    /** Beginstand van de molen voor dit recept bij de referentiedosis, als de bron een maling noemt die in klikken om te rekenen is (klasse C: converters). */
+    readonly startClick?: { readonly click: number; readonly source: string };
     readonly pours: readonly ReferencePour[] | null;
     /** Voor de start (filter spoelen, kuiltje maken, ...), uit de bron. */
     readonly prep?: readonly string[];

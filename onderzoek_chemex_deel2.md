@@ -7,7 +7,7 @@ Datum: 9 nov 2026. Vervolg op `onderzoek_chemex.md`. Dit deel gaat over de gaten
 Het meeste wat over de Chemex gezegd wordt, is **mening of herhaling van de maker**. Gecontroleerde metingen zijn er bijna niet. Wat we wel vonden en voor de app telt:
 
 1. **Een kop in een 6-kops heeft meer koffie nodig dan wij nu doen.** George Howell publiceert zelf een recept "6-kops, voor één": **25 tot 28 g koffie op 390 g water** voor een kop van 340 g (3 gietbeurten, 4 minuten). Dat is ongeveer het dubbele van ons Verve-recept (15 g op 225 g), dat voor een kleinere Chemex is bedoeld. Scott Rao legt uit waarom een dunne laag een risico is (kanalen die de bodem halen geven astringentie). Dit raakt direct iets wat we gebouwd hebben.
-2. **Je maalstand is een gok.** Twee bronnen voor je molen spreken elkaar tegen: BrewTuner zegt 24 klikken voor de Chemex (die gebruikt de app), een andere lijst zegt 17 tot 19. De eerste kop is dus een kalibratie.
+2. **Je maalstand is een gok (inmiddels gecorrigeerd met je eigen zetsels, zie sectie 7).** Twee bronnen voor je molen spreken elkaar tegen: BrewTuner zegt 24 klikken voor de Chemex (die gebruikt de app), een andere lijst zegt 17 tot 19. De eerste kop is dus een kalibratie.
 3. **Er is geen enkele gecontroleerde Chemex-tegen-V60-meting** met een refractometer. Eén forumgebruiker haalde op de Chemex 20,5 % extractie tegen bijna 23 % op de V60 met dezelfde boon. Eén persoon, één boon: een aanwijzing.
 4. **Warmteverlies:** één thuismeting met thermokoppels zegt dat de Chemex snel warmte verliest, ook voorverwarmd. De rest is advies zonder meting.
 5. **Branding:** de bronnen zeggen licht tot medium; geen enkele geeft een meting.
@@ -81,3 +81,55 @@ Niet doen: de 96 °C of de recepten aanpassen op basis van de warmteverlies-clai
 - Of Barefoots felle giet en de zachte gietadviezen elkaar echt tegenspreken of dat dit afhangt van de boon.
 
 **Verwerkt (9 nov 2026):** het Howell-recept voor één kop staat in de app als voorstel voor '1 kop' (340 g); zie `docs/engine3/05-technieken.md`.
+
+## 6. Aanvulling: James Hoffmann, video over de Chemex (door Jelle aangeleverd, 9 nov 2026)
+
+Bron: transcript van Hoffmanns video over de Chemex (klasse A: de maker van het V60-recept zelf; geen aanpassing door een derde). Het transcript is **afgebroken** bij "6. One…", dus alles wat daarna in de video komt, ontbreekt hier.
+
+**Wat hij zegt**
+- **Filter:** een Chemex-filter weegt net geen 4,5 g, een Hario-filter voor twee kopjes ongeveer 1,5 g: "drie keer zoveel papier", met aan de ene kant drie lagen. Dat is een **gewichtsmeting van Hoffmann zelf**; het vervangt de "20 tot 30 % dikker"-claim van de maker niet, maar zegt wel iets anders (het gewicht omvat ook het grotere vel). Spoel het filter altijd.
+- **Maling:** "niet te veel compenseren voor de extra weerstand." Bij dezelfde maling, dosis en giettechniek liep de Chemex veel langzamer dan de V60. Dat is volgens hem prima: **4 tot 5 minuten bij een halve liter** en dan nog goede koffie. Mensen die te grof malen om 3 tot 3,5 minuut te halen, krijgen een zwakkere kop.
+- **Dosis:** blijf bij **60 g per liter** (1:16,7); wie sterker wil, past dat aan. Hij waarschuwt voor een **spiraal van meer koffie en onderextractie** (meer koffie nemen omdat de kop dun is, terwijl te grof malen de oorzaak is).
+- **Bloem:** hetzelfde als bij de V60, **2 tot 3 keer de dosis** (60 tot 90 g bij 30 g koffie), **minstens 45 seconden**.
+- **Gieten:** "een vergelijkbare giettechniek, in fases, als in de V60-video", aan het eind **even roeren en dan swirlen** voor een vlak bed.
+- **Luchtslot:** de dikke kant van het filter hoort bij de tuit; het papier mag na het spoelen de opening niet dichtplakken. Noodoplossing: een stokje (liefst metaal) in de kan. Beter: let op de opening.
+
+**Wat dit verandert**
+1. De **maling:** de app begint op klik 24 (6 klikken grover dan de V60). Hoffmann raadt juist aan niet veel grover te gaan, en een andere bron zei al "één of twee standen fijner dan de V60". Samen met de lijst die 17 tot 19 noemt, wijst alles op een **lagere beginklik dan 24**. Nog steeds geen meting, maar nu twee onafhankelijke aanwijzingen tegen één.
+2. De **eindtijd:** bij Hoffmann hoort bij 500 g een tijd van 4 tot 5 minuten. Onze Chemex-recepten staan op 3:30 tot 4:00 (Howell, Verve, Pull & Pour) en de V60-variant van Hoffmann op de Chemex op 3:30. Die laatste is dus te kort als je Hoffmanns eigen Chemex-advies volgt.
+3. Een **Hoffmann-Chemex-recept** is nu mogelijk uit zijn eigen woorden: 60 g/l, bloem 2 tot 3 keer, minstens 45 s, fases als de V60, aan het eind roeren en swirlen, klaar in 4 tot 5 minuten. **Ontbreekt:** de gietmomenten en gewichten per fase voor de Chemex (die staan in het afgebroken deel of in zijn V60-video).
+4. De **filteraanwijzingen** (dikke kant bij de tuit, opening vrijhouden, altijd spoelen) staan al bij de recepten; het luchtslot kan als tip erbij.
+
+## 7. Je eigen eerste Chemex-zetsels (logboek van 9 nov 2026)
+
+Twee zetsels met het Hoffmann-V60-recept op de Chemex (400 g water, 21,1 en 22,8 g koffie, 100 °C, klik 14), zak Lord voldemor (Colombia, natural, licht gebrand):
+
+| | Dosis / water | Klik | Bed droog | Staart na laatste giet (75 s) | Smaak |
+|---|---|---|---|---|---|
+| 07:42 | 21,1 / 400 g (1:19) | 14 | 3:24 | 129 s | te slap, vlak, droog afdronk, 3,5 |
+| 16:09 | 22,8 / 403 g (1:17,7) | 14 | 3:42 | 147 s | juist, vlak, hol maar zoet, 3,5 |
+
+Ter vergelijking, dezelfde zak op de V60 (Kasuya, 300 g, klik 15): bed droog na 3:46 tot 4:09, staart 46 tot 69 s.
+
+**Wat dat zegt (n = 2, dus een aanwijzing):**
+- Een Chemex-staart van 129 tot 147 s is ongeveer **twee tot drie keer zo lang** als bij de V60 op bijna dezelfde klik. Dat is het trage dikke filter, en het klopt met Hoffmann.
+- Klik 14 (een stand **fijner** dan je V60 op 15) gaf toch een eindtijd van 3:24 tot 3:42, korter dan Hoffmanns 4 tot 5 minuten, en een vlakke, holle kop. Dat wijst **niet** op veel grover malen: de 24 uit BrewTuner zou de staart naar ongeveer 40 s brengen.
+- Een kop van 22,8 g op 403 g was "juist" qua sterkte: de engine leert nu uit die eigen koppen een lagere dosis dan Howells 26,5 g op 390 g (zie de berekening: ongeveer 21 g op 380 g).
+
+**Besluit:** beginklik voor de Chemex 15 (daarna de klik van je laatste Chemex-kop), venster 11 tot 22.
+
+## 8. Bron voor later: Blue Bottle, eigen transcript
+
+Jelle leverde op 9 nov 2026 het transcript van Blue Bottles eigen Chemex-video aan (klasse A, 4 gietbeurten, 700 g; echte gietmomenten 0:00, 0:45, 1:50, 3:10). Uitgewerkt in `bronnen/blue_bottle_chemex.md`, inclusief wat er in het recept `chemex_blue_bottle` aangepast moet worden. Verwerkt in de app op 9 nov 2026.
+
+## 9. Bron voor later: vijf extra transcripten
+
+Jelle leverde op 9 nov 2026 transcripten van Hedrick, Stumptown, Ox Coffee, Onyx (director's cut) en Gagné (podcast afl. 350) aan. Uitgewerkt, met wat er later in de app aangepast kan worden, in `bronnen/chemex_transcripten_9nov.md`. Verwerkt in de app op 9 nov 2026. Hedricks eigen Chemex-recept (40 g op 650 g) vult een gat uit sectie 5: er is nu wel een Chemex-recept van Hedrick.
+
+## 10. Maling omgerekend: Hedrick en de dosis (9 nov 2026)
+
+- Hedricks "zeer grof" (30 klikken Comandante C40, ongeveer 900 µm) is volgens Beean en Brewfolio 21 klikken en volgens Coffeemaster 23 klikken op de C3S Pro.
+- BrewTuners "Chemex 24 (20 tot 28)" past bij zo'n grote dosis (40 g of meer); jouw 14 klikken kwamen van 21 tot 23 g op 400 g. De maling hangt van de dosis af: ongeveer 9 klikken grover per verdubbeling (natuurkunde geeft 9 tot 13). Dat is nu in de app verwerkt (zie `docs/engine3/05-technieken.md`).
+- Micron per klik: 83 µm (dial-afstand?) of 20 µm; bij 83 µm komt jouw V60 op ongeveer 400 µm uit, bij 20 µm op ongeveer 780 µm, dus 20 µm is aannemelijker. Aanwijzing, niet gebruikt in de berekening.
+
+**Aanvulling (Coffeemaster, 9 nov 2026):** de gids voor jouw molen telt net als jij vanaf nul (0 = messen raken, 26 standen) en zet de V60 op 16 tot 17 en de Chemex op 19 tot 20 (30 g op 500 ml, 3:30 tot 4:30). Dat is ongeveer 3 klikken grover dan de V60 en komt overeen met de dosisregel (klik 19 bij 30 g). Micron per klik: ongeveer 50 in de V60/Chemex-zone (niet lineair), dus noch 83 noch 20. De eerdere voorkeur voor 20 µm per klik is daarmee herzien: bij 50 µm is klik 21 ongeveer 900 µm. Bevestigt ook BrewTuners V60 op 18 als aan de hoge kant.
