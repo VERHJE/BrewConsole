@@ -1,5 +1,6 @@
-// Foto per zak. De foto blijft op het toestel (eigen IndexedDB-database), staat niet in het logboek en niet in de
-// synchronisatieblokken, maar wel in de back-up (core/backup.ts, versie 2). Zuivere hulpfuncties + een smalle opslag-interface.
+// Foto per zak. De foto staat op het toestel (eigen IndexedDB-database), niet in het logboek en niet in de gebeurtenisblokken van de
+// synchronisatie; wel in de back-up (core/backup.ts, versie 2) en, als synchronisatie aanstaat, als eigen versleutelde foto-blokken
+// (core/photosync.ts). Zuivere hulpfuncties + een smalle opslag-interface.
 
 export interface PhotoStore {
   get(beanId: string): Promise<Blob | null>;

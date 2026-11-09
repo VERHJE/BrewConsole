@@ -171,7 +171,7 @@ function Editor({ beanId }: { beanId: string | null }): JSX.Element {
     const file = input.files?.[0];
     if (!file) return;
     setPhotoMsg('Bezig…');
-    try { setPhotoBlob(await encodePhoto(file)); setPhotoMsg('Foto klaar. Ze blijft op dit toestel en staat in je back-up, niet in de synchronisatie.'); }
+    try { setPhotoBlob(await encodePhoto(file)); setPhotoMsg('Foto klaar. Ze staat in je back-up en gaat mee met de synchronisatie, als die aanstaat.'); }
     catch { setPhotoMsg('Deze foto kon niet gelezen worden.'); }
     input.value = '';
   };

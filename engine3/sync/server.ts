@@ -11,6 +11,7 @@
 //   GET  /blocks/:id        → envelop-tekst
 //   GET  /blocks?cursor=&limit=  → {ids, next}
 //   DELETE /blocks/:id
+//   GET /photos?cursor=&limit=, GET|PUT|DELETE /photos/:id   (dezelfde regels, eigen opslag; versleutelde foto-blokken)
 //   POST /scan              ← {consent:true, mediaType, imageBase64} → voorstel voor boonvelden (alleen met API-sleutel op de Worker)
 // Elke route behalve OPTIONS vereist `Authorization: Bearer <token>`; de server kent alleen de
 // SHA-256 van geldige tokens.
@@ -18,6 +19,7 @@
 import type { webcrypto } from 'node:crypto';
 import { BLOCK_ID_PATTERN, MAX_BLOCK_BYTES } from './blocks.ts';
 import { handleAiScan, type AiEnv } from './ai.ts';
+import { PHOTO_ID_PATTERN } from './photo-blocks.ts';
 
 export interface BlockStore {
   getMeta(): Promise<string | null>;
@@ -32,6 +34,8 @@ export interface BlockStore {
 
 export interface ServerEnv {
   readonly store: BlockStore;
+  /** Optioneel: eigen opslag voor foto's (routes /photos). Zonder deze antwoordt de server op /photos met 404. */
+  readonly photos?: BlockStore;
   /** SHA-256 (hex, kleine letters) van elk geldig token. */
   readonly tokenHashes: readonly string[];
   readonly subtle: webcrypto.SubtleCrypto;
@@ -109,35 +113,39 @@ export async function handleRequest(req: Request, env: ServerEnv): Promise<Respo
     return handleAiScan(req, env.ai, body => respond(env, body.status, body.json));
   }
 
-  if (path === '/blocks') {
-    if (req.method !== 'GET') return respond(env, 405, { error: 'methode niet toegestaan' });
-    const limit = Math.min(500, Math.max(1, Number(url.searchParams.get('limit') ?? 100) || 100));
-    const r = await env.store.list(url.searchParams.get('cursor'), limit);
-    return respond(env, 200, r);
-  }
-
-  const m = /^\/blocks\/([^/]+)$/.exec(path);
-  if (m) {
-    const id = decodeURIComponent(m[1]!);
-    if (!BLOCK_ID_PATTERN.test(id)) return respond(env, 400, { error: 'ongeldig blok-id' });
-    if (req.method === 'GET') {
-      const b = await env.store.get(id);
-      return b === null ? respond(env, 404, { error: 'onbekend blok' }) : respond(env, 200, b, 'text/plain; charset=utf-8');
+  const store = path === '/blocks' || path.startsWith('/blocks/') ? env.store : path === '/photos' || path.startsWith('/photos/') ? env.photos : undefined;
+  if (path.startsWith('/photos') && !store) return respond(env, 404, { error: 'foto-synchronisatie staat niet aan' });
+  if (store) {
+    const base = path.startsWith('/photos') ? '/photos' : '/blocks';
+    if (path === base) {
+      if (req.method !== 'GET') return respond(env, 405, { error: 'methode niet toegestaan' });
+      const limit = Math.min(500, Math.max(1, Number(url.searchParams.get('limit') ?? 100) || 100));
+      const r = await store.list(url.searchParams.get('cursor'), limit);
+      return respond(env, 200, r);
     }
-    if (req.method === 'PUT') {
-      const body = await req.text();
-      if (body.length === 0) return respond(env, 400, { error: 'leeg blok' });
-      if (body.length > MAX_BLOCK_BYTES) return respond(env, 413, { error: 'blok te groot' });
-      const existing = await env.store.get(id);
-      if (existing !== null) return existing === body ? respond(env, 200, { status: 'bestond al' }) : respond(env, 409, { error: 'een blok is onveranderlijk' });
-      await env.store.put(id, body);
-      return respond(env, 201, { status: 'bewaard' });
+    const m = /^\/(?:blocks|photos)\/([^/]+)$/.exec(path);
+    if (m) {
+      const id = decodeURIComponent(m[1]!);
+      if (!(base === '/photos' ? PHOTO_ID_PATTERN : BLOCK_ID_PATTERN).test(id)) return respond(env, 400, { error: 'ongeldig blok-id' });
+      if (req.method === 'GET') {
+        const b = await store.get(id);
+        return b === null ? respond(env, 404, { error: 'onbekend blok' }) : respond(env, 200, b, 'text/plain; charset=utf-8');
+      }
+      if (req.method === 'PUT') {
+        const body = await req.text();
+        if (body.length === 0) return respond(env, 400, { error: 'leeg blok' });
+        if (body.length > MAX_BLOCK_BYTES) return respond(env, 413, { error: 'blok te groot' });
+        const existing = await store.get(id);
+        if (existing !== null) return existing === body ? respond(env, 200, { status: 'bestond al' }) : respond(env, 409, { error: 'een blok is onveranderlijk' });
+        await store.put(id, body);
+        return respond(env, 201, { status: 'bewaard' });
+      }
+      if (req.method === 'DELETE') {
+        await store.delete(id);
+        return respond(env, 200, { status: 'verwijderd' });
+      }
+      return respond(env, 405, { error: 'methode niet toegestaan' });
     }
-    if (req.method === 'DELETE') {
-      await env.store.delete(id);
-      return respond(env, 200, { status: 'verwijderd' });
-    }
-    return respond(env, 405, { error: 'methode niet toegestaan' });
   }
 
   return respond(env, 404, { error: 'onbekend pad' });

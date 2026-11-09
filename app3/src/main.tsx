@@ -6,6 +6,7 @@ import type { Env } from './core/ids.ts';
 import { App } from './ui/App.tsx';
 import { applyPrefs, readTheme, readType } from './core/prefs.ts';
 import { openPhotoStore } from './core/photos.ts';
+import { createPhotoSync, localPhotoMeta } from './core/photosync.ts';
 import { Ctx } from './ui/store-context.tsx';
 
 function deviceId(): string {
@@ -25,8 +26,8 @@ async function start(): Promise<void> {
   if (idb) { try { await navigator.storage?.persist?.(); } catch { /* geen probleem: alleen een verzoek */ } }
   const store = await createStore(storage, engine);
   const env: Env = { now: () => Date.now(), uuid: () => crypto.randomUUID(), device: deviceId() };
-  const photos = await openPhotoStore();
-  render(<Ctx.Provider value={{ store, engine, env, photos }}><App persistent={storage.persistent} /></Ctx.Provider>, document.getElementById('root')!);
+  const photoSync = createPhotoSync(await openPhotoStore(), localPhotoMeta(localStorage), () => Date.now());
+  render(<Ctx.Provider value={{ store, engine, env, photos: photoSync.store, photoSync: photoSync.run }}><App persistent={storage.persistent} /></Ctx.Provider>, document.getElementById('root')!);
 }
 
 function registerWorker(): void {
