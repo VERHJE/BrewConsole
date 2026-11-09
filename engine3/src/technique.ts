@@ -187,7 +187,8 @@ export function chooseTechnique(facts: FactState, req: TechniqueRequest): Techni
   // 2. Eigen uitkomsten voor deze zak.
   const own = outcomesOf(facts.trials.values(), b => b === req.beanId);
   const decisiveOwn = own.filter(o => o.decisive);
-  const latestWin = decisiveOwn[decisiveOwn.length - 1];
+  // De laatste winnaar die bij deze brewer past (een V60-winnaar telt niet voor de Chemex).
+  const latestWin = [...decisiveOwn].reverse().find(o => o.winner && !String(o.winner).startsWith('legacy:') && usable(o.winner as TechniqueId, req.method));
   if (latestWin && latestWin.winner && !String(latestWin.winner).startsWith('legacy:') && usable(latestWin.winner as TechniqueId, req.method)) {
     const t = latestWin.winner as TechniqueId;
     reasons.push(reason('technique.won_trial', `${nameOf(t)} won jouw proef met deze zak.`));
@@ -213,46 +214,49 @@ export function chooseTechnique(facts: FactState, req: TechniqueRequest): Techni
 
   // 4. De regeltabel: eerst een direct besluit, anders Kasuya als controle met een proefkandidaat.
   const top = matched[0]!;
-  if (top.evidence === 'decision_jelle' && top.suggest[0] !== KASUYA) {
+  // Chemex: de regel zet het recept direct; Kasuya is daar geen controle. Het recept van de regel wordt zelf de controle van een proef.
+  const chemexDirect = req.method === 'chemex' && top.evidence === 'decision_jelle' && top.suggest[0] !== KASUYA;
+  if (top.evidence === 'decision_jelle' && top.suggest[0] !== KASUYA && !chemexDirect) {
     reasons.push(reason('technique.rule_direct', top.why));
     return finish(top.suggest[0]!, 'rule_direct', top.id, null, null);
   }
+  const control: TechniqueId = chemexDirect ? top.suggest[0]! : KASUYA;
   const first = matched.find(r => r.when && Object.keys(r.when).length > 0) ?? null;
-  reasons.push(reason(first ? 'technique.rule' : 'technique.fallback', first ? first.why : top.why));
-  const source: TechniqueSource = first ? 'rule' : 'fallback';
+  reasons.push(reason(chemexDirect ? 'technique.rule_direct' : first ? 'technique.rule' : 'technique.fallback', chemexDirect ? top.why : first ? first.why : top.why));
+  const source: TechniqueSource = chemexDirect ? 'rule_direct' : first ? 'rule' : 'fallback';
 
   // 5. Proef: alleen met een bekende controle, zonder lopende of net afgeronde proef.
   const cups = facts.cupOrder.map(id => facts.cups.get(id)!).filter(c => c.beanId === req.beanId);
   const pendingIds = new Set<string>();
   for (const c of cups) if (c.trialId && c.trialId.startsWith('tech:') && !facts.trials.has(c.trialId)) pendingIds.add(c.trialId);
   const pending = [...pendingIds][0] ?? null;
-  const controlCups = cups.filter((c: CupFacts) => c.technique === KASUYA && c.tasting !== null && c.trialId === null).length;
+  const controlCups = cups.filter((c: CupFacts) => c.technique === control && c.tasting !== null && c.trialId === null).length;
   const recentTrialCup = cups.slice(-2).some(c => c.trialId !== null);
   let trial: TechniqueTrialPlan | null = null;
   if (pending) {
     reasons.push(reason('technique.trial_pending', 'Er loopt al een proef met deze zak; rond die eerst af.'));
   } else if (controlCups < MIN_CONTROL_CUPS) {
-    if (matched.some(r => r.suggest.some(t => t !== KASUYA)) || similarBest) reasons.push(reason('technique.trial_later', `Eerst ${MIN_CONTROL_CUPS} geproefde Kasuya-koppen van deze zak (nu ${controlCups}); daarna volgt een proef.`));
+    if (matched.some(r => r.suggest.some(t => t !== control && usable(t, req.method))) || similarBest) reasons.push(reason('technique.trial_later', `Eerst ${MIN_CONTROL_CUPS} geproefde ${nameOf(control)}-koppen van deze zak (nu ${controlCups}); daarna volgt een proef.`));
   } else if (recentTrialCup) {
-    reasons.push(reason('technique.trial_cooldown', 'Je hebt net een proef gezet; de volgende kop is gewoon Kasuya.'));
+    reasons.push(reason('technique.trial_cooldown', `Je hebt net een proef gezet; de volgende kop is gewoon ${nameOf(control)}.`));
   } else {
     let cand: { t: TechniqueId; basis: 'rule' | 'similar'; ruleId: string | null } | null = null;
-    if (similarBest && similarBest.t !== KASUYA && !tried.has(similarBest.t)) cand = { t: similarBest.t, basis: 'similar', ruleId: null };
+    if (similarBest && similarBest.t !== control && !tried.has(similarBest.t)) cand = { t: similarBest.t, basis: 'similar', ruleId: null };
     for (const r of matched) {
       if (cand) break;
       for (const t of r.suggest) {
-        if (t === KASUYA || tried.has(t) || !usable(t, req.method)) continue;
+        if (t === control || tried.has(t) || !usable(t, req.method)) continue;
         cand = { t, basis: 'rule', ruleId: r.id };
         break;
       }
     }
     if (cand) {
       const n = own.filter(o => o.variant === cand!.t).length + 1;
-      trial = { id: `tech:${req.beanId ?? 'onbekend'}:${cand.t}:${n}`, control: KASUYA, variant: cand.t, basis: cand.basis, ruleId: cand.ruleId };
-      reasons.push(reason('technique.trial', `Proef: ${nameOf(cand.t)} tegen ${nameOf(KASUYA)} met deze zak, blind en met gelijke dosis, water en maling.`));
+      trial = { id: `tech:${req.beanId ?? 'onbekend'}:${cand.t}:${n}`, control, variant: cand.t, basis: cand.basis, ruleId: cand.ruleId };
+      reasons.push(reason('technique.trial', `Proef: ${nameOf(cand.t)} tegen ${nameOf(control)} met deze zak, blind en met gelijke dosis, water en maling.`));
     }
   }
-  return finish(KASUYA, source, first ? first.id : top.id, trial, pending);
+  return finish(control, source, chemexDirect ? top.id : first ? first.id : top.id, trial, pending);
 }
 
 // ───────────────────────────── de proef als twee recepten ─────────────────────────────

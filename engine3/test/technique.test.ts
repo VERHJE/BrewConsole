@@ -45,6 +45,20 @@ test('Chemex: recept per portie als besluit, direct en zonder proef', () => {
     assert.equal(c.trial, null);
   }
 });
+test('Chemex: na twee geproefde koppen volgt een proef tussen twee Chemex-recepten; de winnaar wordt de keuze voor die zak', () => {
+  const ccup = (id: string): EngineEvent[] => cup(id, 'z', { tech: 'chemex_verve' });
+  const r = req('z', { method: 'chemex', cupG: 250 });
+  assert.equal(choose([bean('z'), ...ccup('a')], r).trial, null);
+  const c = choose([bean('z'), ...ccup('a'), ...ccup('b')], r);
+  assert.equal(c.technique, 'chemex_verve');
+  assert.deepEqual([c.trial?.control, c.trial?.variant], ['chemex_verve', 'chemex_pull_pour']);
+  // Gewonnen proef: de winnaar wint, ook als er een V60-proef van dezelfde zak bestaat.
+  const won = [bean('z'), ...ccup('a'), ...ccup('b'), trial('t1', 'z', 'chemex_verve', 'chemex_pull_pour', 'variant')];
+  assert.equal(choose(won, r).technique, 'chemex_pull_pour');
+  const mixed = [...won, trial('t2', 'z', 'kasuya_46', 'gagne', 'variant')];
+  assert.equal(choose(mixed, r).technique, 'chemex_pull_pour');
+  assert.equal(choose(mixed, req('z')).technique, 'gagne');
+});
 test('een Chemex-recept wordt op de V60 nooit gekozen, ook niet na een gewonnen proef', () => {
   const events = [bean('z'), ...two('k', 'z'), trial('t1', 'z', 'kasuya_46', 'chemex_stumptown', 'variant')];
   assert.equal(choose(events, req('z')).technique, 'kasuya_46');

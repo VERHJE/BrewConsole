@@ -1500,3 +1500,5 @@ Jelle liet een extern UX/UI-verbeterplan ('Brew Console 2.1') beoordelen; wat al
 - Tests: engine3 `data.test.ts` (+2), `engine.test.ts`, `technique.test.ts`, `recipe.test.ts`; app3 `chemex.ui.test.mjs` (licht en donker, axe). 179 engine3-tests, 170 app3-tests.
 
 - **Sterktevoorkeur per brewer (9 nov 2026, keuze Jelle):** `strengthPlan` filtert de waarnemingen op de gevraagde brewer; V60- en Chemex-koppen beïnvloeden elkaars dosisadvies niet. Test in `strength.test.ts`; 180 engine3-tests.
+
+- **Chemex-proeven (9 nov 2026):** op de Chemex is het recept van de portieregel de controle van een proef (twee geproefde koppen eerst), de tweede keuze uit de regel de variant; de winnaar geldt voor die zak op de Chemex. `chooseTechnique` neemt voor een gewonnen proef alleen winnaars die bij de brewer passen. Test in `technique.test.ts`; 181 engine3-tests.
