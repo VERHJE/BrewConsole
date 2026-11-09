@@ -17,10 +17,11 @@ export const GRINDER_C3S_PRO = {
     { title: 'The Basic Barista, Timemore C3 grind size chart', url: 'https://thebasicbarista.com/blogs/article/timemore-c3-grind-size-chart', says: 'C3/C3S: V60 11–18 klikken (913–1494 micron), 36 klikken in totaal, 83 micron per klik.' },
     { title: 'Slow Pour Supply, Chestnut C-series vergelijking', url: 'https://www.slowpoursupply.co/pages/timemore-chestnut-c-series-model-comparison', says: 'C3S Pro: 0,0833 mm per klik, 12 klikken per omwenteling.' },
     { title: 'Balance Journal, Timemore Chestnut C3 review', url: 'https://balancejournal.co/food-drink/timemore-chestnut-c3-review', says: 'C3S Pro: 20 micron per klik (tegenspraak met 83 micron).' },
+    { title: 'Coffeemaster, Timemore Chestnut C3S Pro grind settings', url: 'https://coffeemaster.app/guides/timemore-chestnut-c3s-pro-grind-settings', says: 'Ring met 26 standen (0–25), elke klik is een stand, 0 = messen raken elkaar, lager is fijner. V60 16–17 (2:45–3:30, 15 g op 250 ml), Chemex 19–20 (3:30–4:30, 30 g op 500 ml), French press 23–25. Micron per klik niet lineair: ongeveer 15 rond 11–13, ongeveer 50 in de V60/Chemex-zone (16–21). Chemex is dus ongeveer 3 klikken grover dan de V60.' },
     { title: 'Beean, grinder setting converter', url: 'https://beeancoffee.com/grinder-setting-converter/', says: 'Lijst bevat de C3S Pro, maar de pagina toont geen micron per klik.' }
   ] as readonly GrinderSource[],
-  /** Micron per klik: de bronnen noemen 83 en 20. Niet gebruikt in de berekening. */
-  micronPerClickClaims: [83, 20] as readonly number[],
+  /** Micron per klik: de bronnen noemen 83, 20 en (Coffeemaster, niet lineair) ongeveer 15 rond klik 11–13 en ongeveer 50 rond 16–21. Niet gebruikt in de berekening. */
+  micronPerClickClaims: [83, 20, 50] as readonly number[],
   v60ClickRangeClaims: [{ lo: 14, hi: 22, source: 'BrewTuner' }, { lo: 11, hi: 18, source: 'The Basic Barista' }] as readonly { lo: number; hi: number; source: string }[],
   /** Bewaking voor het advies: de unie van de V60-bereiken (11–22) met 3 klikken marge. Aanname. */
   adviceWindow: { lo: 8, hi: 25 },
@@ -45,8 +46,8 @@ export const GRINDER_C3S_PRO = {
   },
   /**
    * Omrekening Comandante C40 → Timemore C3S Pro voor Hedricks 900 µm (30 klikken op de C40): Beean en Brewfolio 21 klikken, Coffeemaster 23.
-   * Micron per klik (83 of 20): bij 83 µm zou Jelles V60 op klik 15 ongeveer 400 µm zijn (te fijn voor een filter), bij 20 µm ongeveer 780 µm;
-   * 83 µm is dus vermoedelijk de afstand op de dial en niet de verandering van de maling. Aanwijzing, geen bewijs.
+   * Micron per klik: 83 µm geeft Jelles V60 op klik 15 ongeveer 400 µm (te fijn voor een filter); Coffeemaster noemt voor 16 tot 21 ongeveer 50 µm
+   * (niet lineair), waarbij klik 21 ongeveer 900 µm is, klik 16 ongeveer 650 µm. Aanwijzing, geen bewijs.
    */
   hedrickConversion: { c40Clicks: 30, micron: 900, c3sProClicks: [21, 23] as readonly number[] }
 } as const;

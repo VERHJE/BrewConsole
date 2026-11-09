@@ -170,3 +170,10 @@ test('Chemex: eigen beginklik van het recept (Hedrick 22) en schalen van een eer
   // V60 blijft ongewijzigd
   assert.deepEqual(currentClickFor(none, 'kasuya_46', null, null, 'v60', 17), { click: 16, source: 'default' });
 });
+
+test('Chemex: de dosisregel klopt met Coffeemaster (30 g op 500 ml: klik 19 tot 20) en met de V60 plus ongeveer 3 klikken', () => {
+  const c30 = chemexClickForDose(30);
+  assert.ok(c30 >= 19 && c30 <= 20, `30 g → ${c30}`);
+  // Jelles V60 staat op 15 tot 17; Coffeemaster zet de Chemex ongeveer 3 klikken boven de V60 (V60 16–17, Chemex 19–20).
+  assert.ok(chemexClickForDose(22) - 15 === 0 && c30 - 16 >= 3 - 1 && c30 - 17 <= 3 + 1);
+});
