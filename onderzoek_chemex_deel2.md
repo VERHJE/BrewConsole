@@ -79,3 +79,5 @@ Niet doen: de 96 °C of de recepten aanpassen op basis van de warmteverlies-clai
 - Hoe de maalstanden van de C3S Pro echt tellen (vanaf nul of de strakste stand) en welke Chemex-stand klopt.
 - Of een 6-kops met 15 g echt slechter smaakt dan met 22 g; dat is met eigen koppen te testen.
 - Of Barefoots felle giet en de zachte gietadviezen elkaar echt tegenspreken of dat dit afhangt van de boon.
+
+**Verwerkt (9 nov 2026):** het Howell-recept voor één kop staat in de app als voorstel voor '1 kop' (340 g); zie `docs/engine3/05-technieken.md`.

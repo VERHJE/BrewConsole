@@ -24,11 +24,10 @@ export const DEFAULT_FORM: BrewForm = { beanId: null, method: 'v60', cupG: 250, 
 export const GOAL_LABEL: Readonly<Record<Goal, string>> = { bright: 'Helder en fris', balanced: 'Gebalanceerd', rich: 'Rond en vol' };
 export const METHOD_LABEL: Readonly<Record<Method, string>> = { v60: 'Hario V60', chemex: 'Chemex (6 kops)' };
 
-/** Porties voor de Chemex (besluit Jelle 9 nov 2026: een kop is hier 250 g in het glas). */
-export const CHEMEX_PORTIONS: ReadonlyArray<{ id: 'one' | 'two' | 'jug'; label: string; cupG: number }> = [
-  { id: 'one', label: '1 kop', cupG: 250 },
-  { id: 'two', label: '2 koppen', cupG: 500 },
-  { id: 'jug', label: 'Hele kan', cupG: 650 }
+/** Porties voor de Chemex: een kop is hier 340 g (12 oz), de maat van George Howells 6-kops-recept voor één kop. */
+export const CHEMEX_PORTIONS: ReadonlyArray<{ id: 'one' | 'two'; label: string; cupG: number }> = [
+  { id: 'one', label: '1 kop', cupG: 340 },
+  { id: 'two', label: '2 koppen', cupG: 680 }
 ];
 export const portionOf = (cupG: number): (typeof CHEMEX_PORTIONS)[number]['id'] | null => CHEMEX_PORTIONS.find(p => p.cupG === cupG)?.id ?? null;
 export const FEEDBACK_LABEL: Readonly<Record<FeedbackSignal, string>> = {

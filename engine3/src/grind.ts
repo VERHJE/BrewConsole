@@ -277,7 +277,9 @@ export function grindPlan(facts: FactState, req: GrindRequest): GrindPlan {
 
   let code: GrindCode = 'ok';
   let advice: GrindAdvice | null = null;
-  if (pNow < KEEP_P_IN_BAND || Math.abs(endMid - req.targetEnd.mid) > KEEP_NEAR_TARGET_SEC) {
+  // Chemex zonder eigen doorlooptijden voor deze techniek: het beginpunt is zelf het recept (aanname), dus er valt niets bij te stellen.
+  const noChemexData = req.method === 'chemex' && obs.filter(o => o.method === 'chemex' && o.technique === req.technique).length === 0;
+  if (!noChemexData && (pNow < KEEP_P_IN_BAND || Math.abs(endMid - req.targetEnd.mid) > KEEP_NEAR_TARGET_SEC)) {
     code = endMid > req.targetEnd.mid ? 'too_slow' : 'too_fast';
     const win = req.method === 'chemex' ? GRINDER_C3S_PRO.chemex.adviceWindow : GRINDER_C3S_PRO.adviceWindow;
     let best: { click: number; p: number; dist: number; band: Band<number> } | null = null;

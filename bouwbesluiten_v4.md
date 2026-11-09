@@ -1502,3 +1502,5 @@ Jelle liet een extern UX/UI-verbeterplan ('Brew Console 2.1') beoordelen; wat al
 - **Sterktevoorkeur per brewer (9 nov 2026, keuze Jelle):** `strengthPlan` filtert de waarnemingen op de gevraagde brewer; V60- en Chemex-koppen beïnvloeden elkaars dosisadvies niet. Test in `strength.test.ts`; 180 engine3-tests.
 
 - **Chemex-proeven (9 nov 2026):** op de Chemex is het recept van de portieregel de controle van een proef (twee geproefde koppen eerst), de tweede keuze uit de regel de variant; de winnaar geldt voor die zak op de Chemex. `chooseTechnique` neemt voor een gewonnen proef alleen winnaars die bij de brewer passen. Test in `technique.test.ts`; 181 engine3-tests.
+
+- **Chemex Howell, één kop (9 nov 2026, keuze Jelle):** recept van George Howell voor één kop in een 6-kops (25–28 g op 390 g, 3 gietbeurten) is het voorstel voor '1 kop' (340 g); portieknoppen '1 kop' (340 g) en '2 koppen' (680 g); regels ≤ 400 / 401–550 / ≥ 551 g. Geen maalbijsturing op de Chemex zonder eigen doorlooptijden. 181 engine3-tests, 170 app3-tests.

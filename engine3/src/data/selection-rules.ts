@@ -45,19 +45,19 @@ export const SELECTION_RULES: readonly SelectionRule[] = [
   // Chemex (6-kops, besluit Jelle 9 nov 2026): eerst de recepten uit onderzoek_chemex.md, per portie. Een koppie is
   // ongeveer 250 g. Het zijn startvoorstellen uit bronnen; geen bewijs welk recept bij welke boon past.
   {
-    id: 'chemex.one_cup', when: { method: 'chemex', maxCupG: 300 }, suggest: ['chemex_verve', 'chemex_pull_pour'], kasuyaFirstPourShare: null,
+    id: 'chemex.one_cup', when: { method: 'chemex', maxCupG: 400 }, suggest: ['chemex_howell_cup', 'chemex_pull_pour'], kasuyaFirstPourShare: null,
     evidence: 'decision_jelle', priority: 102,
-    why: 'Eén kop op de Chemex: het Verve-recept is gemaakt voor één kop (15 g op 225 g water), Pull & Pour is de rustige tweede keuze.'
+    why: 'Eén kop in de 6-kops Chemex: George Howell publiceert een eigen recept voor één kop (25 tot 28 g op 390 g water, drie gietbeurten); Pull & Pour is de rustige tweede keuze.'
   },
   {
-    id: 'chemex.two_cups', when: { method: 'chemex', minCupG: 301, maxCupG: 450 }, suggest: ['chemex_pull_pour', 'chemex_stumptown'], kasuyaFirstPourShare: null,
+    id: 'chemex.two_cups', when: { method: 'chemex', minCupG: 401, maxCupG: 550 }, suggest: ['chemex_stumptown', 'chemex_barefoot'], kasuyaFirstPourShare: null,
     evidence: 'decision_jelle', priority: 101,
-    why: 'Twee koppen of iets minder op de Chemex: Pull & Pour (24 g op 385 g water) met één kalme giet; Stumptown is de variant met drie gietbeurten.'
+    why: 'Tussen één en twee koppen op de Chemex: Stumptown (42 g op 700 g water) met drie gietbeurten; Barefoot is de variant met twee.'
   },
   {
-    id: 'chemex.full_jug', when: { method: 'chemex', minCupG: 451 }, suggest: ['chemex_barefoot', 'chemex_stumptown', 'chemex_blue_bottle', 'chemex_onyx'], kasuyaFirstPourShare: null,
+    id: 'chemex.full_jug', when: { method: 'chemex', minCupG: 551 }, suggest: ['chemex_barefoot', 'chemex_stumptown', 'chemex_blue_bottle', 'chemex_onyx'], kasuyaFirstPourShare: null,
     evidence: 'decision_jelle', priority: 100,
-    why: 'Een grotere portie (meerdere mensen) op de Chemex: Barefoot kreeg in de Prima-vergelijking het hoogste cijfer (één boon, één proever); Stumptown, Blue Bottle en Onyx zijn de alternatieven.'
+    why: 'Twee koppen of een hele kan op de Chemex: Barefoot kreeg in de Prima-vergelijking het hoogste cijfer (één boon, één proever); Stumptown, Blue Bottle en Onyx zijn de alternatieven.'
   },
   {
     id: 'feedback.sour_hollow_light', when: { roast: ['light', 'light_medium'], feedbackAny: ['sour_or_hollow'] }, suggest: ['gagne', 'kasuya_46'],

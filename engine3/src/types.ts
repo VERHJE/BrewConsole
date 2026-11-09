@@ -25,6 +25,7 @@ export type TechniqueId =
   | 'april'
   | 'hedrick_one_and_done'
   | 'rao'
+  | 'chemex_howell_cup'
   | 'chemex_verve'
   | 'chemex_pull_pour'
   | 'chemex_barefoot'

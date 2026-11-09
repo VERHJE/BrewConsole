@@ -28,20 +28,20 @@ for (const scheme of ['light', 'dark']) {
     await page.waitForSelector('.numbers');
 
     // V60: geen portiekeuze
-    assert.equal(await page.locator('button.chip:has-text("Hele kan")').count(), 0);
+    assert.equal(await page.locator('button.chip:has-text("2 koppen")').count(), 0);
     await page.click('button.chip:has-text("Chemex")');
-    await page.waitForSelector('button.chip:has-text("Hele kan")');
+    await page.waitForSelector('button.chip:has-text("2 koppen")');
 
     const pick = async (portie, naam) => {
       await page.click(`button.chip:has-text("${portie}")`);
       await page.waitForSelector(`h2:has-text("${naam}")`);
     };
-    await pick('1 kop', 'Chemex Verve');
+    await pick('1 kop', 'Chemex Howell');
     assert.match(await text(page, '.numbers'), /klik 24/);
     assert.equal(await page.locator('button.chip:has-text("1 kop")').getAttribute('aria-pressed'), 'true');
-    // twee koppen (500 g) valt in de grote portie: Barefoot is het voorstel
+    // twee koppen (680 g): Barefoot is het voorstel
     await pick('2 koppen', 'Chemex Barefoot');
-    await pick('Hele kan', 'Chemex Barefoot');
+    assert.equal(await page.locator('button.chip:has-text("Hele kan")').count(), 0);
     // geen V60-melding bij een Chemex-recept
     assert.equal(await page.locator('.banner.warn:has-text("V60-techniek")').count(), 0);
     assert.equal(await page.locator('ul.notes li:has-text("V60-techniek")').count(), 0);
@@ -68,14 +68,14 @@ for (const scheme of ['light', 'dark']) {
     // Chemex starten: timer met aanwijzing per giet
     await page.click('button.chip:has-text("Chemex")');
     await page.click('button.chip:has-text("1 kop")');
-    await page.waitForSelector('h2:has-text("Chemex Verve")');
+    await page.waitForSelector('h2:has-text("Chemex Howell")');
     await page.clock.install({ time: new Date('2026-11-09T12:00:00Z') });
     await page.click('button:has-text("Start zetsel")');
     await page.waitForSelector('.timer.ready');
     await page.click('button:has-text("Start")');
     await page.waitForSelector('.pprog');
-    assert.match(await text(page, '.pprog'), /Giet 1 van 4/);
-    assert.match(await text(page, '.steptip'), /cirkels/i);
+    assert.match(await text(page, '.pprog'), /Giet 1 van 3/);
+    assert.match(await text(page, '.steptip'), /20 seconden[\s\S]*concentrische cirkels/i);
     assert.deepEqual(await axe(page), []);
     assert.deepEqual(errors, []);
     await ctx.close();
