@@ -40,7 +40,9 @@ function Plan(): JSX.Element {
   useEffect(() => saveForm(eff), [eff]);
   const outcome = useMemo(() => planBrew(engine, state, env, eff), [engine, revision, eff]);
   const set = (p: Partial<BrewForm>): void => {
-    const next = { ...eff, ...p, ...('beanId' in p ? { noBean: p.beanId === null } : {}) };
+    let next = { ...eff, ...p, ...('beanId' in p ? { noBean: p.beanId === null } : {}) };
+    // Wissel naar de Chemex: begin bij één kop (340 g, de maat van het recept), anders geeft 250 g een te dunne laag.
+    if (next.method === 'chemex' && eff.method !== 'chemex' && portionOf(next.cupG) === null && !('cupG' in p)) next = { ...next, cupG: CHEMEX_PORTIONS[0]!.cupG };
     // Een techniek die niet bij de gekozen brewer past, valt terug op "Laat Brew Console kiezen".
     setForm(techniqueFits(next.method, next.technique) ? next : { ...next, technique: null });
   };
