@@ -6,7 +6,7 @@ Datum: 9 nov 2026. Vervolg op `onderzoek_chemex.md`. Dit deel gaat over de gaten
 
 Het meeste wat over de Chemex gezegd wordt, is **mening of herhaling van de maker**. Gecontroleerde metingen zijn er bijna niet. Wat we wel vonden en voor de app telt:
 
-1. **Kleine porties in een 6-kops zijn riskant.** Meerdere bronnen noemen een dunne koffielaag als probleem; Scott Rao legt uit waarom (kanalen die de bodem halen geven astringentie). Onze 1-kop (250 g) komt neer op ongeveer 15 g koffie in een 6-kops; bronnen noemen 22 g (voor 352 g water) of een kleinere Chemex. Dit raakt direct iets wat we gebouwd hebben.
+1. **Een kop in een 6-kops heeft meer koffie nodig dan wij nu doen.** George Howell publiceert zelf een recept "6-kops, voor één": **25 tot 28 g koffie op 390 g water** voor een kop van 340 g (3 gietbeurten, 4 minuten). Dat is ongeveer het dubbele van ons Verve-recept (15 g op 225 g), dat voor een kleinere Chemex is bedoeld. Scott Rao legt uit waarom een dunne laag een risico is (kanalen die de bodem halen geven astringentie). Dit raakt direct iets wat we gebouwd hebben.
 2. **Je maalstand is een gok.** Twee bronnen voor je molen spreken elkaar tegen: BrewTuner zegt 24 klikken voor de Chemex (die gebruikt de app), een andere lijst zegt 17 tot 19. De eerste kop is dus een kalibratie.
 3. **Er is geen enkele gecontroleerde Chemex-tegen-V60-meting** met een refractometer. Eén forumgebruiker haalde op de Chemex 20,5 % extractie tegen bijna 23 % op de V60 met dezelfde boon. Eén persoon, één boon: een aanwijzing.
 4. **Warmteverlies:** één thuismeting met thermokoppels zegt dat de Chemex snel warmte verliest, ook voorverwarmd. De rest is advies zonder meting.
@@ -16,6 +16,7 @@ Het meeste wat over de Chemex gezegd wordt, is **mening of herhaling van de make
 
 | Onderwerp | Beste bron die we vonden | Klasse |
 |---|---|---|
+| Eén kop in een 6-kops | [George Howell, Chemex brew guide (PDF, zelf gelezen)](https://cdn.shopify.com/s/files/1/0550/4119/6267/files/ChemexCombined_1125.pdf): 3-kops voor twee, 6-kops voor één, 6-kops voor twee | A |
 | Bedikte en kleine porties | [Scott Rao, Bed depth: why it matters](https://www.scottrao.com/blog/2025/11/11/bed-depth-why-it-matters) (zelf gelezen) | A, maar noemt de Chemex **niet** |
 | Kleine dosis in een 6-kops | zoekresultaten van gidsen en een forum | C |
 | Warmteverlies | één thuisexperiment met thermokoppels (via zoekresultaat) | C |
@@ -45,13 +46,23 @@ Let op: een groot deel van de zoekresultaten waren spiegelsites en SEO-pagina's.
 
 **Branding.** Licht tot medium wordt het meest genoemd; medium als veilige start. Eén gids noemt 1:17 tot 1:18 voor licht, 1:16 voor medium en 1:15 voor donker. Dat is één mening, geen meting.
 
+**George Howell, drie recepten uit zijn eigen PDF** (alle: water 201 tot 205 °F, maling "drip-medium", filter spoelen, dikke kant tegen de tuit, in concentrische cirkels vanuit het midden, richten op donkere plekken):
+
+| Recept | Koffie | Water | Gietbeurten | Tijd |
+|---|---|---|---|---|
+| 3-kops, voor twee (340 g) | 25 tot 28 g | 390 g | 100 g in 15 s; 1:00 naar 200 g; 2:00 naar 300 g; 3:00 naar 390 g (elk in 15 s) | ca. 4:00 |
+| **6-kops, voor één (340 g)** | **25 tot 28 g** | **390 g** | **130 g in 20 s; 1:00 naar 260 g; 2:00 naar 390 g (elk in 20 s)** | **3:30 tot 4:00** |
+| 6-kops, voor twee (710 g) | 50 tot 57 g | 780 g | 260 g in 30 s; 1:00 naar 520 g; 2:30 naar 780 g (elk in 30 s) | ca. 5:00 (3:30 tot 4:00 volgens de laatste stap) |
+
+Daaruit volgt: de dosis voor één kop in een 6-kops is een **bronwaarde**, geen afleiding. Onze huidige 1-kop (Verve, 15/225) is een recept voor een kleinere Chemex.
+
 ## 4. Waar in de app winst te halen is
 
 Gerangschikt naar nut en zekerheid. De items 1 en 2 raken wat er nu al staat.
 
 | # | Winst | Waarom | Zekerheid |
 |---|---|---|---|
-| 1 | **Waarschuwing of ondergrens voor kleine doseringen in een 6-kops** (nu ondergrens 15 g, 1 kop = ongeveer 15 g) | Dunne laag is het enige punt waar een primaire bron (Rao) en meerdere gidsen op elkaar aansluiten | Middel: Rao noemt de Chemex niet; de drempel (ca. 22 g) is een afleiding |
+| 1 | **Een eigen recept voor één kop in een 6-kops**: George Howell (25 tot 28 g op 390 g, drie gietbeurten) als voorstel voor "1 kop", en een ondergrens voor de dosis (nu 15 g) | Een roaster publiceert dit zelf; Rao en meerdere gidsen noemen het risico van een dunne laag | Hoog voor het recept (bron klasse A); de ondergrens is een afleiding |
 | 2 | **Eerste Chemex-kop als maalkalibratie**: de app zegt dat 24 een startpunt is (twee bronnen verschillen) en vraagt na de eerste kop om de doorlooptijd | Het model leert hierna zelf bij; nu staat 24 er als feit | Hoog: het gaat om eerlijkheid over wat we niet weten |
 | 3 | **Chemex-meting vastleggen**: de refractometer-invoer (TDS) werkt al per brewer; een korte uitleg dat jouw metingen de enige Chemex-tegen-V60-data zijn die bestaan | Er is geen gecontroleerde bron; jouw koppen zijn de data | Hoog, afhankelijk van of je een refractometer hebt |
 | 4 | **Filtertype bij het zetsel** (Chemex wit, natural, ander) | Het enige filter-effect dat we kunnen onderzoeken is met eigen koppen; geen bron geeft cijfers | Middel: kost een nieuw veld |
