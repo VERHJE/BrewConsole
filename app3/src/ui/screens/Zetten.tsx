@@ -5,8 +5,8 @@ import type { Route } from '../../core/router.ts';
 import { href } from '../../core/router.ts';
 import { beanRows } from '../../core/beans.ts';
 import {
-  CUP_MAX, CUP_MIN, DEFAULT_FORM, FEEDBACK_LABEL, GOAL_LABEL, METHOD_LABEL, TECHNIQUE_OPTIONS,
-  bandText, brewPlanEvent, clock, nl1, planBrew, pourLines, splitWarnings, techniqueName, type BrewForm
+  CHEMEX_PORTIONS, CUP_MAX, CUP_MIN, DEFAULT_FORM, FEEDBACK_LABEL, GOAL_LABEL, METHOD_LABEL,
+  bandText, portionOf, techniqueFits, techniqueOptions, brewPlanEvent, clock, nl1, planBrew, pourLines, splitWarnings, techniqueName, type BrewForm
 } from '../../core/brew.ts';
 import { BagArt, useApp, useSnapshot } from '../store-context.tsx';
 import { finishLines, pourNotes, prepLines } from '../../core/gieten.ts';
@@ -39,7 +39,13 @@ function Plan(): JSX.Element {
   const eff = useMemo(() => ({ ...form, beanId }), [form, beanId]);
   useEffect(() => saveForm(eff), [eff]);
   const outcome = useMemo(() => planBrew(engine, state, env, eff), [engine, revision, eff]);
-  const set = (p: Partial<BrewForm>): void => setForm({ ...eff, ...p, ...('beanId' in p ? { noBean: p.beanId === null } : {}) });
+  const set = (p: Partial<BrewForm>): void => {
+    const next = { ...eff, ...p, ...('beanId' in p ? { noBean: p.beanId === null } : {}) };
+    // Een techniek die niet bij de gekozen brewer past, valt terug op "Laat Brew Console kiezen".
+    setForm(techniqueFits(next.method, next.technique) ? next : { ...next, technique: null });
+  };
+  const options = techniqueOptions(eff.method);
+  const portion = eff.method === 'chemex' ? portionOf(eff.cupG) : null;
 
   const start = async (): Promise<void> => {
     if (!outcome.ok) return;
@@ -57,7 +63,7 @@ function Plan(): JSX.Element {
   };
 
   const beanName = beanId ? rows.find(r => r.id === beanId)?.name ?? 'Zak' : 'Geen zak';
-  const summary = [beanName, `${eff.cupG} g`, eff.goal ? GOAL_LABEL[eff.goal] : 'geen voorkeur', eff.technique ? techniqueName(eff.technique) : null].filter(Boolean).join(' · ');
+  const summary = [beanName, eff.method === 'chemex' ? 'Chemex' : null, `${eff.cupG} g`, eff.goal ? GOAL_LABEL[eff.goal] : 'geen voorkeur', eff.technique ? techniqueName(eff.technique) : null].filter(Boolean).join(' · ');
 
   return (
     <section class="zetten">
@@ -74,6 +80,17 @@ function Plan(): JSX.Element {
             {rows.map(r => <option key={r.id} value={r.id}>{r.name}{r.roaster ? ` · ${r.roaster}` : ''}</option>)}
           </select>
         </label>
+        <div class="field"><span id="method-l">Brewer</span>
+          <div class="chips" role="group" aria-labelledby="method-l">
+            {(Object.keys(METHOD_LABEL) as Array<keyof typeof METHOD_LABEL>).map(m => <button key={m} type="button" class="chip" aria-pressed={eff.method === m} onClick={() => set({ method: m })}>{METHOD_LABEL[m]}</button>)}
+          </div>
+        </div>
+        {eff.method === 'chemex' && (
+          <div class="field"><span id="portion-l">Portie (een kop is 250 g)</span>
+            <div class="chips" role="group" aria-labelledby="portion-l">
+              {CHEMEX_PORTIONS.map(p => <button key={p.id} type="button" class="chip" aria-pressed={portion === p.id} onClick={() => set({ cupG: p.cupG })}>{p.label}</button>)}
+            </div>
+          </div>)}
         <div class="field"><span id="cup-l">Kop (gram, koffie die je drinkt)</span>
           <div class="stepper">
             <button class="btn" type="button" aria-label="Kleiner" onClick={() => set({ cupG: Math.max(CUP_MIN, eff.cupG - 10) })}>−</button>
@@ -89,14 +106,11 @@ function Plan(): JSX.Element {
         </div>
         <details>
           <summary>Meer opties</summary>
-          <label class="field"><span>Methode</span>
-            <select name="method" value={eff.method} onChange={e => set({ method: (e.currentTarget as HTMLSelectElement).value as BrewForm['method'] })}>
-              {(Object.keys(METHOD_LABEL) as Array<keyof typeof METHOD_LABEL>).map(m => <option key={m} value={m}>{METHOD_LABEL[m]}</option>)}
-            </select></label>
           <label class="field"><span>Techniek</span>
             <select name="technique" value={eff.technique ?? ''} onChange={e => set({ technique: ((e.currentTarget as HTMLSelectElement).value || null) as BrewForm['technique'] })}>
               <option value="">Laat Brew Console kiezen</option>
-              {TECHNIQUE_OPTIONS.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              {options.own.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              {options.other.length > 0 && <optgroup label="V60-technieken (lopen op de Chemex trager door)">{options.other.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</optgroup>}
             </select></label>
           <fieldset class="field"><legend class="meta">Over de vorige kop</legend>
             {(Object.keys(FEEDBACK_LABEL) as Array<keyof typeof FEEDBACK_LABEL>).map(k => (

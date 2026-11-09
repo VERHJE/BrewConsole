@@ -6,8 +6,9 @@ import { SELECTION_RULES } from '../src/data/selection-rules.ts';
 import { FLAVOR_WHEEL } from '../src/data/flavor-wheel.ts';
 import { loadApp } from '../../tests/load-app.mjs';
 
-test('acht technieken, elk met een bron en een rol', () => {
-  assert.equal(TECHNIQUES.length, 8);
+test('veertien recepten (acht V60, zes Chemex), elk met een bron en een rol', () => {
+  assert.equal(TECHNIQUES.length, 14);
+  assert.equal(TECHNIQUES.filter(t => t.methods?.includes('chemex')).length, 6);
   for (const t of TECHNIQUES) {
     assert.ok(t.sources.length > 0, t.id);
     assert.ok(t.role.length > 0, t.id);
@@ -75,4 +76,27 @@ test('gietaanwijzingen: elke swirl of roerbeurt heeft een uitleg, prep en finish
   assert.equal(hof.pours![2]!.agitationAfter, 'stir');
   assert.match(hof.pours![2]!.tip!, /langzamer/);
   assert.match(hof.pours![2]!.after!, /met de klok mee/);
+});
+test('Chemex-recepten: bron, Chemex-eindtijd, plaatshouders staan in `open`, V60-recepten blijven V60', () => {
+  for (const t of TECHNIQUES) {
+    const cx = t.methods?.includes('chemex') ?? false;
+    if (!cx) { assert.equal(t.methods, undefined, t.id); continue; }
+    assert.ok(t.id.startsWith('chemex_'), t.id);
+    assert.ok(t.reference.endSec && t.reference.endSec.lo >= 210, `${t.id}: de Chemex loopt langer door dan de V60`);
+    assert.ok(t.reference.prep && t.reference.finish, `${t.id}: voor- en nastappen`);
+    assert.ok(t.reference.pours!.every(p => p.tip), `${t.id}: tip per giet`);
+    assert.ok(t.reference.tempC !== null, t.id);
+  }
+  // Barefoot: bloem 75 g, daarna 750 g; Onyx: vier keer 200 g op 0:45, 1:30, 2:30, 3:30 (Prima).
+  assert.deepEqual(TECHNIQUE_BY_ID.get('chemex_barefoot')!.reference.pours!.map(p => p.toG), [75, 750]);
+  assert.deepEqual(TECHNIQUE_BY_ID.get('chemex_onyx')!.reference.pours!.map(p => p.atSec), [0, 45, 90, 150, 210]);
+  assert.ok(TECHNIQUE_BY_ID.get('chemex_blue_bottle')!.open.some(o => /Plaatshouder/.test(o)));
+});
+test('portieregels voor de Chemex dekken elke kopgrootte, zonder gat of overlap', () => {
+  const rules = SELECTION_RULES.filter(r => r.when.method === 'chemex');
+  for (let cup = 100; cup <= 700; cup += 5) {
+    const hit = rules.filter(r => (r.when.minCupG ?? 0) <= cup && cup <= (r.when.maxCupG ?? Infinity));
+    assert.equal(hit.length, 1, `${cup} g`);
+    for (const t of hit[0]!.suggest) assert.ok(TECHNIQUE_BY_ID.get(t)!.methods?.includes('chemex'), t);
+  }
 });

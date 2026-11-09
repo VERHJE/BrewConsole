@@ -25,7 +25,9 @@ export const GRINDER_C3S_PRO = {
   /** Bewaking voor het advies: de unie van de V60-bereiken (11–22) met 3 klikken marge. Aanname. */
   adviceWindow: { lo: 8, hi: 25 },
   /** Stand waarmee een eerste zetsel begint zolang er niets gelogd is: Jelles gebruikelijke stand (16, 17 van 20 zetsels). */
-  defaultStartClick: 16
+  defaultStartClick: 16,
+  /** Chemex: BrewTuner noemt 24 klikken (bereik 20–28), klasse C. */
+  chemex: { defaultStartClick: 24, adviceWindow: { lo: 17, hi: 31 } }
 } as const;
 
 /**

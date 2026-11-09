@@ -21,7 +21,9 @@ Perger 80/20 is een beslisregel, geen recept.
 
 | Prioriteit | Als | Voorstel → proef | Kasuya eerste giet | Bewijs |
 |---|---|---|---|---|
-| 100 | Chemex | Hoffmann | — | besluit |
+| 102 | Chemex, kop ≤ 300 g (1 kop) | Chemex Verve → Pull & Pour | — | besluit |
+| 101 | Chemex, kop 301–450 g | Chemex Pull & Pour → Stumptown | — | besluit |
+| 100 | Chemex, kop ≥ 451 g (2 koppen tot hele kan) | Chemex Barefoot → Stumptown, Blue Bottle, Onyx | — | besluit |
 | 90 | licht/light-medium, en herhaald zuur of hol | Gagné → Kasuya | — | E3 |
 | 85 | ongelijk doorlopen of droge afdronk | Rao → Kasuya | — | E3 |
 | 60 | bloemige of theenotities | Wendelboe (eigen recept) → Kasuya | — | E3; besluit |
@@ -58,3 +60,13 @@ De recepten kenden per giet alleen tijd, gewicht, patroon en swirl/roeren. Wat d
 | Osmotic Flow | Geen schema. | — |
 
 Bijeffect: waar een bron geen patroon noemt, toont de app er niets over in plaats van een aanname als feit.
+
+## Chemex-recepten (9 nov 2026)
+
+Zes recepten uit `onderzoek_chemex.md`, als data in `engine3/src/data/chemex-techniques.ts` (`methods: ['chemex']`): Verve (15/225, 1 kop), Pull & Pour (24/385, één kalme giet), Barefoot (50/750, twee gietbeurten), Stumptown (42/700, drie), Blue Bottle (50/700, pulsen, giet aan het zakken gekoppeld) en Onyx (55/900, vier pulsen, 6–7 min). Per recept staan bron, klasse, voor- en nastappen en een tip per giet erin; wat de bron niet noemt, is een plaatshouder in `open` (komt als melding bij het recept).
+
+- **Brewer:** `fitsMethod(def, method)`; een recept zonder `methods` is een V60-recept. De techniekkeuze (`chooseTechnique`) kiest een Chemex-recept nooit voor de V60 en omgekeerd, ook niet via een gewonnen proef of vergelijkbare zakken. Zelf kiezen blijft altijd kunnen: een V60-techniek op de Chemex krijgt de melding dat het dikkere filter trager doorloopt.
+- **Portie:** de regels kijken naar de kopgrootte (`minCupG`/`maxCupG`); de app biedt '1 kop' (250 g), '2 koppen' (500 g) en 'Hele kan' (650 g).
+- **Dosisgrens:** 15–57 g (laagste en hoogste dosis in de brongegeven recepten, klasse C). Boven 800 g water volgt een melding dat het dicht bij de rand van een 6-kops Chemex komt (885 ml).
+- **Molen:** beginklik 24 (BrewTuner, klasse C), adviesvenster 17–31. Het doorloopmodel start voor de Chemex bij het eindmoment van het recept (aanname, breed), niet bij de V60-waarden; klikken van de V60 tellen niet mee voor de Chemex.
+- **Nog niet:** leren van eigen Chemex-koppen (proeven tussen Chemex-recepten) volgt zodra er koppen gelogd zijn; er is geen Chemex-proefkandidaat en geen keuze per boon.

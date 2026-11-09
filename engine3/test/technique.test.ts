@@ -36,11 +36,19 @@ const two = (id: string, b: string | null): EngineEvent[] => [...cup(`${id}a`, b
 const req = (beanId: string | null, o: Partial<TechniqueRequest> = {}): TechniqueRequest => ({ beanId, method: 'v60', cupG: 300, technique: null, ...o });
 const choose = (events: EngineEvent[], r: TechniqueRequest) => chooseTechnique(learnFacts(events), r);
 
-test('Chemex: Hoffmann als besluit, direct en zonder proef', () => {
-  const c = choose([bean('z')], req('z', { method: 'chemex' }));
-  assert.equal(c.technique, 'hoffmann_ultimate');
-  assert.equal(c.source, 'rule_direct');
-  assert.equal(c.trial, null);
+test('Chemex: recept per portie als besluit, direct en zonder proef', () => {
+  const want: ReadonlyArray<[number, TechniqueId]> = [[250, 'chemex_verve'], [300, 'chemex_verve'], [350, 'chemex_pull_pour'], [450, 'chemex_pull_pour'], [500, 'chemex_barefoot'], [650, 'chemex_barefoot']];
+  for (const [cupG, t] of want) {
+    const c = choose([bean('z')], req('z', { method: 'chemex', cupG }));
+    assert.equal(c.technique, t, `${cupG} g`);
+    assert.equal(c.source, 'rule_direct');
+    assert.equal(c.trial, null);
+  }
+});
+test('een Chemex-recept wordt op de V60 nooit gekozen, ook niet na een gewonnen proef', () => {
+  const events = [bean('z'), ...two('k', 'z'), trial('t1', 'z', 'kasuya_46', 'chemex_stumptown', 'variant')];
+  assert.equal(choose(events, req('z')).technique, 'kasuya_46');
+  assert.notEqual(choose(events, req('z', { method: 'chemex', cupG: 650 })).technique, 'kasuya_46');
 });
 test('niets wijst iets anders aan: Kasuya als terugval', () => {
   const c = choose([bean('z')], req('z'));

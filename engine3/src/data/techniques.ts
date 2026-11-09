@@ -5,7 +5,8 @@
 // Bronklasse: A = eigen tekst/video van de bedenker of diens bedrijf; B = interview of
 // receptensite die het recept aan de bedenker toeschrijft, consistent; C = één tweedehands bron.
 
-import type { Agitation, PourStyle, TechniqueId } from '../types.ts';
+import type { Agitation, Method, PourStyle, TechniqueId } from '../types.ts';
+import { CHEMEX_TECHNIQUES } from './chemex-techniques.ts';
 
 export type SourceClass = 'A' | 'A/B' | 'B' | 'C';
 export type AgitationLevel = 'very_low' | 'low' | 'medium' | 'high';
@@ -69,13 +70,15 @@ export interface TechniqueDef {
   };
   /** Wat de bron zegt over andere hoeveelheden. */
   readonly scaling: string;
+  /** Voor welke brewers het recept gemaakt is; weggelaten = alleen de V60. */
+  readonly methods?: readonly Method[];
   /** Rol in de engine (verslag). */
   readonly role: string;
   /** Openstaande punten bij deze techniek. */
   readonly open: readonly string[];
 }
 
-export const TECHNIQUES: readonly TechniqueDef[] = [
+export const V60_TECHNIQUES: readonly TechniqueDef[] = [
   {
     id: 'kasuya_46',
     name: 'Kasuya 4:6',
@@ -308,6 +311,12 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
     open: ['De laatste giet hangt aan het doorlopen, niet aan de klok.']
   }
 ];
+
+/** Alle recepten: de acht V60-technieken en de zes Chemex-recepten. */
+export const TECHNIQUES: readonly TechniqueDef[] = [...V60_TECHNIQUES, ...CHEMEX_TECHNIQUES];
+
+/** Past dit recept bij deze brewer? Zonder `methods` is het een V60-recept. */
+export const fitsMethod = (def: TechniqueDef, method: Method): boolean => (def.methods ?? ['v60']).includes(method);
 
 /** Perger 80/20 is een beslisregel, geen recept (Barista Hustle/Medium, klasse A). */
 export const PERGER_8020_NOTE = 'Perger 80/20: een beslisregel over waar je je moeite in steekt, geen gietschema.';

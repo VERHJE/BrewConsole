@@ -1490,3 +1490,11 @@ Jelle liet een extern UX/UI-verbeterplan ('Brew Console 2.1') beoordelen; wat al
 - **Timer:** per giet het doelgewicht, het patroon (alleen als de bron er een noemt) en de tip; een blok 'Daarna: swirl de V60 / roer / Rao-spin' met de uitleg zolang die giet loopt; voor de start 'Voor je begint'; bij de laatste giet 'Na de laatste giet'. In het schema staat per giet kort wat er daarna gebeurt.
 - **Receptscherm:** 'Voor je begint' en 'Na de laatste giet' onder het schema, en een inklapbaar blok 'Aanwijzingen per giet'.
 - Tests: engine3 `data.test.ts` (+1), `gieten.test.ts` (kern, 8), `gieten.ui.test.mjs` (Hoffmann van recept tot laatste giet, licht en donker, axe). 168 app3-tests, 176 engine3-tests.
+
+### Chemex-ondersteuning (9 nov 2026) · contract e3-contract-1.3
+
+- **Besluit (Jelle):** een 6-kops Chemex; keuze tussen één kop en meerdere mensen; eerst de recepten uit `onderzoek_chemex.md`, leren van eigen koppen volgt later.
+- **Engine:** zes Chemex-recepten als data met bron (`chemex-techniques.ts`), `methods` op de techniekdefinitie, `fitsMethod`; portieregels (`minCupG`) vervangen `chemex.base` (Hoffmann); techniekkeuze houdt de brewer in de gaten; dosisgrens 15–57 g; waarschuwing boven 800 g water; geen V60-melding bij een Chemex-recept; beginklik 24 en een eigen doorloopbeginpunt voor de Chemex.
+- **App:** 'Brewer' als keuzeknoppen bovenaan het zetscherm (de Methode-keuze onder 'Meer opties' is vervallen), 'Portie' (1 kop / 2 koppen / Hele kan) bij de Chemex, techniekenlijst per brewer (V60-technieken op de Chemex in een eigen groep), plaatshouders als rustige uitleg.
+- **Niet gedaan:** bonen-specifieke Chemex-keuze en proeven tussen Chemex-recepten (te weinig eigen koppen); Blue Bottle/Onyx/Barefoot zijn via Prima Coffee, niet via de eigen pagina's van de roasters.
+- Tests: engine3 `data.test.ts` (+2), `engine.test.ts`, `technique.test.ts`, `recipe.test.ts`; app3 `chemex.ui.test.mjs` (licht en donker, axe). 179 engine3-tests, 170 app3-tests.

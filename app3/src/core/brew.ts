@@ -1,7 +1,7 @@
 // Zetten: een vraag aan de engine stellen en het antwoord leesbaar maken. De engine rekent; hier wordt niets bijgerekend.
 
 import {
-  TECHNIQUE_BY_ID, TECHNIQUES, RecipeError, ms, g,
+  TECHNIQUE_BY_ID, TECHNIQUES, RecipeError, fitsMethod, ms, g,
   type Advice, type Band, type Engine, type EngineState, type FeedbackSignal, type Goal, type Method,
   type PlanRequest, type Pour, type Recipe, type TechniqueId, type BrewPlanEvent
 } from '../../../engine3/src/index.ts';
@@ -22,13 +22,35 @@ export interface BrewForm {
 export const DEFAULT_FORM: BrewForm = { beanId: null, method: 'v60', cupG: 250, goal: null, technique: null, feedback: [] };
 
 export const GOAL_LABEL: Readonly<Record<Goal, string>> = { bright: 'Helder en fris', balanced: 'Gebalanceerd', rich: 'Rond en vol' };
-export const METHOD_LABEL: Readonly<Record<Method, string>> = { v60: 'Hario V60', chemex: 'Chemex' };
+export const METHOD_LABEL: Readonly<Record<Method, string>> = { v60: 'Hario V60', chemex: 'Chemex (6 kops)' };
+
+/** Porties voor de Chemex (besluit Jelle 9 nov 2026: een kop is hier 250 g in het glas). */
+export const CHEMEX_PORTIONS: ReadonlyArray<{ id: 'one' | 'two' | 'jug'; label: string; cupG: number }> = [
+  { id: 'one', label: '1 kop', cupG: 250 },
+  { id: 'two', label: '2 koppen', cupG: 500 },
+  { id: 'jug', label: 'Hele kan', cupG: 650 }
+];
+export const portionOf = (cupG: number): (typeof CHEMEX_PORTIONS)[number]['id'] | null => CHEMEX_PORTIONS.find(p => p.cupG === cupG)?.id ?? null;
 export const FEEDBACK_LABEL: Readonly<Record<FeedbackSignal, string>> = {
   sour_or_hollow: 'De vorige kop was zuur of hol',
   drying: 'De vorige kop was droog in de mond',
   uneven_drain: 'Het water liep ongelijk door'
 };
 export const TECHNIQUE_OPTIONS: ReadonlyArray<{ id: TechniqueId; name: string }> = TECHNIQUES.map(t => ({ id: t.id, name: t.name }));
+
+/** Technieken voor een brewer: de eigen recepten, en bij de Chemex daarnaast de V60-technieken (die loopt dan trager door). */
+export function techniqueOptions(method: Method): { own: ReadonlyArray<{ id: TechniqueId; name: string }>; other: ReadonlyArray<{ id: TechniqueId; name: string }> } {
+  const own = TECHNIQUES.filter(t => fitsMethod(t, method)).map(t => ({ id: t.id, name: t.name }));
+  const other = method === 'chemex' ? TECHNIQUES.filter(t => !fitsMethod(t, method)).map(t => ({ id: t.id, name: t.name })) : [];
+  return { own, other };
+}
+
+/** Is deze techniek voor deze brewer te kiezen? (Bij een wissel van brewer valt een niet-passende keuze terug op "Laat Brew Console kiezen".) */
+export function techniqueFits(method: Method, id: TechniqueId | null): boolean {
+  if (id === null) return true;
+  const o = techniqueOptions(method);
+  return o.own.some(t => t.id === id) || o.other.some(t => t.id === id);
+}
 
 export const CUP_MIN = 100, CUP_MAX = 700;
 
@@ -104,7 +126,8 @@ const INFO_WARNING = [
   /Voor deze techniek zijn nog geen doorlooptijden gelogd/,
   /is een V60-techniek; op de Chemex/,
   /geen schaalregel; hoeveelheden zijn op verhouding geschaald/,
-  /geen duidelijk betere klik/
+  /geen duidelijk betere klik/,
+  /^Plaatshouder:/
 ];
 
 /** Splitst de zichtbare meldingen in uitleg (rustig tonen) en echte aandachtspunten (waarschuwing). */

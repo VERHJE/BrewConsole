@@ -20,6 +20,8 @@ export interface RuleWhen {
   readonly feedbackAny?: readonly ('sour_or_hollow' | 'drying' | 'uneven_drain')[];
   /** Kop van deze grootte of kleiner (g in de kop). */
   readonly maxCupG?: number;
+  /** Kop van deze grootte of groter (g in de kop). */
+  readonly minCupG?: number;
 }
 
 export interface SelectionRule {
@@ -40,10 +42,22 @@ export interface SelectionRule {
 }
 
 export const SELECTION_RULES: readonly SelectionRule[] = [
+  // Chemex (6-kops, besluit Jelle 9 nov 2026): eerst de recepten uit onderzoek_chemex.md, per portie. Een koppie is
+  // ongeveer 250 g. Het zijn startvoorstellen uit bronnen; geen bewijs welk recept bij welke boon past.
   {
-    id: 'chemex.base', when: { method: 'chemex' }, suggest: ['hoffmann_ultimate'], kasuyaFirstPourShare: null,
+    id: 'chemex.one_cup', when: { method: 'chemex', maxCupG: 300 }, suggest: ['chemex_verve', 'chemex_pull_pour'], kasuyaFirstPourShare: null,
+    evidence: 'decision_jelle', priority: 102,
+    why: 'Eén kop op de Chemex: het Verve-recept is gemaakt voor één kop (15 g op 225 g water), Pull & Pour is de rustige tweede keuze.'
+  },
+  {
+    id: 'chemex.two_cups', when: { method: 'chemex', minCupG: 301, maxCupG: 450 }, suggest: ['chemex_pull_pour', 'chemex_stumptown'], kasuyaFirstPourShare: null,
+    evidence: 'decision_jelle', priority: 101,
+    why: 'Twee koppen of iets minder op de Chemex: Pull & Pour (24 g op 385 g water) met één kalme giet; Stumptown is de variant met drie gietbeurten.'
+  },
+  {
+    id: 'chemex.full_jug', when: { method: 'chemex', minCupG: 451 }, suggest: ['chemex_barefoot', 'chemex_stumptown', 'chemex_blue_bottle', 'chemex_onyx'], kasuyaFirstPourShare: null,
     evidence: 'decision_jelle', priority: 100,
-    why: 'Geen van de recepten is voor de Chemex gemaakt; Hoffmann (V60-techniek) en een lage-agitatievariant zijn de kandidaten.'
+    why: 'Een grotere portie (meerdere mensen) op de Chemex: Barefoot kreeg in de Prima-vergelijking het hoogste cijfer (één boon, één proever); Stumptown, Blue Bottle en Onyx zijn de alternatieven.'
   },
   {
     id: 'feedback.sour_hollow_light', when: { roast: ['light', 'light_medium'], feedbackAny: ['sour_or_hollow'] }, suggest: ['gagne', 'kasuya_46'],
