@@ -23,6 +23,7 @@ function Row({ r, active, multi }: { r: ReturnType<typeof cupRows>[number]; acti
     <li><a class="item go" href={href('logboek', r.id)} aria-current={active ? 'true' : undefined}>
       <strong>{multi ? (r.beanName ?? 'Zonder zak') : dateText(r.at)} <Stars value={r.liking} /></strong>
       <small>{multi ? `${dateText(r.at)} · ${extra}` : extra}</small>
+      {r.taste && <small class="taste">{r.taste}</small>}
     </a></li>
   );
 }

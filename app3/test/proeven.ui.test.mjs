@@ -36,6 +36,7 @@ test('proeven: stappen in de juiste volgorde, blinde keuze vóór de zaknotities
   await page.click('button:has-text("Opslaan")');
   await page.waitForSelector('h1:has-text("Opgeslagen")');
   await page.click('a:has-text("Volgende kop")');
+  await page.click('summary:has-text("Waarom dit recept")');
   await page.waitForSelector('.reasons');
   const reasons = await page.locator('.reasons').innerText();
   assert.match(reasons, /sterker/i, 'het oordeel "iets slap" werkt door in het advies');

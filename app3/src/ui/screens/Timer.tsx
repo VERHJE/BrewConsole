@@ -92,11 +92,18 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
   return (
     <section class={view.status === 'ready' ? 'timer ready' : 'timer'} aria-label="Timer">
       <div class="clock" aria-label={`Totale tijd ${clock(Math.floor(t))}`}>{clock(Math.floor(t))}<small>totaal</small></div>
+      {guide.progress && (
+        <div class="pprog" role="group" aria-label={`Giet ${guide.progress.index} van ${guide.progress.count}`}>
+          <span class="ptext">Giet {guide.progress.index} van {guide.progress.count}</span>
+          <span class="pdots" aria-hidden="true">{Array.from({ length: guide.progress.count }, (_, i) => <i key={i} class={i + 1 < guide.progress!.index ? 'd done' : i + 1 === guide.progress!.index ? 'd now' : 'd'} />)}</span>
+        </div>)}
       <div class={`stepcard ${guide.kind}`}>
         {guide.kind !== 'ready' && <Ring fraction={guide.fraction} kind={guide.kind} label={center} />}
         <div class="stepcopy" role="status">
           <h2 class="stepname">{guide.title}</h2>
-          <p class="stepaction">{guide.action}</p>
+          {guide.target
+            ? <p class="steptarget"><b>tot {Math.round(guide.target.toG)} g</b><span>+{Math.round(guide.target.addG)} g · {guide.target.how}</span></p>
+            : <p class="stepaction">{guide.action}</p>}
         </div>
       </div>
       {guide.next && <p class="stepnext">{guide.next}</p>}

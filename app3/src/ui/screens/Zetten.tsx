@@ -8,7 +8,7 @@ import {
   CUP_MAX, CUP_MIN, DEFAULT_FORM, FEEDBACK_LABEL, GOAL_LABEL, METHOD_LABEL, TECHNIQUE_OPTIONS,
   bandText, brewPlanEvent, clock, nl1, planBrew, pourLines, splitWarnings, techniqueName, type BrewForm
 } from '../../core/brew.ts';
-import { useApp, useSnapshot } from '../store-context.tsx';
+import { BagArt, useApp, useSnapshot } from '../store-context.tsx';
 import { Timer } from './Timer.tsx';
 import { Proeven } from './Proeven.tsx';
 import { Welkom } from '../Welkom.tsx';
@@ -107,7 +107,7 @@ function Plan(): JSX.Element {
 
       </div>
       <div class="zadvice-col">
-      {!outcome.ok ? <p class="banner warn" role="alert">{outcome.message}</p> : <Advice outcome={outcome} onStart={start} onTrial={startTrial} />}
+      {!outcome.ok ? <p class="banner warn" role="alert">{outcome.message}</p> : <Advice outcome={outcome} beanId={beanId} beanName={beanId ? beanName : null} onStart={start} onTrial={startTrial} />}
       {err && <p class="banner warn" role="alert">{err}</p>}
       </div>
       </div>
@@ -115,24 +115,32 @@ function Plan(): JSX.Element {
   );
 }
 
-function Advice({ outcome, onStart, onTrial }: { outcome: Extract<ReturnType<typeof planBrew>, { ok: true }>; onStart: () => void; onTrial: (arm: TrialArm) => void }): JSX.Element {
+function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extract<ReturnType<typeof planBrew>, { ok: true }>; beanId: string | null; beanName: string | null; onStart: () => void; onTrial: (arm: TrialArm) => void }): JSX.Element {
   const { advice } = outcome;
   const r = advice.recipe;
   const { notes, cautions } = splitWarnings(advice.warnings);
   const end = bandText(advice.uncertainty.endSec, '', clock);
-  const dose = bandText(advice.uncertainty.doseG, 'g');
-  const tds = bandText(advice.uncertainty.targetTds, '% TDS', n => n.toFixed(2).replace('.', ','));
+  const endB = advice.uncertainty.endSec;
+  const doseB = advice.uncertainty.doseG;
+  const tdsB = advice.uncertainty.targetTds;
+  const tdsN = (n: number): string => n.toFixed(2).replace('.', ',');
   const lines = pourLines(r);
   return (
     <div>
-      <h2>{techniqueName(r.technique)}</h2>
+      <div class="advhead">
+        {beanId && beanName && <span class="advthumb"><BagArt beanId={beanId} name={beanName} /></span>}
+        <div class="advtitle">
+          {beanName && <small class="eyebrow">{beanName}</small>}
+          <h2>{techniqueName(r.technique)}</h2>
+        </div>
+      </div>
       <div class="numbers">
         <div class="num"><b>{nl1(r.doseG)} g</b><small>koffie</small></div>
         <div class="num"><b>{Math.round(r.waterG)} g</b><small>water{r.bypassG > 0 ? ` (+${Math.round(r.bypassG)} g erbij)` : ''}</small></div>
         {r.tempC !== null && <div class="num"><b>{r.tempC} °C</b><small>temperatuur</small></div>}
         {r.grindClick !== null && <div class="num"><b>klik {r.grindClick}</b><small>Timemore C3S Pro</small></div>}
       </div>
-      {(dose || tds) && <p class="meta">Onzekerheid: {[dose && `dosis ${dose}`, tds && `doel-TDS ${tds}`].filter(Boolean).join(' · ')}</p>}
+      {endB && <p class="meta">Verwacht klaar tussen {clock(endB.lo)} en {clock(endB.hi)}.</p>}
       <div class="card">
         <table class="pours"><thead><tr><th>Tijd</th><th>Giet</th><th>Totaal</th><th>Hoe</th></tr></thead>
           <tbody>{lines.map(l => (
@@ -142,7 +150,15 @@ function Advice({ outcome, onStart, onTrial }: { outcome: Extract<ReturnType<typ
       </div>
       {cautions.map(w => <p class="banner warn" key={w} role="status">{w}</p>)}
       {notes.length > 0 && <ul class="notes" aria-label="Goed om te weten">{notes.map(w => <li key={w}>{w}</li>)}</ul>}
-      {advice.reasons.length > 0 && (<div class="card"><strong>Waarom dit recept</strong><ul class="reasons">{advice.reasons.map(x => <li key={x.code + x.text}>{x.text}</li>)}</ul></div>)}
+      {advice.reasons.length > 0 && (<details class="card fold"><summary>Waarom dit recept?</summary><ul class="reasons">{advice.reasons.map(x => <li key={x.code + x.text}>{x.text}</li>)}</ul></details>)}
+      {(doseB || tdsB) && (
+        <details class="card fold"><summary>Hoe zeker is dit recept?</summary>
+          <p class="meta">Het advies is een schatting met een marge, geen exacte waarde.</p>
+          <ul class="sure">
+            {doseB && <li>De dosis ligt tussen {nl1(doseB.lo)} en {nl1(doseB.hi)} g.</li>}
+            {tdsB && <li>De sterkte van de kop (doel-TDS) komt tussen {tdsN(tdsB.lo)} en {tdsN(tdsB.hi)} %.</li>}
+          </ul>
+        </details>)}
       {advice.trial && (
         <div class="card"><p><strong>Proef:</strong> {advice.trial.text}</p>
           <div class="actions">
