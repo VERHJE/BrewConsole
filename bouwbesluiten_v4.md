@@ -1539,3 +1539,10 @@ Jelle liet een extern UX/UI-verbeterplan ('Brew Console 2.1') beoordelen; wat al
 - **Welkom**: lijnillustratie (kop met stoom, rustige beweging, uit bij "verminder beweging") en woordmerk.
 - **Smaakprofiel**: balkje per smaakgroep (herkend) en gestapeld balkje per notitie (ja, een beetje, nee); de tekst blijft erbij.
 - **Molen** krijgt geen balkje: er is geen vaste schaal voor "genoeg metingen", en die verzin ik niet.
+
+## Ronde 6 · fase C: afwerking (keuze Jelle, nov 2026)
+
+- **Foto eerst**: heeft een zak een foto, dan wordt hij op brede schermen (vanaf 900 px) een kaart met de foto bovenaan. Op de telefoon blijft het een compacte rij met een miniatuur, zodat de lijst kort blijft. Het zakdetail had al een grote foto of etiket.
+- **Iconen**: filter-icoon in de Filter-knop, naast de bestaande tabiconen en de kop met stoom.
+- **Beweging**: alleen zachte overgangen op schaduw, indrukken (schaal .98) en balkjes (breedte). Bewust geen fade van pagina's en geen kleurovergangen: axe mat contrast midden in zo'n overgang en keurde het af. "Verminder beweging" zet alles uit.
+- **Tweede lichte variant (punt 12)** is vervallen: het lichte thema is in fase A al ivoor, espresso en messing geworden in plaats van groen.
