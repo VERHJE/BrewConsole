@@ -3,3 +3,4 @@ _baselines/
 dist/
 .wrangler/
 dist-oud/
+.DS_Store
