@@ -26,8 +26,12 @@ export const GRINDER_C3S_PRO = {
   adviceWindow: { lo: 8, hi: 25 },
   /** Stand waarmee een eerste zetsel begint zolang er niets gelogd is: Jelles gebruikelijke stand (16, 17 van 20 zetsels). */
   defaultStartClick: 16,
-  /** Chemex: BrewTuner noemt 24 klikken (bereik 20–28), klasse C. */
-  chemex: { defaultStartClick: 24, adviceWindow: { lo: 17, hi: 31 } }
+  /**
+   * Chemex: beginpunt 15 (besluit Jelle, 9 nov 2026, op grond van zijn eigen zetsels): BrewTuner noemt 24 (bereik 20–28), maar dat is
+   * relatief aan hun V60 van 18, en een andere lijst noemt 17–19. Op klik 14 liep een Chemex van 400 g bij Jelle door in 3:24 en 3:41
+   * (staart 129 en 147 s na de laatste giet). Venster = Jelles V60-bereik (11–18) tot 22, met marge.
+   */
+  chemex: { defaultStartClick: 15, adviceWindow: { lo: 11, hi: 22 } }
 } as const;
 
 /**

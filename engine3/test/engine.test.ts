@@ -102,7 +102,7 @@ test('Chemex: eigen recept per portie, eigen dosisgrens, geen V60-melding, Cheme
     const a = pick(c);
     assert.equal(a.recipe.method, 'chemex');
     assert.ok(!a.warnings.some(w => /V60-techniek/.test(w)), `${c} g`);
-    assert.equal(a.recipe.grindClick, 24, 'beginklik Chemex (BrewTuner)');
+    assert.equal(a.recipe.grindClick, 15, 'beginklik Chemex (zonder eigen Chemex-koppen)');
     assert.ok(a.recipe.doseG >= 15 && a.recipe.doseG <= 57, `${c} g → ${a.recipe.doseG} g`);
     assert.ok(a.recipe.expectedEndSec!.hi >= 210, 'eindtijd van de Chemex, niet van de V60');
   }

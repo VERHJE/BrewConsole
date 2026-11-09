@@ -7,7 +7,7 @@ Datum: 9 nov 2026. Vervolg op `onderzoek_chemex.md`. Dit deel gaat over de gaten
 Het meeste wat over de Chemex gezegd wordt, is **mening of herhaling van de maker**. Gecontroleerde metingen zijn er bijna niet. Wat we wel vonden en voor de app telt:
 
 1. **Een kop in een 6-kops heeft meer koffie nodig dan wij nu doen.** George Howell publiceert zelf een recept "6-kops, voor één": **25 tot 28 g koffie op 390 g water** voor een kop van 340 g (3 gietbeurten, 4 minuten). Dat is ongeveer het dubbele van ons Verve-recept (15 g op 225 g), dat voor een kleinere Chemex is bedoeld. Scott Rao legt uit waarom een dunne laag een risico is (kanalen die de bodem halen geven astringentie). Dit raakt direct iets wat we gebouwd hebben.
-2. **Je maalstand is een gok.** Twee bronnen voor je molen spreken elkaar tegen: BrewTuner zegt 24 klikken voor de Chemex (die gebruikt de app), een andere lijst zegt 17 tot 19. De eerste kop is dus een kalibratie.
+2. **Je maalstand is een gok (inmiddels gecorrigeerd met je eigen zetsels, zie sectie 7).** Twee bronnen voor je molen spreken elkaar tegen: BrewTuner zegt 24 klikken voor de Chemex (die gebruikt de app), een andere lijst zegt 17 tot 19. De eerste kop is dus een kalibratie.
 3. **Er is geen enkele gecontroleerde Chemex-tegen-V60-meting** met een refractometer. Eén forumgebruiker haalde op de Chemex 20,5 % extractie tegen bijna 23 % op de V60 met dezelfde boon. Eén persoon, één boon: een aanwijzing.
 4. **Warmteverlies:** één thuismeting met thermokoppels zegt dat de Chemex snel warmte verliest, ook voorverwarmd. De rest is advies zonder meting.
 5. **Branding:** de bronnen zeggen licht tot medium; geen enkele geeft een meting.
@@ -99,3 +99,21 @@ Bron: transcript van Hoffmanns video over de Chemex (klasse A: de maker van het 
 2. De **eindtijd:** bij Hoffmann hoort bij 500 g een tijd van 4 tot 5 minuten. Onze Chemex-recepten staan op 3:30 tot 4:00 (Howell, Verve, Pull & Pour) en de V60-variant van Hoffmann op de Chemex op 3:30. Die laatste is dus te kort als je Hoffmanns eigen Chemex-advies volgt.
 3. Een **Hoffmann-Chemex-recept** is nu mogelijk uit zijn eigen woorden: 60 g/l, bloem 2 tot 3 keer, minstens 45 s, fases als de V60, aan het eind roeren en swirlen, klaar in 4 tot 5 minuten. **Ontbreekt:** de gietmomenten en gewichten per fase voor de Chemex (die staan in het afgebroken deel of in zijn V60-video).
 4. De **filteraanwijzingen** (dikke kant bij de tuit, opening vrijhouden, altijd spoelen) staan al bij de recepten; het luchtslot kan als tip erbij.
+
+## 7. Je eigen eerste Chemex-zetsels (logboek van 9 nov 2026)
+
+Twee zetsels met het Hoffmann-V60-recept op de Chemex (400 g water, 21,1 en 22,8 g koffie, 100 °C, klik 14), zak Lord voldemor (Colombia, natural, licht gebrand):
+
+| | Dosis / water | Klik | Bed droog | Staart na laatste giet (75 s) | Smaak |
+|---|---|---|---|---|---|
+| 07:42 | 21,1 / 400 g (1:19) | 14 | 3:24 | 129 s | te slap, vlak, droog afdronk, 3,5 |
+| 16:09 | 22,8 / 403 g (1:17,7) | 14 | 3:42 | 147 s | juist, vlak, hol maar zoet, 3,5 |
+
+Ter vergelijking, dezelfde zak op de V60 (Kasuya, 300 g, klik 15): bed droog na 3:46 tot 4:09, staart 46 tot 69 s.
+
+**Wat dat zegt (n = 2, dus een aanwijzing):**
+- Een Chemex-staart van 129 tot 147 s is ongeveer **twee tot drie keer zo lang** als bij de V60 op bijna dezelfde klik. Dat is het trage dikke filter, en het klopt met Hoffmann.
+- Klik 14 (een stand **fijner** dan je V60 op 15) gaf toch een eindtijd van 3:24 tot 3:42, korter dan Hoffmanns 4 tot 5 minuten, en een vlakke, holle kop. Dat wijst **niet** op veel grover malen: de 24 uit BrewTuner zou de staart naar ongeveer 40 s brengen.
+- Een kop van 22,8 g op 403 g was "juist" qua sterkte: de engine leert nu uit die eigen koppen een lagere dosis dan Howells 26,5 g op 390 g (zie de berekening: ongeveer 21 g op 380 g).
+
+**Besluit:** beginklik voor de Chemex 15 (daarna de klik van je laatste Chemex-kop), venster 11 tot 22.
