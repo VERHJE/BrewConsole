@@ -31,7 +31,24 @@ export const GRINDER_C3S_PRO = {
    * relatief aan hun V60 van 18, en een andere lijst noemt 17–19. Op klik 14 liep een Chemex van 400 g bij Jelle door in 3:24 en 3:41
    * (staart 129 en 147 s na de laatste giet). Venster = Jelles V60-bereik (11–18) tot 22, met marge.
    */
-  chemex: { defaultStartClick: 15, adviceWindow: { lo: 11, hi: 22 } }
+  chemex: {
+    defaultStartClick: 15,
+    /** Dosis waarbij de beginklik 15 hoort: Jelles eigen Chemex-zetsels (21 tot 23 g op 400 g, klik 14, bed droog in 3:24 en 3:41). */
+    refDoseG: 22,
+    /**
+     * Klikken grover per verdubbeling van de dosis. Natuurkunde: doorlooptijd ~ bedhoogte / korreldiameter²; voor gelijke tijd moet de maling bij
+     * dubbele dosis ×√2 grover, ofwel 9 tot 13 klikken bij 20 µm per klik. Jelles twee punten (21 tot 23 g op klik 14 en Hedricks 40 g op klik 22) geven
+     * ongeveer 9. Aanname; het model bijsturen kan met eigen koppen.
+     */
+    clicksPerDoubling: 9,
+    adviceWindow: { lo: 11, hi: 30 }
+  },
+  /**
+   * Omrekening Comandante C40 → Timemore C3S Pro voor Hedricks 900 µm (30 klikken op de C40): Beean en Brewfolio 21 klikken, Coffeemaster 23.
+   * Micron per klik (83 of 20): bij 83 µm zou Jelles V60 op klik 15 ongeveer 400 µm zijn (te fijn voor een filter), bij 20 µm ongeveer 780 µm;
+   * 83 µm is dus vermoedelijk de afstand op de dial en niet de verandering van de maling. Aanwijzing, geen bewijs.
+   */
+  hedrickConversion: { c40Clicks: 30, micron: 900, c3sProClicks: [21, 23] as readonly number[] }
 } as const;
 
 /**

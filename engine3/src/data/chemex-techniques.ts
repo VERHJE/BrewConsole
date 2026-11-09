@@ -204,6 +204,7 @@ export const CHEMEX_TECHNIQUES: readonly TechniqueDef[] = [
       doseG: 40, waterG: 650,
       tempC: 100, tempNote: 'Hedrick: vers kokend water (bij donkerder gebrande koffie koeler, geen getal).',
       grind: 'zeer grof: 30 klikken op een Comandante C40, ongeveer 900 µm',
+      startClick: { click: 22, source: 'Hedrick: 30 klikken Comandante C40 (ca. 900 µm); converters (Beean, Brewfolio 21; Coffeemaster 23) geven voor de Timemore C3S Pro 21 tot 23 klikken; 22 is het midden (klasse C)' },
       pours: [
         { atSec: 0, toG: 100, style: 'spiral', agitationAfter: 'swirl', waitForDrain: false, drainCue: null, tip: 'Bloem van 100 g, vanuit het midden naar buiten.', after: 'Swirl tot de klonten weg zijn en het gas eruit is; niet overdrijven, anders schieten er fijne deeltjes uit het bed en slibt het filter dicht.' },
         { atSec: 30, toG: 200, style: 'spiral', styleGiven: false, agitationAfter: 'swirl', waitForDrain: false, drainCue: null, tip: 'Een tweede bloem van 100 g (de koffie is ongeveer een week oud: er zit gas achter de korst).', after: 'Weer swirlen tot de klonten weg zijn.' },

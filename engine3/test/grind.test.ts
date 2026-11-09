@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fc from 'fast-check';
 import { learnFacts } from '../src/state.ts';
-import { currentClickFor, fitGrind, grindPlan, MAX_CLICK_STEP, perClickEffect, predictTail, tailObservationsOf } from '../src/grind.ts';
+import { chemexClickForDose, currentClickFor, fitGrind, grindPlan, MAX_CLICK_STEP, perClickEffect, predictTail, tailObservationsOf } from '../src/grind.ts';
 import { buildRecipe } from '../src/recipe.ts';
 import { GRINDER_C3S_PRO, GRIND_PRIORS } from '../src/data/grinder.ts';
 import { GRIND_SCENARIO, GRIND_WORLDS, engine3Strategy, fixedClick, simulateGrind } from '../eval/grind-sim.ts';
@@ -151,4 +151,22 @@ test('meetopstelling: in alle werelden vaker op tijd dan een vaste klik, en rust
     assert.ok(step / runs < 0.15, `${w.name} klikstap ${step / runs}`);
   }
   assert.equal(GRIND_SCENARIO.band.mid, 210);
+});
+
+test('Chemex: beginklik 15 bij 22 g, 9 klikken grover per verdubbeling van de dosis, begrensd door het venster', () => {
+  assert.equal(chemexClickForDose(22), 15);
+  assert.equal(chemexClickForDose(44), 24);
+  assert.equal(chemexClickForDose(11), 6 < GRINDER_C3S_PRO.chemex.adviceWindow.lo ? GRINDER_C3S_PRO.chemex.adviceWindow.lo : 6);
+  assert.equal(chemexClickForDose(500), GRINDER_C3S_PRO.chemex.adviceWindow.hi);
+  assert.equal(chemexClickForDose(0), 15);
+});
+test('Chemex: eigen beginklik van het recept (Hedrick 22) en schalen van een eerdere klik met de dosis', () => {
+  const none = learnFacts([]);
+  const h = currentClickFor(none, 'chemex_hedrick', null, null, 'chemex', 40);
+  assert.deepEqual([h.click, h.source], [22, 'recipe']);
+  assert.equal(currentClickFor(none, 'chemex_hedrick', null, null, 'chemex', 80).click, 30);
+  const d = currentClickFor(none, 'chemex_howell_cup', null, null, 'chemex', 26.5);
+  assert.deepEqual([d.click, d.source], [17, 'default']);
+  // V60 blijft ongewijzigd
+  assert.deepEqual(currentClickFor(none, 'kasuya_46', null, null, 'v60', 17), { click: 16, source: 'default' });
 });

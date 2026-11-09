@@ -125,3 +125,9 @@ Jelle leverde op 9 nov 2026 het transcript van Blue Bottles eigen Chemex-video a
 ## 9. Bron voor later: vijf extra transcripten
 
 Jelle leverde op 9 nov 2026 transcripten van Hedrick, Stumptown, Ox Coffee, Onyx (director's cut) en Gagné (podcast afl. 350) aan. Uitgewerkt, met wat er later in de app aangepast kan worden, in `bronnen/chemex_transcripten_9nov.md`. Verwerkt in de app op 9 nov 2026. Hedricks eigen Chemex-recept (40 g op 650 g) vult een gat uit sectie 5: er is nu wel een Chemex-recept van Hedrick.
+
+## 10. Maling omgerekend: Hedrick en de dosis (9 nov 2026)
+
+- Hedricks "zeer grof" (30 klikken Comandante C40, ongeveer 900 µm) is volgens Beean en Brewfolio 21 klikken en volgens Coffeemaster 23 klikken op de C3S Pro.
+- BrewTuners "Chemex 24 (20 tot 28)" past bij zo'n grote dosis (40 g of meer); jouw 14 klikken kwamen van 21 tot 23 g op 400 g. De maling hangt van de dosis af: ongeveer 9 klikken grover per verdubbeling (natuurkunde geeft 9 tot 13). Dat is nu in de app verwerkt (zie `docs/engine3/05-technieken.md`).
+- Micron per klik: 83 µm (dial-afstand?) of 20 µm; bij 83 µm komt jouw V60 op ongeveer 400 µm uit, bij 20 µm op ongeveer 780 µm, dus 20 µm is aannemelijker. Aanwijzing, niet gebruikt in de berekening.

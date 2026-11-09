@@ -102,7 +102,7 @@ export function plan(state: EngineState, request: PlanRequest): Advice {
   const lastPourAt = provisional.recipe.pours[provisional.recipe.pours.length - 1]!.atSec;
   const srcBand = provisional.recipe.expectedEndSec;
   const gp = srcBand
-    ? grindPlan(facts, { method: request.method, technique, beanId: request.beanId, waterG: water, lastPourAtSec: lastPourAt, targetEnd: srcBand })
+    ? grindPlan(facts, { method: request.method, technique, beanId: request.beanId, waterG: water, doseG: dose, lastPourAtSec: lastPourAt, targetEnd: srcBand })
     : null;
   const click = gp ? (gp.advice ? gp.advice.click : gp.currentClick) : null;
   if (gp) { reasons.push(...grindReasons(gp)); warnings.push(...gp.warnings); }
