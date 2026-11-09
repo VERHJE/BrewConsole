@@ -31,7 +31,7 @@ De engine zelf blijft zuiver (geen netwerk, geen opslag; zie 02). De synchronisa
 | Server | `engine3/sync/server.ts` | `Request` → `Response`, opslag als interface; geheugenopslag voor tests, Cloudflare-opslag in de ingang |
 | Client | `engine3/sync/client.ts` | push en pull; `fetch` en toestand worden meegegeven, dus testbaar zonder netwerk |
 
-Routes: `POST /scan` (foto-herkenning, alleen met `ANTHROPIC_API_KEY`, zie 16), `GET/PUT /meta` (het zout, niet geheim), `PUT/GET/DELETE /blocks/:id`, `GET /blocks?after=`. Een blok is onveranderlijk: hetzelfde id met andere inhoud geeft 409.
+Routes: `POST /scan` (foto-herkenning, alleen met `ANTHROPIC_API_KEY`, zie 16), `GET/PUT /meta` (het zout, niet geheim), `PUT/GET/DELETE /blocks/:id`, `GET /photos` en `PUT/GET/DELETE /photos/:id` (foto's, zie hieronder), `GET /blocks?after=`. Een blok is onveranderlijk: hetzelfde id met andere inhoud geeft 409.
 
 ## Tests
 
@@ -76,3 +76,16 @@ Handmatig kan het ook: `node engine3/sync/make-token.mjs` in plaats van de token
 - Gecontroleerd in de echte Workers-runtime: de Worker is lokaal gestart met `wrangler dev` (workerd en een KV) en doorlopen met curl: zonder token 401; meta zetten 201; blok zetten 201; hetzelfde blok met andere inhoud 409; lijst en ophalen; `/scan` zonder sleutel 404. `wrangler deploy --dry-run` bundelt de Worker (31 KiB).
 - Tests: `engine3/test/sync-blocks.test.ts` en `sync-server.test.ts`. Client en server draaien daarin in één proces, zonder Cloudflare.
 - Bekend en bewust: een verkeerde wachtwoordzin geeft `unreadable` blokken in plaats van een fout, en het logboek blijft dan ongemoeid.
+
+## Foto's (9 nov 2026)
+
+Een foto per zak reist als eigen, versleuteld blok naast het logboek, via aparte routes (`/photos`) en een aparte KV-voorvoegsel (`p:`). Daardoor merken toestellen met een oudere app er niets van, en de server blijft dom: hij ziet alleen een blok-id en een envelop.
+
+- **Blok-id:** `ph-<32 hex van SHA-256("brewconsole-photo|"+zak-id)>-<tijdstip van de wijziging in ms, 13 cijfers>`. Het id verraadt de zak niet, en uit de lijst met id's alleen is al af te leiden welke versie per zak de nieuwste is.
+- **Inhoud (versleuteld met dezelfde sleutel, id als additional data):** `{v:1, beanId, at, deleted, type?, data?}`; `data` is de foto in base64 (hoogstens ± 150 kB per foto, ruim binnen de 900.000 tekens per blok).
+- **Verwijderen is een nieuw blok** met `deleted:true` en een later tijdstip (een grafsteen). De nieuwste wijziging wint, ook bij tegelijk wijzigen op twee toestellen (op klokken van de toestellen; bij gelijk tijdstip wint wie eerst op de server staat).
+- **Per toestel een markering per zak** (`brewconsole.fotosync` in localStorage): tijdstip, verwijderd ja/nee, nog niet verstuurd ja/nee. Alle schrijfacties in de app lopen via een omhulsel dat die markering bijhoudt (`core/photosync.ts`); het ophalen van een foto van de server schrijft er langs heen.
+- **Volgorde:** eerst het logboek (zodat alle zakken bekend zijn), dan ophalen, dan versturen, dan oude versies op de server opruimen. Een foto zonder markering (van vóór deze functie) telt bij de eerste synchronisatie als eigen wijziging.
+- **Oudere Worker zonder `/photos`:** de client merkt dat (404 op de lijst) en slaat foto's over; het logboek synchroniseert gewoon. Een mislukte fotosynchronisatie maakt die van het logboek niet ongedaan en verschijnt als regel op het scherm.
+- **Grenzen:** een foto groter dan een blok of van een ander type dan webp/jpeg/png wordt overgeslagen en blijft op het toestel. Kinderen van een verwijderde zak bestaan niet; een zak die op dit toestel nog onbekend is, krijgt zijn foto bij een latere synchronisatie.
+- Tests: `engine3/test/sync-server.test.ts` (routes, id's, onveranderlijkheid), `app3/test/photosync.test.ts` (twee toestellen, vervangen, verwijderen, tegelijk wijzigen, oudere Worker, kapotte blokken, markeringen) en `app3/test/fotosync.ui.test.mjs` (twee echte browsers tegen een lokale server).

@@ -10,23 +10,24 @@ export interface KvNamespaceLike {
   list(opts: { prefix?: string; cursor?: string; limit?: number }): Promise<{ keys: Array<{ name: string }>; list_complete: boolean; cursor?: string }>;
 }
 
-const BLOCK_PREFIX = 'b:';
 const META_KEY = 'meta';
 
 export class KvStore implements BlockStore {
   readonly kv: KvNamespaceLike;
-  constructor(kv: KvNamespaceLike) { this.kv = kv; }
+  /** Voorvoegsel van de sleutels: 'b:' voor logboekblokken, 'p:' voor foto's. */
+  private readonly prefix: string;
+  constructor(kv: KvNamespaceLike, prefix = 'b:') { this.kv = kv; this.prefix = prefix; }
   getMeta() { return this.kv.get(META_KEY); }
   async putMetaIfAbsent(meta: string) {
     if ((await this.kv.get(META_KEY)) !== null) return false;
     await this.kv.put(META_KEY, meta);
     return true;
   }
-  get(id: string) { return this.kv.get(BLOCK_PREFIX + id); }
-  put(id: string, body: string) { return this.kv.put(BLOCK_PREFIX + id, body); }
-  delete(id: string) { return this.kv.delete(BLOCK_PREFIX + id); }
+  get(id: string) { return this.kv.get(this.prefix + id); }
+  put(id: string, body: string) { return this.kv.put(this.prefix + id, body); }
+  delete(id: string) { return this.kv.delete(this.prefix + id); }
   async list(cursor: string | null, limit: number) {
-    const r = await this.kv.list({ prefix: BLOCK_PREFIX, limit, ...(cursor === null ? {} : { cursor }) });
-    return { ids: r.keys.map(k => k.name.slice(BLOCK_PREFIX.length)), next: r.list_complete ? null : (r.cursor ?? null) };
+    const r = await this.kv.list({ prefix: this.prefix, limit, ...(cursor === null ? {} : { cursor }) });
+    return { ids: r.keys.map(k => k.name.slice(this.prefix.length)), next: r.list_complete ? null : (r.cursor ?? null) };
   }
 }

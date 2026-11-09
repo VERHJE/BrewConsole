@@ -169,3 +169,75 @@ test('de KV-opslag werkt als BlockStore (pagina\'s en voorvoegsel)', async () =>
   const r = await pull(cfgFor(TOKEN_B), deps, key, newSyncState('toestel-b'), []);
   assert.equal(r.events.length, 12);
 });
+
+// ───────────── foto-routes ─────────────
+
+import { beanKey, latestPerBean, openPhoto, parsePhotoId, photoId, sealPhoto } from '../sync/photo-blocks.ts';
+import { deletePhotoId, getPhotoBody, listPhotoIds, putPhotoBody } from '../sync/client.ts';
+
+async function withPhotos() {
+  const base = await setup();
+  const env: ServerEnv = { ...base.env, photos: new MemoryStore() };
+  const cfg: SyncConfig = { baseUrl: 'https://sync.example', token: TOKEN_A, fetch: (url, init) => handleRequest(new Request(url, init), env) };
+  return { env, cfg, key: base.key };
+}
+
+test('foto-routes: bewaren, ophalen, lijst en verwijderen; los van de logboekblokken', async () => {
+  const { env, cfg } = await withPhotos();
+  const k = await beanKey(deps, 'bean:abc');
+  const id = photoId(k, 1_700_000_000_000);
+  assert.deepEqual(await listPhotoIds(cfg), []);
+  await putPhotoBody(cfg, id, '{"v":1,"iv":"x","ct":"y"}');
+  assert.deepEqual(await listPhotoIds(cfg), [id]);
+  assert.equal(await getPhotoBody(cfg, id), '{"v":1,"iv":"x","ct":"y"}');
+  assert.deepEqual(await listBlockIds(cfg), [], 'foto-blokken staan niet tussen de logboekblokken');
+  // onveranderlijk: dezelfde inhoud mag opnieuw, andere inhoud telt als al bewaard (de client behandelt 409 als gelukt)
+  await putPhotoBody(cfg, id, '{"v":1,"iv":"x","ct":"y"}');
+  const clash = await raw(env, `/photos/${id}`, { method: 'PUT', headers: bearer(TOKEN_A), body: 'iets anders' });
+  assert.equal(clash.status, 409);
+  await putPhotoBody(cfg, id, 'iets anders');
+  assert.equal(await getPhotoBody(cfg, id), '{"v":1,"iv":"x","ct":"y"}');
+  await deletePhotoId(cfg, id);
+  assert.deepEqual(await listPhotoIds(cfg), []);
+  assert.equal(await getPhotoBody(cfg, id), null);
+});
+
+test('foto-routes: zonder token niets, zonder foto-opslag een duidelijke 404, te grote of rare blokken geweigerd', async () => {
+  const { env } = await withPhotos();
+  assert.equal((await raw(env, '/photos')).status, 401);
+  assert.equal((await raw(env, '/photos/ph-abc', { headers: bearer(TOKEN_A) })).status, 400);
+  assert.equal((await raw(env, `/photos/${photoId('0'.repeat(32), 1)}`, { method: 'PUT', headers: bearer(TOKEN_A), body: '' })).status, 400);
+  assert.equal((await raw(env, `/photos/${photoId('0'.repeat(32), 1)}`, { method: 'PUT', headers: bearer(TOKEN_A), body: 'x'.repeat(900_001) })).status, 413);
+  assert.equal((await raw(env, '/photos', { method: 'POST', headers: bearer(TOKEN_A) })).status, 405);
+  const oldWorker = await setup(); // geen photos in de omgeving
+  const res = await raw(oldWorker.env, '/photos', { headers: bearer(TOKEN_A) });
+  assert.equal(res.status, 404);
+  const cfg: SyncConfig = { baseUrl: 'https://sync.example', token: TOKEN_A, fetch: (url, init) => handleRequest(new Request(url, init), oldWorker.env) };
+  assert.equal(await listPhotoIds(cfg), null, 'een oudere Worker: de client weet dat foto-synchronisatie niet kan');
+});
+
+test('foto-blokken: id verraadt de zak niet, nieuwste versie per zak, openen controleert id en vorm', async () => {
+  const { key } = await withPhotos();
+  const a = await beanKey(deps, 'bean:een'); const b = await beanKey(deps, 'bean:twee');
+  assert.notEqual(a, b);
+  assert.match(photoId(a, 5), /^ph-[0-9a-f]{32}-0000000000005$/);
+  assert.deepEqual(parsePhotoId(photoId(a, 42)), { key: a, at: 42 });
+  assert.equal(parsePhotoId('blk-web-a-00000001'), null);
+  const ids = [photoId(a, 10), photoId(a, 30), photoId(a, 20), photoId(b, 7), 'onzin'];
+  const l = latestPerBean(ids);
+  assert.equal(l.get(a)!.id, photoId(a, 30));
+  assert.deepEqual(l.get(a)!.older.sort(), [photoId(a, 10), photoId(a, 20)].sort());
+  assert.equal(l.get(b)!.id, photoId(b, 7));
+  assert.equal(l.size, 2);
+
+  const id = photoId(a, 30);
+  const body = await sealPhoto(deps, key, id, { v: 1, beanId: 'bean:een', at: 30, deleted: false, type: 'image/webp', data: 'QUJD' });
+  assert.equal((await openPhoto(deps, key, id, body)).beanId, 'bean:een');
+  await assert.rejects(openPhoto(deps, key, photoId(a, 31), body), 'een blok onder een ander id ontsleutelt niet');
+  const wrongAt = await sealPhoto(deps, key, id, { v: 1, beanId: 'bean:een', at: 31, deleted: false, type: 'image/webp', data: 'QUJD' });
+  await assert.rejects(openPhoto(deps, key, id, wrongAt), /onbekende vorm/);
+  const empty = await sealPhoto(deps, key, id, { v: 1, beanId: 'bean:een', at: 30, deleted: false });
+  await assert.rejects(openPhoto(deps, key, id, empty), /zonder inhoud/);
+  const tomb = await sealPhoto(deps, key, id, { v: 1, beanId: 'bean:een', at: 30, deleted: true });
+  assert.equal((await openPhoto(deps, key, id, tomb)).deleted, true);
+});

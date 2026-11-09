@@ -4,9 +4,10 @@ import type { Engine } from '../../../engine3/src/index.ts';
 import type { Env } from '../core/ids.ts';
 import type { Snapshot, Store } from '../core/store.ts';
 import { bagPalette, type PhotoStore } from '../core/photos.ts';
+import type { PhotoSyncRun } from '../core/photosync.ts';
 import type { JSX } from 'preact';
 
-export interface AppContext { readonly store: Store; readonly engine: Engine; readonly env: Env; readonly photos: PhotoStore }
+export interface AppContext { readonly store: Store; readonly engine: Engine; readonly env: Env; readonly photos: PhotoStore; /** Foto's meesynchroniseren (alleen in de echte app). */ readonly photoSync?: PhotoSyncRun }
 
 export const Ctx = createContext<AppContext | null>(null);
 

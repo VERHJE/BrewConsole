@@ -1461,3 +1461,11 @@ Uit een beoordeling van de schermen door vier rollen (interactie, visueel, toega
 - **Bewust niet aangepast:** de vaste startbalk op de laptop. Hij dekt alleen inhoud af tijdens het scrollen en staat aan het eind van de pagina vrij.
 - **Kasuya-meldingen (daarna opgelost):** uitleg bij een recept (zoals 'giet pas als het bed bijna droog is' en 'einde nog niet uit eigen zetsels geleerd') staat nu als rustige lijst onder het schema (`splitWarnings` in `core/brew.ts`, `ul.notes`); alleen echte aandachtspunten (zoals een giet zonder water, of een dosis ruim buiten het bereik) blijven een amberkleurige waarschuwing.
 - Tests: `warnings.test.ts`, `panel1.ui.test.mjs`. 141 app3-tests.
+
+### Foto's synchroniseren (9 nov 2026)
+
+- **Besluit (Jelle):** foto's gaan mee met de synchronisatie, en verwijderen ook.
+- **Gebouwd:** eigen versleutelde foto-blokken op eigen routes (`/photos`, KV-voorvoegsel `p:`), zodat de logboekblokken en oudere apps niets merken. Nieuwste wijziging wint; verwijderen is een grafsteen. Ontwerp in `docs/engine3/08-synchronisatie.md` ('Foto's').
+- **App:** `core/photosync.ts` (markeringen per zak, omhulsel om de fotoruimte, synchronisatie), `Sync.tsx` toont een regel 'Foto's: x verstuurd, y opgehaald, z verwijderd'.
+- **Uitrol:** de Worker moet eerst de nieuwe versie draaien (automatisch na de merge via Cloudflare), daarna de app op beide toestellen bijwerken.
+- Tests: 5 nieuwe servertests, 10 kerntests, 1 browsertest met twee toestellen. 151 app3-tests.

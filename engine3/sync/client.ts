@@ -123,3 +123,43 @@ export async function compact(cfg: SyncConfig, deps: CryptoDeps, key: webcrypto.
   const next = afterPush(state, sealed);
   return { state: { ...next, seenBlockIds: [sealed.id] }, removed: old.length };
 }
+
+// ───────────── foto's (eigen routes, zie photo-blocks.ts) ─────────────
+
+/** Id's van alle foto-blokken, of null als de server nog geen foto-synchronisatie kent (oudere Worker). */
+export async function listPhotoIds(cfg: SyncConfig): Promise<string[] | null> {
+  const ids: string[] = [];
+  let cursor: string | null = null;
+  for (let guard = 0; guard < 1000; guard++) {
+    const res = await call(cfg, 'GET', `/photos?limit=500${cursor === null ? '' : `&cursor=${encodeURIComponent(cursor)}`}`);
+    if (res.status === 404) return null;
+    if (!res.ok) throw new SyncError('server', `onverwachte status ${res.status}`);
+    const page = (await res.json()) as { ids: string[]; next: string | null };
+    ids.push(...page.ids);
+    if (page.next === null) break;
+    cursor = page.next;
+  }
+  return ids;
+}
+
+export async function getPhotoBody(cfg: SyncConfig, id: string): Promise<string | null> {
+  const res = await call(cfg, 'GET', `/photos/${encodeURIComponent(id)}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new SyncError('server', `onverwachte status ${res.status}`);
+  return res.text();
+}
+
+/** Bewaart een foto-blok. Een blok met dit id maar andere inhoud (409) telt als 'al bewaard': dezelfde wijziging is eerder aangekomen. */
+export async function putPhotoBody(cfg: SyncConfig, id: string, body: string): Promise<void> {
+  try {
+    const res = await call(cfg, 'PUT', `/photos/${encodeURIComponent(id)}`, body);
+    if (!res.ok) throw new SyncError('server', `onverwachte status ${res.status}`);
+  } catch (e) {
+    if (e instanceof SyncError && e.kind === 'conflict') return;
+    throw e;
+  }
+}
+
+export async function deletePhotoId(cfg: SyncConfig, id: string): Promise<void> {
+  await call(cfg, 'DELETE', `/photos/${encodeURIComponent(id)}`);
+}

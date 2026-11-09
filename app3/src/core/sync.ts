@@ -6,7 +6,9 @@ import {
   deriveKey, ensureSalt, fetchSalt, newSalt, newSyncState, syncOnce, SyncError,
   type CryptoDeps, type SyncConfig, type SyncState
 } from '../../../engine3/sync/index.ts';
+import { factsOf } from '../../../engine3/src/index.ts';
 import type { Store } from './store.ts';
+import type { PhotoSyncResult, PhotoSyncRun } from './photosync.ts';
 
 export interface SyncSettings { readonly baseUrl: string; readonly token: string; readonly salt: string; readonly lastSyncAt: number | null }
 
@@ -46,12 +48,14 @@ export interface SyncDeps {
   readonly store: Store;
   readonly device: string;
   readonly now: () => number;
+  /** Foto's meesynchroniseren (zie photosync.ts); zonder dit blijven foto's op het toestel. */
+  readonly photoSync?: PhotoSyncRun;
   /** Aantal PBKDF2-rondes (alleen tests verlagen dit). */
   readonly iterations?: number;
 }
 
 export type SyncOutcome =
-  | { readonly ok: true; readonly pushed: number; readonly fetched: number; readonly added: number }
+  | { readonly ok: true; readonly pushed: number; readonly fetched: number; readonly added: number; readonly photos?: PhotoSyncResult; readonly photoError?: string }
   | { readonly ok: false; readonly kind: 'not_connected' | 'offline' | 'unauthorised' | 'wrong_passphrase' | 'server' | 'conflict'; readonly message: string };
 
 const clean = (url: string): string => url.trim().replace(/\/+$/, '');
@@ -99,7 +103,13 @@ export async function syncNow(d: SyncDeps): Promise<SyncOutcome> {
     }
     const merged = await d.store.merge(r.events);
     await d.storage.save({ settings: { ...saved.settings, lastSyncAt: d.now() }, state: r.state, key: saved.key });
-    return { ok: true, pushed: r.pushed, fetched: r.fetchedBlocks, added: merged.added };
+    // Foto's na het logboek, zodat alle zakken bekend zijn. Een mislukte fotosynchronisatie maakt de rest niet ongedaan.
+    let photos: PhotoSyncResult | undefined; let photoError: string | undefined;
+    if (d.photoSync) {
+      try { photos = (await d.photoSync(cfg, d.crypto, saved.key, [...factsOf(d.store.snapshot().state).beans.keys()])) ?? undefined; }
+      catch (e) { const o = explain(e); photoError = o.ok ? 'niet gesynchroniseerd.' : o.message; }
+    }
+    return { ok: true, pushed: r.pushed, fetched: r.fetchedBlocks, added: merged.added, ...(photos ? { photos } : {}), ...(photoError ? { photoError } : {}) };
   } catch (e) { return explain(e); }
 }
 

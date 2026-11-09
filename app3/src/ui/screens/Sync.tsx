@@ -4,12 +4,20 @@ import { href } from '../../core/router.ts';
 import { connect, disconnect, indexedDbSyncStorage, memorySyncStorage, syncNow, type SyncDeps, type SyncOutcome, type SyncSettings, type SyncStorage } from '../../core/sync.ts';
 import { useApp } from '../store-context.tsx';
 
+function photoLine(o: Extract<SyncOutcome, { ok: true }>): string {
+  if (o.photoError) return ` Foto’s: ${o.photoError}`;
+  const p = o.photos;
+  if (!p) return '';
+  const parts = [p.pushed ? `${p.pushed} verstuurd` : '', p.pulled ? `${p.pulled} opgehaald` : '', p.removed ? `${p.removed} verwijderd` : '', p.skipped ? `${p.skipped} overgeslagen` : ''].filter(Boolean);
+  return parts.length ? ` Foto’s: ${parts.join(', ')}.` : ' Foto’s: alles up-to-date.';
+}
+
 function describe(o: SyncOutcome): string {
-  return o.ok ? `Gelukt: ${o.fetched} blok${o.fetched === 1 ? '' : 'ken'} opgehaald, ${o.pushed} gebeurtenissen verstuurd, ${o.added} nieuw hier.` : o.message;
+  return o.ok ? `Gelukt: ${o.fetched} blok${o.fetched === 1 ? '' : 'ken'} opgehaald, ${o.pushed} gebeurtenissen verstuurd, ${o.added} nieuw hier.${photoLine(o)}` : o.message;
 }
 
 export function Sync(): JSX.Element {
-  const { store, env } = useApp();
+  const { store, env, photoSync } = useApp();
   const [storage, setStorage] = useState<SyncStorage | null>(null);
   const [settings, setSettings] = useState<SyncSettings | null>(null);
   const [url, setUrl] = useState('');
@@ -22,8 +30,9 @@ export function Sync(): JSX.Element {
   const deps = useMemo<SyncDeps | null>(() => storage && ({
     storage, store, device: env.device, now: env.now,
     crypto: { subtle: crypto.subtle as never, randomBytes: n => crypto.getRandomValues(new Uint8Array(n)) },
-    fetch: (u, init) => fetch(u, init)
-  }), [storage, store, env]);
+    fetch: (u, init) => fetch(u, init),
+    ...(photoSync ? { photoSync } : {})
+  }), [storage, store, env, photoSync]);
 
   const run = async (f: (d: SyncDeps) => Promise<SyncOutcome>): Promise<void> => {
     if (!deps) return;
@@ -35,7 +44,7 @@ export function Sync(): JSX.Element {
   return (
     <section>
       <div class="head"><a class="btn" href={href('meer')}>Terug</a><h1>Synchronisatie</h1></div>
-      <p class="muted">Houd twee toestellen gelijk. Alles wordt versleuteld op dit toestel; de server ziet geen inhoud.</p>
+      <p class="muted">Houd twee toestellen gelijk, ook de foto’s van je zakken en het verwijderen ervan. Alles wordt versleuteld op dit toestel; de server ziet geen inhoud.</p>
       {msg && <p class="banner" role="status">{msg}</p>}
       {settings ? (
         <div class="card">

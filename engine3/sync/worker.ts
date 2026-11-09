@@ -20,6 +20,7 @@ export default {
   fetch(req: Request, env: Env): Promise<Response> {
     return handleRequest(req, {
       store: new KvStore(env.BLOCKS),
+      photos: new KvStore(env.BLOCKS, 'p:'),
       tokenHashes: (env.TOKEN_HASHES ?? '').split(',').map(s => s.trim().toLowerCase()).filter(s => s.length === 64),
       subtle: crypto.subtle,
       allowOrigin: env.ALLOW_ORIGIN,
