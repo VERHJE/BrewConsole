@@ -31,7 +31,9 @@ export type TechniqueId =
   | 'chemex_barefoot'
   | 'chemex_stumptown'
   | 'chemex_blue_bottle'
-  | 'chemex_onyx';
+  | 'chemex_onyx'
+  | 'chemex_hedrick'
+  | 'chemex_ox';
 
 /** Oude of onbekende technieknamen uit de huidige app blijven bewaard als tekst. */
 export type TechniqueRef = TechniqueId | `legacy:${string}`;

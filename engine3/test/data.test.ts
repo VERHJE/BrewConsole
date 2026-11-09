@@ -6,9 +6,9 @@ import { SELECTION_RULES } from '../src/data/selection-rules.ts';
 import { FLAVOR_WHEEL } from '../src/data/flavor-wheel.ts';
 import { loadApp } from '../../tests/load-app.mjs';
 
-test('vijftien recepten (acht V60, zeven Chemex), elk met een bron en een rol', () => {
-  assert.equal(TECHNIQUES.length, 15);
-  assert.equal(TECHNIQUES.filter(t => t.methods?.includes('chemex')).length, 7);
+test('zeventien recepten (acht V60, negen Chemex), elk met een bron en een rol', () => {
+  assert.equal(TECHNIQUES.length, 17);
+  assert.equal(TECHNIQUES.filter(t => t.methods?.includes('chemex')).length, 9);
   for (const t of TECHNIQUES) {
     assert.ok(t.sources.length > 0, t.id);
     assert.ok(t.role.length > 0, t.id);
@@ -92,7 +92,19 @@ test('Chemex-recepten: bron, Chemex-eindtijd, plaatshouders staan in `open`, V60
   // Barefoot: bloem 75 g, daarna 750 g; Onyx: vier keer 200 g op 0:45, 1:30, 2:30, 3:30 (Prima).
   assert.deepEqual(TECHNIQUE_BY_ID.get('chemex_barefoot')!.reference.pours!.map(p => p.toG), [75, 750]);
   assert.deepEqual(TECHNIQUE_BY_ID.get('chemex_onyx')!.reference.pours!.map(p => p.atSec), [0, 45, 90, 150, 210]);
-  assert.ok(TECHNIQUE_BY_ID.get('chemex_blue_bottle')!.open.some(o => /Plaatshouder/.test(o)));
+  // Blue Bottle (eigen transcript): 0:00, 0:45, 1:50, 3:10; 100/300/500/700 g; 205 tot 210 °F.
+  const bb = TECHNIQUE_BY_ID.get('chemex_blue_bottle')!;
+  assert.deepEqual(bb.reference.pours!.map(p => [p.atSec, p.toG]), [[0, 100], [45, 300], [110, 500], [190, 700]]);
+  assert.equal(bb.sourceClass, 'A');
+  assert.deepEqual(bb.open, []);
+  // Onyx (eigen transcript): totalen 110/300/500/700/900 op 0:00, 0:45, 1:30, 2:30, 3:30.
+  assert.deepEqual(TECHNIQUE_BY_ID.get('chemex_onyx')!.reference.pours!.map(p => [p.atSec, p.toG]), [[0, 110], [45, 300], [90, 500], [150, 700], [210, 900]]);
+  // Hedrick: 100, 200 (0:30), 400 (1:00), 550, 650; Ox Coffee: 65, 215 (0:35), 360 (1:15).
+  assert.deepEqual(TECHNIQUE_BY_ID.get('chemex_hedrick')!.reference.pours!.map(p => p.toG), [100, 200, 400, 550, 650]);
+  assert.deepEqual(TECHNIQUE_BY_ID.get('chemex_hedrick')!.reference.pours!.slice(0, 3).map(p => p.atSec), [0, 30, 60]);
+  assert.deepEqual(TECHNIQUE_BY_ID.get('chemex_ox')!.reference.pours!.map(p => [p.atSec, p.toG]), [[0, 65], [35, 215], [75, 360]]);
+  // Elk Chemex-recept noemt de luchtopening bij de tuit.
+  for (const t of TECHNIQUES.filter(t => t.methods?.includes('chemex'))) assert.ok(t.reference.prep!.some(l => /luchtopening/.test(l)), t.id);
 });
 test('portieregels voor de Chemex dekken elke kopgrootte, zonder gat of overlap', () => {
   const rules = SELECTION_RULES.filter(r => r.when.method === 'chemex');

@@ -21,9 +21,9 @@ Perger 80/20 is een beslisregel, geen recept.
 
 | Prioriteit | Als | Voorstel → proef | Kasuya eerste giet | Bewijs |
 |---|---|---|---|---|
-| 102 | Chemex, kop ≤ 400 g (1 kop = 340 g) | Chemex Howell (1 kop) → Pull & Pour | — | besluit |
+| 102 | Chemex, kop ≤ 400 g (1 kop = 340 g) | Chemex Howell (1 kop) → Ox Coffee, Pull & Pour | — | besluit |
 | 101 | Chemex, kop 401–550 g | Chemex Stumptown → Barefoot | — | besluit |
-| 100 | Chemex, kop ≥ 551 g (2 koppen = 680 g) | Chemex Barefoot → Stumptown, Blue Bottle, Onyx | — | besluit |
+| 100 | Chemex, kop ≥ 551 g (2 koppen = 680 g) | Chemex Barefoot → Stumptown, Hedrick, Blue Bottle, Onyx | — | besluit |
 | 90 | licht/light-medium, en herhaald zuur of hol | Gagné → Kasuya | — | E3 |
 | 85 | ongelijk doorlopen of droge afdronk | Rao → Kasuya | — | E3 |
 | 60 | bloemige of theenotities | Wendelboe (eigen recept) → Kasuya | — | E3; besluit |
@@ -78,3 +78,15 @@ Zes recepten uit `onderzoek_chemex.md`, als data in `engine3/src/data/chemex-tec
 George Howell publiceert in zijn eigen PDF een recept 'Chemex six cup, brew for one': 25 tot 28 g koffie op 390 g water (340 g in de kop), 201 tot 205 °F, drie gietbeurten (130 g in 20 s, 1:00 naar 260 g, 2:00 naar 390 g, elk in concentrische cirkels vanuit het midden), klaar na 3:30 tot 4:00. Klasse A. Dosis 26,5 g (midden van de band) en 95 °C (midden van 94 tot 96 °C) zijn de referentie. Het is nu het voorstel voor '1 kop' (340 g, de maat van het recept); Verve (15/225) blijft beschikbaar voor een kleinere Chemex. De portieknoppen zijn '1 kop' (340 g) en '2 koppen' (680 g); 'Hele kan' is vervallen, want twee koppen zijn bij 6-kops vrijwel de hele kan.
 
 Het doorloopmodel stelt de maalstand voor een Chemex-recept niet bij zolang er voor dat recept geen eigen doorlooptijd is gelogd (het beginpunt is zelf een aanname); eerder gaf elke Chemex-brew de melding dat het einde afweek.
+
+### Chemex-recepten uit de aangeleverde transcripten verwerkt (9 nov 2026)
+
+Jelle leverde transcripten van eigen video's van Blue Bottle, Hedrick, Stumptown, Onyx en Ox Coffee aan (bronnen in `bronnen/`). Verwerkt:
+- **Blue Bottle** is nu klasse A met de echte gietmomenten (0:00, 0:45, 1:50, 3:10; 100/300/500/700 g), 205 tot 210 °F (97 °C is het midden) en 'iets fijner dan French press'; geen plaatshouders meer.
+- **Onyx:** totalen 110/300/500/700/900 g (de bron noemt 300/500/700/900), tips per giet (in het midden gieten, het bed met een stokje laten leunen), de bron is klasse A (transcript op ondertitels, niet op audio gecontroleerd).
+- **Stumptown:** tips voor het slurry-niveau en de glazen bel op 4:00.
+- **Nieuw: `chemex_hedrick`** (40/650; twee bloemen, agressieve derde giet, kuiltje en stokje, de laatste giet zachter; de momenten 2:00 en 3:00 zijn afgeleid en als plaatshouder gemarkeerd) en **`chemex_ox`** (22/360, klasse B, tweede keuze voor één kop).
+- **Luchtopening bij de tuit** (Hoffmann, Hedrick) staat bij elk Chemex-recept onder 'Voor je begint'.
+- **Dunne of diepe laag:** een melding bij een dosis onder 22 g (Rao; de laagste dosis in de 6-kops-bronnen) of boven 50 g (Gagné); beide aannames, als rustige uitleg getoond.
+- **Water:** de waterpagina verwijst naar Gagné (bicarbonaat dempt het zuur).
+- Niet verwerkt: het micron-anker van Hedrick (900 µm bij 30 klikken Comandante C40; de micron per klik van de C3S Pro is nog onbekend) en de filterhacks (twee en twee lagen, siliconen) als regel; ze staan wel als optionele tip bij het Hedrick-recept. Contract: `e3-contract-1.4`.

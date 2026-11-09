@@ -51,12 +51,12 @@ test('Chemex: na twee geproefde koppen volgt een proef tussen twee Chemex-recept
   assert.equal(choose([bean('z'), ...ccup('a')], r).trial, null);
   const c = choose([bean('z'), ...ccup('a'), ...ccup('b')], r);
   assert.equal(c.technique, 'chemex_howell_cup');
-  assert.deepEqual([c.trial?.control, c.trial?.variant], ['chemex_howell_cup', 'chemex_pull_pour']);
+  assert.deepEqual([c.trial?.control, c.trial?.variant], ['chemex_howell_cup', 'chemex_ox']);
   // Gewonnen proef: de winnaar wint, ook als er een V60-proef van dezelfde zak bestaat.
-  const won = [bean('z'), ...ccup('a'), ...ccup('b'), trial('t1', 'z', 'chemex_howell_cup', 'chemex_pull_pour', 'variant')];
-  assert.equal(choose(won, r).technique, 'chemex_pull_pour');
+  const won = [bean('z'), ...ccup('a'), ...ccup('b'), trial('t1', 'z', 'chemex_howell_cup', 'chemex_ox', 'variant')];
+  assert.equal(choose(won, r).technique, 'chemex_ox');
   const mixed = [...won, trial('t2', 'z', 'kasuya_46', 'gagne', 'variant')];
-  assert.equal(choose(mixed, r).technique, 'chemex_pull_pour');
+  assert.equal(choose(mixed, r).technique, 'chemex_ox');
   assert.equal(choose(mixed, req('z')).technique, 'gagne');
 });
 test('een Chemex-recept wordt op de V60 nooit gekozen, ook niet na een gewonnen proef', () => {

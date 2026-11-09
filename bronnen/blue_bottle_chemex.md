@@ -19,7 +19,7 @@ Aangeleverd door Jelle op 9 nov 2026 (PDF, 2 pagina's). Klasse A: de roaster zel
 
 - **Afloop:** meestal klaar in ongeveer **4 minuten**; langer is niet ongewoon, vooral bij lichtgebrande koffie van grote hoogte. Als het water uitgedruppeld is: filter weg.
 
-## Wat dit verandert in de app (nog niet gedaan; Jelle: "voeg later toe wat nodig is")
+## Wat dit verandert in de app (**verwerkt op 9 nov 2026**, zie `docs/engine3/05-technieken.md`)
 `chemex_blue_bottle` in `engine3/src/data/chemex-techniques.ts` gebruikt nu plaatshouders uit de Prima-vergelijking:
 1. Gietmomenten **0 / 50 / 110 / 170 s** worden **0 / 45 / 110 / 190 s** (nu allemaal uit de bron; de plaatshouder in `open` vervalt).
 2. Temperatuur: nu 96 °C; de bron geeft **96 tot 99 °C** (205 tot 210 °F).

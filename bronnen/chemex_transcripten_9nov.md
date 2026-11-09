@@ -1,6 +1,6 @@
 # Bronnen: vijf transcripten over de Chemex (aangeleverd door Jelle, 9 nov 2026)
 
-Alle vijf zijn "gecorrigeerde Engelse transcripten" van video's/gesprekken. Het Onyx-transcript zegt zelf dat het op ondertitels is gebaseerd en dat de audio niet is gecontroleerd. Jelle: "onthoud dit en voeg later toe wat nodig is". **Nog niets in de app verwerkt.** Eerder aangeleverd: Hoffmann (zie `onderzoek_chemex_deel2.md`, sectie 6) en Blue Bottle (`bronnen/blue_bottle_chemex.md`).
+Alle vijf zijn "gecorrigeerde Engelse transcripten" van video's/gesprekken. Het Onyx-transcript zegt zelf dat het op ondertitels is gebaseerd en dat de audio niet is gecontroleerd. Jelle: "onthoud dit en voeg later toe wat nodig is". **Verwerkt in de app op 9 nov 2026** (zie `docs/engine3/05-technieken.md`). Eerder aangeleverd: Hoffmann (zie `onderzoek_chemex_deel2.md`, sectie 6) en Blue Bottle (`bronnen/blue_bottle_chemex.md`).
 
 ## 1. Lance Hedrick, "Chemex brew guide" (klasse A, eigen video)
 
@@ -45,7 +45,7 @@ Alle vijf zijn "gecorrigeerde Engelse transcripten" van video's/gesprekken. Het 
 
 Alle ratio's liggen tussen 1:14 en 1:16,7; de eindtijd loopt op met de hoeveelheid (3:30 bij 360 g tot 7:00 bij 900 g).
 
-## Wat dit later kan veranderen in de app (niet gedaan)
+## Wat dit kon veranderen in de app (verwerkt op 9 nov 2026, behalve het micron-anker en de filterhacks als regel)
 
 1. **Hedrick-recept** (40/650, twee bloemen, agressieve derde giet, kuiltje en stokje, vers kokend water) als nieuwe Chemex-techniek; de gietmomenten na 1:00 zijn afgeleid en moeten als plaatshouder gemarkeerd worden.
 2. **Ox Coffee** als kleine-portie-bron (22 g op 360 g, 3:30), mogelijk als tweede keuze naast Howell voor één kop.

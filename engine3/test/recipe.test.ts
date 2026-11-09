@@ -72,6 +72,12 @@ test('waarschuwt als de eerste giet kleiner is dan 2 × de dosis, en bij de Chem
   const own = buildRecipe({ technique: 'chemex_stumptown', method: 'chemex', doseG: 42, waterG: 700 });
   assert.ok(!own.warnings.some(w => /V60-techniek/.test(w)));
   assert.deepEqual(own.recipe.pours.map(p => [p.atSec, p.toG]), [[0, 150], [45, 450], [105, 700]]);
+  // Dunne en diepe laag op de Chemex
+  const thin = buildRecipe({ technique: 'chemex_ox', method: 'chemex', doseG: 18, waterG: 300 });
+  assert.ok(thin.warnings.some(w => /^Chemex: dunne laag/.test(w)));
+  const deep = buildRecipe({ technique: 'chemex_hedrick', method: 'chemex', doseG: 55, waterG: 900 });
+  assert.ok(deep.warnings.some(w => /^Chemex: diepe laag/.test(w)));
+  assert.ok(!own.warnings.some(w => /laag \(/.test(w)));
 });
 test('ongeldige invoer wordt geweigerd; bypass en klik gaan mee', () => {
   assert.throws(() => buildRecipe({ technique: 'kasuya_46', method: 'v60', doseG: 0, waterG: 300 }), (e: unknown) => e instanceof RecipeError && e.code === 'bad_input');
