@@ -214,6 +214,11 @@ Fase 1: in kaart brengen en vinden. Er is in deze fase niets aan de app verander
 - **P3-03 opgelost.** De zoektekst is nu "Zoek zak, brander, land" en past op 390 px.
 - **Tests:** `audit2.test.ts` en `audit2.ui.test.mjs`. Regressie: app3 196 tests geslaagd.
 
+**Ronde 3 (10 nov, keuzes Jelle: P2-01 optie a, P2-05 optie a):**
+
+- **P2-01 opgelost (uitleg, geen gladstrijken).** De Chemex-regels voor twee koppen en een hele kan zeggen in "Waarom dit recept?" dat elke portie het recept van de eigen bron volgt, en dat de dosis vlak boven de portiegrens daardoor iets lager kan uitvallen (450 g tegen 400 g). De getallen zijn niet veranderd. Test: `engine3/test/cuplimits.test.ts`.
+- **P2-05 nog open.** De oude tests uit de verplichte CI-poort halen (`npm run qa` uit `.github/workflows/ci.yml`) werd in deze sessie door de veiligheidscontrole tegengehouden. Die ziet dat als het omzeilen van CI. Jelle kan de wijziging zelf doen, of de sessie er toestemming voor geven.
+
 ## J. Resterende risico's
 
 - Echt Safari en iOS: lettertype, `:has()`, wake lock en het verlaten van een PWA zijn niet geverifieerd.

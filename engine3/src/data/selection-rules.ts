@@ -52,12 +52,12 @@ export const SELECTION_RULES: readonly SelectionRule[] = [
   {
     id: 'chemex.two_cups', when: { method: 'chemex', minCupG: 401, maxCupG: 550 }, suggest: ['chemex_stumptown', 'chemex_barefoot'], kasuyaFirstPourShare: null,
     evidence: 'decision_jelle', priority: 101,
-    why: 'Tussen één en twee koppen op de Chemex: Stumptown (42 g op 700 g water) met drie gietbeurten; Barefoot is de variant met twee.'
+    why: 'Tussen één en twee koppen op de Chemex: Stumptown (42 g op 700 g water) met drie gietbeurten; Barefoot is de variant met twee. Elke portie volgt het recept van de eigen bron, met een eigen verhouding; vlak boven de portiegrens kan de dosis daardoor iets lager uitvallen dan net eronder (bijvoorbeeld 450 g tegen 400 g).'
   },
   {
     id: 'chemex.full_jug', when: { method: 'chemex', minCupG: 551 }, suggest: ['chemex_barefoot', 'chemex_stumptown', 'chemex_hedrick', 'chemex_blue_bottle', 'chemex_onyx'], kasuyaFirstPourShare: null,
     evidence: 'decision_jelle', priority: 100,
-    why: 'Twee koppen of een hele kan op de Chemex: Barefoot kreeg in de Prima-vergelijking het hoogste cijfer (één boon, één proever); Stumptown, Hedrick (40 g op 650 g), Blue Bottle en Onyx zijn de alternatieven.'
+    why: 'Twee koppen of een hele kan op de Chemex: Barefoot kreeg in de Prima-vergelijking het hoogste cijfer (één boon, één proever); Stumptown, Hedrick (40 g op 650 g), Blue Bottle en Onyx zijn de alternatieven. Elke portie volgt het recept van de eigen bron, met een eigen verhouding; vlak boven de portiegrens kan de dosis daardoor iets lager uitvallen dan net eronder (bijvoorbeeld 450 g tegen 400 g).'
   },
   {
     id: 'feedback.sour_hollow_light', when: { roast: ['light', 'light_medium'], feedbackAny: ['sour_or_hollow'] }, suggest: ['gagne', 'kasuya_46'],
