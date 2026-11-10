@@ -106,6 +106,8 @@ function Plan(): JSX.Element {
             {(Object.keys(GOAL_LABEL) as Goal[]).map(k => <button key={k} type="button" class="chip" aria-pressed={eff.goal === k} onClick={() => set({ goal: k })}>{GOAL_LABEL[k]}</button>)}
           </div>
         </div>
+        {eff.goal !== null && outcome.ok && outcome.advice.recipe.technique !== 'kasuya_46' && (
+          <p class="meta goalnote" role="status">Bij {techniqueName(outcome.advice.recipe.technique)} verandert het doel het recept niet. Alleen Kasuya 4:6 (V60) gebruikt het. Je kunt bij Meer opties zelf een andere techniek kiezen.</p>)}
         <details>
           <summary>Meer opties</summary>
           <label class="field"><span>Techniek</span>

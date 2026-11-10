@@ -1546,3 +1546,10 @@ Jelle liet een extern UX/UI-verbeterplan ('Brew Console 2.1') beoordelen; wat al
 - **Iconen**: filter-icoon in de Filter-knop, naast de bestaande tabiconen en de kop met stoom.
 - **Beweging**: alleen zachte overgangen op schaduw, indrukken (schaal .98) en balkjes (breedte). Bewust geen fade van pagina's en geen kleurovergangen: axe mat contrast midden in zo'n overgang en keurde het af. "Verminder beweging" zet alles uit.
 - **Tweede lichte variant (punt 12)** is vervallen: het lichte thema is in fase A al ivoor, espresso en messing geworden in plaats van groen.
+
+## Ronde 7: opmerkingen na gebruik op de iPad (keuze Jelle, nov 2026)
+
+- **Vinkjes onder Meer opties**: in Safari kregen de keuzevakjes de volle breedte van het veld (`.field input { width: 100% }`), waardoor de tekst als een smalle kolom letters ernaast stond. Vinkjes en keuzerondjes hebben nu een vaste maat; er is een test op de breedte.
+- **Timer zonder uitgang**: vóór de start staat bovenaan "Annuleren, terug naar Zetten" (het geplande zetsel telt als afgebroken en doet niet mee); na afloop staat naast Proeven ook "Later proeven, naar Zetten".
+- **Doel bij Chemex**: het doel stuurt in de engine alleen de eerste giet van Kasuya 4:6 (V60); voor de Chemex-technieken bestaat in de bronnen geen regel die het doel vertaalt, en die verzin ik niet. Het scherm zegt dat nu onder Doel, in plaats van stil niets te doen. Wil Jelle toch een doel voor Chemex, dan kiest het doel mogelijk een techniek (bron nodig).
+- **Zakkenlijst op brede schermen**: elke zak is een kaart met een grote etikettegel (of foto) bovenaan, de tekst eronder.

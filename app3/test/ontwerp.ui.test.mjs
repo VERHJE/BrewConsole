@@ -130,3 +130,22 @@ test('ontwerp: een afgerond zetsel toont bij elke giet een vinkje', async () => 
   assert.equal(await page.locator('.timer ol.steps li.past').count(), n, 'alle gietbeurten zijn afgevinkt');
   await page.close();
 });
+
+test('iPad-meldingen: vinkjes onder Meer opties zijn klein met tekst ernaast; timer heeft een uitgang; doel zonder effect wordt uitgelegd', async () => {
+  const page = await app.browser.newPage({ viewport: { width: 1180, height: 820 } });
+  await importLog(page, app.base, json);
+  await page.goto(app.base + '#/zetten');
+  await page.click('summary:has-text("Meer opties")');
+  const boxes = await page.locator('fieldset.field input[type=checkbox]').evaluateAll(els => els.map(e => e.getBoundingClientRect().width));
+  assert.ok(boxes.length > 0 && boxes.every(w => w <= 30), `vinkjes ${boxes}`);
+  const labelW = await page.locator('fieldset.field label.row').first().evaluate(e => e.getBoundingClientRect().width);
+  assert.ok(labelW > 150, `tekst heeft ruimte (${labelW}px)`);
+  await page.click('button.chip:has-text("Chemex")');
+  await page.click('button.chip:has-text("Helder en fris")');
+  assert.match(await page.locator('.goalnote').innerText(), /verandert het doel het recept niet/);
+  await page.click('button:has-text("Start zetsel")');
+  await page.waitForSelector('.timer.ready');
+  await page.click('button:has-text("Annuleren, terug naar Zetten")');
+  await page.waitForSelector('select[name=bean]');
+  await page.close();
+});
