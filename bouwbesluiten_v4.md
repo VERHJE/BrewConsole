@@ -1553,3 +1553,9 @@ Jelle liet een extern UX/UI-verbeterplan ('Brew Console 2.1') beoordelen; wat al
 - **Timer zonder uitgang**: vóór de start staat bovenaan "Annuleren, terug naar Zetten" (het geplande zetsel telt als afgebroken en doet niet mee); na afloop staat naast Proeven ook "Later proeven, naar Zetten".
 - **Doel bij Chemex**: het doel stuurt in de engine alleen de eerste giet van Kasuya 4:6 (V60); voor de Chemex-technieken bestaat in de bronnen geen regel die het doel vertaalt, en die verzin ik niet. Het scherm zegt dat nu onder Doel, in plaats van stil niets te doen. Wil Jelle toch een doel voor Chemex, dan kiest het doel mogelijk een techniek (bron nodig).
 - **Zakkenlijst op brede schermen**: elke zak is een kaart met een grote etikettegel (of foto) bovenaan, de tekst eronder.
+
+## Ronde 7b: opruimklussen (keuze Jelle, nov 2026)
+
+- **Logboekdetail**: dezelfde taal als de rest: de vier hoofdgetallen (koffie, water, klik, klaar na) in de serif, de brewer-badge met techniek eronder, de overige gegevens klein. Schema en proefkaart ongewijzigd.
+- **Waterpagina**: één korte zin bovenaan; de uitleg (geen gevalideerde omrekening, wat Gagné zegt) staat ingeklapt onder "Waarom verandert dit niets?".
+- Het doel bij Chemex blijft zonder effect tot er een bron is die een doel aan een Chemex-techniek koppelt (Jelle heeft die nog niet).

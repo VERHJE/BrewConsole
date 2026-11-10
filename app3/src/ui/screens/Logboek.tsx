@@ -90,12 +90,15 @@ function Detail({ id }: { id: string }): JSX.Element {
     <section>
       <div class="head"><a class="btn back-narrow" href={href('logboek')}>Terug</a><h1>{bean?.fields.name ?? 'Kop'}</h1></div>
       <p class="meta">{dateText(c.at)} · {STATUS[c.status]}</p>
-      <dl class="kv">
-        <dt>Brewer</dt><dd>{METHOD_LABEL[c.method]}</dd><dt>Techniek</dt><dd>{techniqueName(c.technique)}</dd>
-        <dt>Koffie</dt><dd>{nl1(c.doseG)} g</dd><dt>Water</dt><dd>{Math.round(c.waterG)} g{c.bypassG > 0 ? ` + ${Math.round(c.bypassG)} g bypass` : ''}</dd>
-        {c.grindClick !== null && <><dt>Klik</dt><dd>{c.grindClick}</dd></>}
+      <div class="numbers">
+        <div class="num"><b>{nl1(c.doseG)} g</b><small>koffie</small></div>
+        <div class="num"><b>{Math.round(c.waterG)} g</b><small>water{c.bypassG > 0 ? ` + ${Math.round(c.bypassG)} g bypass` : ''}</small></div>
+        {c.grindClick !== null && <div class="num"><b>klik {c.grindClick}</b><small>molen</small></div>}
+        {c.endSec !== null && <div class="num"><b>{clock(c.endSec)}</b><small>klaar na</small></div>}
+      </div>
+      <p class="logmeta"><span class="brewer">{BREWER_SHORT[c.method]}</span> {techniqueName(c.technique)}</p>
+      <dl class="kv small">
         {c.planned.tempC !== null && <><dt>Temperatuur</dt><dd>{c.planned.tempC} °C</dd></>}
-        {c.endSec !== null && <><dt>Klaar na</dt><dd>{clock(c.endSec)}</dd></>}
         {c.lastDrainSec !== null && <><dt>Laatste giet doorgelopen na</dt><dd>{clock(c.lastDrainSec)}</dd></>}
         {c.tdsPct !== null && <><dt>TDS</dt><dd>{c.tdsPct.toFixed(2).replace('.', ',')} %</dd></>}
       </dl>
