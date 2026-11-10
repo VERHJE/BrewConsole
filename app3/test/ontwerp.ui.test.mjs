@@ -57,7 +57,7 @@ for (const scheme of ['light', 'dark']) {
     await page.goto(app.base + '#/zakken');
     await page.click('ul.thumbs a.item >> nth=0');
     await page.waitForSelector('.detail');
-    assert.match(await page.locator('.detail .muted').first().innerText(), /3 koppen/);
+    assert.match(await page.locator('.beantiles').textContent(), /3\s*koppen/); // tegel: "3" en "koppen"
     await ctx.close();
   });
 
