@@ -139,7 +139,7 @@ export function Proeven({ brewId }: { brewId: string }): JSX.Element {
     try { await store.append([pairTrialEvent(env, pending, preferred, brighter)]); } catch (e) { setErr(`Opslaan is mislukt: ${(e as Error).message}`); }
   };
   if (saved && pending && pref !== null) {
-    return (<section><h1>Welke was helderder?</h1>
+    return (<section class="proeven rit"><h1>Welke was helderder?</h1>
       <p class="muted">Helderder is frisser en levendiger, niet per se lekkerder.</p>
       <div class="choices">
         <button class="choice" type="button" onClick={() => choose(pref, 'control')}>Kop 1 · {techniqueName(pending.control.technique)}</button>
@@ -150,7 +150,7 @@ export function Proeven({ brewId }: { brewId: string }): JSX.Element {
   }
   if (saved && pending) {
     const pick = (v: PairArm | 'none'): void => { if (lighter) setPref(v); else void choose(v, null); };
-    return (<section><h1>Welke was beter?</h1>
+    return (<section class="proeven rit"><h1>Welke was beter?</h1>
       <p class="muted">Je hebt beide koppen van de proef geproefd. Welke vond je lekkerder?</p>
       <div class="choices">
         <button class="choice" type="button" onClick={() => pick('control')}>Kop 1 · {techniqueName(pending.control.technique)}</button>
@@ -160,19 +160,19 @@ export function Proeven({ brewId }: { brewId: string }): JSX.Element {
       {err && <p class="banner warn" role="alert">{err}</p>}</section>);
   }
   if (saved) {
-    return (<section><h1>Opgeslagen</h1><p class="muted">Dit telt mee voor je volgende advies.</p>
+    return (<section class="proeven rit done"><div class="saved-mark" aria-hidden="true"><svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="54" /><path class="check" d="M44 61 l11 11 l22 -24" pathLength="1" /></svg></div><h1>Opgeslagen</h1><p class="muted">Dit telt mee voor je volgende advies.</p>
       <div class="actions"><a class="btn primary" href={href('zetten')}>Volgende kop</a><a class="btn" href={href('logboek')}>Logboek</a></div></section>);
   }
   return (
-    <section>
+    <section class="proeven rit">
       <div class="head"><h1>Proeven</h1></div>
-      <p class="meta">{techniqueName(ctx.cup.technique)} · {Math.round(ctx.cup.doseG)} g · klik {ctx.cup.grindClick ?? '?'}{ctx.cup.endSec !== null ? ` · klaar in ${clock(ctx.cup.endSec)}` : ''}</p>
+      <p class="meta peyebrow">{techniqueName(ctx.cup.technique)} · {Math.round(ctx.cup.doseG)} g · klik {ctx.cup.grindClick ?? '?'}{ctx.cup.endSec !== null ? ` · klaar in ${clock(ctx.cup.endSec)}` : ''}</p>
       <div class="progress" role="progressbar" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={i + 1} aria-label="Voortgang"><i style={`width:${((i + 1) / steps.length) * 100}%`} /></div>
-      <Step id={step} ctx={ctx} d={d} set={set} />
+      <div class="pstep" key={step}><Step id={step} ctx={ctx} d={d} set={set} /></div>
       {last && <Recap d={d} />}
       {problems.map(p => <p class="banner warn" key={p} role="alert">{p}</p>)}
       {err && <p class="banner warn" role="alert">{err}</p>}
-      <div class="actions">
+      <div class="actions pactions">
         {i > 0 && <button class="btn" type="button" onClick={() => setI(i - 1)}>Terug</button>}
         <span class="spacer" />
         {last ? <button class="btn primary" type="button" onClick={save} disabled={problems.length > 0}>Opslaan</button>

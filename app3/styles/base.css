@@ -708,3 +708,60 @@ html:has(.timer.rit) body { background: radial-gradient(130% 70% at 50% -10%, #2
 .timer.ready { min-height: calc(100dvh - 40px - env(safe-area-inset-top)); }
 dialog.guide { max-height: calc(100dvh - 48px - env(safe-area-inset-top)); }
 @media (max-width: 719px) { dialog.guide { max-height: calc(88dvh - env(safe-area-inset-top)); } }
+
+/* ───────────── Proeven in de zetmodus (zelfde sfeer als de timer, 10 nov 2026) ───────────── */
+html:has(.proeven.rit), html:has(.proeven.rit) body { background: #0d1611; }
+html:has(.proeven.rit) body { background: radial-gradient(130% 70% at 50% -10%, #2f4a3d 0%, #142019 55%, #0b120e 100%) fixed; }
+.proeven.rit {
+  --bg: #13201a; --surface: #1b2b23; --surface-2: #24372d; --line: #33493d;
+  --text: #f1e8d8; --text-2: #cfc6b5; --text-3: #a59d8c; --accent: #e6c58f; --accent-soft: #2a3a2f;
+  --primary: #e2bd84; --primary-ink: #1b130a; --ok: #9fd3a8; --warn: #f0c47a; --bad: #f2a397; --star: #e6c58f;
+  color: var(--text); max-width: 34rem;
+}
+.proeven.rit .head { justify-content: center; }
+.proeven.rit h1 { text-align: center; font-weight: 400; letter-spacing: .04em; margin-top: 8px; }
+.proeven.rit .peyebrow, .proeven.rit > .muted { text-align: center; color: var(--text-3); font-size: var(--fs-xs); letter-spacing: .22em; text-transform: uppercase; }
+.proeven.rit > .muted { text-transform: none; letter-spacing: .01em; font-size: var(--fs-m); color: var(--text-2); }
+.proeven.rit .progress { height: 3px; background: rgb(241 232 216 / .12); margin: 14px 0 22px; }
+.proeven.rit .progress > i { background: var(--accent); box-shadow: 0 0 8px rgb(230 197 143 / .5); }
+@media (prefers-reduced-motion: no-preference) { .proeven.rit .progress > i { transition: width .35s cubic-bezier(.2, .7, .2, 1); } }
+.proeven.rit .q { font-family: var(--head); font-weight: 400; font-size: var(--fs-xl); letter-spacing: .01em; text-align: center; margin: 4px 0 10px; }
+.proeven.rit .hint { color: var(--text-2); text-align: center; }
+.proeven.rit .choice { background: rgb(241 232 216 / .04); border-color: var(--line); color: var(--text); border-radius: 16px; }
+.proeven.rit .choice[aria-pressed="true"], .proeven.rit .choice[aria-checked="true"] { background: rgb(230 197 143 / .14); border-color: var(--accent); color: var(--text); box-shadow: 0 0 0 1px var(--accent) inset; }
+.proeven.rit .choice .box { border-color: var(--text-3); border-radius: 50%; }
+.proeven.rit .choice[aria-checked="true"] .box { background: var(--accent); border-color: var(--accent); }
+.proeven.rit .chip { background: transparent; border-color: rgb(241 232 216 / .28); color: var(--text); }
+.proeven.rit .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--primary-ink); }
+.proeven.rit .notehit strong { font-family: var(--head); font-weight: 400; font-size: var(--fs-l); }
+.proeven.rit .star { background: rgb(241 232 216 / .04); border-color: var(--line); color: var(--text-3); border-radius: 16px; }
+.proeven.rit .star.on { color: var(--accent); background: rgb(230 197 143 / .12); border-color: var(--accent); }
+.proeven.rit .liking-val { color: var(--text); }
+.proeven.rit .field > span { color: var(--text-2); }
+.proeven.rit .field input, .proeven.rit .field textarea { background: rgb(241 232 216 / .05); border-color: var(--line); color: var(--text); }
+.proeven.rit .field input::placeholder, .proeven.rit .field textarea::placeholder { color: var(--text-3); }
+.proeven.rit .recap { background: rgb(241 232 216 / .05); border: 1px solid var(--line); }
+.proeven.rit .recap ul { color: var(--text-2); }
+.proeven.rit .banner { background: rgb(240 196 122 / .12); color: var(--text); border-color: var(--warn); }
+/* Knoppen: gouden pil voor de hoofdactie, omlijnde pil voor Terug; onderaan vast op de telefoon. */
+.proeven.rit .btn { background: transparent; color: var(--text); border: 1px solid rgb(241 232 216 / .28); }
+.proeven.rit .btn.primary { background: linear-gradient(180deg, #ecca93, #c99b5b); color: var(--primary-ink); border: 0; letter-spacing: .18em; text-transform: uppercase; font-size: var(--fs-s); font-weight: 700; box-shadow: 0 10px 30px -10px rgb(201 155 91 / .6); }
+.proeven.rit .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.proeven.rit .pactions { position: sticky; bottom: 0; z-index: 3; margin-top: 18px; padding: 14px 0 calc(8px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgb(11 18 14 / 0), #0b120e 45%); }
+.proeven.rit .pactions .btn { min-height: 52px; padding-inline: 22px; }
+.proeven.rit .pactions .btn.primary { flex: 1; max-width: 260px; }
+.proeven.rit .actions:not(.pactions) { justify-content: center; }
+.proeven.rit .choices { margin-top: 10px; }
+/* Opgeslagen: dezelfde groene ring met vinkje als aan het eind van de timer */
+.proeven.rit.done { text-align: center; padding-top: 6vh; }
+.proeven.rit .saved-mark { width: 140px; height: 140px; margin: 0 auto 10px; }
+.proeven.rit .saved-mark svg { width: 100%; height: 100%; }
+.proeven.rit .saved-mark .track { fill: none; stroke: var(--ok); stroke-width: 2.5; }
+.proeven.rit .saved-mark .check { fill: none; stroke: var(--ok); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .proeven.rit .pstep { animation: rit-rise .4s cubic-bezier(.2, .7, .2, 1); }
+  .proeven.rit .saved-mark .check { stroke-dashoffset: 1; animation: rit-draw .6s .15s ease-out forwards; }
+  .proeven.rit .star.on { animation: tab-pop .25s cubic-bezier(.2, .8, .2, 1.4); }
+}
+.proeven.rit .pactions { position: static; background: none; padding: 0 0 calc(8px + env(safe-area-inset-bottom)); }
+.proeven.rit .peyebrow { letter-spacing: .14em; }
