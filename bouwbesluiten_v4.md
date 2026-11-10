@@ -1609,3 +1609,7 @@ Bij de Chemex staat onder Doel een knop "Welk recept past?". Die opent een venst
 - **Oorzaak 2, veilige zone:** met `viewport-fit=cover` loopt de pagina onder de statusbalk en de notch door. `.main` (en de zijbalk en de plakkende kolommen op brede schermen) houden nu `env(safe-area-inset-top)` vrij.
 - **Liggende telefoon:** de Start-knop in de klaar-stand viel onder de rand. Dat kwam pas aan het licht toen de scrollpositie werd hersteld. Hij staat nu vast onderin, met een kleinere ring.
 - **Test:** `veiligezone.ui.test.mjs` controleert dat de titels en "Annuleren" onder een statusbalk van 47 px staan.
+
+## Proeven in de zetmodus (keuze Jelle, 10 nov 2026)
+
+Proeven volgt direct op de timer en heeft nu dezelfde sfeer: altijd donker groen-espresso met goud. De techniek staat bovenaan in kapitalen, de vragen in de serif, en een dunne gouden voortgangslijn loopt zacht mee. Keuzes zijn donkere kaarten met een gouden rand als ze gekozen zijn, en de sterren zijn goud. De hoofdknop is een gouden pil, Terug een omlijnde pil. "Opgeslagen" krijgt dezelfde groene ring met vinkje als het einde van de timer. Een nieuwe stap schuift omhoog in beeld en het vinkje tekent zich. Met "verminder beweging" staat het uit.
