@@ -109,11 +109,10 @@ test('droge afdronk of ongelijk doorlopen geeft Rao als proef', () => {
   const uneven = choose([bean('z'), ...two('a', 'z')], req('z', { feedback: ['uneven_drain'] }));
   assert.equal(uneven.trial?.variant, 'rao');
 });
-test('natural met fruit: grote eerste giet (0,667), en Osmotic Flow wordt niet voorgesteld (geen schema)', () => {
+test('natural met fruit: grote eerste giet (0,667), geen proef', () => {
   const c = choose([bean('z', { process: 'natural', cats: ['fruitig'] }), ...two('a', 'z')], req('z'));
   assert.equal(c.technique, 'kasuya_46');
   assert.equal(c.kasuyaFirstPourShare, 0.667);
-  assert.ok(!c.trial || c.trial.variant !== 'osmotic_flow');
   assert.equal(c.trial, null);
 });
 test('chocolade en karamel: kleinere eerste giet (0,333) en April als proef', () => {

@@ -15,13 +15,12 @@ import type { Band, Celsius, Clicks, EpochMs, EyFraction, Grams, IsoDate, Metres
 
 export type Method = 'v60' | 'chemex';
 
-/** De acht V60-technieken uit het verslag ('Technieken: de keuze voor de herbouw') en de zes Chemex-recepten uit het onderzoek. */
+/** De V60-technieken uit het verslag ('Technieken: de keuze voor de herbouw'; Osmotic Flow verwijderd, geen gietschema) en de Chemex-recepten uit het onderzoek. */
 export type TechniqueId =
   | 'kasuya_46'
   | 'hoffmann_ultimate'
   | 'gagne'
   | 'wendelboe'
-  | 'osmotic_flow'
   | 'april'
   | 'hedrick_one_and_done'
   | 'rao'

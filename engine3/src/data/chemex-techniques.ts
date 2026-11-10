@@ -32,6 +32,7 @@ export const CHEMEX_TECHNIQUES: readonly TechniqueDef[] = [
     },
     scaling: 'De bron geeft 25 tot 28 g op 390 g water voor één kop (340 g) en 50 tot 57 g op 780 g voor twee.',
     role: 'Eén kop in de 6-kops Chemex: genoeg koffie voor een bruikbare laag.',
+    taste: { portion: '1 kop', sourced: 'Prima-proef 9/10: zuur, zoet, karamel, chocolade, druif.', expect: 'Meeste body van de kleine recepten.' },
     open: []
   },
   {
@@ -59,6 +60,7 @@ export const CHEMEX_TECHNIQUES: readonly TechniqueDef[] = [
     },
     scaling: 'De bron geeft alleen 15/225.',
     role: 'Eén kop op de Chemex, rustig en zonder roeren.',
+    taste: { portion: 'kleine kop (3-kops)', sourced: null, expect: 'Voor een kleinere Chemex; in de 6-kops is de laag dun.' },
     open: ['Plaatshouder: de momenten van giet 3 en 4 (1:25 en 2:10) staan niet in de bron.']
   },
   {
@@ -84,6 +86,7 @@ export const CHEMEX_TECHNIQUES: readonly TechniqueDef[] = [
     },
     scaling: 'De bron geeft alleen 24/385.',
     role: 'Eén of twee koppen, kalm en met één giet.',
+    taste: { portion: '1–2 koppen', sourced: null, expect: 'Rustigst: schoon en helder, minder body.' },
     open: []
   },
   {
@@ -109,6 +112,7 @@ export const CHEMEX_TECHNIQUES: readonly TechniqueDef[] = [
     },
     scaling: 'De bron geeft alleen 50/750.',
     role: 'Grotere portie (twee koppen tot een hele kan), weinig gietbeurten.',
+    taste: { portion: '2 koppen tot kan', sourced: 'Prima-proef 10/10 (hoogste): hoog zuur, veel zoet, medium body.', expect: 'Levendig en zoet.' },
     open: ['Plaatshouder: het moment van de tweede giet (0:40) is het midden van 30 tot 50 s.']
   },
   {
@@ -135,6 +139,7 @@ export const CHEMEX_TECHNIQUES: readonly TechniqueDef[] = [
     },
     scaling: 'De bron geeft alleen 42/700.',
     role: 'Standaard voor twee tot drie koppen: drie gietbeurten.',
+    taste: { portion: '2 koppen', sourced: 'Prima-proef 9/10: zuur, zoet, karamel, chocolade, druif.', expect: 'Lichtste verhouding: helder.' },
     open: []
   },
   {
@@ -162,6 +167,7 @@ export const CHEMEX_TECHNIQUES: readonly TechniqueDef[] = [
     },
     scaling: 'De bron geeft alleen 50/700.',
     role: 'Pulsen voor een grotere portie; het bed blijft laag.',
+    taste: { portion: '2 koppen tot kan', sourced: 'Prima-proef 9/10: zuur, zoet, karamel, chocolade, druif.', expect: 'Sterkste verhouding: voller.' },
     open: []
   },
   {
@@ -190,6 +196,7 @@ export const CHEMEX_TECHNIQUES: readonly TechniqueDef[] = [
     },
     scaling: 'De bron geeft alleen 55/900.',
     role: 'Een hele kan voor meerdere mensen, lange contacttijd.',
+    taste: { portion: 'hele kan', sourced: 'Prima-proef 8/10: weinig fruit, nauwelijks bitter.', expect: 'Lange contacttijd: rond en zacht.' },
     open: []
   },
   {
@@ -219,6 +226,7 @@ export const CHEMEX_TECHNIQUES: readonly TechniqueDef[] = [
     },
     scaling: 'De bron geeft alleen 40/650; hij zegt dat je het aantal gietbeurten en de nadruk kunt verschuiven.',
     role: 'Een grote portie met veel agitatie in het begin en een zachte laatste giet.',
+    taste: { portion: 'grote portie', sourced: null, expect: 'Heet water en veel agitatie vroeg: zoet, met een schone afdronk.' },
     open: ['Plaatshouder: de momenten van giet 4 en 5 (2:00 en 3:00) zijn afgeleid uit "een minuut tussen elke giet daarna".']
   },
   {
@@ -245,6 +253,7 @@ export const CHEMEX_TECHNIQUES: readonly TechniqueDef[] = [
     },
     scaling: 'De bron geeft alleen 22/360.',
     role: 'Eén kop in een Chemex, kalm en kort.',
+    taste: { portion: '1 kop', sourced: null, expect: 'Lichter en wat helderder dan Howell.' },
     open: ['De grootte van de Chemex is in de bron niet genoemd.']
   }
 ];

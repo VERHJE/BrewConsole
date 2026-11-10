@@ -528,3 +528,18 @@ details.fold[open] > summary::before { transform: rotate(45deg); margin-top: -4p
 /* P3-02: etiketten vallen in donker niet meer weg tegen de kaart */
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bagart.label { box-shadow: 0 0 0 1px rgb(217 179 106 / .32); filter: brightness(1.35) saturate(1.1); } }
 :root[data-theme="dark"] .bagart.label { box-shadow: 0 0 0 1px rgb(217 179 106 / .32); filter: brightness(1.35) saturate(1.1); }
+
+/* Keuzehulp Chemex-recepten */
+.guidebtn { width: 100%; justify-content: center; margin: 0 0 12px; }
+dialog.guide { width: min(640px, calc(100vw - 24px)); max-height: calc(100dvh - 48px); padding: var(--sp-4); border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); color: var(--text); box-shadow: var(--shadow-2); overflow-y: auto; }
+dialog.guide::backdrop { background: rgb(20 14 8 / .45); }
+.guide-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: calc(-1 * var(--sp-4)); background: var(--bg); padding: 4px 0 8px; z-index: 1; }
+.guide-head h2 { margin: 0; }
+.guide-list { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 10px; }
+.guide-list li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-s); padding: 12px 14px; }
+.guide-list li.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.guide-top { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+.guide-top strong { font-family: var(--head); font-size: var(--fs-l); font-weight: 600; }
+.guide-list p { margin: 4px 0; font-size: var(--fs-s); color: var(--text-2); }
+.guide-list .lbl { display: block; margin-bottom: 1px; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); }
+.guide-list .btn { margin-top: 6px; }

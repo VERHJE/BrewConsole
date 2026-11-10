@@ -6,8 +6,8 @@ import { SELECTION_RULES } from '../src/data/selection-rules.ts';
 import { FLAVOR_WHEEL } from '../src/data/flavor-wheel.ts';
 import { loadApp } from '../../tests/load-app.mjs';
 
-test('zeventien recepten (acht V60, negen Chemex), elk met een bron en een rol', () => {
-  assert.equal(TECHNIQUES.length, 17);
+test('zestien recepten (zeven V60, negen Chemex), elk met een bron en een rol', () => {
+  assert.equal(TECHNIQUES.length, 16);
   assert.equal(TECHNIQUES.filter(t => t.methods?.includes('chemex')).length, 9);
   for (const t of TECHNIQUES) {
     assert.ok(t.sources.length > 0, t.id);
