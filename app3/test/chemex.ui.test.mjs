@@ -74,7 +74,7 @@ for (const scheme of ['light', 'dark']) {
     await page.waitForSelector('.timer.ready');
     await page.click('button:has-text("Start")');
     await page.waitForSelector('.pprog');
-    assert.match(await text(page, '.pprog'), /Giet 1 van 3/);
+    assert.match(await text(page, '.pprog'), /Giet 1 van 3/i); // de kop staat in kapitalen (CSS)
     assert.match(await text(page, '.steptip'), /20 seconden[\s\S]*concentrische cirkels/i);
     assert.deepEqual(await axe(page), []);
     assert.deepEqual(errors, []);

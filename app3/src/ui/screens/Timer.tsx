@@ -10,19 +10,47 @@ import { cueFor, readCuePrefs, type CueState } from '../../core/cues.ts';
 import { playCue, unlockAudio } from '../cues.ts';
 import { useApp, useSnapshot } from '../store-context.tsx';
 
-/** Ring rond de tijd van de huidige stap. De getallen erin zijn voor het oog; de uitleg staat in de tekst ernaast. */
-function Ring({ fraction, kind, label }: { fraction: number | null; kind: StepKind; label: string }): JSX.Element {
-  const R = 52, C = 2 * Math.PI * R;
+/**
+ * De ring (richting "Ritueel"): loopt rond tot het einde van de stap. In het midden het gewicht waar je naartoe giet,
+ * daaronder de aftelling. Alles is voor het oog; de uitleg staat in de tekst eronder (role=status).
+ */
+function Ring({ fraction, kind, label, big, unit, soon }: { fraction: number | null; kind: StepKind; label: string; big: string | null; unit: string | null; soon: boolean }): JSX.Element {
+  const R = 54, C = 2 * Math.PI * R;
   const f = kind === 'done' ? 1 : kind === 'hold' ? 1 : fraction ?? 0;
   return (
-    <div class="ring" aria-hidden="true">
+    <div class={soon ? 'ring soon' : 'ring'} aria-hidden="true">
       <svg viewBox="0 0 120 120">
         <circle class="track" cx="60" cy="60" r={R} />
-        <circle class={`bar ${kind}`} cx="60" cy="60" r={R} stroke-dasharray={kind === 'hold' ? '5 7' : C.toFixed(1)} stroke-dashoffset={kind === 'hold' ? 0 : (C * (1 - f)).toFixed(1)} transform="rotate(-90 60 60)" />
+        <circle class={`bar ${kind}`} cx="60" cy="60" r={R} stroke-dasharray={kind === 'hold' ? '2 6' : C.toFixed(1)} stroke-dashoffset={kind === 'hold' ? 0 : (C * (1 - f)).toFixed(1)} transform="rotate(-90 60 60)" />
+        {kind === 'done' && <path class="check" d="M44 61 l11 11 l22 -24" pathLength="1" />}
       </svg>
+      {kind !== 'done' && big !== null && <span class="ringnum" key={big}>{big}{unit && <small>{unit}</small>}</span>}
       <span class="ringtext">{label}</span>
     </div>
   );
+}
+
+/** Voor de start: dezelfde vorm zonder voortgang, met het totale water erin. */
+function ReadyDial({ waterG, endText }: { waterG: number; endText: string | null }): JSX.Element {
+  return (
+    <div class="readydial" aria-hidden="true">
+      <svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="54" /></svg>
+      <span class="ringnum">{Math.round(waterG)}<small>g</small></span>
+      <span class="ringsub">{endText ? `water · klaar ${endText}` : 'water'}</span>
+    </div>
+  );
+}
+
+/** Breed of liggend: dan staan schema en uitleg naast de timer en is het schema altijd open. */
+function useWide(): boolean {
+  const q = '(min-width: 900px) and (min-height: 600px), (orientation: landscape) and (max-height: 560px)';
+  const [wide, setWide] = useState(() => typeof matchMedia === 'function' && matchMedia(q).matches);
+  useEffect(() => {
+    if (typeof matchMedia !== 'function') return;
+    const m = matchMedia(q); const on = (): void => setWide(m.matches);
+    m.addEventListener('change', on); return () => m.removeEventListener('change', on);
+  }, []);
+  return wide;
 }
 
 function useTicker(active: boolean): void {
@@ -63,6 +91,7 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
   useTicker(running);
   useWakeLock(running || view?.status === 'paused');
   const [confirmStop, setConfirmStop] = useState(false);
+  const wide = useWide();
 
   // Signalen (geluid en trillen) bij een giet, een wacht-op-doorlopen, de laatste drie seconden voor een giet en het einde.
   const prevCue = useRef<CueState | null>(null);
@@ -89,20 +118,30 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
 
   const guide = stepGuide(recipe, view, recipe.expectedEndSec?.mid ?? null);
   const center = guide.kind === 'ready' ? 'start' : guide.kind === 'done' ? 'klaar' : guide.kind === 'hold' ? 'wacht' : guide.remainingSec !== null ? clock(guide.remainingSec) : 'droog?';
+  // Het grote getal in de ring: het gewicht waar je naartoe giet; bij wachten het volgende doel.
+  const holdIdx = view.phases.indexOf('hold');
+  const holdNext = guide.kind === 'hold' && holdIdx >= 0 ? recipe.pours[holdIdx]! : null;
+  const big = guide.target ? String(Math.round(guide.target.toG)) : holdNext ? String(Math.round(holdNext.toG)) : guide.kind === 'drain' || guide.kind === 'wait' ? String(Math.round(recipe.pours[lastIdx]!.toG)) : null;
+  const soon = guide.kind === 'pour' && guide.remainingSec !== null && guide.remainingSec <= 5 && view.current < lastIdx;
+  const name = techniqueName(recipe.technique);
+  const eyebrow = `${name} · ${String(Math.round(recipe.doseG * 10) / 10).replace('.', ',')} g`;
+  const end = recipe.expectedEndSec ? clock(recipe.expectedEndSec.mid) : null;
+  // Op de telefoon is het schema alleen voor de start open (dan staat Start vast onderin); daarna één stap tegelijk.
+  const schemaOpen = wide || view.status === 'ready';
 
   return (
-    <section class={view.status === 'ready' ? 'timer ready' : 'timer'} aria-label="Timer">
+    <section class={`timer rit ${view.status === 'ready' ? 'ready' : ''} k-${guide.kind}`.trim()} aria-label="Timer">
       <div class="tnow">
       {view.status === 'ready' && <button class="btn leave-top" type="button" onClick={() => { send(abandonTimer(env, brewId, 0)); location.hash = href('zetten'); }}>← Annuleren, terug naar Zetten</button>}
-      <div class="clock" aria-label={`Totale tijd ${clock(Math.floor(t))}`}>{clock(Math.floor(t))}<small>totaal</small></div>
       {guide.progress && (
         <div class="pprog" role="group" aria-label={`Giet ${guide.progress.index} van ${guide.progress.count}`}>
           <span class="ptext">Giet {guide.progress.index} van {guide.progress.count}</span>
           <span class="pdots" aria-hidden="true">{Array.from({ length: guide.progress.count }, (_, i) => <i key={i} class={i + 1 < guide.progress!.index ? 'd done' : i + 1 === guide.progress!.index ? 'd now' : 'd'} />)}</span>
         </div>)}
+      <p class="teyebrow">{eyebrow}</p>
       <div class={`stepcard ${guide.kind}`}>
-        {guide.kind !== 'ready' && <Ring fraction={guide.fraction} kind={guide.kind} label={center} />}
-        <div class="stepcopy" role="status">
+        {guide.kind === 'ready' ? <ReadyDial waterG={recipe.waterG} endText={end} /> : <Ring fraction={guide.fraction} kind={guide.kind} label={center} big={big} unit={big ? 'g' : null} soon={soon} />}
+        <div class="stepcopy" role="status" key={`${guide.kind}-${guide.progress?.index ?? 0}`}>
           <h2 class="stepname">{guide.title}</h2>
           {guide.target
             ? <p class="steptarget"><b>tot {Math.round(guide.target.toG)} g</b><span>+{Math.round(guide.target.addG)} g{guide.target.how ? ` · ${guide.target.how}` : ''}</span></p>
@@ -115,6 +154,7 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
           <strong>Daarna{guide.after.todo ? `: ${guide.after.todo}` : ''}</strong>
           {guide.after.detail && <span>{guide.after.detail}</span>}
         </div>)}
+      <div class="clock" aria-label={`Totale tijd ${clock(Math.floor(t))}`}>{clock(Math.floor(t))}<small>totaal{end && view.status !== 'complete' ? ` · ±${end}` : ''}</small></div>
       </div>
       <div class="tplan">
       {guide.prep.length > 0 && (
@@ -122,13 +162,16 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
       {guide.finish.length > 0 && (
         <div class="stepprep"><strong>Na de laatste giet</strong><ol>{guide.finish.map(t => <li key={t}>{t}</li>)}</ol></div>)}
       {guide.next && <p class="stepnext">{guide.next}</p>}
-      <ol class="steps" aria-label="Gietschema">
-        {lines.map((l, i) => {
-          const ph = view.phases[i]!;
-          const cls = view.status === 'complete' ? 'past' : ph === 'hold' ? 'hold' : ph === 'go' && i === view.current ? 'go' : view.drained.has(i) ? 'past' : '';
-          return <li key={i} class={cls}><span>{l.at}</span><span>{l.add}</span><span>→ {l.to}</span>{l.how && <small>{l.how}</small>}</li>;
-        })}
-      </ol>
+      <details class="schema" open={schemaOpen} key={schemaOpen ? 'open' : 'dicht'}>
+        <summary>Gietschema <span class="meta">· {lines.length} gieten</span></summary>
+        <ol class="steps" aria-label="Gietschema">
+          {lines.map((l, i) => {
+            const ph = view.phases[i]!;
+            const cls = view.status === 'complete' ? 'past' : ph === 'hold' ? 'hold' : ph === 'go' && i === view.current ? 'go' : view.drained.has(i) ? 'past' : '';
+            return <li key={i} class={cls}><span>{l.at}</span><span>{l.add}</span><span>→ {l.to}</span>{l.how && <small>{l.how}</small>}</li>;
+          })}
+        </ol>
+      </details>
       </div>
 
       <div class="tctl">

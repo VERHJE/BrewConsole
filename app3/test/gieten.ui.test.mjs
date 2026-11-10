@@ -51,7 +51,7 @@ for (const scheme of ['light', 'dark']) {
     await page.clock.install({ time: new Date('2026-11-05T12:00:00Z') });
     await page.click('button:has-text("Start")');
     await page.waitForSelector('.pprog');
-    assert.match(await text(page, '.pprog'), /Giet 1 van 3/);
+    assert.match(await text(page, '.pprog'), /Giet 1 van 3/i); // de kop staat in kapitalen (CSS)
     assert.match(await text(page, '.steptip'), /twee keer de dosis/);
     assert.equal((await text(page, '.steptarget span')).trim().startsWith('+'), true);
     assert.doesNotMatch(await text(page, '.steptarget span'), /spiraal/);
