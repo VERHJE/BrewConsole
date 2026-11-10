@@ -27,3 +27,9 @@ test('kopgrenzen: de standaardkeuze kapt de dosis binnen de grenzen niet af', ()
     }
   }
 });
+
+test('Chemex boven de portiegrens: de uitleg noemt dat de dosis kan dalen (audit P2-01, keuze a)', () => {
+  const e = createEngine(); const st = e.learn([]);
+  const a = e.plan(st, { at: ms(1.79e12), beanId: null, method: 'chemex', cupG: g(450), goal: null, technique: null });
+  assert.ok(a.reasons.some(r => r.text.includes('portiegrens')), a.reasons.map(r => r.text).join(' | '));
+});

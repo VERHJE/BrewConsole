@@ -29,18 +29,17 @@ jobs:
 
       # Downloadt Playwright's eigen, door Playwright beheerde Chromium-build (in
       # ~/.cache/ms-playwright) plus de systeembibliotheken die een headless Chromium op een
-      # kale Ubuntu-runner nodig heeft. tests/kernflow.smoke.test.mjs en
-      # tests/sw-registration.test.mjs vallen automatisch op deze managed browser terug zodra
-      # hun vaste sandbox-pad (/opt/pw-browsers/chromium) niet bestaat — geen verdere
-      # CI-specifieke configuratie nodig.
+      # kale Ubuntu-runner nodig heeft. De schermtests van app3 vallen op deze browser terug
+      # zodra het vaste sandbox-pad (/opt/pw-browsers/chromium) niet bestaat.
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run QA suite
-        run: npm run qa
+      # De tests van de oude app (tests/*.test.mjs op brewconsole_v2_2.html, `npm run qa`) horen
+      # niet meer bij de poort: die app wordt niet meer uitgeleverd (op /oud/ staat alleen een
+      # melding). Ze blijven met de hand te draaien. Keuze Jelle, audit 10 nov 2026 (P2-05).
+      # De jobnaam hierboven blijft gelijk, zodat een vereiste check op GitHub blijft kloppen.
 
-      # Engine 3 (in voorbereiding): typecheck (TypeScript strict), eigen tests en een
-      # proefbouw met esbuild. Raakt de huidige app niet.
+      # Engine 3: typecheck (TypeScript strict), eigen tests en een proefbouw met esbuild.
       - name: Engine 3 checks
         run: npm run e3:check
 
