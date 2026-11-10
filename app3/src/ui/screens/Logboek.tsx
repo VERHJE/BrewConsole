@@ -104,7 +104,7 @@ function Detail({ id }: { id: string }): JSX.Element {
         {c.tdsPct !== null && <><dt>TDS</dt><dd>{c.tdsPct.toFixed(2).replace('.', ',')} %</dd></>}
       </dl>
       <div class="card"><strong>Schema</strong>
-        <table class="plain"><tbody>{lines.map(l => <tr key={l.index}><td>{l.at}</td><td>{l.add}</td><td>→ {l.to}</td><td>{c.drainedAtSec.has(l.index) ? `erdoor ${clock(c.drainedAtSec.get(l.index)!)}` : ''}</td></tr>)}</tbody></table></div>
+        <table class="plain"><tbody>{lines.map(l => <tr key={l.index}><td>{l.at}</td><td>{l.add}</td><td>→ {l.to}</td><td>{c.drainedAtSec.has(l.index) ? `doorgelopen ${clock(c.drainedAtSec.get(l.index)!)}` : ''}</td></tr>)}</tbody></table></div>
       <div class="card"><strong>Geproefd</strong>
         {!t ? <EmptyState compact title="Nog niet geproefd">{c.status === 'complete' ? 'Leg vast hoe hij was; dat telt mee voor je volgende advies.' : undefined}</EmptyState> : (
           <dl class="kv">

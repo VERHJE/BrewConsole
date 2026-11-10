@@ -118,7 +118,7 @@ export function Voorkeuren(): JSX.Element {
         <span>Trillen bij een giet</span>
       </label>
       <p><button class="btn" type="button" name="cueTest" onClick={() => { unlockAudio(); playCue('pour', cues); }}>Test het signaal</button></p>
-      <p class="meta">Een tikje in de laatste drie seconden voor een giet, een dubbele piep als de giet begint, een aandachtssignaal als je “Erdoor” moet tikken en een stijgende toon als het klaar is. Trillen werkt niet op een iPhone; het scherm blijft wel aan tijdens het zetsel. Deze keuzes gelden voor dit toestel.</p>
+      <p class="meta">Een tikje in de laatste drie seconden voor een giet, een dubbele piep als de giet begint, een aandachtssignaal als je “Doorgelopen” moet tikken en een stijgende toon als het klaar is. Trillen werkt niet op een iPhone; het scherm blijft wel aan tijdens het zetsel. Deze keuzes gelden voor dit toestel.</p>
       <h2>Proeven</h2>
       <label class="choice" style="margin-top:8px">
         <input type="checkbox" name="lighter" checked={s.brightLighter} onChange={e => { void store.append([brightLighterEvent(env, (e.currentTarget as HTMLInputElement).checked)]); }} />

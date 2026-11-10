@@ -48,7 +48,7 @@ export async function brewToEnd(page, base, beanName) {
     // Een knop kan tussen kijken en klikken verdwijnen (de vorige tik wordt net opgeslagen en het scherm tekent opnieuw):
     // dan niet 30 seconden wachten maar in de volgende ronde opnieuw kijken.
     if (await finish.count() && await finish.click({ timeout: 3000 }).then(() => true, () => false)) break;
-    const erdoor = page.locator('button:text-is("Erdoor")');
+    const erdoor = page.locator('button:text-is("Doorgelopen")');
     if (await erdoor.count()) await erdoor.click({ timeout: 3000 }).catch(() => {});
   }
   await page.click('a:has-text("Proeven")');

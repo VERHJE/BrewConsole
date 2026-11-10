@@ -123,7 +123,7 @@ test('ontwerp: een afgerond zetsel toont bij elke giet een vinkje', async () => 
     await page.clock.fastForward(40_000);
     const fin = page.locator('button:has-text("Alles doorgelopen")');
     if (await fin.count() && await fin.click({ timeout: 3000 }).then(() => true, () => false)) break;
-    const er = page.locator('button:text-is("Erdoor")'); if (await er.count()) await er.click({ timeout: 3000 }).catch(() => {});
+    const er = page.locator('button:text-is("Doorgelopen")'); if (await er.count()) await er.click({ timeout: 3000 }).catch(() => {});
   }
   await page.waitForSelector('a:has-text("Proeven")');
   const n = await page.locator('.timer ol.steps li').count();
