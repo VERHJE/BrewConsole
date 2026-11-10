@@ -5,7 +5,7 @@ import type { Route } from '../../core/router.ts';
 import { href } from '../../core/router.ts';
 import { beanRows } from '../../core/beans.ts';
 import {
-  CHEMEX_PORTIONS, CUP_MAX, CUP_MIN, DEFAULT_FORM, FEEDBACK_LABEL, GOAL_LABEL, METHOD_LABEL,
+  CHEMEX_PORTIONS, DEFAULT_FORM, clampCup, cupRange, openBrew, parseCup, FEEDBACK_LABEL, GOAL_LABEL, METHOD_LABEL,
   bandText, portionOf, techniqueFits, techniqueOptions, brewPlanEvent, clock, nl1, planBrew, pourLines, splitWarnings, techniqueName, type BrewForm
 } from '../../core/brew.ts';
 import { BagArt, useApp, useSnapshot } from '../store-context.tsx';
@@ -18,7 +18,11 @@ import { trialPlanEvent, type TrialArm } from '../../core/trials.ts';
 
 const KEY = 'brewconsole.zetten';
 function loadForm(): BrewForm {
-  try { return { ...DEFAULT_FORM, ...(JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<BrewForm>), feedback: [] }; } catch { return DEFAULT_FORM; }
+  try {
+    const f = { ...DEFAULT_FORM, ...(JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<BrewForm>), feedback: [] };
+    // Een opgeslagen kop van vóór de kopgrenzen (of een kapotte waarde) valt binnen het bereik van de brewer.
+    return { ...f, cupG: clampCup(f.method, f.cupG) };
+  } catch { return DEFAULT_FORM; }
 }
 const hasSavedForm = (): boolean => { try { return localStorage.getItem(KEY) !== null; } catch { return false; } };
 function saveForm(f: BrewForm): void {
@@ -31,6 +35,8 @@ function Plan(): JSX.Element {
   const rows = beanRows(state);
   const [form, setForm] = useState<BrewForm>(loadForm);
   const [err, setErr] = useState('');
+  // De kop zoals getypt: zo blijft "250," of "abc" in het veld staan in plaats van NaN (audit 10 nov, P2-02).
+  const [cupRaw, setCupRaw] = useState<string | null>(null);
   // Op een telefoon start het formulier ingeklapt zodra je het eerder gebruikte; op een laptop staat het altijd open.
   const [open, setOpen] = useState(() => !hasSavedForm());
   // Een zak die niet meer bestaat (archief, andere toestel) valt terug op 'geen zak'.
@@ -43,10 +49,17 @@ function Plan(): JSX.Element {
     let next = { ...eff, ...p, ...('beanId' in p ? { noBean: p.beanId === null } : {}) };
     // Wissel naar de Chemex: begin bij één kop (340 g, de maat van het recept), anders geeft 250 g een te dunne laag.
     if (next.method === 'chemex' && eff.method !== 'chemex' && portionOf(next.cupG) === null && !('cupG' in p)) next = { ...next, cupG: CHEMEX_PORTIONS[0]!.cupG };
+    // Andere brewer: een kop buiten het bereik van die brewer schuift naar de grens.
+    if (next.method !== eff.method && !('cupG' in p)) next = { ...next, cupG: clampCup(next.method, next.cupG) };
+    if ('cupG' in p || next.method !== eff.method) setCupRaw(null);
     // Een techniek die niet bij de gekozen brewer past, valt terug op "Laat Brew Console kiezen".
     setForm(techniqueFits(next.method, next.technique) ? next : { ...next, technique: null });
   };
   const options = techniqueOptions(eff.method);
+  const range = cupRange(eff.method);
+  const cupInvalid = cupRaw !== null && parseCup(cupRaw) === null;
+  const cupOut = !cupInvalid && (eff.cupG < range.min || eff.cupG > range.max);
+  const openCup = openBrew(state, env.now());
   const portion = eff.method === 'chemex' ? portionOf(eff.cupG) : null;
 
   const start = async (): Promise<void> => {
@@ -70,6 +83,11 @@ function Plan(): JSX.Element {
   return (
     <section class="zetten">
       <h1>Zetten</h1>
+      {openCup && (
+        <div class="banner openbrew" role="status">
+          <span>{openCup.status === 'brewing' ? 'Er loopt nog een zetsel' : 'Er staat een zetsel klaar'}: {techniqueName(openCup.technique)}, {new Date(openCup.at).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}.</span>
+          <a class="btn primary" href={href('timer', openCup.id)}>Naar de timer</a>
+        </div>)}
       <div class="zgrid">
       <div class="zform-col">
       <button type="button" class="zsummary" aria-expanded={open} aria-controls="zform" onClick={() => setOpen(!open)}>
@@ -93,12 +111,17 @@ function Plan(): JSX.Element {
               {CHEMEX_PORTIONS.map(p => <button key={p.id} type="button" class="chip" aria-pressed={portion === p.id} onClick={() => set({ cupG: p.cupG })}>{p.label}</button>)}
             </div>
           </div>)}
-        <div class="field"><span id="cup-l">Kop (gram, koffie die je drinkt)</span>
+        <div class="field"><span id="cup-l">Kop (gram, koffie die je drinkt) <small class="hint-inline">{range.min}–{range.max} g</small></span>
           <div class="stepper">
-            <button class="btn" type="button" aria-label="Kleiner" onClick={() => set({ cupG: Math.max(CUP_MIN, eff.cupG - 10) })}>−</button>
-            <input name="cup" inputMode="numeric" aria-labelledby="cup-l" value={String(eff.cupG)} onInput={e => set({ cupG: Number((e.currentTarget as HTMLInputElement).value) })} />
-            <button class="btn" type="button" aria-label="Groter" onClick={() => set({ cupG: Math.min(CUP_MAX, eff.cupG + 10) })}>+</button>
+            <button class="btn" type="button" aria-label="Kleiner" disabled={eff.cupG <= range.min} onClick={() => set({ cupG: clampCup(eff.method, eff.cupG - 10) })}>−</button>
+            <input name="cup" inputMode="decimal" aria-labelledby="cup-l" aria-invalid={cupInvalid || cupOut ? 'true' : undefined} aria-describedby={cupInvalid || cupOut ? 'cup-err' : undefined}
+              value={cupRaw ?? String(eff.cupG)}
+              onInput={e => { const raw = (e.currentTarget as HTMLInputElement).value; const n = parseCup(raw); setCupRaw(raw); if (n !== null) setForm(f => ({ ...f, beanId: eff.beanId, cupG: n })); }}
+              onBlur={() => { if (cupRaw !== null && parseCup(cupRaw) !== null) setCupRaw(null); }} />
+            <button class="btn" type="button" aria-label="Groter" disabled={eff.cupG >= range.max} onClick={() => set({ cupG: clampCup(eff.method, eff.cupG + 10) })}>+</button>
           </div>
+          {cupInvalid && <div class="err" id="cup-err" role="alert">Vul een getal in, bijvoorbeeld 250.</div>}
+          {cupOut && <div class="err" id="cup-err">Kies tussen {range.min} en {range.max} g.</div>}
         </div>
         <div class="field"><span id="goal-l">Doel</span>
           <div class="chips" role="group" aria-labelledby="goal-l">

@@ -90,6 +90,7 @@ function Detail({ id }: { id: string }): JSX.Element {
     <section>
       <div class="head"><a class="btn back-narrow" href={href('logboek')}>Terug</a><h1>{bean?.fields.name ?? 'Kop'}</h1></div>
       <p class="meta">{dateText(c.at)} · {STATUS[c.status]}</p>
+      {(c.status === 'planned' || c.status === 'brewing') && <p><a class="btn primary" href={href('timer', id)}>{c.status === 'brewing' ? 'Terug naar de timer' : 'Naar de timer'}</a></p>}
       <div class="numbers">
         <div class="num"><b>{nl1(c.doseG)} g</b><small>koffie</small></div>
         <div class="num"><b>{Math.round(c.waterG)} g</b><small>water{c.bypassG > 0 ? ` + ${Math.round(c.bypassG)} g bypass` : ''}</small></div>

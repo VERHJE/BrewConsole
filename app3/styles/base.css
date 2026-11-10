@@ -506,3 +506,9 @@ fieldset.field label.row { display: flex; align-items: center; gap: 12px; }
 .kv.small { font-size: var(--fs-s); } .kv.small:empty { display: none; }
 .detail-numbers { margin-top: var(--sp-3); }
 .chips[aria-label="Snel invullen"] { margin-bottom: 14px; }
+
+/* Audit 10 nov · ronde 1: open zetsel terugvinden, kopbereik zichtbaar */
+.banner.openbrew { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2) var(--sp-3); }
+.banner.openbrew span { flex: 1 1 14rem; }
+.hint-inline { color: var(--text-3); font-size: var(--fs-xs); font-weight: 400; }
+.stepper .btn:disabled { opacity: .45; cursor: default; }

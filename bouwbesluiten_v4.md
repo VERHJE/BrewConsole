@@ -1559,3 +1559,9 @@ Jelle liet een extern UX/UI-verbeterplan ('Brew Console 2.1') beoordelen; wat al
 - **Logboekdetail**: dezelfde taal als de rest: de vier hoofdgetallen (koffie, water, klik, klaar na) in de serif, de brewer-badge met techniek eronder, de overige gegevens klein. Schema en proefkaart ongewijzigd.
 - **Waterpagina**: één korte zin bovenaan; de uitleg (geen gevalideerde omrekening, wat Gagné zegt) staat ingeklapt onder "Waarom verandert dit niets?".
 - Het doel bij Chemex blijft zonder effect tot er een bron is die een doel aan een Chemex-techniek koppelt (Jelle heeft die nog niet).
+
+## Audit 10 nov · ronde 1 (keuze Jelle: kop begrenzen, optie a)
+
+- **Kopgrenzen per brewer** (`CUP_LIMITS`, engine-data): V60 200–280 g, Chemex 200–700 g. Afgeleid uit de dosisgrenzen (V60 15–22 g, Chemex 15–57 g) bij de referentieverhoudingen, zodat de dosis binnen het bereik nooit afgekapt hoeft te worden. Eerder kon de V60 tot 700 g, met 22 g koffie op 702 g water (1:32).
+- **Open zetsel terugvinden**: Zetten en het logboekdetail wijzen naar een gepland of lopend zetsel (jonger dan 12 uur).
+- **Kopveld**: getypte tekst blijft staan, komma mag, nooit NaN.
