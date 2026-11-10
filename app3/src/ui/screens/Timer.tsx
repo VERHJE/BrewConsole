@@ -93,6 +93,7 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
   return (
     <section class={view.status === 'ready' ? 'timer ready' : 'timer'} aria-label="Timer">
       <div class="tnow">
+      {view.status === 'ready' && <button class="btn leave-top" type="button" onClick={() => { send(abandonTimer(env, brewId, 0)); location.hash = href('zetten'); }}>← Annuleren, terug naar Zetten</button>}
       <div class="clock" aria-label={`Totale tijd ${clock(Math.floor(t))}`}>{clock(Math.floor(t))}<small>totaal</small></div>
       {guide.progress && (
         <div class="pprog" role="group" aria-label={`Giet ${guide.progress.index} van ${guide.progress.count}`}>
@@ -151,7 +152,11 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
           </div>
         </div>
       )}
-      {view.status === 'complete' && <a class="btn primary big" href={href('proeven', brewId)}>Proeven</a>}
+      {view.status === 'complete' && (
+        <div>
+          <a class="btn primary big" href={href('proeven', brewId)}>Proeven</a>
+          <a class="btn big leave" href={href('zetten')}>Later proeven, naar Zetten</a>
+        </div>)}
       {view.status === 'abandoned' && <a class="btn big" href={href('zetten')}>Terug</a>}
       </div>
     </section>
