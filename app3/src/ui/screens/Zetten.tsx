@@ -209,10 +209,10 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
         </div>
       </div>
       <div class="numbers">
-        <div class="num"><b>{nl1(r.doseG)} g</b><small>koffie</small></div>
-        <div class="num"><b>{Math.round(r.waterG)} g</b><small>water{r.bypassG > 0 ? ` (+${Math.round(r.bypassG)} g erbij)` : ''}</small></div>
-        {r.tempC !== null && <div class="num"><b>{r.tempC} °C</b><small>temperatuur</small></div>}
-        {r.grindClick !== null && <div class="num"><b>klik {r.grindClick}</b><small>Timemore C3S Pro</small></div>}
+        <div class="num"><b key={`d${r.doseG}`}>{nl1(r.doseG)} g</b><small>koffie</small></div>
+        <div class="num"><b key={`w${r.waterG}`}>{Math.round(r.waterG)} g</b><small>water{r.bypassG > 0 ? ` (+${Math.round(r.bypassG)} g erbij)` : ''}</small></div>
+        {r.tempC !== null && <div class="num"><b key={`t${r.tempC}`}>{r.tempC} °C</b><small>temperatuur</small></div>}
+        {r.grindClick !== null && <div class="num"><b key={`k${r.grindClick}`}>klik {r.grindClick}</b><small>molen · C3S Pro</small></div>}
       </div>
       {endB && <p class="meta">Verwacht klaar tussen {clock(endB.lo)} en {clock(endB.hi)}.</p>}
       <div class="recipe-body">

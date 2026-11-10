@@ -651,3 +651,46 @@ html:has(.timer.rit) body { background: radial-gradient(130% 70% at 50% -10%, #2
 .timer.rit.ready .tctl { margin-top: auto; position: sticky; bottom: 0; z-index: 3; padding: 16px 0 calc(8px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgb(11 18 14 / 0), #0b120e 40%); }
 .timer.rit.ready .tctl .big { margin-top: 0; }
 @media (min-width: 900px) and (min-height: 600px), (orientation: landscape) and (max-height: 560px) { .timer.rit.ready .tctl { position: static; background: none; padding: 0; } }
+
+/* ───────────── Ronde 8 · de rest van de app in dezelfde sfeer als de timer ───────────── */
+/* Knoppen als pil, zoals in de timer en de voorbeelden; kaarten houden hun hoeken. */
+.btn { border-radius: 999px; }
+.btn.primary { letter-spacing: .02em; }
+.startbar { border-radius: 999px; }
+.startbar .btn { border-radius: 999px; }
+.recipe .startbar { border-radius: 999px; }
+
+/* Receptgetallen als tegels (2 × 2), op Zetten en in het logboekdetail */
+.numbers { gap: 10px; margin: 4px 0 12px; }
+.num { background: var(--surface-2); border: 0; border-radius: var(--radius-s); padding: 14px 16px 12px; }
+.num b { font-size: clamp(1.7rem, 7.5vw, 2.3rem); font-weight: 600; }
+.recipe .num { background: var(--bg); }
+
+/* Tabbalk: het actieve tabblad krijgt een messing pil achter het icoon */
+.tabbar a svg { padding: 3px 14px; width: 52px; height: 30px; box-sizing: border-box; border-radius: 999px; }
+.tabbar a[aria-current="page"] svg { background: var(--accent-soft); }
+@media (min-width: 900px) { .tabbar a svg { width: 52px; height: 30px; } }
+
+/* De keuzehulp is op de telefoon een paneel dat van onderen inschuift */
+@media (max-width: 719px) {
+  dialog.guide { margin: auto 0 0; width: 100%; max-width: 100%; max-height: 88dvh; border-radius: 24px 24px 0 0; border-bottom: 0; padding-bottom: calc(var(--sp-4) + env(safe-area-inset-bottom)); }
+  dialog.guide::before { content: ''; display: block; width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 10px; }
+}
+
+/* Beweging: alleen transform (geen fades), uit bij "verminder beweging" */
+@media (prefers-reduced-motion: no-preference) {
+  /* Schermwissel: het nieuwe scherm schuift een paar pixels omhoog (View Transitions, alleen de schermafdruk beweegt). */
+  ::view-transition-old(root) { animation: 160ms ease-out both vt-out; }
+  ::view-transition-new(root) { animation: 220ms cubic-bezier(.2, .7, .2, 1) both vt-in; }
+  /* Een nieuw getal in het recept komt van onderen in beeld. */
+  .numbers .num b { animation: rit-rise .35s cubic-bezier(.2, .7, .2, 1); }
+  /* Het onderpaneel en het filter schuiven in. */
+  dialog.guide[open] { animation: sheet-up .32s cubic-bezier(.2, .8, .2, 1); }
+  #filterpanel { animation: rit-rise .25s cubic-bezier(.2, .7, .2, 1); }
+  .tabbar a[aria-current="page"] svg { animation: tab-pop .3s cubic-bezier(.2, .8, .2, 1.4); }
+  .zform:not(.collapsed) { animation: rit-rise .25s cubic-bezier(.2, .7, .2, 1); }
+}
+@keyframes vt-out { to { transform: translateY(-6px); opacity: 0; } }
+@keyframes vt-in { from { transform: translateY(10px); opacity: 0; } }
+@keyframes sheet-up { from { transform: translateY(40px); } }
+@keyframes tab-pop { from { transform: scale(.82); } }
