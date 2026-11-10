@@ -211,7 +211,7 @@ export function beanDetail(state: EngineState, beanId: string): BeanDetail | nul
     id: b.beanId, name: f.name ?? '(zonder naam)',
     eyebrow: [process, f.roastLevel ? ROAST_LABEL[f.roastLevel] : null].filter(Boolean).join(' · '),
     roaster: f.roaster ?? null, facts,
-    tags: [...(f.notes?.tags ?? []), ...(f.notes?.unmapped ?? [])], roastDate: f.roastDate ?? null, cups: b.brewIds.length, shopUrl: isShopUrl(f.shopUrl) ? f.shopUrl : null
+    tags: [...new Set([...(f.notes?.tags ?? []), ...(f.notes?.unmapped ?? [])].map(tagLabel))], roastDate: f.roastDate ?? null, cups: b.brewIds.length, shopUrl: isShopUrl(f.shopUrl) ? f.shopUrl : null
   };
 }
 
@@ -260,4 +260,13 @@ export function rowLines(row: BeanRow, stock: StockView | undefined, today: stri
     row.cups ? `${row.cups} ${row.cups === 1 ? 'kop' : 'koppen'}` : 'Nog niet gezet'
   ].filter((x): x is string => x !== null);
   return { origin: [row.roaster, row.country].filter(Boolean).join(' · ') || 'Herkomst onbekend', facts: parts.join(' · '), low: !!stock?.low };
+}
+
+/** Weergavenaam van een smaaktag: het wiel heeft groepstags als "Bessen (algemeen)"; op het scherm is "Bessen" genoeg (audit P3-01). */
+export const tagLabel = (tag: string): string => tag.replace(/\s*\(algemeen\)\s*$/i, '');
+
+/** Bestaat er al een (niet-gearchiveerde) zak met deze naam, los van hoofdletters en spaties? (audit P2-06) */
+export function sameNameBean(rows: ReadonlyArray<{ id: string; name: string }>, name: string, exceptId: string | null): boolean {
+  const key = name.trim().replace(/\s+/g, ' ').toLocaleLowerCase('nl');
+  return key !== '' && rows.some(r => r.id !== exceptId && r.name.trim().replace(/\s+/g, ' ').toLocaleLowerCase('nl') === key);
 }

@@ -204,6 +204,16 @@ Fase 1: in kaart brengen en vinden. Er is in deze fase niets aan de app verander
 - **Aangepaste test:** `zetten.ui.test.mjs` gebruikte een V60-kop van 400 g. Dat is nu 280 g.
 - **Regressie:** engine 189 en app3 191 tests slagen, inclusief axe licht en donker en responsive op 10 formaten.
 
+**Ronde 2 (10 nov):**
+
+- **P2-03 opgelost.** Op het zakdetail zonder foto staan naam, brander en proces alleen nog op het etiket. De h1 blijft voor schermlezers. De eyebrow en de brander in de subregel verschijnen alleen bij een foto.
+- **P2-04 opgelost.** De uitklapkaarten hebben een eigen pijltje dat draait bij openen. Eerder verborg `display: flex` op de summary de standaardmarkering in Chromium. Opslaan is breed en 52 px hoog op de telefoon.
+- **P2-06 opgelost.** Bij een naam die al bestaat (los van hoofdletters en spaties) staat er een zachte melding. Opslaan blijft mogelijk.
+- **P3-01 opgelost.** Smaaktags tonen geen "(algemeen)" meer, op het zakdetail en in de logboekregel. Dubbele labels worden samengevoegd. De opgeslagen gegevens zijn ongewijzigd.
+- **P3-02 opgelost.** In donker hebben de etiketten een dunne messing rand en een iets lichtere tint.
+- **P3-03 opgelost.** De zoektekst is nu "Zoek zak, brander, land" en past op 390 px.
+- **Tests:** `audit2.test.ts` en `audit2.ui.test.mjs`. Regressie: app3 196 tests geslaagd.
+
 ## J. Resterende risico's
 
 - Echt Safari en iOS: lettertype, `:has()`, wake lock en het verlaten van een PWA zijn niet geverifieerd.

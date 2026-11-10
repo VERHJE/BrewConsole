@@ -512,3 +512,19 @@ fieldset.field label.row { display: flex; align-items: center; gap: 12px; }
 .banner.openbrew span { flex: 1 1 14rem; }
 .hint-inline { color: var(--text-3); font-size: var(--fs-xs); font-weight: 400; }
 .stepper .btn:disabled { opacity: .45; cursor: default; }
+
+/* Audit 10 nov · ronde 2 */
+/* P2-04: uitklapkaarten krijgen een eigen pijltje (de flex-summary verbergt de standaardmarkering in Chromium) */
+details.fold > summary { list-style: none; gap: 10px; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::before { content: ''; flex: none; width: 8px; height: 8px; border-right: 2px solid var(--text-2); border-bottom: 2px solid var(--text-2); transform: rotate(-45deg); margin-inline: 2px 4px; }
+details.fold[open] > summary::before { transform: rotate(45deg); margin-top: -4px; }
+@media (prefers-reduced-motion: no-preference) { details.fold > summary::before { transition: transform .15s; } }
+/* P2-04: Opslaan breed en duidelijk onderaan het zakformulier */
+.editor-actions { flex-direction: column; align-items: stretch; gap: var(--sp-2); }
+.editor-actions .btn { width: 100%; justify-content: center; }
+.editor-actions .btn.primary { min-height: 52px; }
+@media (min-width: 720px) { .editor-actions { flex-direction: row; } .editor-actions .btn { width: auto; min-width: 200px; } }
+/* P3-02: etiketten vallen in donker niet meer weg tegen de kaart */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bagart.label { box-shadow: 0 0 0 1px rgb(217 179 106 / .32); filter: brightness(1.35) saturate(1.1); } }
+:root[data-theme="dark"] .bagart.label { box-shadow: 0 0 0 1px rgb(217 179 106 / .32); filter: brightness(1.35) saturate(1.1); }

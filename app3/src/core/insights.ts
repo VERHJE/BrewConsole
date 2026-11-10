@@ -1,3 +1,4 @@
+import { tagLabel } from './beans.ts';
 // Logboek en inzicht: alleen lezen uit de feiten van de engine. Er wordt hier niets zelf gerekend wat de engine ook kan.
 
 import {
@@ -36,7 +37,7 @@ export function tasteLine(t: CupFacts['tasting']): string | null {
   if (!t) return null;
   const note = t.note.trim().replace(/\s+/g, ' ');
   if (note) return note.length > 60 ? note.slice(0, 57).trimEnd() + '…' : note;
-  const hits = t.noteHits.filter(h => h.hit === 'yes').map(h => h.note);
+  const hits = t.noteHits.filter(h => h.hit === 'yes').map(h => tagLabel(h.note));
   const parts = [
     hits.length ? `herkend: ${hits.slice(0, 3).join(', ')}` : null,
     t.strength !== null ? STRENGTH_SHORT[String(t.strength)] ?? null : null,
