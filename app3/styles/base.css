@@ -543,3 +543,111 @@ dialog.guide::backdrop { background: rgb(20 14 8 / .45); }
 .guide-list p { margin: 4px 0; font-size: var(--fs-s); color: var(--text-2); }
 .guide-list .lbl { display: block; margin-bottom: 1px; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); }
 .guide-list .btn { margin-top: 6px; }
+
+/* ───────────── Timer · richting "Ritueel" (keuze Jelle, 10 nov 2026) ─────────────
+   Altijd donker (zetmodus), groen-espresso met goud: één stap tegelijk, een grote ring met het doelgewicht,
+   kapitalen met letterruimte, pilknoppen. Beweging alleen via transform en strepen (geen fades: contrast blijft meetbaar). */
+html:has(.timer.rit), html:has(.timer.rit) body { background: #0d1611; }
+html:has(.timer.rit) body { background: radial-gradient(130% 70% at 50% -10%, #2f4a3d 0%, #142019 55%, #0b120e 100%) fixed; }
+.timer.rit {
+  --bg: #13201a; --surface: #1b2b23; --surface-2: #24372d; --line: #33493d;
+  --text: #f1e8d8; --text-2: #cfc6b5; --text-3: #a59d8c; --accent: #e6c58f; --accent-soft: #2a3a2f;
+  --primary: #e2bd84; --primary-ink: #1b130a; --ok: #9fd3a8; --warn: #f0c47a;
+  color: var(--text); text-align: center;
+}
+.timer.rit .tnow { display: flex; flex-direction: column; align-items: center; }
+.timer.rit .leave-top { color: var(--text-2); align-self: flex-start; }
+.timer.rit .pprog { margin: 6px 0 0; }
+.timer.rit .pdots { display: flex; gap: 14px; }
+.timer.rit .pdots .d { width: 8px; height: 8px; border-radius: 50%; background: rgb(241 232 216 / .22); border: 0; }
+.timer.rit .pdots .d.done { background: var(--accent); }
+.timer.rit .pdots .d.now { background: var(--accent); box-shadow: 0 0 0 5px rgb(230 197 143 / .2); }
+.timer.rit .teyebrow { margin: 18px 0 0; font-size: var(--fs-xs); font-weight: 600; letter-spacing: .3em; text-transform: uppercase; color: var(--accent); }
+.timer.rit .stepcard { display: flex; flex-direction: column; align-items: center; gap: 18px; border: 0; padding: 18px 0 8px; text-align: center; width: 100%; }
+.timer.rit .ring, .timer.rit .readydial { position: relative; width: min(66vw, 280px); height: min(66vw, 280px); flex: none; }
+.timer.rit .ring svg, .timer.rit .readydial svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.timer.rit .track { fill: none; stroke: rgb(241 232 216 / .12); stroke-width: 2.5; }
+.timer.rit .ring .bar { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; transition: stroke-dashoffset .25s linear; filter: drop-shadow(0 0 6px rgb(230 197 143 / .35)); }
+.timer.rit .ring .bar.hold { stroke: var(--warn); stroke-linecap: round; }
+.timer.rit .ring .bar.done { stroke: var(--ok); }
+.timer.rit .ring .check { fill: none; stroke: var(--ok); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+.timer.rit .ringnum { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 4px; font-family: var(--head); font-weight: 300; font-size: clamp(3.4rem, 19vw, 5rem); line-height: 1; letter-spacing: .01em; font-variant-numeric: lining-nums tabular-nums; }
+.timer.rit .ringnum small { font-size: .36em; color: var(--text-2); align-self: center; margin-top: .9em; }
+.timer.rit .ringtext { position: absolute; left: 0; right: 0; bottom: 22%; inset-block-start: auto; top: auto; display: block; font-family: var(--font); font-size: var(--fs-s); font-weight: 600; letter-spacing: .18em; color: var(--accent); font-variant-numeric: tabular-nums; }
+.timer.rit .k-hold .ringtext, .timer.rit .ring .bar.hold ~ .ringtext { color: var(--warn); }
+.timer.rit .readydial .ringsub { position: absolute; left: 0; right: 0; bottom: 22%; font-size: var(--fs-xs); letter-spacing: .24em; text-transform: uppercase; color: var(--text-3); }
+.timer.rit .stepcopy { max-width: 30rem; }
+.timer.rit .stepname { margin: 0; font-family: var(--head); font-size: var(--fs-xl); font-weight: 400; letter-spacing: .04em; color: var(--text); }
+.timer.rit .steptarget { margin: 8px 0 0; display: block; }
+.timer.rit .steptarget b { display: inline; font-family: var(--font); font-size: var(--fs-m); font-weight: 600; color: var(--accent); }
+.timer.rit .steptarget span { display: inline; margin-left: 8px; color: var(--text-2); font-size: var(--fs-m); }
+.timer.rit .stepaction, .timer.rit .steptip { margin: 8px auto 0; color: var(--text-2); font-size: var(--fs-m); line-height: 1.55; letter-spacing: .01em; }
+.timer.rit .stepafter { margin: 12px 0 0; width: 100%; max-width: 30rem; text-align: left; background: rgb(241 232 216 / .06); border: 1px solid var(--line); border-radius: var(--radius-s); }
+.timer.rit .stepafter strong { color: var(--accent); font-size: var(--fs-m); } .timer.rit .stepafter span { color: var(--text-2); }
+.timer.rit .clock { margin: 18px 0 4px; font-size: var(--fs-l); font-weight: 500; letter-spacing: .08em; color: var(--text); }
+.timer.rit .clock small { display: inline; margin-left: 10px; font-size: var(--fs-xs); letter-spacing: .26em; text-transform: uppercase; color: var(--text-3); }
+.timer.rit .tplan { text-align: left; }
+.timer.rit .stepprep { background: rgb(241 232 216 / .05); border: 1px solid var(--line); color: var(--text); }
+.timer.rit .stepprep ol { color: var(--text-2); } .timer.rit .stepprep ol li::marker { color: var(--accent); }
+.timer.rit .stepnext { color: var(--text-2); text-align: center; }
+.timer.rit details.schema { margin: 8px 0; border-top: 1px solid var(--line); }
+.timer.rit details.schema > summary { color: var(--text-2); font-size: var(--fs-s); letter-spacing: .18em; text-transform: uppercase; justify-content: center; text-align: center; }
+.timer.rit details.schema > summary .meta { color: var(--text-3); text-transform: none; letter-spacing: 0; }
+.timer.rit ol.steps li { color: var(--text-2); }
+.timer.rit ol.steps li::before { border-color: var(--text-3); }
+.timer.rit ol.steps li.go { background: rgb(230 197 143 / .14); color: var(--text); }
+.timer.rit ol.steps li.go::before { background: var(--accent); border-color: var(--accent); }
+.timer.rit ol.steps li.hold { background: rgb(240 196 122 / .08); color: var(--warn); }
+.timer.rit ol.steps li.past { color: var(--text-3); } .timer.rit ol.steps li.past::before { color: var(--ok); }
+.timer.rit ol.steps li small { color: var(--text-3); }
+/* Knoppen: gouden pil, daaronder spookknoppen */
+.timer.rit .tctl .btn { border-radius: 999px; }
+.timer.rit .tctl .btn.primary { background: linear-gradient(180deg, #ecca93, #c99b5b); color: var(--primary-ink); border: 0; letter-spacing: .22em; text-transform: uppercase; font-size: var(--fs-s); font-weight: 700; box-shadow: 0 10px 30px -10px rgb(201 155 91 / .6); }
+.timer.rit .tctl .btn:not(.primary) { background: transparent; color: var(--text); border: 1px solid rgb(241 232 216 / .28); letter-spacing: .18em; text-transform: uppercase; font-size: var(--fs-xs); font-weight: 600; }
+.timer.rit .tctl .big { min-height: 60px; }
+.timer.rit .tctl .pair .btn { min-height: 50px; }
+.timer.rit .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.timer.rit .leave-top { background: transparent; border-color: transparent; }
+
+/* Beweging (alleen bij "geen voorkeur" voor minder beweging) */
+@media (prefers-reduced-motion: no-preference) {
+  .timer.rit .stepcopy { animation: rit-rise .45s cubic-bezier(.2, .7, .2, 1); }
+  .timer.rit .ringnum { animation: rit-rise .5s cubic-bezier(.2, .7, .2, 1); }
+  .timer.rit .ring .bar.hold { animation: rit-breathe 2.8s ease-in-out infinite; }
+  .timer.rit .ring.soon { animation: rit-pulse 1s ease-in-out infinite; }
+  .timer.rit .ring .check { stroke-dasharray: 1; stroke-dashoffset: 1; animation: rit-draw .6s .15s ease-out forwards; }
+  .timer.rit .ring .bar.done { animation: rit-glow 1.2s ease-out; }
+}
+@keyframes rit-rise { from { transform: translateY(14px); } to { transform: none; } }
+@keyframes rit-breathe { 50% { stroke-width: 4; } }
+@keyframes rit-pulse { 50% { transform: scale(1.025); } }
+@keyframes rit-draw { to { stroke-dashoffset: 0; } }
+@keyframes rit-glow { from { filter: drop-shadow(0 0 0 rgb(159 211 168 / 0)); } 50% { filter: drop-shadow(0 0 14px rgb(159 211 168 / .7)); } }
+
+/* Breed of liggend: ring en uitleg links, voorbereiding en schema rechts (de grid komt uit de eerdere timerregels). */
+@media (min-width: 900px) and (min-height: 600px) {
+  .timer.rit .ring, .timer.rit .readydial { width: min(34vw, 380px); height: min(34vw, 380px); }
+  .timer.rit .ringnum { font-size: clamp(5rem, 7vw, 7rem); }
+  .timer.rit .tplan { border-left: 1px solid var(--line); padding-left: 32px; }
+  .timer.rit ol.steps { display: block; }
+  .timer.rit details.schema { border-top: 0; }
+  .timer.rit .tctl { max-width: 520px; margin-inline: auto; width: 100%; }
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  .timer.rit .ring, .timer.rit .readydial { width: 170px; height: 170px; }
+  .timer.rit .ringnum { font-size: 3rem; }
+  .timer.rit .teyebrow { margin-top: 4px; }
+  .timer.rit .stepcard { flex-direction: row; text-align: left; padding: 6px 0; }
+  .timer.rit ol.steps { display: block; }
+}
+@media (max-width: 360px) { .timer.rit .ring, .timer.rit .readydial { width: 200px; height: 200px; } .timer.rit .ringnum { font-size: 3.2rem; } }
+.timer.rit .pprog { flex-direction: column-reverse; gap: 12px; }
+.timer.rit .ptext { font-size: var(--fs-xs); font-weight: 600; letter-spacing: .3em; text-transform: uppercase; color: var(--accent); }
+.timer.rit .pprog + .teyebrow { margin-top: 6px; color: var(--text-3); }
+.timer.rit.k-done .ringtext { display: none; }
+@media (min-width: 900px) and (min-height: 600px) { .timer.rit .clock { margin-bottom: 20px; } }
+/* Telefoon: de knoppen vormen één blok; voor de start staat dat vast onderin, boven het schema. */
+.timer.rit .tctl { display: block; }
+.timer.rit.ready .tctl { margin-top: auto; position: sticky; bottom: 0; z-index: 3; padding: 16px 0 calc(8px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgb(11 18 14 / 0), #0b120e 40%); }
+.timer.rit.ready .tctl .big { margin-top: 0; }
+@media (min-width: 900px) and (min-height: 600px), (orientation: landscape) and (max-height: 560px) { .timer.rit.ready .tctl { position: static; background: none; padding: 0; } }
