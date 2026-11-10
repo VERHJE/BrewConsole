@@ -118,13 +118,14 @@ function Detail({ beanId }: { beanId: string }): JSX.Element {
           <a class="btn" href={href('zakken', beanId, 'bewerken')}>Bewerken</a>
         </div>
         <BagArt beanId={beanId} name={d.name} large roaster={d.roaster} meta={[d.country, d.process].filter(Boolean).join(' · ') || null} roast={d.roastLevel} />
-        {hasPhoto && (
-          <div class="herotitle">
-            {d.eyebrow && <small class="eyebrow">{d.eyebrow}</small>}
-            <h1>{d.name}</h1>
-            {d.roaster && <span>{d.roaster}</span>}
-          </div>)}
       </div>
+      {/* Met een foto staat de titel onder de foto: over een zakfoto met eigen tekst is hij niet te lezen (test op iPhone, 10 nov). */}
+      {hasPhoto && (
+        <div class="herotitle">
+          {d.eyebrow && <small class="eyebrow">{d.eyebrow}</small>}
+          <h1>{d.name}</h1>
+          {d.roaster && <span>{d.roaster}</span>}
+        </div>)}
       {/* Zonder foto staan naam, brander en proces al groot op het etiket: de kop is er dan alleen voor schermlezers (audit P2-03). */}
       {!hasPhoto && <h1 class="sr-only">{d.name}</h1>}
       <div class="numbers beantiles">

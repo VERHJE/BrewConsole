@@ -1647,3 +1647,11 @@ De timerknop die het moment noteert waarop het water door het bed is (de meting 
 - **Smaakprofiel:** tegels bovenaan (geproefd, gemiddeld, blinde smaakkeuze, laat geproefd); herkende notities in één kaart; waardering per groep als rijen met een verschil-pil (groen erboven, oker eronder, ±0 neutraal). Proces en branding staan nu in het Nederlands (Natuurlijk, Gewassen, Licht, Medium) en "(algemeen)" valt weg.
 - **Molen** en **Over:** de getallen als tegels; bij de molen een label "Startwaarde" of "Uit jouw metingen".
 - Water, Voorkeuren, Gegevens en Synchronisatie zijn formulieren; die blijven zoals ze zijn.
+
+## Eén thema: groen-espresso met goud (10 nov 2026, na de proefronde op iPhone)
+
+- Jelle koos "groen overal": de zetmodus (donkergroen met goud) uit de timer en Proeven is nu het thema van de hele app, in licht én donker. Het ivoren lichte thema en het bruine donkere thema zijn vervallen.
+- Eén palet in `tokens.css` (`color-scheme: dark`), een groen verloop als achtergrond van de pagina, statusbalk en app-kleur (`theme-color`, manifest) gelijk aan de ondergrond.
+- De keuze Licht/Donker/Volg toestel in Meer → Voorkeuren is weg; alleen het lettertype blijft. Een oude themakeuze in de opslag doet niets meer.
+- Zakdetail met foto: naam en brander staan onder de foto, niet erover. Over een zakfoto met eigen tekst was de titel onleesbaar.
+- Etiketten zonder foto zijn iets minder opgelicht (filter 1,18) zodat de hoogtelijnen rustig blijven op het groen.

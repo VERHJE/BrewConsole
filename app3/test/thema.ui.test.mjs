@@ -8,28 +8,17 @@ after(async () => { await app.close(); });
 
 const bg = (page) => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
 
-test('thema: volgt het toestel tot je kiest; donker en licht zijn eigen thema\'s en blijven na herladen', async () => {
-  const page = await app.browser.newPage({ colorScheme: 'light' });
-  await page.goto(app.base + '#/meer/voorkeuren');
-  await page.waitForSelector('input[name=theme]');
-  assert.equal(await bg(page), 'rgb(246, 241, 231)', 'licht = ivoor en espresso met messing');
-  assert.equal(await page.evaluate(() => document.documentElement.hasAttribute('data-theme')), false);
-  await page.check('input[name=theme][value=dark]');
-  assert.equal(await bg(page), 'rgb(18, 14, 10)', 'donker = Quiet Luxury (warm bruin)');
-  await page.reload();
-  await page.waitForSelector('input[name=theme]');
-  assert.equal(await bg(page), 'rgb(18, 14, 10)');
-  assert.equal(await page.locator('input[name=theme][value=dark]').isChecked(), true);
-  await page.check('input[name=theme][value=system]');
-  assert.equal(await bg(page), 'rgb(246, 241, 231)');
-  await page.close();
-  const dark = await app.browser.newPage({ colorScheme: 'dark' });
-  await dark.goto(app.base + '#/meer/voorkeuren');
-  await dark.waitForSelector('input[name=theme]');
-  assert.equal(await bg(dark), 'rgb(18, 14, 10)', 'volg toestel bij een donker toestel');
-  await dark.check('input[name=theme][value=light]');
-  assert.equal(await bg(dark), 'rgb(246, 241, 231)', 'een bewuste keuze wint van het toestel');
-  await dark.close();
+test('thema: één thema, groen-espresso met goud, ook als het toestel licht is; geen licht/donker-keuze meer', async () => {
+  for (const scheme of ['light', 'dark']) {
+    const page = await app.browser.newPage({ colorScheme: scheme });
+    await page.goto(app.base + '#/meer/voorkeuren');
+    await page.waitForSelector('input[name=type]');
+    assert.equal(await page.locator('input[name=theme]').count(), 0, 'geen themakeuze');
+    assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()), '#13201a', `${scheme}: groene ondergrond`);
+    assert.equal(await page.evaluate(() => getComputedStyle(document.body).color), 'rgb(241, 232, 216)', `${scheme}: ivoren tekst`);
+    assert.equal(await page.evaluate(() => document.querySelector('meta[name=theme-color]').getAttribute('content')), '#13201a');
+    await page.close();
+  }
 });
 
 test('lettertype: koppen met schreef (eigen bestand, offline), schreefloos als je dat kiest; cijfers blijven schreefloos', async () => {
