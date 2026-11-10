@@ -39,10 +39,13 @@ export function usePhoto(beanId: string | null, bump = 0): string | null {
 }
 
 /** Hoogtelijnen als achtergrond van het etiket (vast per naam). */
-function Topo({ seed }: { seed: string }): JSX.Element {
+export function Topo({ seed }: { seed: string }): JSX.Element {
   const paths = useMemo(() => labelContours(seed), [seed]);
   return <svg class="l-topo" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" focusable="false">{paths.map((d, i) => <path key={i} d={d} class={i % 4 === 3 ? 'major' : undefined} />)}</svg>;
 }
+
+/** Inline-stijl met de etikettint van een naam (dezelfde als op het zaketiket). */
+export function labelStyle(name: string): string { const [t1, t2] = labelTint(name); return `--l1:${t1};--l2:${t2}`; }
 
 /** Brandingsschaal: vijf boontjes, gevuld tot de graad van deze zak. */
 function RoastScale({ level }: { level: RoastLevel }): JSX.Element {

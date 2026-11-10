@@ -17,7 +17,7 @@ test('logboek: lijst, detail, verwijderen; Meer-schermen zonder fouten', async (
   assert.doesNotMatch(await page.locator('.item.go').first().innerText(), /Logzak/);
   await page.click('.item.go');
   await page.waitForSelector('h1:has-text("Logzak")');
-  assert.ok((await page.locator('table.plain tr').count()) >= 3);
+  assert.ok((await page.locator('ol.pourline li').count()) >= 3);
   page.once('dialog', d => d.accept());
   await page.click('button:has-text("Kop verwijderen")');
   await page.waitForSelector('text=Nog geen koppen');

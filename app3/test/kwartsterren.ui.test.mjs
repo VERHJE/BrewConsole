@@ -38,7 +38,7 @@ for (const scheme of ['light', 'dark']) {
     await page.goto(app.base + '#/logboek');
     await page.waitForSelector('.item [role=img][aria-label="4,25 van 5"]');
     await page.click('.item >> nth=0');
-    await page.waitForSelector('dd:has-text("4,25 van 5")');
+    await page.waitForSelector('.heroscore:has-text("4,25 van 5")');
     assert.deepEqual(errors, []);
     await page.close();
   });

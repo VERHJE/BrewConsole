@@ -1631,3 +1631,11 @@ De timerknop die het moment noteert waarop het water door het bed is (de meting 
 - Klein (lijst, receptscherm): het monogram in een messing zegel. Op een breed raster staat het land onder het zegel.
 - Groot (zakdetail): brander, naam, land · proces en een **brandingsschaal** van vijf boontjes (licht = 1 … donker = 5) met de graad in tekst. Kleur is dus nooit het enige signaal.
 - Het etiket blijft `aria-hidden`: naam en gegevens staan ook als tekst op het scherm (kop voor schermlezers, tegels, feiten).
+
+## Logboek in de stijl van het zakdetail (10 nov 2026)
+
+- **Lijst:** het datumblok is een klein etiket in de tint van de zak (met hoogtelijnen). Koppen van dezelfde zak herken je aan de kleur; de datum blijft het eerste wat je leest.
+- **Detail:** een donkere kop zoals het zakdetail: datum en tijd, de zaknaam groot, brewer · techniek · temperatuur en de waardering in sterren met "x van 5" (of "Nog te proeven"). Daaronder de getallen als tegels (koffie, water, molen, klaar na; TDS als je die meet).
+- **Gieten** als tijdlijn: tijd, stip, "+g → totaal"; een doorgelopen gietbeurt heeft een gevulde stip en de tijd erbij.
+- **Geproefd** als tegels (sterkte, zuur, afdronk, doel, tegenover vorige); een eigen notitie als citaat.
+- "Verloop van alle koppen" is een rustige regel in plaats van een groot leeg vak.

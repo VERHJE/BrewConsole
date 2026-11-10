@@ -818,3 +818,56 @@ html:has(.proeven.rit) body { background: radial-gradient(130% 70% at 50% -10%, 
 .thumb .bagart.label:not(.large) .l-topo path, .advthumb .l-topo path { stroke-opacity: .12; }
 .thumb .bagart.label:not(.large) .l-topo path.major, .advthumb .l-topo path.major { stroke-opacity: .24; }
 @media (min-width: 900px) { .wide-list ul.thumbs .item .thumb .l-topo path { stroke-opacity: .17; } .wide-list ul.thumbs .item .thumb .l-topo path.major { stroke-opacity: .34; } }
+
+/* ───── Logboek in de stijl van het zakdetail (10 nov 2026) ───── */
+/* Rij: het datumblok is een klein etiket in de tint van de zak, zodat je koppen van dezelfde zak herkent. */
+.logdate.bagart.label { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 52px; height: 58px; padding: 0; border: 0; border-radius: var(--radius-s); box-shadow: 0 0 0 1px rgb(0 0 0 / .06); }
+.logdate.bagart.label b { position: relative; color: #f3e7cf; }
+.logdate.bagart.label small { position: relative; color: #dcb872; }
+.logdate .l-topo path { stroke-opacity: .14; }
+.logrow .starrow { margin-left: 4px; }
+
+/* Detail: donkere kop met hoogtelijnen, naam, techniek en waardering. */
+.logdetail .loghero.bagart.label { display: block; position: relative; width: auto; height: auto; min-height: 220px; margin: calc(-1 * (var(--gutter) + env(safe-area-inset-top))) calc(-1 * var(--gutter)) 18px; padding: calc(72px + env(safe-area-inset-top)) 20px 22px; font-family: var(--font); color: #f6efe3; }
+.loghero .l-topo { -webkit-mask-image: linear-gradient(200deg, #000 20%, transparent 75%); mask-image: linear-gradient(200deg, #000 20%, transparent 75%); }
+.loghero .backtop { top: calc(12px + env(safe-area-inset-top)); background: var(--surface); color: var(--text); border-color: transparent; box-shadow: 0 2px 10px rgb(0 0 0 / .25); padding-inline: 14px; }
+.loghero-text { position: relative; display: grid; gap: 6px; justify-items: start; }
+.loghero .eyebrow { margin: 0; color: #e6c58f; font-size: var(--fs-xs); letter-spacing: .16em; }
+.loghero h1 { margin: 0; color: #fffaf0; font-size: clamp(1.9rem, 8vw, 2.6rem); line-height: 1.08; }
+.loghero .logmeta { margin: 0; color: #e9dfcf; font-size: var(--fs-s); }
+.loghero .brewer { background: rgb(220 184 114 / .22); color: #f3e7cf; }
+.heroscore { display: inline-flex; align-items: center; gap: 10px; margin-top: 6px; color: #f3e7cf; font-size: var(--fs-s); }
+.heroscore .starrow { font-size: 1.4rem; }
+.heroscore .starrow-bg { color: rgb(243 231 207 / .28); }
+.heroscore .starrow-fg { color: #e6c58f; }
+.heroscore .tag { background: rgb(220 184 114 / .22); color: #f3e7cf; border-color: transparent; }
+.logdetail .numbers .num b { font-size: clamp(1.45rem, 6.2vw, 1.9rem); line-height: 1.15; }
+.sect-h { margin: 22px 0 10px; font-size: var(--fs-l); }
+
+/* Gietschema als tijdlijn: tijd, stip op een lijn, gram; doorgelopen gietbeurten met een gevulde stip. */
+.pourline { list-style: none; margin: 0; padding: 0; }
+.pourline li { display: grid; grid-template-columns: 44px 18px 1fr; align-items: start; column-gap: 10px; padding: 0 0 14px; position: relative; font-variant-numeric: tabular-nums; }
+.pourline li:not(:last-child)::before { content: ''; position: absolute; left: 62px; top: 14px; bottom: -2px; width: 2px; background: var(--line); border-radius: 1px; }
+.pourline .pt { color: var(--text-2); padding-top: 1px; }
+.pourline .pd { width: 14px; height: 14px; margin: 4px 0 0 2px; border-radius: 50%; border: 2px solid var(--accent); background: var(--bg); position: relative; }
+.pourline li.done .pd { background: var(--accent); }
+.pourline .pw b { font-family: var(--head); font-size: var(--fs-m); }
+.pourline .pw small { display: block; color: var(--text-2); font-size: var(--fs-s); }
+.small-note { margin: -4px 0 0; font-size: var(--fs-s); }
+
+/* Proefnotities als tegels; een eigen notitie als citaat. */
+.tastetiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0 0 12px; }
+.tastetiles div { padding: 12px 14px; border-radius: var(--radius-s); background: var(--surface-2); }
+.tastetiles dt { color: var(--text-2); font-size: var(--fs-xs); letter-spacing: .1em; text-transform: uppercase; }
+.tastetiles dd { margin: 4px 0 0; font-family: var(--head); font-size: var(--fs-m); font-weight: 600; overflow-wrap: anywhere; }
+.tastenote { margin: 0 0 12px; padding: 4px 0 4px 16px; border-left: 3px solid var(--brass, var(--accent)); font-family: var(--head); font-style: italic; font-size: var(--fs-m); color: var(--text); }
+@media (min-width: 720px) {
+  .logdetail .loghero.bagart.label { margin: 0 0 18px; border-radius: var(--radius); padding-top: 72px; }
+  .tastetiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: 1100px) { .logdetail .loghero.bagart.label { padding-top: 28px; } }
+@media (prefers-reduced-motion: no-preference) { .loghero .l-topo { animation: hero-in .6s cubic-bezier(.2, .7, .2, 1); } }
+/* Verloop van alle koppen: een rustige regel in plaats van een groot leeg vak */
+.trendcard { padding: 2px 16px; }
+.trendcard > summary { padding-block: 10px; font-weight: 600; }
+.trendcard[open] { padding-bottom: 14px; }
