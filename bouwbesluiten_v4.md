@@ -1602,3 +1602,10 @@ Bij de Chemex staat onder Doel een knop "Welk recept past?". Die opent een venst
   - Een gewijzigd receptgetal komt van onderen in beeld.
   - Filter en formulier schuiven in.
   - Met "verminder beweging" staat alles uit. Safari kent View Transitions vanaf versie 18; oudere versies wisselen gewoon zonder overgang.
+
+## Bovenkant valt weg op de iPhone (melding Jelle, 10 nov 2026)
+
+- **Oorzaak 1, scrollpositie:** bij een schermwissel hield de app de scrollpositie van het vorige scherm vast. Wie op Zetten naar beneden scrolde om te starten, kwam in de timer binnen met "Annuleren" boven de rand. Nu begint elk ander scherm bovenaan (vóór het tekenen, zodat je het niet ziet verspringen).
+- **Oorzaak 2, veilige zone:** met `viewport-fit=cover` loopt de pagina onder de statusbalk en de notch door. `.main` (en de zijbalk en de plakkende kolommen op brede schermen) houden nu `env(safe-area-inset-top)` vrij.
+- **Liggende telefoon:** de Start-knop in de klaar-stand viel onder de rand. Dat kwam pas aan het licht toen de scrollpositie werd hersteld. Hij staat nu vast onderin, met een kleinere ring.
+- **Test:** `veiligezone.ui.test.mjs` controleert dat de titels en "Annuleren" onder een statusbalk van 47 px staan.

@@ -650,7 +650,9 @@ html:has(.timer.rit) body { background: radial-gradient(130% 70% at 50% -10%, #2
 .timer.rit .tctl { display: block; }
 .timer.rit.ready .tctl { margin-top: auto; position: sticky; bottom: 0; z-index: 3; padding: 16px 0 calc(8px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgb(11 18 14 / 0), #0b120e 40%); }
 .timer.rit.ready .tctl .big { margin-top: 0; }
-@media (min-width: 900px) and (min-height: 600px), (orientation: landscape) and (max-height: 560px) { .timer.rit.ready .tctl { position: static; background: none; padding: 0; } }
+@media (min-width: 900px) and (min-height: 600px) { .timer.rit.ready .tctl { position: static; background: none; padding: 0; } }
+/* Liggende telefoon: de ring is lager, en Start blijft ook hier vast onderin. */
+@media (orientation: landscape) and (max-height: 560px) { .timer.rit.ready .tctl { padding: 10px 0 calc(6px + env(safe-area-inset-bottom)); } .timer.rit .ring, .timer.rit .readydial { width: 140px; height: 140px; } .timer.rit .ringnum { font-size: 2.4rem; } }
 
 /* ───────────── Ronde 8 · de rest van de app in dezelfde sfeer als de timer ───────────── */
 /* Knoppen als pil, zoals in de timer en de voorbeelden; kaarten houden hun hoeken. */
@@ -694,3 +696,15 @@ html:has(.timer.rit) body { background: radial-gradient(130% 70% at 50% -10%, #2
 @keyframes vt-in { from { transform: translateY(10px); opacity: 0; } }
 @keyframes sheet-up { from { transform: translateY(40px); } }
 @keyframes tab-pop { from { transform: scale(.82); } }
+
+/* Veilige zone bovenin (iPhone met notch of Dynamic Island, iPad-statusbalk): met viewport-fit=cover loopt de pagina
+   onder de statusbalk door. Zonder deze ruimte viel alles bovenaan (titels, "Annuleren") achter de klok en de batterij. */
+.main { padding-top: calc(var(--gutter) + env(safe-area-inset-top)); }
+@media (min-width: 900px) {
+  .tabbar { padding-top: calc(12px + env(safe-area-inset-top)); }
+  .zform-col { top: calc(16px + env(safe-area-inset-top)); }
+  .split.has-detail > .split-list { top: calc(12px + env(safe-area-inset-top)); max-height: calc(100dvh - 24px - env(safe-area-inset-top)); }
+}
+.timer.ready { min-height: calc(100dvh - 40px - env(safe-area-inset-top)); }
+dialog.guide { max-height: calc(100dvh - 48px - env(safe-area-inset-top)); }
+@media (max-width: 719px) { dialog.guide { max-height: calc(88dvh - env(safe-area-inset-top)); } }

@@ -106,6 +106,17 @@
     return [w ? 'ok' : 'bad', `Worker ${w ? 'ja' : 'nee'} · OffscreenCanvas ${oc ? 'ja' : 'nee'} · createImageBitmap ${ib ? 'ja' : 'nee'}`];
   });
   await check('Service worker', async () => ['serviceWorker' in navigator ? 'ok' : 'bad', 'serviceWorker' in navigator ? 'beschikbaar' : 'niet beschikbaar']);
+  await check('Veilige zone (statusbalk, notch, thuisbalk)', async () => {
+    // Het besturingssysteem vult env(safe-area-inset-*) per toestel en stand in; de app houdt die ruimte vrij.
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
+    document.body.appendChild(probe);
+    const cs = getComputedStyle(probe); const px = (v) => Math.round(parseFloat(v));
+    const v = { boven: px(cs.paddingTop), rechts: px(cs.paddingRight), onder: px(cs.paddingBottom), links: px(cs.paddingLeft) };
+    probe.remove();
+    const stand = matchMedia('(orientation: landscape)').matches ? 'liggend' : 'staand';
+    return ['info', `${stand}: boven ${v.boven} · rechts ${v.rechts} · onder ${v.onder} · links ${v.links} (punten)`];
+  });
   add('Toestel', 'info', navigator.userAgent);
 
   const text = results.map(r => `${r.status === 'ok' ? 'OK ' : r.status === 'bad' ? 'NEE' : '-- '} ${r.name}: ${r.detail}`).join('\n');
