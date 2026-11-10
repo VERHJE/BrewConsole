@@ -32,7 +32,7 @@ test('kopgrootte buiten bereik geeft een melding, geen uitzondering', () => {
 test('elke techniek geeft een gietschema met oplopend gewicht, of een nette melding', () => {
   const engine = createEngine();
   const state = engine.learn([]);
-  for (const technique of ['kasuya_46', 'hoffmann_ultimate', 'gagne', 'wendelboe', 'osmotic_flow', 'april', 'hedrick_one_and_done', 'rao'] as const) {
+  for (const technique of ['kasuya_46', 'hoffmann_ultimate', 'gagne', 'wendelboe', 'april', 'hedrick_one_and_done', 'rao'] as const) {
     const out = planBrew(engine, state, env, { ...DEFAULT_FORM, technique });
     if (!out.ok) { assert.ok(out.message.length > 0); continue; }
     const lines = pourLines(out.advice.recipe);

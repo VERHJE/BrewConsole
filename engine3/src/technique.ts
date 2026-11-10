@@ -6,7 +6,7 @@
 //     Alleen een besluit van Jelle (bijv. Chemex → Hoffmann) wordt direct gezet.
 //   - Een gewonnen proef wint, voor die zak en voor vergelijkbare koffies.
 //   - Een techniek die al geprobeerd is op deze zak wordt niet nog eens voorgesteld.
-//   - Een techniek zonder gietschema in de bron (Osmotic Flow) wordt niet als proef voorgesteld.
+//   - Een techniek zonder gietschema in de bron wordt niet als proef voorgesteld (Osmotic Flow is om die reden verwijderd, keuze Jelle 10 nov 2026).
 //   - Een proef pas als de controle een beetje bekend is (2 geproefde Kasuya-koppen van deze zak),
 //     nooit twee tegelijk en niet direct na een vorige.
 // Zuiver: feiten en vraag in, keuze uit.

@@ -75,7 +75,7 @@ export const SELECTION_RULES: readonly SelectionRule[] = [
     why: 'Thee- of bloemige notities: Wendelboe met zijn eigen recept (bloom roeren, doorlopend in rondjes), met Kasuya als proef.'
   },
   {
-    id: 'notes.fruity_natural', when: { processBase: ['natural', 'honey'], noteCategoryAny: ['fruitig'] }, suggest: ['kasuya_46', 'osmotic_flow'],
+    id: 'notes.fruity_natural', when: { processBase: ['natural', 'honey'], noteCategoryAny: ['fruitig'] }, suggest: ['kasuya_46'],
     kasuyaFirstPourShare: 0.667, evidence: 'E3_practice', priority: 55,
     why: 'Natural/honey met fruit: Kasuya met een grote eerste giet (helderder), Osmotic Flow als proef zodra er een betrouwbaar schema is.'
   },

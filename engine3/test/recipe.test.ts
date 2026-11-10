@@ -18,8 +18,9 @@ test('bij de referentiehoeveelheid komt precies het brongetal terug', () => {
     assert.equal(b.warnings.some(w => /geschaald|nog niet uit eigen/.test(w)), false, `${t.id} geeft onnodige schaalmelding`);
   }
 });
-test('Osmotic Flow heeft geen schema en weigert netjes', () => {
-  assert.throws(() => buildRecipe({ technique: 'osmotic_flow', method: 'v60', doseG: 20, waterG: 250 }), (e: unknown) => e instanceof RecipeError && e.code === 'no_schedule');
+test('elke techniek in de data heeft een gietschema (Osmotic Flow is verwijderd, keuze Jelle 10 nov 2026)', () => {
+  for (const t of TECHNIQUES) assert.notEqual(t.reference.pours, null, t.id);
+  assert.equal(TECHNIQUES.some(t => (t.id as string) === 'osmotic_flow'), false);
 });
 test('Kasuya: Hario-momenten bij elke hoeveelheid, 40/60, drie gelijke delen', () => {
   for (const [dose, water] of [[15, 225], [20, 300], [30, 450], [18.5, 277]] as const) {

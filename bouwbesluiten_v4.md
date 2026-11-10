@@ -1573,3 +1573,7 @@ Jelle liet een extern UX/UI-verbeterplan ('Brew Console 2.1') beoordelen; wat al
 - Zachte melding bij een zaknaam die al bestaat; opslaan blijft mogelijk (twee zakken van dezelfde boon kan bewust zijn).
 - "(algemeen)" alleen bij weergave weggelaten; de opgeslagen tags blijven zoals het smaakwiel ze noemt.
 - Etiketten in donker: messing rand en lichtere tint.
+
+## Osmotic Flow verwijderd (keuze Jelle, 10 nov 2026)
+
+De V60-techniek Osmotic Flow had geen gietschema in een bron (alleen een titel en samenvatting, klasse C) en was in de app niet te kiezen. Ze is uit de data, het type en de keuzeregel voor fruitige naturals gehaald (die stelt nu alleen Kasuya 4:6 voor). Er bestaan geen zetsels met Osmotic Flow, want de engine weigerde die altijd.

@@ -208,25 +208,6 @@ export const V60_TECHNIQUES: readonly TechniqueDef[] = [
     open: ['De temperatuur (96 °C) is een aanname; een eigen proef 96 tegen 100 °C kan dat beslissen.']
   },
   {
-    id: 'osmotic_flow',
-    name: 'Osmotic Flow',
-    author: 'traditioneel Japans (geen bedenker gevonden)',
-    sourceClass: 'C',
-    sources: [{ title: 'European Coffee Trip, 3 essential Hario V60 recipes (alleen titel/samenvatting; pagina geeft 403)', url: 'https://europeancoffeetrip.com/hario-v60-recipes/', readPrimary: false }],
-    axes: { agitation: 'very_low', structure: 'continuous', extraction: 'normal' },
-    reference: {
-      doseG: 20, waterG: 250,
-      tempC: null, tempNote: null,
-      grind: null,
-      pours: null,
-      endSec: null,
-      notes: ['Alleen in het midden gieten; het bed blijft een koepel (bolle korst).', 'Ook 15/225 genoemd.', 'Tijden en temperatuur: geen betrouwbare bron.']
-    },
-    scaling: 'Onbekend.',
-    role: 'Naturals en honeys die snel overextraheren; zoet en clean.',
-    open: ['Geen primaire bron; gietschema ontbreekt. Pas gebruiken als proef na eigen metingen, of een bron vinden.']
-  },
-  {
     id: 'april',
     name: 'April (zes pulsen)',
     author: 'April Coffee Roasters (Patrik Rolf)',
