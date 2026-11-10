@@ -7,7 +7,7 @@ import {
   ROAST_LABEL, beanArchive, beanDetail, rowLines, stockView, beanRows, beanUpsert, daysSinceRoast, emptyForm, formFromBean, scanText, validateForm,
   type BeanForm, type FormKey, type BeanRow, type StockView
 } from '../../core/beans.ts';
-import { formFromScan } from '../../core/beans.ts';
+import { formFromScan, sameNameBean } from '../../core/beans.ts';
 import { BeanFormView } from '../BeanFormView.tsx';
 import { BeanInsights } from '../Insights.tsx';
 import { EmptyState } from '../EmptyState.tsx';
@@ -63,7 +63,7 @@ function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
         : <>
           {base.length > 3 && (
             <div class="listbar">
-              <label class="field search"><span class="sr-only">Zoek in zakken</span><input type="search" name="zoek" placeholder="Zoek op naam, brander of land" value={q} onInput={e => setQ((e.currentTarget as HTMLInputElement).value)} /></label>
+              <label class="field search"><span class="sr-only">Zoek in zakken</span><input type="search" name="zoek" placeholder="Zoek zak, brander, land" value={q} onInput={e => setQ((e.currentTarget as HTMLInputElement).value)} /></label>
               <button type="button" class="btn filterbtn" aria-expanded={panel} aria-controls="filterpanel" onClick={() => setPanel(!panel)}><IconFilter />Filter{activeCount > 0 && <span class="count" aria-label={`${activeCount} actief`}>{activeCount}</span>}</button>
             </div>)}
           {base.length > 3 && panel && (
@@ -97,6 +97,7 @@ function Detail({ beanId }: { beanId: string }): JSX.Element {
   const { env } = useApp();
   const d = beanDetail(state, beanId);
   const [fav, setFav] = useState(() => readFavs(localStorage).has(beanId));
+  const hasPhoto = usePhoto(beanId) !== null;
   if (!d) return <section><h1>Zak niet gevonden</h1><a class="btn" href={href('zakken')}>Terug</a></section>;
   const age = daysSinceRoast(d.roastDate, todayIso(env.now()));
   const rest = restView(age);
@@ -112,9 +113,10 @@ function Detail({ beanId }: { beanId: string }): JSX.Element {
     <section class="detail">
       <div class="hero-photo"><a class="btn back-narrow backtop" href={href('zakken')} aria-label="Terug naar zakken">Terug</a><BagArt beanId={beanId} name={d.name} large roaster={d.roaster} meta={[d.facts.find(f => f.label === 'Land')?.value, d.eyebrow].filter(Boolean).join(' · ') || null} /></div>
       <div class="head"><button class="btn" type="button" aria-pressed={fav} onClick={() => setFav(toggleFav(localStorage, beanId))}>{fav ? '★ Favoriet' : '☆ Favoriet'}</button><a class="btn" href={href('zakken', beanId, 'bewerken')}>Bewerken</a></div>
-      {d.eyebrow && <small class="eyebrow">{d.eyebrow}</small>}
-      <h1>{d.name}</h1>
-      <p class="muted">{[d.roaster, age !== null ? `${age} d na branding` : null, d.cups ? `${d.cups} ${d.cups === 1 ? 'kop' : 'koppen'}` : null].filter(Boolean).join(' · ')}</p>
+      {hasPhoto && d.eyebrow && <small class="eyebrow">{d.eyebrow}</small>}
+      {/* Zonder foto staan naam, brander en proces al groot op het etiket: dan geen tweede keer (audit P2-03). */}
+      <h1 class={hasPhoto ? undefined : 'sr-only'}>{d.name}</h1>
+      <p class="muted">{[hasPhoto ? d.roaster : null, age !== null ? `${age} d na branding` : null, d.cups ? `${d.cups} ${d.cups === 1 ? 'kop' : 'koppen'}` : null].filter(Boolean).join(' · ')}</p>
       {rest && <p class="rest"><span class="tag">{rest.label}</span> <span class="muted">{rest.hint}</span></p>}
       {stock.remainingG !== null && (
         <p class="stock"><span class={stock.low ? 'tag warn' : 'tag'}>{stock.low ? 'Bijna op' : 'Voorraad'}</span>{' '}
@@ -219,8 +221,9 @@ function Editor({ beanId }: { beanId: string | null }): JSX.Element {
         </div>
       </div>
       <BeanFormView form={form} problems={problems} onChange={setForm} />
+      {sameNameBean(beanRows(state), form.values.name, beanId) && <p class="banner" role="status">Er is al een zak met de naam “{form.values.name.trim()}”. Opslaan maakt een tweede zak; wil je de bestaande aanpassen, open die dan via Zakken.</p>}
       {saveErr && <p class="banner warn" role="alert">{saveErr}</p>}
-      <div class="actions">
+      <div class="actions editor-actions">
         <button class="btn primary" type="button" onClick={save} disabled={busy}>Opslaan</button>
         {beanId && <button class="btn" type="button" onClick={async () => { await store.append([beanArchive(env, beanId)]); location.hash = href('zakken'); }}>Archiveren</button>}
       </div>

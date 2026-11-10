@@ -1565,3 +1565,11 @@ Jelle liet een extern UX/UI-verbeterplan ('Brew Console 2.1') beoordelen; wat al
 - **Kopgrenzen per brewer** (`CUP_LIMITS`, engine-data): V60 200–280 g, Chemex 200–700 g. Afgeleid uit de dosisgrenzen (V60 15–22 g, Chemex 15–57 g) bij de referentieverhoudingen, zodat de dosis binnen het bereik nooit afgekapt hoeft te worden. Eerder kon de V60 tot 700 g, met 22 g koffie op 702 g water (1:32).
 - **Open zetsel terugvinden**: Zetten en het logboekdetail wijzen naar een gepland of lopend zetsel (jonger dan 12 uur).
 - **Kopveld**: getypte tekst blijft staan, komma mag, nooit NaN.
+
+## Audit 10 nov · ronde 2 (ontwerp)
+
+- Zakdetail zonder foto: het etiket draagt naam, brander en proces; de kop blijft alleen voor schermlezers.
+- Uitklapkaarten met een eigen pijltje; Opslaan breed in het zakformulier.
+- Zachte melding bij een zaknaam die al bestaat; opslaan blijft mogelijk (twee zakken van dezelfde boon kan bewust zijn).
+- "(algemeen)" alleen bij weergave weggelaten; de opgeslagen tags blijven zoals het smaakwiel ze noemt.
+- Etiketten in donker: messing rand en lichtere tint.
