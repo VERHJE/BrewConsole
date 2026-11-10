@@ -1,6 +1,7 @@
 import type { JSX } from 'preact';
-import { useEffect, useMemo, useState } from 'preact/hooks';
-import type { Goal } from '../../../../engine3/src/index.ts';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import type { Goal, TechniqueId } from '../../../../engine3/src/index.ts';
+import { TECHNIQUES, fitsMethod } from '../../../../engine3/src/index.ts';
 import type { Route } from '../../core/router.ts';
 import { href } from '../../core/router.ts';
 import { beanRows } from '../../core/beans.ts';
@@ -129,8 +130,9 @@ function Plan(): JSX.Element {
             {(Object.keys(GOAL_LABEL) as Goal[]).map(k => <button key={k} type="button" class="chip" aria-pressed={eff.goal === k} onClick={() => set({ goal: k })}>{GOAL_LABEL[k]}</button>)}
           </div>
         </div>
+        {eff.method === 'chemex' && <ChemexGuide current={eff.technique} onPick={t => set({ technique: t })} />}
         {eff.goal !== null && outcome.ok && outcome.advice.recipe.technique !== 'kasuya_46' && (
-          <p class="meta goalnote" role="status">Bij {techniqueName(outcome.advice.recipe.technique)} verandert het doel het recept niet. Alleen Kasuya 4:6 (V60) gebruikt het. Je kunt bij Meer opties zelf een andere techniek kiezen.</p>)}
+          <p class="meta goalnote" role="status">Bij {techniqueName(outcome.advice.recipe.technique)} verandert het doel het recept niet. Alleen Kasuya 4:6 (V60) gebruikt het. {eff.method === 'chemex' ? 'Kies hierboven bij “Welk recept past?” zelf een recept dat bij je smaak past.' : 'Je kunt bij Meer opties zelf een andere techniek kiezen.'}</p>)}
         <details>
           <summary>Meer opties</summary>
           <label class="field"><span>Techniek</span>
@@ -154,6 +156,34 @@ function Plan(): JSX.Element {
       </div>
       </div>
     </section>
+  );
+}
+
+/** Keuzehulp voor de Chemex: per recept de portie, verhouding en wat de bron over smaak zegt; met één tik kiezen. */
+function ChemexGuide({ current, onPick }: { current: TechniqueId | null; onPick: (t: TechniqueId | null) => void }): JSX.Element {
+  const ref = useRef<HTMLDialogElement>(null);
+  // Van kleine naar grote portie (water van de bron).
+  const list = TECHNIQUES.filter(t => fitsMethod(t, 'chemex') && t.taste).sort((a, b) => a.reference.waterG - b.reference.waterG);
+  const pick = (t: TechniqueId | null): void => { onPick(t); ref.current?.close(); };
+  const ratio = (d: number, w: number): string => `1:${(w / d).toFixed(1).replace('.', ',')}`;
+  return (
+    <>
+      <button class="btn guidebtn" type="button" onClick={() => ref.current?.showModal()}>Welk recept past?</button>
+      <dialog ref={ref} class="guide" aria-labelledby="guide-h" onClick={e => { if (e.target === ref.current) ref.current?.close(); }}>
+        <div class="guide-head"><h2 id="guide-h">Welk recept past?</h2><button class="btn" type="button" onClick={() => ref.current?.close()}>Sluiten</button></div>
+        <p class="meta">Er is één proef die recepten op smaak vergelijkt (Prima Coffee, één lichte washed boon, één proever). “Verwachting” is afgeleid uit verhouding en zetwijze: proef het zelf.</p>
+        <ul class="guide-list">
+          {list.map(t => (
+            <li key={t.id} class={current === t.id ? 'on' : undefined}>
+              <div class="guide-top"><strong>{t.name}</strong><span class="meta">{t.taste!.portion} · {t.reference.doseG.toString().replace('.', ',')} g op {t.reference.waterG} g ({ratio(t.reference.doseG, t.reference.waterG)})</span></div>
+              <p><span class="lbl">Bron</span>{t.taste!.sourced ?? 'Geen bron zegt iets over de smaak.'}</p>
+              <p><span class="lbl">Verwachting</span>{t.taste!.expect}</p>
+              <button class={current === t.id ? 'btn primary' : 'btn'} type="button" aria-pressed={current === t.id} onClick={() => pick(t.id)}>{current === t.id ? 'Gekozen' : 'Kies dit recept'}</button>
+            </li>))}
+        </ul>
+        <button class="btn" type="button" onClick={() => pick(null)}>Laat Brew Console kiezen</button>
+      </dialog>
+    </>
   );
 }
 

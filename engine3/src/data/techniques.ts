@@ -76,6 +76,11 @@ export interface TechniqueDef {
   readonly methods?: readonly Method[];
   /** Rol in de engine (verslag). */
   readonly role: string;
+  /**
+   * Smaak, voor de keuzehulp in de app. `sourced`: wat een bron over de smaak zegt (null als geen bron iets zegt);
+   * `expect`: wat je op grond van verhouding en zetwijze kunt verwachten (hypothese, geen bron). Zie chemex_recepten_overzicht.md.
+   */
+  readonly taste?: { readonly portion: string; readonly sourced: string | null; readonly expect: string };
   /** Openstaande punten bij deze techniek. */
   readonly open: readonly string[];
 }

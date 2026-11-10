@@ -1577,3 +1577,7 @@ Jelle liet een extern UX/UI-verbeterplan ('Brew Console 2.1') beoordelen; wat al
 ## Osmotic Flow verwijderd (keuze Jelle, 10 nov 2026)
 
 De V60-techniek Osmotic Flow had geen gietschema in een bron (alleen een titel en samenvatting, klasse C) en was in de app niet te kiezen. Ze is uit de data, het type en de keuzeregel voor fruitige naturals gehaald (die stelt nu alleen Kasuya 4:6 voor). Er bestaan geen zetsels met Osmotic Flow, want de engine weigerde die altijd.
+
+## Keuzehulp voor de Chemex (wens Jelle, 10 nov 2026)
+
+Bij de Chemex staat onder Doel een knop "Welk recept past?". Die opent een venster met de negen recepten, van kleine naar grote portie. Per recept staat erin: portie, koffie en water, wat de bron over de smaak zegt (alleen de Prima-proef, n = 1, anders "geen bron") en een verwachting uit verhouding en zetwijze, duidelijk als verwachting benoemd. Met één tik kies je het recept. De teksten staan als `taste` in de engine-data (`chemex-techniques.ts`). De app kiest hiermee niet zelf; het doel blijft alleen Kasuya 4:6 sturen.
