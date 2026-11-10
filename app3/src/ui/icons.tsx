@@ -18,3 +18,11 @@ export const CupSteam = (): JSX.Element => (
     <path d="M14 92h80" />
   </svg>
 );
+// Iconen voor Meer: eenvoudige lijnen in dezelfde stijl.
+export const IconTaste = (): JSX.Element => (<svg {...base}><path d="M12 3.5l2.5 5.2 5.6.8-4.1 3.9 1 5.6L12 16.3 7 19l1-5.6-4.1-3.9 5.6-.8z" /></svg>);
+export const IconGrind = (): JSX.Element => (<svg {...base}><path d="M7 9h10l-1.2 11H8.2z" /><path d="M6 9h12" /><path d="M12 9V5h5" /><circle cx="18.5" cy="5" r="1.3" /></svg>);
+export const IconDrop = (): JSX.Element => (<svg {...base}><path d="M12 3.5c3 3.8 6 7.2 6 10.5a6 6 0 0 1-12 0c0-3.3 3-6.7 6-10.5z" /></svg>);
+export const IconSliders = (): JSX.Element => (<svg {...base}><path d="M4 7h9M17 7h3M4 17h3M11 17h9" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="17" r="2" /></svg>);
+export const IconArchive = (): JSX.Element => (<svg {...base}><path d="M4 5h16v4H4z" /><path d="M5 9v10h14V9" /><path d="M10 13h4" /></svg>);
+export const IconSync = (): JSX.Element => (<svg {...base}><path d="M19 8a7 7 0 0 0-12.5-2L5 7.5" /><path d="M5 3.5v4h4" /><path d="M5 16a7 7 0 0 0 12.5 2l1.5-1.5" /><path d="M19 20.5v-4h-4" /></svg>);
+export const IconInfo = (): JSX.Element => (<svg {...base}><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5" /><path d="M12 7.6v.2" /></svg>);
