@@ -217,7 +217,7 @@ Fase 1: in kaart brengen en vinden. Er is in deze fase niets aan de app verander
 **Ronde 3 (10 nov, keuzes Jelle: P2-01 optie a, P2-05 optie a):**
 
 - **P2-01 opgelost (uitleg, geen gladstrijken).** De Chemex-regels voor twee koppen en een hele kan zeggen in "Waarom dit recept?" dat elke portie het recept van de eigen bron volgt, en dat de dosis vlak boven de portiegrens daardoor iets lager kan uitvallen (450 g tegen 400 g). De getallen zijn niet veranderd. Test: `engine3/test/cuplimits.test.ts`.
-- **P2-05 nog open.** De oude tests uit de verplichte CI-poort halen (`npm run qa` uit `.github/workflows/ci.yml`) werd in deze sessie door de veiligheidscontrole tegengehouden. Die ziet dat als het omzeilen van CI. Jelle kan de wijziging zelf doen, of de sessie er toestemming voor geven.
+- **P2-05 opgelost.** De stap `npm run qa` (de tests van de oude, niet meer uitgeleverde app) is uit `.github/workflows/ci.yml` gehaald, met toestemming van Jelle. De jobnaam is gelijk gebleven, zodat een vereiste check op GitHub blijft kloppen. De oude tests blijven met de hand te draaien via `npm run qa`. De poort draait nu engine3 en app3, en dat is wat er wordt uitgeleverd.
 
 ## J. Resterende risico's
 
