@@ -71,7 +71,7 @@ export const pauseTimer = (env: Env, brewId: string, tSec: number): BrewTimerEve
 export const resumeTimer = (env: Env, brewId: string, tSec: number): BrewTimerEvent[] => [ev(env, brewId, 'resume', tSec, null)];
 export const drainedTap = (env: Env, brewId: string, tSec: number, pourIndex: number): BrewTimerEvent[] => [ev(env, brewId, 'drained', tSec, pourIndex)];
 export const drainedUndo = (env: Env, brewId: string, tSec: number, pourIndex: number): BrewTimerEvent[] => [ev(env, brewId, 'drained_undo', tSec, pourIndex)];
-/** Laatste giet doorgelopen: erdoor, bed droog en klaar in één tik (elk 1 ms later, zodat de volgorde vastligt). */
+/** Laatste giet doorgelopen: doorgelopen-tik, bed droog en klaar in één tik (elk 1 ms later, zodat de volgorde vastligt). */
 export const finishTimer = (env: Env, brewId: string, tSec: number, lastIndex: number): BrewTimerEvent[] => [
   ev(env, brewId, 'drained', tSec, lastIndex), ev(env, brewId, 'bed_dry', tSec, null, 1), ev(env, brewId, 'complete', tSec, null, 2)
 ];
@@ -130,7 +130,7 @@ export function stepGuide(recipe: Recipe, v: TimerView, expectedEndSec: number |
   if (holdIdx >= 0) {
     const p = pours[holdIdx]!;
     return { kind: 'hold', title: 'Wacht op doorlopen', remainingSec: null, fraction: null,
-      action: `Tik “Erdoor” zodra het bed bijna droog is. Dan giet ${holdIdx + 1}: ${g0(p.addG)} g tot ${g0(p.toG)} g.`,
+      action: `Tik “Doorgelopen” zodra het bed bijna droog is. Dan giet ${holdIdx + 1}: ${g0(p.addG)} g tot ${g0(p.toG)} g.`,
       next: holdIdx < last ? `Daarna ${nextPourText(holdIdx + 1)}.` : 'Daarna: laat doorlopen.', progress: { index: holdIdx + 1, count: pours.length }, target: null, after: null, prep: [], finish: [] };
   }
   if (v.current >= 0 && !v.allPoured) {

@@ -1613,3 +1613,7 @@ Bij de Chemex staat onder Doel een knop "Welk recept past?". Die opent een venst
 ## Proeven in de zetmodus (keuze Jelle, 10 nov 2026)
 
 Proeven volgt direct op de timer en heeft nu dezelfde sfeer: altijd donker groen-espresso met goud. De techniek staat bovenaan in kapitalen, de vragen in de serif, en een dunne gouden voortgangslijn loopt zacht mee. Keuzes zijn donkere kaarten met een gouden rand als ze gekozen zijn, en de sterren zijn goud. De hoofdknop is een gouden pil, Terug een omlijnde pil. "Opgeslagen" krijgt dezelfde groene ring met vinkje als het einde van de timer. Een nieuwe stap schuift omhoog in beeld en het vinkje tekent zich. Met "verminder beweging" staat het uit.
+
+## "Erdoor" heet nu "Doorgelopen" (keuze Jelle, 10 nov 2026)
+
+De timerknop die het moment noteert waarop het water door het bed is (de meting waar de molen van leert), en de volgende giet vrijgeeft, heet nu "Doorgelopen". Dat sluit aan op de laatste knop "Alles doorgelopen — klaar". Ook aangepast: "Doorgelopen ongedaan maken", de uitleg bij wachten ("Tik 'Doorgelopen' zodra het bed bijna droog is"), de tekst bij de molen en de signalen, en in het logboekschema "doorgelopen 3:18".

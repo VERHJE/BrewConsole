@@ -181,9 +181,9 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
           {view.status === 'running' && (view.current === lastIdx && view.phases[lastIdx] === 'go' && !view.allPoured
             ? <button class="btn primary big" type="button" onClick={() => send(finishTimer(env, brewId, t, lastIdx))}>Alles doorgelopen — klaar</button>
             : view.current >= 0 && !view.drained.has(view.current)
-              ? <button class="btn primary big" type="button" onClick={() => send(drainedTap(env, brewId, t, view.current))}>Erdoor</button>
+              ? <button class="btn primary big" type="button" onClick={() => send(drainedTap(env, brewId, t, view.current))}>Doorgelopen</button>
               : view.current >= 0 && view.drained.has(view.current) && view.current !== lastIdx
-                ? <button class="btn big" type="button" onClick={() => send(drainedUndo(env, brewId, t, view.current))}>Erdoor ongedaan maken</button>
+                ? <button class="btn big" type="button" onClick={() => send(drainedUndo(env, brewId, t, view.current))}>Doorgelopen ongedaan maken</button>
                 : null)}
           <div class="pair">
             {view.status === 'running'

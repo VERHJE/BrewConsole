@@ -96,7 +96,7 @@ function Molen(): JSX.Element {
         <dt>Bruikbare metingen</dt><dd>{g.observations}</dd>
       </dl>
       <ZeroCheck />
-      {!g.learned && <p class="banner">Tik bij elke giet op “Erdoor” en zet een paar koppen met 3 klikken verschil; dan leert de molen jouw waarde.</p>}
+      {!g.learned && <p class="banner">Tik bij elke giet op “Doorgelopen” en zet een paar koppen met 3 klikken verschil; dan leert de molen jouw waarde.</p>}
     </section>
   );
 }

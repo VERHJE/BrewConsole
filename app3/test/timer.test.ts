@@ -131,7 +131,7 @@ test('stap per stap: klaar → giet met aftelling en "hierna" → wachten op doo
   if (pours[1]!.waitForDrain) {
     const h = guide(atSecond);
     assert.equal(h.kind, 'hold'); assert.equal(h.remainingSec, null); assert.equal(h.fraction, null);
-    assert.match(h.action, /Erdoor/);
+    assert.match(h.action, /Doorgelopen/);
     now = atSecond;
     await s.store.append(drainedTap(env, s.brewId, pours[1]!.atSec + 1, 0));
     assert.equal(guide(atSecond).kind, 'pour');

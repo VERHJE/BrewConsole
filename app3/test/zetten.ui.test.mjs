@@ -50,7 +50,7 @@ test('hele stroom: zak → advies → timer → klaar; herladen midden in het ze
     await page.clock.fastForward(40_000);
     const finish = page.locator('button:has-text("Alles doorgelopen")');
     if (await finish.count()) { await finish.click(); break; }
-    const erdoor = page.locator('button:text-is("Erdoor")');
+    const erdoor = page.locator('button:text-is("Doorgelopen")');
     if (await erdoor.count()) await erdoor.click();
   }
   await page.waitForSelector('a:has-text("Proeven")');

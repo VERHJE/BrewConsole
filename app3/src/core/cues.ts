@@ -1,5 +1,5 @@
 // Signalen tijdens het zetsel: een tikje in de laatste drie seconden voor een giet, een dubbele piep als een giet begint,
-// een aandachtssignaal als je "Erdoor" moet tikken, en een stijgende drieklank als het klaar is. Zuiver: de toestand van
+// een aandachtssignaal als je "Doorgelopen" moet tikken, en een stijgende drieklank als het klaar is. Zuiver: de toestand van
 // de timer erin, een signaal (of niets) eruit. Geluid en trillen zelf zitten in de schermlaag.
 
 import type { StepKind } from './timer.ts';
