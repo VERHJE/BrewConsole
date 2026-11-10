@@ -194,6 +194,10 @@ export interface BeanDetail {
   readonly roastDate: string | null;
   readonly cups: number;
   readonly shopUrl: string | null;
+  /** Voor het etiket zonder foto. */
+  readonly country: string | null;
+  readonly process: string | null;
+  readonly roastLevel: RoastLevel | null;
 }
 
 export function beanDetail(state: EngineState, beanId: string): BeanDetail | null {
@@ -211,7 +215,8 @@ export function beanDetail(state: EngineState, beanId: string): BeanDetail | nul
     id: b.beanId, name: f.name ?? '(zonder naam)',
     eyebrow: [process, f.roastLevel ? ROAST_LABEL[f.roastLevel] : null].filter(Boolean).join(' · '),
     roaster: f.roaster ?? null, facts,
-    tags: [...new Set([...(f.notes?.tags ?? []), ...(f.notes?.unmapped ?? [])].map(tagLabel))], roastDate: f.roastDate ?? null, cups: b.brewIds.length, shopUrl: isShopUrl(f.shopUrl) ? f.shopUrl : null
+    tags: [...new Set([...(f.notes?.tags ?? []), ...(f.notes?.unmapped ?? [])].map(tagLabel))], roastDate: f.roastDate ?? null, cups: b.brewIds.length, shopUrl: isShopUrl(f.shopUrl) ? f.shopUrl : null,
+    country: f.country ?? null, process, roastLevel: f.roastLevel ?? null
   };
 }
 
