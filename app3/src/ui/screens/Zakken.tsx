@@ -110,17 +110,32 @@ function Detail({ beanId }: { beanId: string }): JSX.Element {
     location.hash = href('zetten');
   };
   return (
-    <section class="detail">
-      <div class="hero-photo"><a class="btn back-narrow backtop" href={href('zakken')} aria-label="Terug naar zakken">Terug</a><BagArt beanId={beanId} name={d.name} large roaster={d.roaster} meta={[d.facts.find(f => f.label === 'Land')?.value, d.eyebrow].filter(Boolean).join(' · ') || null} /></div>
-      <div class="head"><button class="btn" type="button" aria-pressed={fav} onClick={() => setFav(toggleFav(localStorage, beanId))}>{fav ? '★ Favoriet' : '☆ Favoriet'}</button><a class="btn" href={href('zakken', beanId, 'bewerken')}>Bewerken</a></div>
-      {hasPhoto && d.eyebrow && <small class="eyebrow">{d.eyebrow}</small>}
-      {/* Zonder foto staan naam, brander en proces al groot op het etiket: dan geen tweede keer (audit P2-03). */}
-      <h1 class={hasPhoto ? undefined : 'sr-only'}>{d.name}</h1>
-      <p class="muted">{[hasPhoto ? d.roaster : null, age !== null ? `${age} d na branding` : null, d.cups ? `${d.cups} ${d.cups === 1 ? 'kop' : 'koppen'}` : null].filter(Boolean).join(' · ')}</p>
-      {rest && <p class="rest"><span class="tag">{rest.label}</span> <span class="muted">{rest.hint}</span></p>}
-      {stock.remainingG !== null && (
-        <p class="stock"><span class={stock.low ? 'tag warn' : 'tag'}>{stock.low ? 'Bijna op' : 'Voorraad'}</span>{' '}
-          <span class="muted">nog ± {stock.remainingG} g{stock.cupsLeft !== null ? `, ongeveer ${stock.cupsLeft} ${stock.cupsLeft === 1 ? 'kop' : 'koppen'}` : ''}</span></p>)}
+    <section class="detail beandetail">
+      <div class={hasPhoto ? 'hero-photo withphoto' : 'hero-photo'}>
+        <a class="btn back-narrow backtop" href={href('zakken')} aria-label="Terug naar zakken">Terug</a>
+        <div class="heroacts">
+          <button class="btn" type="button" aria-pressed={fav} onClick={() => setFav(toggleFav(localStorage, beanId))}>{fav ? '★ Favoriet' : '☆ Favoriet'}</button>
+          <a class="btn" href={href('zakken', beanId, 'bewerken')}>Bewerken</a>
+        </div>
+        <BagArt beanId={beanId} name={d.name} large roaster={d.roaster} meta={[d.facts.find(f => f.label === 'Land')?.value, d.eyebrow].filter(Boolean).join(' · ') || null} />
+        {hasPhoto && (
+          <div class="herotitle">
+            {d.eyebrow && <small class="eyebrow">{d.eyebrow}</small>}
+            <h1>{d.name}</h1>
+            {d.roaster && <span>{d.roaster}</span>}
+          </div>)}
+      </div>
+      {/* Zonder foto staan naam, brander en proces al groot op het etiket: de kop is er dan alleen voor schermlezers (audit P2-03). */}
+      {!hasPhoto && <h1 class="sr-only">{d.name}</h1>}
+      <div class="numbers beantiles">
+        <div class="num"><b>{age !== null ? `${age} d` : '–'}</b><small>{age !== null ? 'na branding' : 'branding onbekend'}</small></div>
+        <div class="num"><b>{d.cups}</b><small>{d.cups === 1 ? 'kop' : 'koppen'}</small></div>
+        {stock.remainingG !== null
+          ? <div class="num stock"><b>± {stock.remainingG} g</b><small>{stock.low ? <span class="tag warn">Bijna op</span> : 'voorraad'}</small></div>
+          : <div class="num"><b>–</b><small>voorraad onbekend</small></div>}
+        <div class="num"><b>{rest ? rest.label : '–'}</b><small>rust</small></div>
+      </div>
+      {rest && <p class="rest muted">{rest.hint}</p>}
       {d.shopUrl
         ? <p><a class={stock.low ? 'btn primary' : 'btn'} href={d.shopUrl} target="_blank" rel="noopener noreferrer">Opnieuw kopen <span class="sr-only">(opent de winkel in een nieuw tabblad)</span></a></p>
         : stock.low && <p class="muted">Bijna op. Voeg bij Bewerken een webadres toe om hem met één tik opnieuw te kopen.</p>}

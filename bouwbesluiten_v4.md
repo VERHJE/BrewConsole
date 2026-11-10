@@ -1617,3 +1617,10 @@ Proeven volgt direct op de timer en heeft nu dezelfde sfeer: altijd donker groen
 ## "Erdoor" heet nu "Doorgelopen" (keuze Jelle, 10 nov 2026)
 
 De timerknop die het moment noteert waarop het water door het bed is (de meting waar de molen van leert), en de volgende giet vrijgeeft, heet nu "Doorgelopen". Dat sluit aan op de laatste knop "Alles doorgelopen — klaar". Ook aangepast: "Doorgelopen ongedaan maken", de uitleg bij wachten ("Tik 'Doorgelopen' zodra het bed bijna droog is"), de tekst bij de molen en de signalen, en in het logboekschema "doorgelopen 3:18".
+
+## Zakdetail: groot beeld en tegels (keuze Jelle, 10 nov 2026)
+
+- **Bovenaan een groot beeld.** Op de telefoon loopt het over de volle breedte, op brede schermen is het een afgeronde kaart. Het is het etiket of de foto van de zak, met een kleine zoom bij binnenkomst (uit bij "verminder beweging").
+- **Knoppen op het beeld:** Terug links, Favoriet en Bewerken rechts, als effen pillen.
+- **Met een foto:** proces, naam en brander staan over de foto, op een donkere verloopband. Zonder foto staat dat al op het etiket.
+- **Vier tegels:** dagen na branding, koppen, voorraad ("Bijna op" in oranje als het zover is) en rust. Op brede schermen staan ze op één rij. Daaronder de rustuitleg, smaaktags, herkomst en het verloop zoals voorheen.
