@@ -1,5 +1,5 @@
 import type { JSX } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useState } from 'preact/hooks';
 import { parseRoute, href, type Tab } from '../core/router.ts';
 import { IconBean, IconBrew, IconLog, IconMore } from './icons.tsx';
 import { useSnapshot } from './store-context.tsx';
@@ -51,7 +51,12 @@ function useUpdate(): ServiceWorkerRegistration | null {
 }
 
 export function App({ persistent }: { persistent: boolean }): JSX.Element {
-  const route = parseRoute(useHash());
+  const hash = useHash();
+  const route = parseRoute(hash);
+  // Een ander scherm begint bovenaan. Zonder dit hield de app de scrollpositie van het vorige scherm vast: wie op Zetten
+  // naar beneden scrolde om te starten, kwam in de timer binnen met "Annuleren" boven de rand van het scherm.
+  const screen0 = screenOf(hash);
+  useLayoutEffect(() => { window.scrollTo(0, 0); }, [screen0]);
   const update = useUpdate();
   useSnapshot(); // herteken bij elke wijziging van het logboek
   const screen = route.tab === 'zakken' ? <Zakken route={route} />
