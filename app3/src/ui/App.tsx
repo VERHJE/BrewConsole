@@ -21,12 +21,17 @@ function useHash(): string {
   useEffect(() => {
     const on = (): void => {
       const next = location.hash;
-      const doc = document as Document & { startViewTransition?: (cb: () => Promise<void>) => unknown };
+      type VT = { ready?: Promise<unknown>; finished?: Promise<unknown>; updateCallbackDone?: Promise<unknown> };
+      const doc = document as Document & { startViewTransition?: (cb: () => Promise<void>) => VT };
       // Zachte overgang tussen schermen (View Transitions, waar de browser die kent; uit bij "verminder beweging").
       const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
       if (doc.startViewTransition && !calm && screenOf(next) !== screenOf(hashRef.current)) {
         hashRef.current = next;
-        doc.startViewTransition(() => new Promise<void>(resolve => { setHash(next); setTimeout(resolve, 0); }));
+        const vt = doc.startViewTransition(() => new Promise<void>(resolve => { setHash(next); setTimeout(resolve, 0); }));
+        // Een overgang die de browser overslaat (snel opnieuw navigeren, tabblad op de achtergrond) wijst deze beloftes af;
+        // het scherm zelf wisselt dan gewoon. Opvangen, anders is het een onafgehandelde fout.
+        const quiet = (): void => {};
+        vt?.ready?.catch(quiet); vt?.finished?.catch(quiet); vt?.updateCallbackDone?.catch(quiet);
       } else { hashRef.current = next; setHash(next); }
     };
     addEventListener('hashchange', on);
