@@ -871,3 +871,43 @@ html:has(.proeven.rit) body { background: radial-gradient(130% 70% at 50% -10%, 
 .trendcard { padding: 2px 16px; }
 .trendcard > summary { padding-block: 10px; font-weight: 600; }
 .trendcard[open] { padding-bottom: 14px; }
+
+/* ───── Meer in de stijl van het zakdetail (10 nov 2026) ───── */
+/* Bovenaan: je koffie in drie getallen op een etiket. */
+.meerhero.bagart.label { display: block; position: relative; width: auto; height: auto; margin: 4px 0 18px; padding: 18px 20px 20px; border-radius: var(--radius); font-family: var(--font); color: #f6efe3; }
+.meerhero .l-topo { -webkit-mask-image: linear-gradient(110deg, transparent 25%, #000 90%); mask-image: linear-gradient(110deg, transparent 25%, #000 90%); }
+.meerhero .eyebrow { position: relative; margin: 0 0 10px; color: #e6c58f; font-size: var(--fs-xs); letter-spacing: .16em; }
+.mh-nums { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.mh-nums b { display: block; font-family: var(--head); font-size: clamp(1.7rem, 7vw, 2.2rem); font-weight: 600; line-height: 1.05; color: #fffaf0; font-variant-numeric: lining-nums tabular-nums; }
+.mh-nums small { display: block; margin-top: 4px; color: #e9dfcf; font-size: var(--fs-xs); letter-spacing: .1em; text-transform: uppercase; }
+
+/* Gegroepeerde lijst: één kaart per groep met scheidingslijnen, een rond icoon per regel. */
+.list.grouped, ul.grouped { list-style: none; margin: 0 0 8px; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-1); overflow: hidden; }
+.list.grouped li { margin: 0; }
+.list.grouped li + li .item { border-top: 1px solid var(--line); }
+.list.grouped .item { display: flex; align-items: center; gap: 14px; margin: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; padding: 12px 36px 12px 14px; }
+.list.grouped .item:hover { box-shadow: none; background: var(--surface-2); }
+.list.grouped .ic { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); }
+.list.grouped .ic svg { width: 20px; height: 20px; }
+.list.grouped .itext { min-width: 0; display: grid; gap: 2px; }
+.list.grouped .itext strong { font-family: var(--head); font-size: var(--fs-m); font-weight: 600; }
+.list.grouped .itext small { color: var(--text-2); font-size: var(--fs-s); }
+
+/* Subschermen: getallen als tegels, rijen in een kaart. */
+.meertiles { margin: 12px 0 6px; }
+.meertiles .num b { font-size: clamp(1.45rem, 6.2vw, 1.9rem); line-height: 1.15; overflow-wrap: anywhere; }
+.sub-h { margin: 16px 0 8px; font-size: var(--fs-xs); font-family: var(--font); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text-2); }
+ul.notelist li { padding: 12px 16px; }
+ul.notelist li + li, ul.deltas li + li { border-top: 1px solid var(--line); }
+ul.notelist strong { font-family: var(--head); font-size: var(--fs-m); font-weight: 600; text-transform: none; }
+ul.notelist strong::first-letter { text-transform: uppercase; }
+ul.deltas li { display: grid; grid-template-columns: minmax(0, 1fr) auto 64px; align-items: center; gap: 12px; padding: 11px 16px; font-variant-numeric: tabular-nums; }
+.deltas .dn { color: var(--text-2); font-size: var(--fs-s); }
+.deltas .dv { justify-self: end; min-width: 52px; text-align: center; padding: 2px 10px; border-radius: 99px; background: var(--surface-2); font-weight: 600; font-size: var(--fs-s); }
+.deltas .dv.up { background: color-mix(in srgb, var(--ok) 16%, var(--surface)); color: var(--text); }
+.deltas .dv.down { background: color-mix(in srgb, var(--warn) 18%, var(--surface)); color: var(--text); }
+.avgline { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.avgline .starrow { font-size: 1.25rem; }
+.sourceline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--text-2); font-size: var(--fs-s); }
+.tag.ok { background: color-mix(in srgb, var(--ok) 16%, var(--surface)); }
+@media (min-width: 720px) { .meertiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

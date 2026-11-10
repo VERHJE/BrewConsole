@@ -1639,3 +1639,11 @@ De timerknop die het moment noteert waarop het water door het bed is (de meting 
 - **Gieten** als tijdlijn: tijd, stip, "+g → totaal"; een doorgelopen gietbeurt heeft een gevulde stip en de tijd erbij.
 - **Geproefd** als tegels (sterkte, zuur, afdronk, doel, tegenover vorige); een eigen notitie als citaat.
 - "Verloop van alle koppen" is een rustige regel in plaats van een groot leeg vak.
+
+## Meer in de stijl van het zakdetail (10 nov 2026)
+
+- **Meer** opent met een etiket (espresso met hoogtelijnen) met je koffie in drie getallen: koppen, gemiddelde waardering en zakken. Zonder koppen valt het weg.
+- De regels staan per groep in één kaart met scheidingslijnen en een rond icoon (smaakprofiel, molen, water, voorkeuren, gegevens, synchronisatie, over).
+- **Smaakprofiel:** tegels bovenaan (geproefd, gemiddeld, blinde smaakkeuze, laat geproefd); herkende notities in één kaart; waardering per groep als rijen met een verschil-pil (groen erboven, oker eronder, ±0 neutraal). Proces en branding staan nu in het Nederlands (Natuurlijk, Gewassen, Licht, Medium) en "(algemeen)" valt weg.
+- **Molen** en **Over:** de getallen als tegels; bij de molen een label "Startwaarde" of "Uit jouw metingen".
+- Water, Voorkeuren, Gegevens en Synchronisatie zijn formulieren; die blijven zoals ze zijn.

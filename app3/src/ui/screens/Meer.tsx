@@ -7,8 +7,11 @@ import { STATUS_TEXT, grindView, profileOf } from '../../core/insights.ts';
 import { useEffect, useState } from 'preact/hooks';
 import { indexedDbSyncStorage } from '../../core/sync.ts';
 import { EmptyState } from '../EmptyState.tsx';
-import { IconBrew } from '../icons.tsx';
-import { useSnapshot } from '../store-context.tsx';
+import { IconArchive, IconBrew, IconDrop, IconGrind, IconInfo, IconSliders, IconSync, IconTaste } from '../icons.tsx';
+import { Topo, useSnapshot } from '../store-context.tsx';
+import { cupRows } from '../../core/insights.ts';
+import { beanRows, PROCESS_LABEL, ROAST_LABEL, tagLabel } from '../../core/beans.ts';
+import { Stars } from '../Stars.tsx';
 import { Gegevens } from './Gegevens.tsx';
 import { Sync } from './Sync.tsx';
 import { Voorkeuren, Water, ZeroCheck } from './Instellingen.tsx';
@@ -16,6 +19,10 @@ import { Voorkeuren, Water, ZeroCheck } from './Instellingen.tsx';
 const pct = (n: number | null): string => (n === null ? '–' : `${Math.round(n * 100)} %`);
 const catName = (k: string): string => CATEGORIES.find(c => c.key === k)?.name ?? k;
 const f1 = (n: number): string => (Math.round(n * 10) / 10).toString().replace('.', ',');
+/** Groepsnamen in het Nederlands (proces en branding komen als sleutel uit de engine). */
+const groupName = (label: string, key: string): string =>
+  label === 'Smaakgroep' ? catName(key) : label === 'Proces' ? ((PROCESS_LABEL as Record<string, string>)[key] ?? key) : label === 'Branding' ? ((ROAST_LABEL as Record<string, string>)[key] ?? key) : key;
+const deltaText = (d: number): string => (Math.abs(d) < 0.05 ? '±0' : `${d > 0 ? '+' : '−'}${f1(Math.abs(d))}`);
 
 function Back(): JSX.Element { return <a class="btn" href={href('meer')}>Terug</a>; }
 
@@ -34,7 +41,12 @@ function Profiel(): JSX.Element {
     <section>
       <div class="head"><Back /><h1>Smaakprofiel</h1></div>
       <p class="muted">Dit laat zien wat je opmerkt en waardeert. Het stuurt je recept niet.</p>
-      <p class="meta">{p.cups} geproefde koppen · {p.cataCups} met de blinde smaakkeuze</p>
+      <div class="numbers meertiles">
+        <div class="num"><b>{p.cups}</b><small>geproefd</small></div>
+        <div class="num"><b>{p.liking.overall ? f1(p.liking.overall.mean) : '–'}</b><small>gemiddeld van 5</small></div>
+        <div class="num"><b>{p.cataCups}</b><small>blinde smaakkeuze</small></div>
+        <div class="num"><b>{pct(p.tendencies.lateShare)}</b><small>laat geproefd</small></div>
+      </div>
       <h2>Wat merk je op?</h2>
       {(() => {
         const known = p.sensitivity.filter(s => s.status !== 'unknown');
@@ -51,22 +63,20 @@ function Profiel(): JSX.Element {
       })()}
       <h2>Notities die je herkent</h2>
       {p.notes.length === 0 ? <EmptyState compact title="Nog geen herkende notities">Je krijgt ze zodra je bij het proeven aangeeft welke notities van de zak je herkent.</EmptyState>
-        : <ul class="list">{p.notes.slice(0, 12).map(n => <li key={n.note}><span class="item"><strong>{n.note}</strong><NoteBar yes={n.yes} bit={n.bit} no={n.no} /></span></li>)}</ul>}
-      {p.vocabulary.length > 0 && <p class="meta">Je woordenschat: {p.vocabulary.join(', ')}</p>}
+        : <ul class="grouped notelist">{p.notes.slice(0, 12).map(n => <li key={n.note}><strong>{tagLabel(n.note)}</strong><NoteBar yes={n.yes} bit={n.bit} no={n.no} /></li>)}</ul>}
+      {p.vocabulary.length > 0 && <p class="meta">Je woordenschat: {[...new Set(p.vocabulary.map(tagLabel))].join(', ')}</p>}
       <h2>Waardering</h2>
       {p.liking.overall === null ? <EmptyState compact title="Nog geen waarderingen">Geef bij het proeven een aantal sterren, dan verschijnt hier wat je lekker vindt.</EmptyState> : (
         <div>
-          <p>Gemiddeld {f1(p.liking.overall.mean)} van 5 over {p.liking.overall.n} koppen.</p>
+          <p class="avgline"><Stars value={Math.round(p.liking.overall.mean * 4) / 4} /> <span>Gemiddeld {f1(p.liking.overall.mean)} van 5 over {p.liking.overall.n} koppen</span></p>
           {[['Smaakgroep', p.liking.byCategory], ['Proces', p.liking.byProcess], ['Branding', p.liking.byRoast]].map(([label, stats]) => (
             (stats as typeof p.liking.byCategory).some(s => s.reliable) && (
-              <div key={label as string}><strong>{label as string}</strong>
-                <table class="plain"><tbody>{(stats as typeof p.liking.byCategory).filter(s => s.reliable).map(s => (
-                  <tr key={s.key}><td>{label === 'Smaakgroep' ? catName(s.key) : s.key}</td><td class="n">{s.n}×</td><td class="n">{s.delta >= 0 ? '+' : ''}{f1(s.delta)}</td></tr>))}</tbody></table></div>)
+              <div key={label as string}><h3 class="sub-h">{label as string}</h3>
+                <ul class="grouped deltas">{(stats as typeof p.liking.byCategory).filter(s => s.reliable).map(s => (
+                  <li key={s.key}><span class="dl">{groupName(label as string, s.key)}</span><span class="dn">{s.n}×</span><span class={s.delta >= 0.05 ? 'dv up' : s.delta <= -0.05 ? 'dv down' : 'dv'}>{deltaText(s.delta)}</span></li>))}</ul></div>)
           ))}
           <p class="meta">Verschil met je gemiddelde; kleine aantallen tellen minder mee. Pas bij 3 koppen of meer wordt een groep getoond.</p>
         </div>)}
-      <h2>Tendensen</h2>
-      <p class="meta">Laat geproefd: {pct(p.tendencies.lateShare)}</p>
     </section>
   );
 }
@@ -90,11 +100,11 @@ function Molen(): JSX.Element {
     <section>
       <div class="head"><Back /><h1>Molen</h1></div>
       <p class="muted">Timemore Chestnut C3S Pro. Brew Console leert hoeveel het doorlopen verandert per klik.</p>
-      <dl class="kv">
-        <dt>Effect per klik</dt><dd>{g.pctPerClick > 0 ? '+' : ''}{f1(g.pctPerClick)} % doorlooptijd</dd>
-        <dt>Bron</dt><dd>{g.learned ? 'uit jouw metingen' : 'startwaarde (nog niet uit jouw metingen)'}</dd>
-        <dt>Bruikbare metingen</dt><dd>{g.observations}</dd>
-      </dl>
+      <div class="numbers meertiles">
+        <div class="num"><b>{g.pctPerClick > 0 ? '+' : g.pctPerClick < 0 ? '−' : ''}{f1(Math.abs(g.pctPerClick))} %</b><small>doorlooptijd per klik</small></div>
+        <div class="num"><b>{g.observations}</b><small>bruikbare metingen</small></div>
+      </div>
+      <p class="sourceline"><span class={g.learned ? 'tag ok' : 'tag'}>{g.learned ? 'Uit jouw metingen' : 'Startwaarde'}</span> {g.learned ? 'De waarde komt uit je eigen koppen.' : 'Nog niet uit jouw metingen.'}</p>
       <ZeroCheck />
       {!g.learned && <p class="banner">Tik bij elke giet op “Doorgelopen” en zet een paar koppen met 3 klikken verschil; dan leert de molen jouw waarde.</p>}
     </section>
@@ -105,7 +115,10 @@ function Over(): JSX.Element {
   return (
     <section>
       <div class="head"><Back /><h1>Over</h1></div>
-      <dl class="kv"><dt>Engine</dt><dd>{ENGINE3_VERSION}</dd><dt>Contract</dt><dd>{ENGINE3_CONTRACT_VERSION}</dd></dl>
+      <div class="numbers meertiles">
+        <div class="num"><b>{ENGINE3_VERSION}</b><small>engine</small></div>
+        <div class="num"><b>{ENGINE3_CONTRACT_VERSION}</b><small>contract</small></div>
+      </div>
       <p class="muted">Je gegevens staan op dit toestel. Er wordt niets verstuurd tenzij je synchronisatie aanzet.</p>
     </section>
   );
@@ -123,6 +136,31 @@ function useSyncLine(): string {
   return line;
 }
 
+function Entry({ to, icon, title, sub }: { to: string; icon: JSX.Element; title: string; sub: string }): JSX.Element {
+  return <li><a class="item go" href={href('meer', to)}><span class="ic">{icon}</span><span class="itext"><strong>{title}</strong><small>{sub}</small></span></a></li>;
+}
+
+/** Bovenaan Meer: je koffie in drie getallen, op een etiket zoals bij de zakken. */
+function Summary(): JSX.Element | null {
+  const { state } = useSnapshot();
+  const cups = cupRows(state).filter(r => r.status === 'complete');
+  if (cups.length === 0) return null;
+  const rated = cups.filter(r => r.liking !== null);
+  const mean = rated.length ? rated.reduce((a, r) => a + (r.liking ?? 0), 0) / rated.length : null;
+  const beans = beanRows(state).length;
+  return (
+    <div class="meerhero bagart label" style="--l1:#2c2118;--l2:#43321f">
+      <Topo seed="Brew Console" />
+      <small class="eyebrow">Jouw koffie tot nu toe</small>
+      <div class="mh-nums">
+        <div><b>{cups.length}</b><small>{cups.length === 1 ? 'kop' : 'koppen'}</small></div>
+        <div><b>{mean !== null ? f1(mean) : '–'}</b><small>gemiddeld</small></div>
+        <div><b>{beans}</b><small>{beans === 1 ? 'zak' : 'zakken'}</small></div>
+      </div>
+    </div>
+  );
+}
+
 export function Meer({ route }: { route: Route }): JSX.Element {
   const syncLine = useSyncLine();
   switch (route.parts[1]) {
@@ -135,23 +173,24 @@ export function Meer({ route }: { route: Route }): JSX.Element {
     case 'voorkeuren': return <Voorkeuren />;
     default:
       return (
-        <section>
+        <section class="meerhub">
           <h1>Meer</h1>
+          <Summary />
           <h2 class="group-h">Jouw koffie</h2>
-          <ul class="list">
-            <li><a class="item go" href={href('meer', 'profiel')}><strong>Smaakprofiel</strong><small>Wat je opmerkt en waardeert</small></a></li>
-            <li><a class="item go" href={href('meer', 'molen')}><strong>Molen</strong><small>Hoe jouw molen reageert</small></a></li>
-            <li><a class="item go" href={href('meer', 'water')}><strong>Water</strong><small>Hardheid, alkaliniteit en verdunning</small></a></li>
+          <ul class="list grouped">
+            <Entry to="profiel" icon={<IconTaste />} title="Smaakprofiel" sub="Wat je opmerkt en waardeert" />
+            <Entry to="molen" icon={<IconGrind />} title="Molen" sub="Hoe jouw molen reageert" />
+            <Entry to="water" icon={<IconDrop />} title="Water" sub="Hardheid, alkaliniteit en verdunning" />
           </ul>
           <h2 class="group-h">Gedrag</h2>
-          <ul class="list">
-            <li><a class="item go" href={href('meer', 'voorkeuren')}><strong>Voorkeuren</strong><small>Hoe proeven, vragen en de timer werken</small></a></li>
+          <ul class="list grouped">
+            <Entry to="voorkeuren" icon={<IconSliders />} title="Voorkeuren" sub="Hoe proeven, vragen en de timer werken" />
           </ul>
           <h2 class="group-h">Gegevens en app</h2>
-          <ul class="list">
-            <li><a class="item go" href={href('meer', 'gegevens')}><strong>Gegevens</strong><small>Back-up maken en terugzetten</small></a></li>
-            <li><a class="item go" href={href('meer', 'sync')}><strong>Synchronisatie</strong><small>{syncLine}</small></a></li>
-            <li><a class="item go" href={href('meer', 'over')}><strong>Over</strong><small>Versie en privacy</small></a></li>
+          <ul class="list grouped">
+            <Entry to="gegevens" icon={<IconArchive />} title="Gegevens" sub="Back-up maken en terugzetten" />
+            <Entry to="sync" icon={<IconSync />} title="Synchronisatie" sub={syncLine} />
+            <Entry to="over" icon={<IconInfo />} title="Over" sub="Versie en privacy" />
           </ul>
         </section>
       );
