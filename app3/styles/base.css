@@ -503,3 +503,6 @@ fieldset.field label.row { display: flex; align-items: center; gap: 12px; }
   .wide-list ul.thumbs .item .itext { padding: 12px 14px 14px; }
 }
 .btn.leave-top { min-height: var(--tap); padding: 4px 12px; margin: 0 0 8px; background: transparent; border-color: transparent; color: var(--text-2); font-size: var(--fs-s); }
+.kv.small { font-size: var(--fs-s); } .kv.small:empty { display: none; }
+.detail-numbers { margin-top: var(--sp-3); }
+.chips[aria-label="Snel invullen"] { margin-bottom: 14px; }

@@ -37,7 +37,9 @@ export function Water(): JSX.Element {
   return (
     <section>
       <div class="head"><Back /><h1>Water</h1></div>
-      <p class="muted">Eenmalig invullen. Het wordt bewaard en verandert geen receptgetal: voor hardheid en alkaliniteit is geen gevalideerde omrekening naar temperatuur of maling gevonden. Wel zegt Gagné (natuurkundige, podcast) dat veel bicarbonaat (alkaliniteit) het zuur dempt en fruitige koffies saai maakt; het getal staat op het waterrapport van je kraanwater.</p>
+      <p class="muted">Eenmalig invullen. Het wordt bewaard en verandert geen receptgetal.</p>
+      <details class="tech-note"><summary>Waarom verandert dit niets?</summary>
+        <p class="engine-note">Voor hardheid en alkaliniteit is geen gevalideerde omrekening naar temperatuur of maling gevonden. Wel zegt Gagné (natuurkundige, podcast) dat veel bicarbonaat (alkaliniteit) het zuur dempt en fruitige koffies saai maakt. Het getal staat op het waterrapport van je kraanwater.</p></details>
       {msg && <p class="banner" role="status">{msg}</p>}
       <p class="meta">Snel invullen</p>
       <div class="chips" role="group" aria-label="Snel invullen">
