@@ -179,7 +179,30 @@ Fase 1: in kaart brengen en vinden. Er is in deze fase niets aan de app verander
 
 ## I. Wijzigingen
 
-Geen. Dit is de vindfase.
+**Ronde 1 (10 nov, na akkoord Jelle, optie a voor P1-01):**
+
+- **P1-01 opgelost.** Er zijn kopgrenzen per brewer, met de bron in de engine-data (`CUP_LIMITS` in `engine3/src/data/brewer.ts`).
+  - Hario V60: 200–280 g.
+  - Chemex: 200–700 g.
+  - Daarbinnen hoeft de dosis niet afgekapt te worden.
+  - Het label toont het bereik en de plusknop staat uit op de grens.
+  - Wisselen van brewer schuift de kop binnen het bereik.
+  - Een opgeslagen kop van vóór de grenzen wordt bij het laden bijgesteld.
+  - Buiten het bereik is er geen recept en geen Start-knop, en staat er een melding onder het veld.
+  - Test: `engine3/test/cuplimits.test.ts`, waarin elke toegestane kop × techniek tussen 1:13 en 1:18 valt en er geen afkapwaarschuwing komt. Plus `app3/test/audit1.ui.test.mjs`.
+  - Hiermee is ook het eerste deel van P2-01 opgelost: kleine koppen onder 200 g kunnen niet meer.
+- **P1-02 opgelost.**
+  - Zetten toont "Er loopt nog een zetsel" (of "Er staat een zetsel klaar") met een knop "Naar de timer".
+  - Het logboekdetail van een gepland of lopend zetsel heeft een knop naar de timer.
+  - Afgeronde, afgebroken en open zetsels van meer dan 12 uur oud tellen niet mee.
+  - Test: `audit1.ui.test.mjs`. Daarin wordt de timer gestart, verlaten, terug gevonden via Zetten en via het logboek, afgebroken, en daarna is de melding weg.
+- **P2-02 opgelost.**
+  - Het kopveld houdt de getypte tekst vast en accepteert een komma.
+  - Bij ongeldige tekst staat er "Vul een getal in" en blijft het vorige recept staan.
+  - Er verschijnt nooit meer NaN of 0.
+  - Test: `audit1.ui.test.mjs`.
+- **Aangepaste test:** `zetten.ui.test.mjs` gebruikte een V60-kop van 400 g. Dat is nu 280 g.
+- **Regressie:** engine 189 en app3 191 tests slagen, inclusief axe licht en donker en responsive op 10 formaten.
 
 ## J. Resterende risico's
 

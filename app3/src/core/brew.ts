@@ -1,9 +1,9 @@
 // Zetten: een vraag aan de engine stellen en het antwoord leesbaar maken. De engine rekent; hier wordt niets bijgerekend.
 
 import {
-  TECHNIQUE_BY_ID, TECHNIQUES, RecipeError, fitsMethod, ms, g,
+  TECHNIQUE_BY_ID, TECHNIQUES, RecipeError, fitsMethod, ms, g, CUP_LIMITS, factsOf,
   type Advice, type Band, type Engine, type EngineState, type FeedbackSignal, type Goal, type Method,
-  type PlanRequest, type Pour, type Recipe, type TechniqueId, type BrewPlanEvent
+  type PlanRequest, type Pour, type Recipe, type TechniqueId, type TechniqueRef, type BrewPlanEvent
 } from '../../../engine3/src/index.ts';
 import { newId, type Env } from './ids.ts';
 import { AGITATION_SHORT, pourGuide } from './gieten.ts';
@@ -51,15 +51,29 @@ export function techniqueFits(method: Method, id: TechniqueId | null): boolean {
   return o.own.some(t => t.id === id) || o.other.some(t => t.id === id);
 }
 
-export const CUP_MIN = 100, CUP_MAX = 700;
+/** Kopgrenzen per brewer (uit de engine): daarbinnen blijft de verhouding kloppen (audit 10 nov, P1-01). */
+export const cupRange = (method: Method): { min: number; max: number } => CUP_LIMITS[method];
+/** Een kop die buiten het bereik van de (nieuwe) brewer valt, wordt de dichtstbijzijnde grens. */
+export const clampCup = (method: Method, cupG: number): number => {
+  const { min, max } = cupRange(method);
+  return Number.isFinite(cupG) ? Math.min(max, Math.max(min, Math.round(cupG))) : DEFAULT_FORM.cupG;
+};
+const METHOD_SHORT: Readonly<Record<Method, string>> = { v60: 'de Hario V60', chemex: 'de Chemex' };
+/** Kopinvoer: accepteert een komma; geeft null als het geen getal is. */
+export function parseCup(raw: string): number | null {
+  const t = raw.replace(',', '.').trim();
+  if (t === '' || !/^\d+(\.\d+)?$/.test(t)) return null;
+  return Math.round(Number(t));
+}
 
 export type PlanOutcome =
   | { readonly ok: true; readonly advice: Advice; readonly request: PlanRequest }
   | { readonly ok: false; readonly message: string };
 
 export function planBrew(engine: Engine, state: EngineState, env: Env, form: BrewForm): PlanOutcome {
-  if (!Number.isFinite(form.cupG) || form.cupG < CUP_MIN || form.cupG > CUP_MAX) {
-    return { ok: false, message: `Kies een kopgrootte tussen ${CUP_MIN} en ${CUP_MAX} gram.` };
+  const { min, max } = cupRange(form.method);
+  if (!Number.isFinite(form.cupG) || form.cupG < min || form.cupG > max) {
+    return { ok: false, message: `Kies voor ${METHOD_SHORT[form.method]} een kop tussen ${min} en ${max} gram. Daarbuiten past de koffie niet in de brewer en klopt de verhouding niet meer.` };
   }
   const request: PlanRequest = {
     at: ms(env.now()), beanId: form.beanId, method: form.method, cupG: g(form.cupG), goal: form.goal, technique: form.technique,
@@ -135,4 +149,20 @@ export function splitWarnings(warnings: readonly string[]): { notes: string[]; c
   const notes: string[] = [], cautions: string[] = [];
   for (const w of visibleWarnings(warnings)) (INFO_WARNING.some(r => r.test(w)) ? notes : cautions).push(w);
   return { notes, cautions };
+}
+
+/** Hoe lang een gepland of lopend zetsel als "open" geldt; daarna is het oud en wijst Zetten er niet meer naar. */
+export const OPEN_BREW_HOURS = 12;
+/**
+ * Het meest recente zetsel dat gepland of bezig is (audit 10 nov, P1-02): daar moet je naar terug kunnen.
+ * Afgeronde en afgebroken zetsels tellen niet; heel oude open zetsels ook niet.
+ */
+export function openBrew(state: EngineState, nowMs: number): { readonly id: string; readonly status: 'planned' | 'brewing'; readonly technique: TechniqueRef; readonly at: number } | null {
+  let best: { id: string; status: 'planned' | 'brewing'; technique: TechniqueRef; at: number } | null = null;
+  for (const [id, c] of factsOf(state).cups) {
+    if (c.status !== 'planned' && c.status !== 'brewing') continue;
+    if (nowMs - c.at > OPEN_BREW_HOURS * 3_600_000) continue;
+    if (!best || c.at > best.at) best = { id, status: c.status, technique: c.technique, at: c.at };
+  }
+  return best;
 }
