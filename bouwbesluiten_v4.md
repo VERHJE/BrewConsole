@@ -1590,3 +1590,15 @@ Bij de Chemex staat onder Doel een knop "Welk recept past?". Die opent een venst
 - Knoppen als pil: de hoofdactie goud, Pauze en Stop als spookknoppen.
 - Het gietschema staat op de telefoon ingeklapt tijdens het zetten. Vóór de start staat het open, met Start vast onderin. Op breed en liggend staat het altijd open in de rechterkolom.
 - Beweging: een nieuwe stap schuift omhoog in beeld. De ring pulseert in de laatste 5 seconden voor een giet, ademt bij wachten, en het vinkje tekent zich. Alles gaat via transform en lijnen, zonder fades, zodat contrast meetbaar blijft. Met "verminder beweging" staat het uit.
+
+## Ronde 8 · de rest van de app in de sfeer van de timer (10 nov 2026)
+
+- **Knoppen als pil**, overal, zoals in de timer en de voorbeelden van Jelle. Kaarten houden hun afgeronde hoeken.
+- **Receptgetallen als tegels (2 × 2)** op Zetten en in het logboekdetail, met labels in kapitalen.
+- **Tabbalk**: het actieve tabblad krijgt een messing pil achter het icoon, die zacht opspringt.
+- **Keuzehulp op de telefoon als paneel** dat van onderen inschuift, met een greep bovenaan.
+- **Beweging**:
+  - Bij een ander scherm schuift het nieuwe scherm zacht omhoog (View Transitions; alleen de schermafdruk beweegt, de echte pagina niet).
+  - Een gewijzigd receptgetal komt van onderen in beeld.
+  - Filter en formulier schuiven in.
+  - Met "verminder beweging" staat alles uit. Safari kent View Transitions vanaf versie 18; oudere versies wisselen gewoon zonder overgang.

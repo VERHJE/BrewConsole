@@ -47,6 +47,7 @@ for (const scheme of ['light', 'dark']) {
     assert.equal(await page.locator('.empty .empty-title').innerText(), 'Nog geen zakken');
     assert.deepEqual(await axe(page), []);
     await page.goto(app.base + '#/logboek');
+    await page.waitForSelector('h1:has-text("Logboek")'); // na de schermovergang (View Transitions) staat het nieuwe scherm er een frame later
     await page.waitForSelector('.empty .empty-icon');
     assert.equal(await page.locator('.empty a.btn').count(), 1);
     assert.deepEqual(await axe(page), []);

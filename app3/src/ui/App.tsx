@@ -11,10 +11,29 @@ import { Meer } from './screens/Meer.tsx';
 const TAB_LABEL: Record<Tab, string> = { zetten: 'Zetten', zakken: 'Zakken', logboek: 'Logboek', meer: 'Meer' };
 const TAB_ICON: Record<Tab, () => JSX.Element> = { zetten: IconBrew, zakken: IconBean, logboek: IconLog, meer: IconMore };
 
+/** Het eerste deel van de route (tab of scherm): alleen bij een ander scherm een overgang, niet bij elke kleine wijziging. */
+const screenOf = (h: string): string => h.replace(/^#\/?/, '').split('/').slice(0, 2).join('/');
+
+const hashRef = { current: location.hash };
+
 function useHash(): string {
   const [hash, setHash] = useState(location.hash);
   useEffect(() => {
-    const on = (): void => setHash(location.hash);
+    const on = (): void => {
+      const next = location.hash;
+      type VT = { ready?: Promise<unknown>; finished?: Promise<unknown>; updateCallbackDone?: Promise<unknown> };
+      const doc = document as Document & { startViewTransition?: (cb: () => Promise<void>) => VT };
+      // Zachte overgang tussen schermen (View Transitions, waar de browser die kent; uit bij "verminder beweging").
+      const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (doc.startViewTransition && !calm && screenOf(next) !== screenOf(hashRef.current)) {
+        hashRef.current = next;
+        const vt = doc.startViewTransition(() => new Promise<void>(resolve => { setHash(next); setTimeout(resolve, 0); }));
+        // Een overgang die de browser overslaat (snel opnieuw navigeren, tabblad op de achtergrond) wijst deze beloftes af;
+        // het scherm zelf wisselt dan gewoon. Opvangen, anders is het een onafgehandelde fout.
+        const quiet = (): void => {};
+        vt?.ready?.catch(quiet); vt?.finished?.catch(quiet); vt?.updateCallbackDone?.catch(quiet);
+      } else { hashRef.current = next; setHash(next); }
+    };
     addEventListener('hashchange', on);
     return () => removeEventListener('hashchange', on);
   }, []);
