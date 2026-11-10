@@ -93,3 +93,35 @@ export function monogram(name: string): string {
   const ch = Array.from(name.trim().replace(/^[^\p{L}\p{N}]+/u, ''))[0];
   return ch ? ch.toLocaleUpperCase('nl-NL') : '·';
 }
+
+/**
+ * Hoogtelijnen voor het etiket van een zak zonder foto: een kleine 'kaart' van een heuvel, vast per naam
+ * (dezelfde zak ziet er altijd hetzelfde uit). Geeft SVG-paden in een vlak van 100 × 100.
+ * Puur decoratief; er zit geen gegeven van de zak in behalve de naam als zaadje.
+ */
+export function labelContours(seed: string, rings = 11): string[] {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+  let s = h >>> 0;
+  const rnd = (): number => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const cx = 28 + rnd() * 44, cy = 30 + rnd() * 40;
+  const waves = [2, 3, 5].map(k => ({ k, amp: 0.05 + rnd() * 0.09, ph: rnd() * Math.PI * 2, drift: (rnd() - 0.5) * 0.5 }));
+  const steps = 96;
+  const out: string[] = [];
+  for (let i = 0; i < rings; i++) {
+    const r = 6 + i * 7.5;
+    let d = '';
+    for (let j = 0; j < steps; j++) {
+      const a = (j / steps) * Math.PI * 2;
+      let f = 1;
+      for (const w of waves) f += w.amp * Math.sin(w.k * a + w.ph + i * w.drift);
+      const x = cx + Math.cos(a) * r * f, y = cy + Math.sin(a) * r * f;
+      d += `${j ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
+    }
+    out.push(d + 'Z');
+  }
+  return out;
+}
+
+/** Brandingsgraad als stap 1 (licht) tot 5 (donker), voor de schaal op het etiket. */
+export const ROAST_STEP = { light: 1, light_medium: 2, medium: 3, medium_dark: 4, dark: 5 } as const;

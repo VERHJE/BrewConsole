@@ -88,7 +88,7 @@ function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
 function BagRow({ r, activeId, fav, today, stock }: { r: BeanRow; activeId: string | null; fav: boolean; today: string; stock: StockView | undefined }): JSX.Element {
   const hasPhoto = usePhoto(r.id) !== null;
   return (
-    <li><a class={hasPhoto ? 'item withphoto' : 'item'} href={href('zakken', r.id)} aria-current={r.id === activeId ? 'true' : undefined}><span class="thumb"><BagArt beanId={r.id} name={r.name} /></span><span class="itext"><strong>{fav && <span aria-label="Favoriet">★ </span>}{r.name}</strong><Meta row={r} today={today} stock={stock} /></span></a></li>
+    <li><a class={hasPhoto ? 'item withphoto' : 'item'} href={href('zakken', r.id)} aria-current={r.id === activeId ? 'true' : undefined}><span class="thumb"><BagArt beanId={r.id} name={r.name} sub={r.country} /></span><span class="itext"><strong>{fav && <span aria-label="Favoriet">★ </span>}{r.name}</strong><Meta row={r} today={today} stock={stock} /></span></a></li>
   );
 }
 
@@ -117,7 +117,7 @@ function Detail({ beanId }: { beanId: string }): JSX.Element {
           <button class="btn" type="button" aria-pressed={fav} onClick={() => setFav(toggleFav(localStorage, beanId))}>{fav ? '★ Favoriet' : '☆ Favoriet'}</button>
           <a class="btn" href={href('zakken', beanId, 'bewerken')}>Bewerken</a>
         </div>
-        <BagArt beanId={beanId} name={d.name} large roaster={d.roaster} meta={[d.facts.find(f => f.label === 'Land')?.value, d.eyebrow].filter(Boolean).join(' · ') || null} />
+        <BagArt beanId={beanId} name={d.name} large roaster={d.roaster} meta={[d.country, d.process].filter(Boolean).join(' · ') || null} roast={d.roastLevel} />
         {hasPhoto && (
           <div class="herotitle">
             {d.eyebrow && <small class="eyebrow">{d.eyebrow}</small>}

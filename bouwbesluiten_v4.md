@@ -1624,3 +1624,10 @@ De timerknop die het moment noteert waarop het water door het bed is (de meting 
 - **Knoppen op het beeld:** Terug links, Favoriet en Bewerken rechts, als effen pillen.
 - **Met een foto:** proces, naam en brander staan over de foto, op een donkere verloopband. Zonder foto staat dat al op het etiket.
 - **Vier tegels:** dagen na branding, koppen, voorraad ("Bijna op" in oranje als het zover is) en rust. Op brede schermen staan ze op één rij. Daaronder de rustuitleg, smaaktags, herkomst en het verloop zoals voorheen.
+
+## Etiket voor zakken zonder foto (10 nov 2026)
+
+- Een zak zonder foto krijgt een etiket zoals een speciaalbrander het zou drukken: het donkere vlak (vaste tint per naam) met **hoogtelijnen**. Die lijnen zijn een getekende 'heuvel' die vastligt per naam (`labelContours`), dus dezelfde zak ziet er altijd hetzelfde uit. Ze zijn alleen decoratie en bevatten geen gegevens.
+- Klein (lijst, receptscherm): het monogram in een messing zegel. Op een breed raster staat het land onder het zegel.
+- Groot (zakdetail): brander, naam, land · proces en een **brandingsschaal** van vijf boontjes (licht = 1 … donker = 5) met de graad in tekst. Kleur is dus nooit het enige signaal.
+- Het etiket blijft `aria-hidden`: naam en gegevens staan ook als tekst op het scherm (kop voor schermlezers, tegels, feiten).
