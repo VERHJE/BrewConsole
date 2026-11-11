@@ -70,9 +70,9 @@ for (const scheme of ['light', 'dark']) {
     assert.equal(await page.locator('.hero').count(), 0);
     const mono = await page.locator('.thumb .bagart.label .mono').first().innerText();
     assert.equal(mono, SEED_BEAN[0]);
-    // De hoofdknop: espresso in het lichte thema, goud in het donkere.
+    // De hoofdknop: goud op het groene thema (één thema, licht en donker zijn gelijk).
     const bg = await page.locator('a.btn.primary').first().evaluate(el => getComputedStyle(el).backgroundColor);
-    assert.equal(bg, scheme === 'light' ? 'rgb(42, 31, 21)' : 'rgb(217, 166, 90)');
+    assert.equal(bg, 'rgb(226, 189, 132)');
     // Het zakdetail toont het etiket met naam en brander in tekst.
     await page.click('ul.thumbs a.item >> nth=0');
     await page.waitForSelector('.hero-photo .bagart.label.large');

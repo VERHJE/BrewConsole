@@ -1,6 +1,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.45 var(--font); }
+html { background: #0d1611; }
+body { margin: 0; background: radial-gradient(130% 70% at 50% -10%, #2f4a3d 0%, #142019 55%, #0b120e 100%) fixed; color: var(--text); font: 16px/1.45 var(--font); }
 button, input, select, textarea { font: inherit; color: inherit; }
 h1, h2, .stepname, .headfont { font-family: var(--head); letter-spacing: -.01em; }
 h1 { font-size: var(--fs-xl); font-weight: 600; margin: 0 0 .25rem; line-height: 1.15; }
@@ -526,8 +527,7 @@ details.fold[open] > summary::before { transform: rotate(45deg); margin-top: -4p
 .editor-actions .btn.primary { min-height: 52px; }
 @media (min-width: 720px) { .editor-actions { flex-direction: row; } .editor-actions .btn { width: auto; min-width: 200px; } }
 /* P3-02: etiketten vallen in donker niet meer weg tegen de kaart */
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bagart.label { box-shadow: 0 0 0 1px rgb(217 179 106 / .32); filter: brightness(1.35) saturate(1.1); } }
-:root[data-theme="dark"] .bagart.label { box-shadow: 0 0 0 1px rgb(217 179 106 / .32); filter: brightness(1.35) saturate(1.1); }
+.bagart.label { box-shadow: 0 0 0 1px rgb(217 179 106 / .32); }
 
 /* Keuzehulp Chemex-recepten */
 .guidebtn { width: 100%; justify-content: center; margin: 0 0 12px; }
@@ -911,3 +911,12 @@ ul.deltas li { display: grid; grid-template-columns: minmax(0, 1fr) auto 64px; a
 .sourceline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--text-2); font-size: var(--fs-s); }
 .tag.ok { background: color-mix(in srgb, var(--ok) 16%, var(--surface)); }
 @media (min-width: 720px) { .meertiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* Zakdetail met foto: de titel onder de foto, niet erover (iPhone-test 10 nov: tekst op de zak zelf maakte hem onleesbaar). */
+.beandetail .hero-photo.withphoto::after { content: none; }
+.beandetail .herotitle { position: static; padding: 0; margin: -4px 0 16px; color: var(--text); }
+.beandetail .herotitle .eyebrow { color: var(--accent); margin: 0 0 4px; }
+.beandetail .herotitle h1 { color: var(--text); }
+.beandetail .herotitle span { color: var(--text-2); }
+/* Donker: het etiket iets minder oplichten, zodat de hoogtelijnen rustig blijven. */
+.bagart.label { filter: brightness(1.18) saturate(1.05); }

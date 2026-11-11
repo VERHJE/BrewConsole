@@ -4,7 +4,7 @@ import { memoryStorage, openIndexedDbStorage } from './core/storage.ts';
 import { createStore } from './core/store.ts';
 import type { Env } from './core/ids.ts';
 import { App } from './ui/App.tsx';
-import { applyPrefs, readTheme, readType } from './core/prefs.ts';
+import { applyPrefs, readType } from './core/prefs.ts';
 import { openPhotoStore } from './core/photos.ts';
 import { createPhotoSync, localPhotoMeta } from './core/photosync.ts';
 import { Ctx } from './ui/store-context.tsx';
@@ -19,7 +19,7 @@ function deviceId(): string {
 }
 
 async function start(): Promise<void> {
-  applyPrefs(document.documentElement, readTheme(localStorage), readType(localStorage));
+  applyPrefs(document.documentElement, readType(localStorage));
   const engine = createEngine();
   const idb = await openIndexedDbStorage();
   const storage = idb ?? memoryStorage();
