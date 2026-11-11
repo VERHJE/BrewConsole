@@ -33,7 +33,7 @@ for (const scheme of ['light', 'dark']) {
     await page.waitForSelector('h2:has-text("Hoffmann")');
     assert.match(await text(page, '.aprep >> nth=0'), /Voor je begint[\s\S]*Spoel het filter[\s\S]*kuiltje/);
     assert.match(await text(page, '.aprep >> nth=1'), /Na de laatste giet[\s\S]*3:30/);
-    const hoe = await page.locator('table.pours tbody tr td:last-child').allInnerTexts();
+    const hoe = await page.locator('ol.pourline li').evaluateAll(els => els.map(e => e.querySelector('.how')?.textContent ?? ''));
     assert.deepEqual(hoe, ['swirl', '', 'roeren']);
     await page.click('summary:has-text("Aanwijzingen per giet")');
     const notes = await page.locator('ol.pournotes li').allInnerTexts();

@@ -8,14 +8,12 @@ let app, json;
 before(async () => { app = await startApp(); json = (await seedLog(8)).json; });
 after(async () => { await app.close(); });
 
-test('Zetten: de tabel heeft geen lege "Hoe"-kolom; de proef heeft maar één "Proef:" ervoor', async () => {
+test('Zetten: het gietschema is de tijdlijn (geen lege kolom meer); de proef heeft maar één "Proef:" ervoor', async () => {
   const page = await app.browser.newPage({ viewport: { width: 390, height: 844 } });
   await importLog(page, app.base, json);
   await page.goto(app.base + '#/zetten'); await page.waitForSelector('.recipe .numbers');
-  const heads = await page.locator('table.pours thead th').allInnerTexts();
-  const cells = await page.locator('table.pours tbody tr').first().locator('td').count();
-  assert.equal(heads.length, cells, 'evenveel koppen als cellen');
-  if (!heads.includes('Hoe')) assert.equal(await page.locator('table.pours tbody tr td:last-child').filter({ hasText: /^$/ }).count(), 0, 'geen lege laatste kolom');
+  assert.ok(await page.locator('.recipe ol.pourline li').count() >= 3, 'tijdlijn met gietbeurten');
+  assert.equal(await page.locator('table.pours').count(), 0, 'de oude tabel is weg');
   const trial = page.locator('.card:has(> p > strong:text-is("Proef:"))');
   if (await trial.count()) assert.doesNotMatch(await trial.first().innerText(), /Proef:\s*Proef:/);
   await page.close();

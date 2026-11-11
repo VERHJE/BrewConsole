@@ -8,24 +8,28 @@ const row = (over: Partial<BeanRow> = {}): BeanRow => ({
 }) as BeanRow;
 const stock = (over: Partial<StockView> = {}): StockView => ({ remainingG: null, cupsLeft: null, low: false, ...over });
 
-test('zakkenlijst: elke rij heeft dezelfde twee regels, met "onbekend" waar iets ontbreekt', () => {
+test('zakkenlijst: elke rij heeft dezelfde drie regels, met "onbekend" waar iets ontbreekt', () => {
   const bare = rowLines(row(), undefined, '2026-11-09');
   assert.equal(bare.origin, 'Herkomst onbekend');
-  assert.equal(bare.facts, 'Branddatum onbekend · Nog niet gezet');
+  assert.equal(bare.roast, 'Branddatum onbekend');
+  assert.equal(bare.stock, 'Nog niet gezet');
   assert.equal(bare.low, false);
 
   const full = rowLines(row({ roaster: 'Hoppenworth', country: 'Colombia', roastLevel: 'light', roastDate: '2026-10-28', cups: 8 }), stock({ remainingG: 120, cupsLeft: 8 }), '2026-11-09');
   assert.equal(full.origin, 'Hoppenworth · Colombia');
-  assert.equal(full.facts, 'Licht · 12 d na branding · 120 g over · 8 koppen');
+  assert.equal(full.roast, 'Licht · 12 d na branding');
+  assert.equal(full.stock, '120 g over · 8 koppen');
 
   const one = rowLines(row({ cups: 1, roastDate: '2026-11-09' }), undefined, '2026-11-09');
-  assert.equal(one.facts, '0 d na branding · 1 kop');
+  assert.equal(one.roast, '0 d na branding');
+  assert.equal(one.stock, '1 kop');
 });
 
 test('zakkenlijst: bijna op staat als label en de resterende gram verdwijnt dan uit de regel', () => {
   const l = rowLines(row({ cups: 6, roastDate: '2026-11-01' }), stock({ remainingG: 20, cupsLeft: 1, low: true }), '2026-11-09');
   assert.equal(l.low, true);
-  assert.equal(l.facts, '8 d na branding · 6 koppen');
+  assert.equal(l.roast, '8 d na branding');
+  assert.equal(l.stock, '6 koppen');
 });
 
 const tasting = (over: Record<string, unknown>) => ({

@@ -76,9 +76,6 @@ a { color: var(--accent); }
 .num { border-top: 1px solid var(--line); padding: 12px 0 8px; min-width: 0; }
 .num b { display: block; font-size: clamp(1.9rem, 9vw, 2.6rem); font-weight: 700; letter-spacing: -.02em; line-height: 1.05; font-variant-numeric: tabular-nums; }
 .num small { color: var(--text-2); font-size: var(--fs-s); }
-table.pours { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-table.pours th { text-align: left; font-weight: 500; color: var(--text-2); font-size: var(--fs-xs); }
-table.pours th, table.pours td { padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .reasons, .sure { margin: 0; padding-left: 1.1rem; }
 .reasons li, .sure li { margin: 0 0 6px; }
 .banner.trial { background: var(--surface-2); }
@@ -104,17 +101,6 @@ table.pours th, table.pours td { padding: 8px 6px; border-bottom: 1px solid var(
 .stepnext { margin: 4px 0 8px; color: var(--text-2); font-size: var(--fs-s); text-align: left; padding: 0 4px; }
 .timer .big { min-height: 72px; font-size: var(--fs-l); width: 100%; }
 .timer .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
-.timer ol.steps { text-align: left; padding-left: 0; list-style: none; margin: 8px 0 12px; }
-.timer ol.steps li { position: relative; display: flex; align-items: baseline; flex-wrap: nowrap; gap: 14px; padding: 10px 12px 10px 38px; border-radius: var(--radius-s); color: var(--text-3); font-size: var(--fs-m); font-variant-numeric: tabular-nums; }
-.timer ol.steps li::before { content: ''; position: absolute; left: 14px; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%; border: 1.5px solid var(--text-3); }
-.timer ol.steps li.go { background: var(--accent-soft); color: var(--text); font-weight: 600; }
-.timer ol.steps li.go::before { background: var(--accent); border-color: var(--accent); }
-.timer ol.steps li.hold { background: var(--surface-2); color: var(--warn); }
-.timer ol.steps li.hold::before { border-color: var(--warn); border-style: dashed; }
-.timer ol.steps li.past { color: var(--text-3); }
-.timer ol.steps li.past::before { content: '✓'; width: auto; height: auto; margin-top: -.6em; border: 0; color: var(--ok); font-size: var(--fs-m); line-height: 1.2; font-weight: 700; }
-.timer ol.steps li small { margin-left: auto; flex: none; padding: 0; font-size: var(--fs-s); font-weight: 400; color: var(--text-3); text-align: right; }
-.timer ol.steps li.go small { color: var(--text-2); }
 @media (max-width: 360px) { .ring { width: 96px; height: 96px; } .ringtext { font-size: var(--fs-l); } .stepcard { gap: 12px; padding: 12px 0; } }
 /* De timer heeft drie blokken: nu (klok en huidige giet), plan (voorbereiding, rest van het schema) en knoppen.
    Staand en smal: onder elkaar in de oude volgorde (display: contents). Liggend of breed: twee kolommen. */
@@ -147,7 +133,7 @@ table.pours th, table.pours td { padding: 8px 6px; border-bottom: 1px solid var(
   .steptarget span, .steptip, .stepaction { font-size: var(--fs-l); }
   .stepafter strong { font-size: var(--fs-l); } .stepafter span { font-size: var(--fs-l); }
   .stepprep ul, .stepprep ol, .stepnext { font-size: var(--fs-l); }
-  .timer ol.steps li { font-size: var(--fs-l); padding: 12px 14px 12px 42px; }
+  .timer .pourline li { font-size: var(--fs-l); }
   .timer .big { min-height: 84px; }
   .main .timer.ready { min-height: 0; } .main .timer.ready .big { margin-top: 0; }
 }
@@ -367,7 +353,6 @@ details:not(.fold) > summary { cursor: pointer; min-height: var(--tap); padding-
 .stepafter span { color: var(--text-2); font-size: var(--fs-s); line-height: 1.35; }
 .stepprep { text-align: left; margin: 8px 0; padding: 12px 14px; border-radius: var(--radius-s); background: var(--surface-2); }
 .stepprep ul { margin: 6px 0 0; padding-left: 1.1rem; color: var(--text-2); font-size: var(--fs-s); line-height: 1.4; }
-.timer ol.steps li.go small { color: var(--text-2); }
 /* Liggend op een telefoon blijven de tips en de voorbereiding zichtbaar (twee kolommen, zie de timer hierboven). */
 
 /* Receptscherm: voorbereiding, afronding en aanwijzing per giet. */
@@ -593,13 +578,6 @@ html:has(.timer.rit) body { background: radial-gradient(130% 70% at 50% -10%, #2
 .timer.rit details.schema { margin: 8px 0; border-top: 1px solid var(--line); }
 .timer.rit details.schema > summary { color: var(--text-2); font-size: var(--fs-s); letter-spacing: .18em; text-transform: uppercase; justify-content: center; text-align: center; }
 .timer.rit details.schema > summary .meta { color: var(--text-3); text-transform: none; letter-spacing: 0; }
-.timer.rit ol.steps li { color: var(--text-2); }
-.timer.rit ol.steps li::before { border-color: var(--text-3); }
-.timer.rit ol.steps li.go { background: rgb(230 197 143 / .14); color: var(--text); }
-.timer.rit ol.steps li.go::before { background: var(--accent); border-color: var(--accent); }
-.timer.rit ol.steps li.hold { background: rgb(240 196 122 / .08); color: var(--warn); }
-.timer.rit ol.steps li.past { color: var(--text-3); } .timer.rit ol.steps li.past::before { color: var(--ok); }
-.timer.rit ol.steps li small { color: var(--text-3); }
 /* Knoppen: gouden pil, daaronder spookknoppen */
 .timer.rit .tctl .btn { border-radius: 999px; }
 .timer.rit .tctl .btn.primary { background: linear-gradient(180deg, #ecca93, #c99b5b); color: var(--primary-ink); border: 0; letter-spacing: .22em; text-transform: uppercase; font-size: var(--fs-s); font-weight: 700; box-shadow: 0 10px 30px -10px rgb(201 155 91 / .6); }
@@ -844,17 +822,6 @@ html:has(.proeven.rit) body { background: radial-gradient(130% 70% at 50% -10%, 
 .logdetail .numbers .num b { font-size: clamp(1.45rem, 6.2vw, 1.9rem); line-height: 1.15; }
 .sect-h { margin: 22px 0 10px; font-size: var(--fs-l); }
 
-/* Gietschema als tijdlijn: tijd, stip op een lijn, gram; doorgelopen gietbeurten met een gevulde stip. */
-.pourline { list-style: none; margin: 0; padding: 0; }
-.pourline li { display: grid; grid-template-columns: 44px 18px 1fr; align-items: start; column-gap: 10px; padding: 0 0 14px; position: relative; font-variant-numeric: tabular-nums; }
-.pourline li:not(:last-child)::before { content: ''; position: absolute; left: 62px; top: 14px; bottom: -2px; width: 2px; background: var(--line); border-radius: 1px; }
-.pourline .pt { color: var(--text-2); padding-top: 1px; }
-.pourline .pd { width: 14px; height: 14px; margin: 4px 0 0 2px; border-radius: 50%; border: 2px solid var(--accent); background: var(--bg); position: relative; }
-.pourline li.done .pd { background: var(--accent); }
-.pourline .pw b { font-family: var(--head); font-size: var(--fs-m); }
-.pourline .pw small { display: block; color: var(--text-2); font-size: var(--fs-s); }
-.small-note { margin: -4px 0 0; font-size: var(--fs-s); }
-
 /* Proefnotities als tegels; een eigen notitie als citaat. */
 .tastetiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0 0 12px; }
 .tastetiles div { padding: 12px 14px; border-radius: var(--radius-s); background: var(--surface-2); }
@@ -977,3 +944,35 @@ fieldset.tiles legend { padding: 0; margin: 0 0 8px; }
 .num.stock { margin: 0; }
 /* Uitgeschakeld = duidelijk anders, geen half-doorzichtig goud dat modderig op groen wordt. */
 .btn[disabled], .btn.primary[disabled] { opacity: 1; background: var(--surface-2); color: var(--text-3); border-color: var(--line); box-shadow: none; cursor: not-allowed; }
+
+/* ───── Eén tijdlijn voor het gietschema: Zetten, timer en Logboek (11 nov 2026) ───── */
+.pourline { list-style: none; margin: 0; padding: 0; text-align: left; }
+.pourline li { position: relative; display: grid; grid-template-columns: 48px 18px minmax(0, 1fr); column-gap: 10px; align-items: start; padding: 8px 10px 14px; border-radius: var(--radius-s); color: var(--text-2); font-variant-numeric: tabular-nums; }
+.pourline li:not(:last-child)::before { content: ''; position: absolute; left: 76px; top: 26px; bottom: -12px; width: 2px; background: var(--line); border-radius: 1px; }
+.pourline .pt { padding-top: 1px; }
+.pourline .pd { width: 14px; height: 14px; margin: 4px 0 0 2px; border-radius: 50%; border: 2px solid var(--accent); background: var(--bg); position: relative; }
+.pourline .pw b { font-family: var(--head); font-size: var(--fs-m); color: var(--text); }
+.pourline .pw small { display: block; color: var(--text-2); font-size: var(--fs-s); }
+.pourline li.past .pd { background: var(--accent); }
+.pourline li.past { color: var(--text-3); } .pourline li.past .pw b { color: var(--text-2); }
+.pourline li.now { background: rgb(230 197 143 / .14); color: var(--text); }
+.pourline li.now .pd { background: var(--accent); box-shadow: 0 0 0 4px rgb(230 197 143 / .28); }
+.pourline li.hold { background: rgb(240 196 122 / .08); color: var(--warn); }
+.pourline li.hold .pd { border-style: dashed; border-color: var(--warn); }
+.pourline li.next { color: var(--text); }
+.pourline li.next .pd { border-style: dotted; }
+.timer .pourline { margin: 8px 0 12px; }
+.timer .pourline li { font-size: var(--fs-m); }
+
+/* Timer op iPad (breed en hoog): het schema eerst en groot rechts, "Daarna giet 2…" is overbodig (de volgende giet staat in de tijdlijn). */
+@media (min-width: 900px) and (min-height: 600px) {
+  .timer.rit .tplan { display: flex; flex-direction: column; gap: 14px; }
+  .timer.rit details.schema { order: -1; margin: 0; }
+  .timer.rit details.schema > summary { justify-content: flex-start; text-align: left; padding-left: 10px; }
+  .timer.rit .stepnext { display: none; }
+  .timer.rit .stepprep { margin: 0; }
+  .timer.rit .pourline li { padding-block: 10px 16px; }
+  .timer.rit .pourline li:not(:last-child)::before { top: 28px; bottom: -14px; }
+  .timer.rit .pourline .pw b { font-size: var(--fs-l); }
+}
+@media (min-width: 900px) and (min-height: 600px) { .timer .pourline li { font-size: var(--fs-l); } }

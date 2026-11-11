@@ -37,13 +37,14 @@ for (const scheme of ['light', 'dark']) {
     assert.match(await page.locator('ul.sure').innerText(), /doel-TDS\) komt tussen [\d,]+ en [\d,]+ %\./);
     assert.deepEqual(await axe(page), []);
 
-    // 4: zakkenlijst — twee vaste regels
+    // 4: zakkenlijst — drie vaste regels
     await page.goto(app.base + '#/zakken');
     await page.waitForSelector('ul.thumbs .item');
     const smalls = await page.locator('ul.thumbs .item .itext small').allInnerTexts();
-    assert.equal(smalls.length, 2);
+    assert.equal(smalls.length, 3);
     assert.equal(smalls[0], 'Herkomst onbekend');
-    assert.match(smalls[1], /^Licht · .*8 koppen/);
+    assert.match(smalls[1], /^Licht · (\d+ d na branding|Branddatum onbekend)$/);
+    assert.match(smalls[2], /8 koppen$/);
     assert.deepEqual(await axe(page), []);
 
     // 6: logboek — korte smaakregel onder elke geproefde kop

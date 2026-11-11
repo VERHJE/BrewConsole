@@ -1673,3 +1673,9 @@ De timerknop die het moment noteert waarop het water door het bed is (de meting 
 - **Smaakprofiel:** "0 van 0 aangevinkt zonder dat de zak het noemt" valt weg als er niets is om tegen af te zetten.
 - **Banner op Zetten:** "Er staat een zetsel klaar: X (klaargezet om 00:40)" en "Er loopt nog een zetsel: X (gestart om 00:40)", zodat de tijd niet voor een tijdsduur wordt aangezien.
 - **Gietschema op Zetten:** de kolom "Hoe" verdwijnt als geen enkele giet iets te zeggen heeft (bij de V60 was hij leeg).
+
+## Nalooprondes, vervolg: punten B7 t/m B9 (11 nov 2026)
+
+- **B7 · één tijdlijn voor het gietschema.** Zetten (het recept), de timer en het Logboek gebruiken nu hetzelfde onderdeel (`PourTimeline`): tijd, stip op een lijn, "+gram → totaal" en eventueel hoe (swirl, roeren). De tabel op Zetten is vervallen. In de timer is de huidige giet gemarkeerd (gevulde stip met ring), de volgende heeft een gestippelde stip, een wachtende giet een stippellijn en een afgeronde giet een gevulde stip. De staat staat ook als verborgen tekst erbij ("Nu:", "Klaar:", "Wacht:", "Straks:"), dus kleur is nooit het enige signaal. In het Logboek staat per giet wanneer hij doorliep.
+- **B8 · timer op de iPad.** Breed en hoog (iPad, MacBook): het schema staat bovenaan de rechterkolom, groter, en de losse regel "Daarna giet 2 om 0:45" is weg (de volgende giet staat al in de tijdlijn). De voorbereiding en "na de laatste giet" staan eronder.
+- **B9 · zakkenlijst.** Elke rij heeft drie vaste regels: herkomst, branding met leeftijd, en voorraad met koppen (met "Bijna op" als label op die laatste regel). Er is geen regel meer die halverwege afbreekt ("6 / koppen").
