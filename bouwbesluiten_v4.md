@@ -1714,3 +1714,7 @@ Bronnen: WebKit bugs [301994](https://bugs.webkit.org/show_bug.cgi?id=301994), [
 - **Maskable:** hetzelfde volle beeld. Dripper, kan en druppel liggen binnen de veilige zone van 80% (cirkel met straal 40%); alleen de damp vervaagt door de uitsnede. Een eigen rand of marge eromheen gaf een zichtbaar kader bij een cirkelvormige uitsnede en is daarom niet gebruikt.
 - **Opstartscherm blijft zonder icoon.** Het icoon zou het opstartplaatje van een paletplaatje (2,7 MB voor 22 stuks) tot een volkleurenplaatje maken (ruim 16 MB), of bij 256 kleuren zichtbaar korrelig in het glas en de glans. Het opstartscherm houdt daarom de naam en de hoogtelijnen.
 - **Opnieuw toevoegen nodig:** iOS onthoudt het icoon bij het toevoegen aan het beginscherm. Maak eerst een back-up (Meer → Gegevens).
+
+## CI: browserinstallatie tegen een onbereikbare pakketserver (11 nov 2026, keuze Jelle)
+- Op 11 nov faalde de QA-suite drie keer achter elkaar vóór er een test draaide: `npx playwright install --with-deps chromium` haalt via `apt` ook lettertypepakketten op en de runner kon de Ubuntu-pakketservers niet bereiken (`Temporary failure resolving`).
+- De stap is nu gesplitst: (1) de browser downloaden, (2) de systeempakketten proberen, waarbij een mislukte `apt` een waarschuwing is, (3) een **harde controle dat Chromium echt start** (met dezelfde keuze van uitvoerbaar bestand als de testhelpers). Ontbreekt er echt een bibliotheek, dan faalt stap 3 meteen en duidelijk, dus groen blijft betekenen dat de tests slaagden. De jobnaam is ongewijzigd.
