@@ -14,7 +14,7 @@ async function openForm(page) {
   const sum = page.locator('.zsummary');
   if (await sum.isVisible() && (await sum.getAttribute('aria-expanded')) === 'false') await sum.click();
 }
-const ratio = async page => { const [dose, water] = await page.locator('.numbers .num b').allInnerTexts(); return parseFloat(water) / parseFloat(dose.replace(',', '.')); };
+const ratio = async page => { const [dose, water] = await page.locator('.recipe .numbers .num b').allInnerTexts(); return parseFloat(water) / parseFloat(dose.replace(',', '.')); };
 
 test('P1-01: de V60 laat geen kop toe waarbij de verhouding onbruikbaar wordt; wisselen van brewer schuift de kop binnen het bereik', async () => {
   const page = await app.browser.newPage({ viewport: { width: 390, height: 844 } });

@@ -27,7 +27,7 @@ for (const scheme of ['light', 'dark']) {
 
     // recept: techniek kiezen, voorbereiding en afronding, aanwijzing per giet; geen "in spiraal" waar de bron geen patroon noemt
     await page.goto(app.base + '#/zetten');
-    await page.waitForSelector('.numbers');
+    await page.waitForSelector('.recipe .numbers');
     await page.click('summary:has-text("Meer opties")');
     await page.selectOption('select[name=technique]', 'hoffmann_ultimate');
     await page.waitForSelector('h2:has-text("Hoffmann")');

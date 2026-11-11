@@ -12,7 +12,7 @@ test('zetten: advies verschijnt en volgt de kopgrootte', async () => {
   page.on('pageerror', e => errors.push(e.message));
   await page.goto(app.base + '#/zetten');
   await page.click('button:has-text("Zonder zak beginnen")'); // eerste start: welkomstkaart
-  await page.waitForSelector('.numbers');
+  await page.waitForSelector('.recipe .numbers');
   const dose250 = await page.locator('.num b').first().innerText();
   await page.fill('input[name=cup]', '280');
   await page.waitForFunction(old => document.querySelector('.num b')?.textContent !== old, dose250);
