@@ -27,12 +27,35 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Downloadt Playwright's eigen, door Playwright beheerde Chromium-build (in
-      # ~/.cache/ms-playwright) plus de systeembibliotheken die een headless Chromium op een
-      # kale Ubuntu-runner nodig heeft. De schermtests van app3 vallen op deze browser terug
-      # zodra het vaste sandbox-pad (/opt/pw-browsers/chromium) niet bestaat.
+      # Playwright's eigen, door Playwright beheerde Chromium-build (in ~/.cache/ms-playwright). De schermtests van app3 vallen op deze
+      # browser terug zodra het vaste sandbox-pad (/opt/pw-browsers/chromium) niet bestaat.
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
+
+      # Systeembibliotheken voor een headless Chromium. Op de runner staan bijna alle al; er ontbreken alleen lettertypepakketten, die via apt
+      # komen. Zijn de Ubuntu-pakketservers even onbereikbaar (nov 2026: drie mislukte runs achter elkaar op "Temporary failure resolving"),
+      # dan is dat een waarschuwing, geen fout. Ontbreekt er echt iets, dan faalt de controle hieronder, en dan is de poort rood.
+      - name: Install Chromium system dependencies (best effort)
+        run: |
+          npx playwright install-deps chromium || echo "::warning::Systeempakketten niet geïnstalleerd (apt onbereikbaar?). De volgende stap controleert of Chromium toch start."
+
+      # Harde controle: start Chromium echt, met dezelfde opties als de tests. Zo faalt een ontbrekende bibliotheek hier, duidelijk en vroeg,
+      # en niet als een raadselachtige fout in een willekeurige test.
+      - name: Check that Chromium starts
+        run: |
+          node -e "
+          const fs = require('fs');
+          const { chromium } = require('playwright');
+          const FIXED = '/opt/pw-browsers/chromium'; // zoals app3/test/helpers.mjs: het vaste pad als dat bestaat, anders Playwrights eigen build
+          (async () => {
+            const b = await chromium.launch({ executablePath: fs.existsSync(FIXED) ? FIXED : undefined, args: ['--no-sandbox'] });
+            const p = await b.newPage();
+            await p.setContent('<h1>ok</h1>');
+            if ((await p.textContent('h1')) !== 'ok') throw new Error('Chromium rendert niet');
+            await b.close();
+            console.log('Chromium start en rendert');
+          })().catch(e => { console.error(e); process.exit(1); });
+          "
 
       # De tests van de oude app (tests/*.test.mjs op brewconsole_v2_2.html, `npm run qa`) horen
       # niet meer bij de poort: die app wordt niet meer uitgeleverd (op /oud/ staat alleen een

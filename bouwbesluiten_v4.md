@@ -1684,7 +1684,7 @@ De timerknop die het moment noteert waarop het water door het bed is (de meting 
 
 ### Opstartscherm
 - iOS toont bij het openen van de app een eigen opstartplaatje (`apple-touch-startup-image`), maar alleen bij een **exacte** overeenkomst van schermbreedte, -hoogte, pixeldichtheid en stand. Zonder match blijft het scherm leeg. Daarom zijn er 22 plaatjes: 8 iPhone-maten (staand) en 7 iPad-maten (staand en liggend), met de maten uit <https://www.ios-resolution.com/> (nov 2026). Jouw iPhone (390 × 844 pt, drievoudig) is gedekt.
-- Ontwerp: dezelfde groene ondergrond als de app, de hoogtelijnen van de etiketten, een dunne messing lijn en "Brew Console" in serif. Het icoon volgt later.
+- Ontwerp: dezelfde groene ondergrond als de app, de hoogtelijnen van de etiketten, een dunne messing lijn en "Brew Console" in serif. Het icoon staat niet op het opstartscherm (zie het kopje App-icoon).
 - De plaatjes worden gemaakt door `scripts/maak-opstartschermen.mjs` (maten in `scripts/opstartscherm-maten.mjs`) en staan in `icons/splash/`. Als paletplaatje (256 kleuren, median cut): 2,7 MB in totaal in plaats van 16 MB, zonder zichtbare banding. De service worker neemt ze niet op in zijn voorraad; iOS haalt ze zelf op.
 - Terwijl de app laadt staat dezelfde naam in `index.html`; die maakt plaats voor de app zodra die tekent, zodat er geen leeg groen scherm tussen zit.
 - **Let op:** iOS leest het opstartplaatje bij het toevoegen aan het beginscherm en onthoudt het. Een bestaande installatie toont het nieuwe plaatje mogelijk pas na opnieuw toevoegen.
@@ -1707,3 +1707,14 @@ Bronnen: WebKit bugs [301994](https://bugs.webkit.org/show_bug.cgi?id=301994), [
 ### Smaakprofiel opgeruimd
 - "Wat merk je op?" als kaart met per groep een pil ("Je merkt dit op", "Je mist dit vaak", "Je vinkt snel aan", "Wisselend") en de balk eronder.
 - De lange opsomming van groepen zonder oordeel is één ingeklapt regeltje: "9 smaakgroepen nog zonder oordeel".
+
+## App-icoon (11 nov 2026)
+- **Nieuw icoon:** een crème keramische dripper op een glazen kan met koffie, een gouden druppel, zachte damp en gouden golflijnen op een groene achtergrond. Het beeld is door Jelle aangeleverd (vol vierkant, 1024 × 1024 px) en staat ongewijzigd in `assets/icoon-bron-1024.png`. De voorgaande variant (een fotorealistische V60 op zwart-bruin, al wazig op 512 px) is vervangen.
+- `scripts/maak-iconen.mjs` maakt daaruit `icons/apple-touch-icon.png` (180 px, iOS rondt zelf af), `icon-192.png`, `icon-512.png` en `icon-maskable-512.png`. Het verkleinen gaat in stappen van de helft (scherper); alles is ondoorzichtig, want iOS maakt doorzichtige hoeken zwart.
+- **Maskable:** hetzelfde volle beeld. Dripper, kan en druppel liggen binnen de veilige zone van 80% (cirkel met straal 40%); alleen de damp vervaagt door de uitsnede. Een eigen rand of marge eromheen gaf een zichtbaar kader bij een cirkelvormige uitsnede en is daarom niet gebruikt.
+- **Opstartscherm blijft zonder icoon.** Het icoon zou het opstartplaatje van een paletplaatje (2,7 MB voor 22 stuks) tot een volkleurenplaatje maken (ruim 16 MB), of bij 256 kleuren zichtbaar korrelig in het glas en de glans. Het opstartscherm houdt daarom de naam en de hoogtelijnen.
+- **Opnieuw toevoegen nodig:** iOS onthoudt het icoon bij het toevoegen aan het beginscherm. Maak eerst een back-up (Meer → Gegevens).
+
+## CI: browserinstallatie tegen een onbereikbare pakketserver (11 nov 2026, keuze Jelle)
+- Op 11 nov faalde de QA-suite drie keer achter elkaar vóór er een test draaide: `npx playwright install --with-deps chromium` haalt via `apt` ook lettertypepakketten op en de runner kon de Ubuntu-pakketservers niet bereiken (`Temporary failure resolving`).
+- De stap is nu gesplitst: (1) de browser downloaden, (2) de systeempakketten proberen, waarbij een mislukte `apt` een waarschuwing is, (3) een **harde controle dat Chromium echt start** (met dezelfde keuze van uitvoerbaar bestand als de testhelpers). Ontbreekt er echt een bibliotheek, dan faalt stap 3 meteen en duidelijk, dus groen blijft betekenen dat de tests slaagden. De jobnaam is ongewijzigd.
