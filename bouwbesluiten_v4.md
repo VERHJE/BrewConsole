@@ -1655,3 +1655,12 @@ De timerknop die het moment noteert waarop het water door het bed is (de meting 
 - De keuze Licht/Donker/Volg toestel in Meer → Voorkeuren is weg; alleen het lettertype blijft. Een oude themakeuze in de opslag doet niets meer.
 - Zakdetail met foto: naam en brander staan onder de foto, niet erover. Over een zakfoto met eigen tekst was de titel onleesbaar.
 - Etiketten zonder foto zijn iets minder opgelicht (filter 1,18) zodat de hoogtelijnen rustig blijven op het groen.
+
+## Water, Voorkeuren, Gegevens en Synchronisatie in dezelfde stijl (11 nov 2026)
+
+- Elk onderdeel is een kaart met een rond icoon en een kop (`Panel`); geen losse labels meer op de achtergrond.
+- **Voorkeuren:** aan/uit-keuzes zijn schakelaars (echte checkboxen met `role="switch"`, dus toetsenbord en schermlezer werken gewoon); het lettertype kies je met twee tegels met een voorbeeld ("Aa").
+- **Water:** snel invullen en je eigen waarden in twee kaarten; "In je kop" als twee tegels met een pil (onder / binnen / boven de SCA-richtwaarde).
+- **Gegevens:** bovenaan tegels (zakken, koppen, dagen sinds je back-up); "Alles wissen" als kaart met een rode rand en rood icoon, zodat hij niet met de rest verward wordt.
+- **Synchronisatie:** een statustegel met stip (Verbonden / Niet verbonden) en de laatste keer.
+- Gedrag en tekst zijn gelijk gebleven; alleen de opmaak is veranderd.

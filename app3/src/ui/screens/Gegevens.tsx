@@ -4,6 +4,8 @@ import { href } from '../../core/router.ts';
 import { base64ToBytes, bytesToBase64, exportLog, previewImport, type BackupPhoto, type ImportPreview } from '../../core/backup.ts';
 import { beanRows } from '../../core/beans.ts';
 import { cupRows } from '../../core/insights.ts';
+import { IconDownload, IconTrash, IconUpload } from '../icons.tsx';
+import { Panel } from '../settings-kit.tsx';
 import { useApp, useSnapshot } from '../store-context.tsx';
 
 const KIND_LABEL: Record<string, string> = {
@@ -71,32 +73,37 @@ export function Gegevens(): JSX.Element {
   const wipe = async (): Promise<void> => { await store.clear(); try { await photos.clear(); } catch { /* geen foto's te wissen */ } setConfirm(''); setMsg('Alles op dit toestel is gewist.'); };
 
   return (
-    <section>
+    <section class="settings">
       <div class="head"><a class="btn" href={href('meer')}>Terug</a><h1>Gegevens</h1></div>
-      <p class="muted">Op dit toestel: {nBeans} {nBeans === 1 ? 'zak' : 'zakken'} en {nCups} {nCups === 1 ? 'kop' : 'koppen'}{store.storage.persistent ? '' : ' (tijdelijk: niet blijvend opgeslagen)'}.</p>
+      <p class="muted">Op dit toestel{store.storage.persistent ? '' : ' (tijdelijk: niet blijvend opgeslagen)'}.</p>
+      <div class="numbers meertiles">
+        <div class="num"><b>{nBeans}</b><small>{nBeans === 1 ? 'zak' : 'zakken'}</small></div>
+        <div class="num"><b>{nCups}</b><small>{nCups === 1 ? 'kop' : 'koppen'}</small></div>
+        <div class="num wide"><b>{days === null ? '–' : days === 0 ? 'vandaag' : `${days} d`}</b><small>{days === null ? 'nog geen back-up' : 'sinds je back-up'}</small></div>
+      </div>
       {days !== null && days >= 14 && <p class="banner" role="status">Je laatste back-up is {days} dagen oud.</p>}
       {last === null && events.length > 0 && <p class="banner" role="status">Je hebt nog geen back-up gemaakt.</p>}
       {msg && <p class="banner" role="status">{msg}</p>}
 
-      <div class="card"><strong>Back-up maken</strong><p class="meta">Eén bestand met alles, ook de foto's van je zakken. Bewaar het buiten dit toestel.</p>
-        <button class="btn primary" type="button" onClick={doExport} disabled={events.length === 0}>Back-up maken</button></div>
+      <Panel icon={<IconDownload />} title="Back-up maken" sub="Eén bestand met alles, ook de foto's van je zakken. Bewaar het buiten dit toestel.">
+        <button class="btn primary" type="button" onClick={doExport} disabled={events.length === 0}>Back-up maken</button>
+      </Panel>
 
-      <div class="card"><strong>Back-up terugzetten</strong>
-        <p class="meta">Werkt met een back-up van deze app en met die van de oude Brew Console. Bestaande gegevens blijven staan; alleen wat nieuw is wordt toegevoegd.</p>
+      <Panel icon={<IconUpload />} title="Back-up terugzetten" sub="Werkt met een back-up van deze app en met die van de oude Brew Console. Bestaande gegevens blijven staan; alleen wat nieuw is wordt toegevoegd.">
         <label class="btn">Bestand kiezen<input class="sr-only" type="file" accept="application/json,.json" onChange={onFile} /></label>
         {preview && (
-          <div>
+          <div class="previewbox">
             {preview.kind === 'unknown' ? null : <p>{preview.kind === 'old-app' ? 'Back-up van de oude app' : 'Back-up van Brew Console'}: {Object.entries(preview.counts).map(([k, n]) => `${n} ${KIND_LABEL[k] ?? k}`).join(', ')}.</p>}
             {preview.kind !== 'unknown' && <p>{preview.fresh} nieuw, {preview.known} al aanwezig{preview.photos.length ? `; ${preview.photos.length} foto${preview.photos.length === 1 ? '' : "'s"} van zakken` : ''}.</p>}
             {preview.warnings.map(w => <p class="banner warn" key={w} role="status">{w}</p>)}
             {preview.kind !== 'unknown' && <button class="btn primary" type="button" onClick={doImport} disabled={preview.fresh === 0 && preview.photos.length === 0}>{preview.fresh > 0 ? `${preview.fresh} toevoegen` : preview.photos.length > 0 ? "Foto's terugzetten" : 'Niets nieuws'}</button>}
           </div>)}
-      </div>
+      </Panel>
 
-      <div class="card"><strong>Alles wissen</strong>
-        <p class="meta">Wist alle gegevens op dit toestel. Maak eerst een back-up. Staat synchronisatie aan, dan blijft de kopie op de server staan.</p>
+      <Panel icon={<IconTrash />} tone="danger" title="Alles wissen" sub="Wist alle gegevens op dit toestel. Maak eerst een back-up. Staat synchronisatie aan, dan blijft de kopie op de server staan.">
         <label class="field"><span>Typ WISSEN om te bevestigen</span><input name="confirm" value={confirm} onInput={e => setConfirm((e.currentTarget as HTMLInputElement).value)} autocomplete="off" /></label>
-        <button class="btn" type="button" onClick={wipe} disabled={confirm !== 'WISSEN'}>Alles wissen</button></div>
+        <button class="btn" type="button" onClick={wipe} disabled={confirm !== 'WISSEN'}>Alles wissen</button>
+      </Panel>
     </section>
   );
 }

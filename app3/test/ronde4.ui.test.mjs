@@ -53,7 +53,8 @@ for (const scheme of ['light', 'dark']) {
     assert.deepEqual(await axe(page), []);
     await importLog(page, app.base, json);
     await page.goto(app.base + '#/meer/gegevens');
-    await page.waitForSelector('text=Op dit toestel: 1 zak en 8 koppen');
+    await page.waitForSelector('.meertiles .num:has-text("1"):has-text("zak")');
+    assert.match(await page.locator('.meertiles').first().innerText(), /1\s*zak[\s\S]*8\s*koppen/i);
     assert.equal(await page.locator('text=gebeurtenissen op dit toestel').count(), 0);
     await page.close();
   });

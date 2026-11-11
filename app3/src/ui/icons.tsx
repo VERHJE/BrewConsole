@@ -26,3 +26,8 @@ export const IconSliders = (): JSX.Element => (<svg {...base}><path d="M4 7h9M17
 export const IconArchive = (): JSX.Element => (<svg {...base}><path d="M4 5h16v4H4z" /><path d="M5 9v10h14V9" /><path d="M10 13h4" /></svg>);
 export const IconSync = (): JSX.Element => (<svg {...base}><path d="M19 8a7 7 0 0 0-12.5-2L5 7.5" /><path d="M5 3.5v4h4" /><path d="M5 16a7 7 0 0 0 12.5 2l1.5-1.5" /><path d="M19 20.5v-4h-4" /></svg>);
 export const IconInfo = (): JSX.Element => (<svg {...base}><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5" /><path d="M12 7.6v.2" /></svg>);
+export const IconDownload = (): JSX.Element => (<svg {...base}><path d="M12 4v11" /><path d="M7.5 11.5L12 16l4.5-4.5" /><path d="M5 19.5h14" /></svg>);
+export const IconUpload = (): JSX.Element => (<svg {...base}><path d="M12 16V5" /><path d="M7.5 8.5L12 4l4.5 4.5" /><path d="M5 19.5h14" /></svg>);
+export const IconTrash = (): JSX.Element => (<svg {...base}><path d="M5 7h14" /><path d="M9.5 7V4.5h5V7" /><path d="M7 7l.8 12.5h8.4L17 7" /></svg>);
+export const IconBell = (): JSX.Element => (<svg {...base}><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z" /><path d="M10 20.5h4" /></svg>);
+export const IconType = (): JSX.Element => (<svg {...base}><path d="M5 18l5-13 5 13" /><path d="M6.8 14h6.4" /><path d="M17 11h3M18.5 11v7" /></svg>);

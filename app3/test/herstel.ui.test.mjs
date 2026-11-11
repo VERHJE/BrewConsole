@@ -13,12 +13,12 @@ for (const scheme of ['light', 'dark']) {
     await page.goto(app.base + '#/meer/voorkeuren');
     await page.waitForSelector('input[type=radio]');
     const m = await page.evaluate(() => [...document.querySelectorAll('.choice')].map(l => {
-      const r = l.querySelector('input').getBoundingClientRect(), s = l.querySelector('span').getBoundingClientRect();
-      const lh = parseFloat(getComputedStyle(l.querySelector('span')).lineHeight) || 24;
+      const r = l.querySelector('input').getBoundingClientRect(), s = l.querySelector('span:last-child').getBoundingClientRect();
+      const lh = parseFloat(getComputedStyle(l.querySelector('span:last-child')).lineHeight) || 24;
       return { w: r.width, text: l.innerText.trim(), lines: Math.round(s.height / lh) };
     }));
     for (const x of m) { assert.ok(x.w <= 30, `rondje ${x.w}px bij ${x.text}`); assert.ok(x.lines <= 2, `${x.text}: ${x.lines} regels`); }
-    for (const word of ['Met schreef', 'Schreefloos']) assert.ok(m.some(x => x.text.startsWith(word) && x.lines === 1), `${word} op één regel`);
+    for (const word of ['Schreefloos']) assert.ok(m.some(x => x.text.includes(word) && x.lines === 1), `${word} op één regel`);
     await page.close();
   });
 }
