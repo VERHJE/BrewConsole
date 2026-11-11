@@ -25,4 +25,4 @@ export function savePref(s: PrefStorage | null, key: string, value: string): voi
 }
 
 /** De kleur voor de statusbalk van de browser: de achtergrond van het thema. */
-export const THEME_COLOR = '#13201a';
+export const THEME_COLOR = '#1e3128';

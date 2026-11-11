@@ -27,7 +27,9 @@ async function start(): Promise<void> {
   const store = await createStore(storage, engine);
   const env: Env = { now: () => Date.now(), uuid: () => crypto.randomUUID(), device: deviceId() };
   const photoSync = createPhotoSync(await openPhotoStore(), localPhotoMeta(localStorage), () => Date.now());
-  render(<Ctx.Provider value={{ store, engine, env, photos: photoSync.store, photoSync: photoSync.run }}><App persistent={storage.persistent} /></Ctx.Provider>, document.getElementById('root')!);
+  const root = document.getElementById('root')!;
+  root.textContent = ''; // het opstartplaatje uit index.html maakt plaats voor de app
+  render(<Ctx.Provider value={{ store, engine, env, photos: photoSync.store, photoSync: photoSync.run }}><App persistent={storage.persistent} /></Ctx.Provider>, root);
 }
 
 function registerWorker(): void {

@@ -148,7 +148,7 @@ export function buildHtml(html){
 
 function copyDir(from, to){
   fs.mkdirSync(to, { recursive: true });
-  for (const f of fs.readdirSync(from)) fs.copyFileSync(path.join(from, f), path.join(to, f));
+  for (const f of fs.readdirSync(from)) { const a = path.join(from, f); if (fs.statSync(a).isDirectory()) copyDir(a, path.join(to, f)); else fs.copyFileSync(a, path.join(to, f)); }
 }
 
 export function build(outDir){

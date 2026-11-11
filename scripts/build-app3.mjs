@@ -29,8 +29,8 @@ fs.mkdirSync(path.join(OUT, 'fonts'), { recursive: true });
 fs.copyFileSync(path.join(FONT_DIR, 'files/fraunces-latin-wght-normal.woff2'), path.join(OUT, 'fonts/fraunces-latin-wght-normal.woff2'));
 fs.copyFileSync(path.join(FONT_DIR, 'LICENSE'), path.join(OUT, 'fonts/Fraunces-OFL.txt'));
 fs.copyFileSync(path.join(ROOT, 'app3/manifest.webmanifest'), path.join(OUT, 'manifest.webmanifest'));
-fs.mkdirSync(path.join(OUT, 'icons'), { recursive: true });
-for (const f of fs.readdirSync(path.join(ROOT, 'icons'))) fs.copyFileSync(path.join(ROOT, 'icons', f), path.join(OUT, 'icons', f));
+// Iconen en opstartschermen (icons/splash/): de hele map, ook de submap.
+fs.cpSync(path.join(ROOT, 'icons'), path.join(OUT, 'icons'), { recursive: true });
 
 // Op de wortel blijven de hulppagina's (tokengenerator voor synchronisatie, toestelcheck) bereikbaar op hun eigen adres.
 const EXTRA_PAGES = ['tokengenerator.html', 'toestelcheck.html'];
@@ -59,7 +59,8 @@ self.addEventListener('activate', e => e.waitUntil((async () => {
 }
 
 // Service worker: versie uit de inhoud van alle bestanden, lijst van wat vooraf in de cache gaat.
-const files = fs.readdirSync(OUT, { recursive: true }).map(String).filter(f => !f.startsWith('oud') && !EXTRA_PAGES.includes(f) && fs.statSync(path.join(OUT, f)).isFile() && f !== 'sw.js').sort();
+// De opstartschermen (22 plaatjes, 2,7 MB) haalt iOS zelf op bij 'Zet op beginscherm'; ze horen niet in de voorraad van de worker.
+const files = fs.readdirSync(OUT, { recursive: true }).map(String).filter(f => !f.startsWith('oud') && !f.startsWith(path.join('icons', 'splash')) && !EXTRA_PAGES.includes(f) && fs.statSync(path.join(OUT, f)).isFile() && f !== 'sw.js').sort();
 const hash = crypto.createHash('sha256');
 for (const f of files) hash.update(f).update(fs.readFileSync(path.join(OUT, f)));
 const version = hash.digest('hex').slice(0, 12);
