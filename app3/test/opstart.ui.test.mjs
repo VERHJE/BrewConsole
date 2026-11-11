@@ -55,7 +55,7 @@ test('logboek compact: lage rijen en een smaakregel van één regel; "Nog te pro
   await importLog(page, app.base, json);
   await page.goto(app.base + '#/logboek'); await page.waitForSelector('.logrow');
   const hs = await page.locator('.logrow').evaluateAll(els => els.map(e => Math.round(e.getBoundingClientRect().height)));
-  assert.ok(hs.every(h => h <= 112), `rijen zijn te hoog: ${hs.join(', ')}`);
+  assert.ok(hs.every(h => h <= 116), `rijen zijn te hoog: ${hs.join(', ')}`);
   const taste = page.locator('.logrow small.taste').first();
   if (await taste.count()) assert.equal(await taste.evaluate(e => getComputedStyle(e).whiteSpace), 'nowrap');
   assert.ok(await page.locator('.logrow .logdate i').first().innerText().then(t => /^\d\d:\d\d$/.test(t)), 'de tijd staat in het datumblok');

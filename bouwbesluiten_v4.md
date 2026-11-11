@@ -1725,3 +1725,7 @@ Bronnen: WebKit bugs [301994](https://bugs.webkit.org/show_bug.cgi?id=301994), [
 - Breed scherm (≥1100 px): Logboek zonder gekozen kop toont rechts het verloop van alle koppen; Meer in twee kolommen; Zetten met gietschema links en "Voor je begint"/"Na de laatste giet" rechts; losse aandachtspunten in een kaart "Goed om te weten". Gekozen met min-width media queries, niet met container queries, om de plakkende startbalk niet te riskeren.
 - Meer-kop in groen-teal in plaats van bruin.
 - Opmerking: de eerste CI-run van deze ronde bleef bij GitHub op "queued" staan en was niet te annuleren of te herstarten; een nieuwe commit start een verse run.
+
+## Grotere kleine letters (11 nov 2026)
+- Letterschaal: `--fs-xs` van 12 naar 13 px en `--fs-s` van 14 naar 15 px; het eindlabel in de grafieken van 11 naar 12 px. Reden: op de iPad in fel licht waren de hoofdletters met letterspatiëring (OKT, V60, groepskoppen, tegelkoppen) te klein.
+- Gevolg: een logboekrij is 2 px hoger (114 px); de testgrens is van 112 naar 116 px gegaan. Verder geen lay-outwijziging; de hele suite is groen.
