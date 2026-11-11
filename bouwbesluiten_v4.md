@@ -1724,3 +1724,4 @@ Bronnen: WebKit bugs [301994](https://bugs.webkit.org/show_bug.cgi?id=301994), [
 - Logboek: een open zetsel (gepland of bezig) van meer dan 12 uur oud heet "Niet afgerond" in plaats van "Bezig"; het detail biedt dan Verwijderen en geen timerknop (`isStale` in `core/brew.ts`).
 - Breed scherm (≥1100 px): Logboek zonder gekozen kop toont rechts het verloop van alle koppen; Meer in twee kolommen; Zetten met gietschema links en "Voor je begint"/"Na de laatste giet" rechts; losse aandachtspunten in een kaart "Goed om te weten". Gekozen met min-width media queries, niet met container queries, om de plakkende startbalk niet te riskeren.
 - Meer-kop in groen-teal in plaats van bruin.
+- Opmerking: de eerste CI-run van deze ronde bleef bij GitHub op "queued" staan en was niet te annuleren of te herstarten; een nieuwe commit start een verse run.
