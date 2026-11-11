@@ -86,7 +86,7 @@ function Plan(): JSX.Element {
       <h1>Zetten</h1>
       {openCup && (
         <div class="banner openbrew" role="status">
-          <span>{openCup.status === 'brewing' ? 'Er loopt nog een zetsel' : 'Er staat een zetsel klaar'}: {techniqueName(openCup.technique)}, {new Date(openCup.at).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}.</span>
+          <span>{openCup.status === 'brewing' ? 'Er loopt nog een zetsel' : 'Er staat een zetsel klaar'}: {techniqueName(openCup.technique)} ({openCup.status === 'brewing' ? 'gestart' : 'klaargezet'} om {new Date(openCup.at).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}).</span>
           <a class="btn primary" href={href('timer', openCup.id)}>Naar de timer</a>
         </div>)}
       <div class="zgrid">
@@ -216,9 +216,9 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
       </div>
       {endB && <p class="meta">Verwacht klaar tussen {clock(endB.lo)} en {clock(endB.hi)}.</p>}
       <div class="recipe-body">
-        <table class="pours"><thead><tr><th>Tijd</th><th>Giet</th><th>Totaal</th><th>Hoe</th></tr></thead>
+        <table class="pours"><thead><tr><th>Tijd</th><th>Giet</th><th>Totaal</th>{lines.some(l => l.how) && <th>Hoe</th>}</tr></thead>
           <tbody>{lines.map(l => (
-            <tr key={l.index}><td>{l.at}{l.wait ? '*' : ''}</td><td>{l.add}</td><td>{l.to}</td><td>{l.how}</td></tr>
+            <tr key={l.index}><td>{l.at}{l.wait ? '*' : ''}</td><td>{l.add}</td><td>{l.to}</td>{lines.some(x => x.how) && <td>{l.how}</td>}</tr>
           ))}</tbody></table>
         {lines.some(l => l.wait) && <p class="meta">* begin pas als het bed bijna droog is, ook als dat later is dan de tijd.</p>}
         {prep.length > 0 && <div class="aprep"><strong>Voor je begint</strong><ul class="alist">{prep.map(t => <li key={t}>{t}</li>)}</ul></div>}
@@ -244,7 +244,7 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
           </ul>
         </details>)}
       {advice.trial && (
-        <div class="card"><p><strong>Proef:</strong> {advice.trial.text}</p>
+        <div class="card"><p>{advice.trial.text.startsWith('Proef:') ? <><strong>Proef:</strong>{advice.trial.text.slice(6)}</> : advice.trial.text}</p>
           <div class="actions">
             <button class="btn" type="button" onClick={() => onTrial('control')}>Zet kop 1: {techniqueName(advice.trial.control.technique)}</button>
             <button class="btn" type="button" onClick={() => onTrial('variant')}>Zet kop 2: {techniqueName(advice.trial.variant.technique)}</button>

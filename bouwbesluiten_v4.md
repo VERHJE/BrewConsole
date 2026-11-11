@@ -1664,3 +1664,12 @@ De timerknop die het moment noteert waarop het water door het bed is (de meting 
 - **Gegevens:** bovenaan tegels (zakken, koppen, dagen sinds je back-up); "Alles wissen" als kaart met een rode rand en rood icoon, zodat hij niet met de rest verward wordt.
 - **Synchronisatie:** een statustegel met stip (Verbonden / Niet verbonden) en de laatste keer.
 - Gedrag en tekst zijn gelijk gebleven; alleen de opmaak is veranderd.
+
+## Nalooprondes na de proefronde (11 nov 2026): punten A en B6
+
+- **"Proef: Proef:"** op Zetten: de kop en de engine-tekst begonnen allebei met "Proef:". Nu staat het woord één keer, vet.
+- **Tegels op het zakdetail** stonden scheef: een oude regel `.stock` (marge) trof ook de voorraadtegel en schoof hem 4 px omlaag. De test gebruikt nu een zak mét zakgrootte, anders zag hij de fout niet.
+- **Uitgeschakelde knoppen:** effen vlak met gedempte tekst in plaats van half-doorzichtig goud (dat werd olijfbruin op het groen).
+- **Smaakprofiel:** "0 van 0 aangevinkt zonder dat de zak het noemt" valt weg als er niets is om tegen af te zetten.
+- **Banner op Zetten:** "Er staat een zetsel klaar: X (klaargezet om 00:40)" en "Er loopt nog een zetsel: X (gestart om 00:40)", zodat de tijd niet voor een tijdsduur wordt aangezien.
+- **Gietschema op Zetten:** de kolom "Hoe" verdwijnt als geen enkele giet iets te zeggen heeft (bij de V60 was hij leeg).
