@@ -25,5 +25,5 @@ test('toepassen: het attribuut alleen bij een bewuste keuze', () => {
 });
 
 test('de statusbalk heeft de kleur van de achtergrond van het thema', () => {
-  assert.equal(THEME_COLOR, '#13201a');
+  assert.equal(THEME_COLOR, '#1e3128');
 });

@@ -1,7 +1,17 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
-html { background: #0d1611; }
-body { margin: 0; background: radial-gradient(130% 70% at 50% -10%, #2f4a3d 0%, #142019 55%, #0b120e 100%) fixed; color: var(--text); font: 16px/1.45 var(--font); }
+/* Statusbalk: op een iPhone in de app kleurt iOS de balk (of de rand eronder) met de achtergrondkleur van de pagina, niet met theme-color.
+   Daarom heeft html dezelfde effen kleur als de bovenkant van de pagina; de bovenste 140 px vloeien daar vanuit over, zodat de balk er zonder naad in overgaat. */
+html { background: #1e3128; }
+body { margin: 0; background: linear-gradient(180deg, #1e3128 0, rgb(30 49 40 / 0) 140px) top / 100% 140px no-repeat fixed, radial-gradient(130% 70% at 50% -10%, #2f4a3d 0%, #142019 55%, #0b120e 100%) fixed; color: var(--text); font: 16px/1.45 var(--font); }
+/* Met doorlopende statusbalk (black-translucent, alleen bij een verse installatie) staat de systeemtekst over de pagina: een zachte schim houdt hem leesbaar. Zonder die modus is de inset 0 en is de schim onzichtbaar. */
+html::before { content: ''; position: fixed; z-index: 60; top: 0; left: 0; right: 0; height: calc(env(safe-area-inset-top) + 8px); pointer-events: none; background: linear-gradient(180deg, rgb(30 49 40 / .88) 0, rgb(30 49 40 / .55) 60%, rgb(30 49 40 / 0) 100%); }
+@supports not (top: env(safe-area-inset-top)) { html::before { display: none; } }
+/* Opstartplaatje terwijl de app laadt (staat in index.html en verdwijnt zodra de app tekent). */
+.boot { min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 14px; text-align: center; color: #f1e8d8; font-family: 'Fraunces', Georgia, serif; }
+.boot i { display: block; width: 44px; height: 2px; background: #e6c58f; opacity: .8; }
+.boot b { font-weight: 500; font-size: 2.2rem; letter-spacing: -.01em; }
+.boot span { font: 600 .72rem system-ui, sans-serif; letter-spacing: .34em; text-transform: uppercase; color: #e6c58f; }
 button, input, select, textarea { font: inherit; color: inherit; }
 h1, h2, .stepname, .headfont { font-family: var(--head); letter-spacing: -.01em; }
 h1 { font-size: var(--fs-xl); font-weight: 600; margin: 0 0 .25rem; line-height: 1.15; }
@@ -532,8 +542,6 @@ dialog.guide::backdrop { background: rgb(20 14 8 / .45); }
 /* ───────────── Timer · richting "Ritueel" (keuze Jelle, 10 nov 2026) ─────────────
    Altijd donker (zetmodus), groen-espresso met goud: één stap tegelijk, een grote ring met het doelgewicht,
    kapitalen met letterruimte, pilknoppen. Beweging alleen via transform en strepen (geen fades: contrast blijft meetbaar). */
-html:has(.timer.rit), html:has(.timer.rit) body { background: #0d1611; }
-html:has(.timer.rit) body { background: radial-gradient(130% 70% at 50% -10%, #2f4a3d 0%, #142019 55%, #0b120e 100%) fixed; }
 .timer.rit {
   --bg: #13201a; --surface: #1b2b23; --surface-2: #24372d; --line: #33493d;
   --text: #f1e8d8; --text-2: #cfc6b5; --text-3: #a59d8c; --accent: #e6c58f; --accent-soft: #2a3a2f;
@@ -688,8 +696,6 @@ dialog.guide { max-height: calc(100dvh - 48px - env(safe-area-inset-top)); }
 @media (max-width: 719px) { dialog.guide { max-height: calc(88dvh - env(safe-area-inset-top)); } }
 
 /* ───────────── Proeven in de zetmodus (zelfde sfeer als de timer, 10 nov 2026) ───────────── */
-html:has(.proeven.rit), html:has(.proeven.rit) body { background: #0d1611; }
-html:has(.proeven.rit) body { background: radial-gradient(130% 70% at 50% -10%, #2f4a3d 0%, #142019 55%, #0b120e 100%) fixed; }
 .proeven.rit {
   --bg: #13201a; --surface: #1b2b23; --surface-2: #24372d; --line: #33493d;
   --text: #f1e8d8; --text-2: #cfc6b5; --text-3: #a59d8c; --accent: #e6c58f; --accent-soft: #2a3a2f;
@@ -976,3 +982,27 @@ fieldset.tiles legend { padding: 0; margin: 0 0 8px; }
   .timer.rit .pourline .pw b { font-size: var(--fs-l); }
 }
 @media (min-width: 900px) and (min-height: 600px) { .timer .pourline li { font-size: var(--fs-l); } }
+
+/* ───── Logboek compacter (11 nov 2026): vier korte regels in plaats van vijf lange ───── */
+.logrow { gap: 12px; padding: 10px 34px 10px 10px; }
+.logdate.bagart.label { height: auto; min-height: 64px; padding: 7px 0; gap: 1px; }
+.logdate.bagart.label b { font-size: 1.45rem; }
+.logdate.bagart.label i { position: relative; margin-top: 3px; font: 500 var(--fs-xs) var(--font); font-style: normal; letter-spacing: .04em; color: rgb(243 231 207 / .85); font-variant-numeric: tabular-nums; }
+.logtop { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.logtop strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.logrow .starrow { margin-left: 0; flex: none; }
+.logrow .tag.totaste { flex: none; min-height: 0; padding: 1px 9px; font-size: var(--fs-xs); background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+.logrow .logmeta { margin-top: 1px; }
+.logrow .lognums { margin-top: 1px; }
+.logrow small.taste { margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
+@media (min-width: 720px) { .logrow small.taste { white-space: normal; } }
+
+/* ───── Smaakprofiel opgeruimd (11 nov 2026): "Wat merk je op?" als kaart met pil, groepen zonder oordeel ingeklapt ───── */
+ul.sens.grouped { margin: 0 0 10px; }
+ul.sens.grouped li { padding: 12px 16px; border-bottom: 0; }
+ul.sens.grouped li + li { border-top: 1px solid var(--line); }
+.senshead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.senshead strong { font-family: var(--head); font-size: var(--fs-m); font-weight: 600; }
+.senshead .tag { flex: none; min-height: 0; padding: 2px 10px; font-size: var(--fs-xs); }
+ul.sens.grouped .meter { margin: 8px 0 4px; }
+details.sens-empty { margin: 0 0 12px; }

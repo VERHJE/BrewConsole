@@ -27,14 +27,16 @@ function Row({ r, active, multi }: { r: ReturnType<typeof cupRows>[number]; acti
   const day = d.toLocaleString('nl-NL', { day: 'numeric' });
   const mon = d.toLocaleString('nl-NL', { month: 'short' }).replace('.', '');
   const time = d.toLocaleString('nl-NL', { hour: '2-digit', minute: '2-digit' });
-  const facts = [time, `${nl1(r.doseG)} g`, r.click !== null ? `klik ${r.click}` : null, r.endSec !== null ? clock(r.endSec) : null, r.status !== 'complete' ? STATUS[r.status] : null, r.status === 'complete' && !r.tasted ? 'nog te proeven' : null].filter(Boolean).join(' · ');
+  // Compact: titel met waardering rechts, dan brewer en techniek, dan de cijfers op één regel en (als je die hebt) de smaakregel op één regel.
+  const nums = [`${nl1(r.doseG)} g`, r.click !== null ? `klik ${r.click}` : null, r.endSec !== null ? clock(r.endSec) : null, r.status !== 'complete' ? STATUS[r.status] : null].filter(Boolean).join(' · ');
+  const todo = r.status === 'complete' && !r.tasted;
   return (
     <li><a class="item go logrow" href={href('logboek', r.id)} aria-current={active ? 'true' : undefined}>
-      <span class="logdate bagart label" style={labelStyle(r.beanName ?? 'Zonder zak')} aria-hidden="true"><Topo seed={r.beanName ?? 'Zonder zak'} /><b>{day}</b><small>{mon}</small></span>
+      <span class="logdate bagart label" style={labelStyle(r.beanName ?? 'Zonder zak')} aria-hidden="true"><Topo seed={r.beanName ?? 'Zonder zak'} /><b>{day}</b><small>{mon}</small><i>{time}</i></span>
       <span class="logbody">
-        <strong>{multi ? (r.beanName ?? 'Zonder zak') : techniqueName(r.technique)} <Stars value={r.liking} /></strong>
+        <span class="logtop"><strong>{multi ? (r.beanName ?? 'Zonder zak') : techniqueName(r.technique)}</strong>{todo ? <span class="tag totaste">Nog te proeven</span> : <Stars value={r.liking} />}</span>
         <small class="logmeta"><span class="brewer">{BREWER_SHORT[r.method]}</span>{multi && <> {techniqueName(r.technique)}</>}</small>
-        <small class="lognums"><span class="sr-only">{dateText(r.at)}. </span>{facts}</small>
+        <small class="lognums"><span class="sr-only">{dateText(r.at)}. </span>{nums}</small>
         {r.taste && <small class="taste">{r.taste}</small>}
       </span>
     </a></li>

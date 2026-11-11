@@ -1679,3 +1679,31 @@ De timerknop die het moment noteert waarop het water door het bed is (de meting 
 - **B7 · één tijdlijn voor het gietschema.** Zetten (het recept), de timer en het Logboek gebruiken nu hetzelfde onderdeel (`PourTimeline`): tijd, stip op een lijn, "+gram → totaal" en eventueel hoe (swirl, roeren). De tabel op Zetten is vervallen. In de timer is de huidige giet gemarkeerd (gevulde stip met ring), de volgende heeft een gestippelde stip, een wachtende giet een stippellijn en een afgeronde giet een gevulde stip. De staat staat ook als verborgen tekst erbij ("Nu:", "Klaar:", "Wacht:", "Straks:"), dus kleur is nooit het enige signaal. In het Logboek staat per giet wanneer hij doorliep.
 - **B8 · timer op de iPad.** Breed en hoog (iPad, MacBook): het schema staat bovenaan de rechterkolom, groter, en de losse regel "Daarna giet 2 om 0:45" is weg (de volgende giet staat al in de tijdlijn). De voorbereiding en "na de laatste giet" staan eronder.
 - **B9 · zakkenlijst.** Elke rij heeft drie vaste regels: herkomst, branding met leeftijd, en voorraad met koppen (met "Bijna op" als label op die laatste regel). Er is geen regel meer die halverwege afbreekt ("6 / koppen").
+
+## Opstartscherm, statusbalk, compact logboek en smaakprofiel (11 nov 2026)
+
+### Opstartscherm
+- iOS toont bij het openen van de app een eigen opstartplaatje (`apple-touch-startup-image`), maar alleen bij een **exacte** overeenkomst van schermbreedte, -hoogte, pixeldichtheid en stand. Zonder match blijft het scherm leeg. Daarom zijn er 22 plaatjes: 8 iPhone-maten (staand) en 7 iPad-maten (staand en liggend), met de maten uit <https://www.ios-resolution.com/> (nov 2026). Jouw iPhone (390 × 844 pt, drievoudig) is gedekt.
+- Ontwerp: dezelfde groene ondergrond als de app, de hoogtelijnen van de etiketten, een dunne messing lijn en "Brew Console" in serif. Het icoon volgt later.
+- De plaatjes worden gemaakt door `scripts/maak-opstartschermen.mjs` (maten in `scripts/opstartscherm-maten.mjs`) en staan in `icons/splash/`. Als paletplaatje (256 kleuren, median cut): 2,7 MB in totaal in plaats van 16 MB, zonder zichtbare banding. De service worker neemt ze niet op in zijn voorraad; iOS haalt ze zelf op.
+- Terwijl de app laadt staat dezelfde naam in `index.html`; die maakt plaats voor de app zodra die tekent, zodat er geen leeg groen scherm tussen zit.
+- **Let op:** iOS leest het opstartplaatje bij het toevoegen aan het beginscherm en onthoudt het. Een bestaande installatie toont het nieuwe plaatje mogelijk pas na opnieuw toevoegen.
+
+### Doorlopende statusbalk op iPhone: wat kan en wat niet
+Onderzoek (bronnen onderaan). Wat daaruit volgt:
+1. **De statusbalkstijl leest iOS bij het toevoegen aan het beginscherm** (WebKit-bug 316008): met `apple-mobile-web-app-status-bar-style = black-translucent` loopt de pagina onder de statusbalk door; een bestaande installatie verandert niet door later de tag toe te voegen, alleen door de app te verwijderen en opnieuw toe te voegen. Brew Console had die tags nog niet; ze staan er nu in (`apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`).
+2. **Er is een bekende iOS-fout** (WebKit-bug 301994, heropend, laatst bijgewerkt 10 nov 2026): in iOS 26.1 en later tekent het systeem bij sommige installaties zelf een balk boven de pagina, `env(safe-area-inset-top)` is dan 0 en de pagina kan er niet onder. Meldingen zijn er voor iOS 26.1, 26.5.2 en de iOS 27-beta's; sommigen zagen het in 26.2 verdwijnen. Dit past bij wat jouw toestelcheck liet zien (boven 0, onder 34).
+3. **`theme-color` telt in Safari 26 niet meer** voor de balk; de kleur komt uit de achtergrond van de pagina. Daarom heeft `html` nu de effen kleur van de bovenkant van de pagina (`#1e3128`) en vloeit het verloop in de bovenste 140 px daar vanuit over. De systeembalk (of de rand eronder) en de pagina gaan zo zonder naad in elkaar over. Dit werkt zonder opnieuw toevoegen (na een herstart van de app); bij de zwarte band die je op de iPhone zag, hoort dit de grootste verbetering te zijn.
+4. Bij een doorlopende balk staat de systeemtekst over de pagina; een zachte schim (`html::before`, hoogte = veilige zone + 8 px) houdt hem leesbaar. Zonder doorlopende balk is de veilige zone 0 en de schim onzichtbaar.
+- **Niet te controleren zonder toestel.** Ik heb dit niet op een echte iPhone kunnen zien; de tests simuleren een veilige zone van 47 pt. De toestelcheck heeft er een regel bij ("Statusbalk: loopt de pagina eronder door?") die het gat tussen scherm- en beeldhoogte meet.
+- **Opnieuw toevoegen kost je lokale gegevens** (iOS wist de opslag van een app die je van het beginscherm haalt). Maak eerst een back-up (Meer → Gegevens) of laat synchronisatie lopen.
+
+Bronnen: WebKit bugs [301994](https://bugs.webkit.org/show_bug.cgi?id=301994), [316008](https://bugs.webkit.org/show_bug.cgi?id=316008) en [306465](https://bugs.webkit.org/show_bug.cgi?id=306465); [Apple Developer Forums](https://developer.apple.com/forums/thread/798014); [ios-resolution.com](https://www.ios-resolution.com/).
+
+### Logboek compacter
+- Vier korte regels in plaats van vijf lange: titel met de waardering rechts ("Nog te proeven" als label rechts als je nog moet proeven), brewer en techniek, de cijfers op één regel, en de smaakregel op één regel (afgekapt op de telefoon). De tijd staat nu in het datumblok.
+- Op de telefoon passen er ruim vijf koppen in beeld in plaats van drie en een half.
+
+### Smaakprofiel opgeruimd
+- "Wat merk je op?" als kaart met per groep een pil ("Je merkt dit op", "Je mist dit vaak", "Je vinkt snel aan", "Wisselend") en de balk eronder.
+- De lange opsomming van groepen zonder oordeel is één ingeklapt regeltje: "9 smaakgroepen nog zonder oordeel".

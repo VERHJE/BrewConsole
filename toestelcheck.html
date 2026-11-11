@@ -117,6 +117,21 @@
     const stand = matchMedia('(orientation: landscape)').matches ? 'liggend' : 'staand';
     return ['info', `${stand}: boven ${v.boven} · rechts ${v.rechts} · onder ${v.onder} · links ${v.links} (punten)`];
   });
+  await check('Statusbalk: loopt de pagina eronder door?', async () => {
+    // Staand en als app: is het beeld even hoog als het scherm, dan tekent de pagina ook onder de statusbalk (doorlopend);
+    // is het lager, dan tekent het systeem zelf een balk boven de pagina (en is de veilige zone boven vaak 0).
+    const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;visibility:hidden;padding-top:env(safe-area-inset-top)';
+    document.body.appendChild(probe);
+    const top = Math.round(parseFloat(getComputedStyle(probe).paddingTop)); probe.remove();
+    const gat = Math.round(screen.height - window.innerHeight);
+    const stand = matchMedia('(orientation: landscape)').matches ? 'liggend' : 'staand';
+    const uitleg = !standalone ? 'open dit vanaf het beginscherm voor de echte uitkomst'
+      : gat <= 1 ? 'de pagina loopt onder de statusbalk door' + (top > 0 ? ' en de app houdt ' + top + ' pt vrij: goed' : ' maar de veilige zone boven is 0: de titel kan eronder vallen')
+      : 'het systeem tekent zelf een balk van ±' + gat + ' pt boven de pagina; de kleur daarvan komt van de achtergrond van de pagina';
+    return ['info', `${stand}, ${standalone ? 'als app' : 'in Safari'}: schermhoogte ${Math.round(screen.height)} · beeldhoogte ${Math.round(window.innerHeight)} · gat ${gat} pt · veilige zone boven ${top} pt — ${uitleg}`];
+  });
   add('Toestel', 'info', navigator.userAgent);
 
   const text = results.map(r => `${r.status === 'ok' ? 'OK ' : r.status === 'bad' ? 'NEE' : '-- '} ${r.name}: ${r.detail}`).join('\n');

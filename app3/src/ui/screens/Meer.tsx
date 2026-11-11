@@ -17,6 +17,8 @@ import { Sync } from './Sync.tsx';
 import { Voorkeuren, Water, ZeroCheck } from './Instellingen.tsx';
 
 const pct = (n: number | null): string => (n === null ? '–' : `${Math.round(n * 100)} %`);
+/** Korte pillen: de volledige zin (STATUS_TEXT) is te lang voor een label. */
+const STATUS_SHORT: Partial<Record<string, string>> = { picks_up: 'Je merkt dit op', misses: 'Je mist dit vaak', overcalls: 'Je vinkt snel aan', mixed: 'Wisselend' };
 const catName = (k: string): string => CATEGORIES.find(c => c.key === k)?.name ?? k;
 const f1 = (n: number): string => (Math.round(n * 10) / 10).toString().replace('.', ',');
 /** Groepsnamen in het Nederlands (proces en branding komen als sleutel uit de engine). */
@@ -53,12 +55,14 @@ function Profiel(): JSX.Element {
         const unknown = p.sensitivity.filter(s => s.status === 'unknown');
         return (
           <div>
-            {known.length > 0 && <ul class="sens">{known.map(s => (
-              <li key={s.category}><strong>{catName(s.category)}</strong>
-                <div>{STATUS_TEXT[s.status]}</div>
+            {known.length > 0 && <ul class="sens grouped">{known.map(s => (
+              <li key={s.category}>
+                <div class="senshead"><strong>{catName(s.category)}</strong><span class="tag" title={STATUS_TEXT[s.status]}>{STATUS_SHORT[s.status] ?? STATUS_TEXT[s.status]}</span></div>
                 <div class="meter" role="img" aria-label={`${s.hits} van ${s.nExpected} herkend`}><i style={`width:${s.nExpected > 0 ? Math.round((s.hits / s.nExpected) * 100) : 0}%`} /></div>
                 <div class="stat">{s.hits} van {s.nExpected} herkend{s.nNotExpected > 0 ? ` · ${s.falseAlarms} van ${s.nNotExpected} aangevinkt zonder dat de zak het noemt` : ''}</div></li>))}</ul>}
-            {unknown.length > 0 && <p class="sens-empty">Nog te weinig zakken om iets te zeggen over: {unknown.map(s => catName(s.category)).join(', ')}.</p>}
+            {unknown.length > 0 && (
+              <details class="tech-note sens-empty"><summary>{unknown.length} {unknown.length === 1 ? 'smaakgroep' : 'smaakgroepen'} nog zonder oordeel</summary>
+                <p class="engine-note">Daarvoor zijn nog te weinig zakken geproefd: {unknown.map(s => catName(s.category)).join(', ')}.</p></details>)}
           </div>);
       })()}
       <h2>Notities die je herkent</h2>

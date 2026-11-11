@@ -16,7 +16,7 @@ test('thema: één thema, groen-espresso met goud, ook als het toestel licht is;
     assert.equal(await page.locator('input[name=theme]').count(), 0, 'geen themakeuze');
     assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()), '#13201a', `${scheme}: groene ondergrond`);
     assert.equal(await page.evaluate(() => getComputedStyle(document.body).color), 'rgb(241, 232, 216)', `${scheme}: ivoren tekst`);
-    assert.equal(await page.evaluate(() => document.querySelector('meta[name=theme-color]').getAttribute('content')), '#13201a');
+    assert.equal(await page.evaluate(() => document.querySelector('meta[name=theme-color]').getAttribute('content')), '#1e3128');
     await page.close();
   }
 });
