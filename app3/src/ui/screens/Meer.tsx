@@ -153,7 +153,7 @@ function Summary(): JSX.Element | null {
   const mean = rated.length ? rated.reduce((a, r) => a + (r.liking ?? 0), 0) / rated.length : null;
   const beans = beanRows(state).length;
   return (
-    <div class="meerhero bagart label" style="--l1:#2c2118;--l2:#43321f">
+    <div class="meerhero bagart label" style="--l1:#24403d;--l2:#33605a">
       <Topo seed="Brew Console" />
       <small class="eyebrow">Jouw koffie tot nu toe</small>
       <div class="mh-nums">
@@ -180,12 +180,16 @@ export function Meer({ route }: { route: Route }): JSX.Element {
         <section class="meerhub">
           <h1>Meer</h1>
           <Summary />
+        <div class="meergroups">
+<div class="mcol">
           <h2 class="group-h">Jouw koffie</h2>
           <ul class="list grouped">
             <Entry to="profiel" icon={<IconTaste />} title="Smaakprofiel" sub="Wat je opmerkt en waardeert" />
             <Entry to="molen" icon={<IconGrind />} title="Molen" sub="Hoe jouw molen reageert" />
             <Entry to="water" icon={<IconDrop />} title="Water" sub="Hardheid, alkaliniteit en verdunning" />
           </ul>
+</div>
+<div class="mcol">
           <h2 class="group-h">Gedrag</h2>
           <ul class="list grouped">
             <Entry to="voorkeuren" icon={<IconSliders />} title="Voorkeuren" sub="Hoe proeven, vragen en de timer werken" />
@@ -196,6 +200,8 @@ export function Meer({ route }: { route: Route }): JSX.Element {
             <Entry to="sync" icon={<IconSync />} title="Synchronisatie" sub={syncLine} />
             <Entry to="over" icon={<IconInfo />} title="Over" sub="Versie en privacy" />
           </ul>
+</div>
+</div>
         </section>
       );
   }

@@ -2,7 +2,7 @@ import type { JSX } from 'preact';
 import { factsOf } from '../../../../engine3/src/index.ts';
 import type { Route } from '../../core/router.ts';
 import { href } from '../../core/router.ts';
-import { METHOD_LABEL, clock, nl1, pourLines, techniqueName } from '../../core/brew.ts';
+import { METHOD_LABEL, OPEN_BREW_HOURS, clock, isStale, nl1, pourLines, techniqueName } from '../../core/brew.ts';
 import { cupRows, brewDeleteEvent } from '../../core/insights.ts';
 import { EmptyState } from '../EmptyState.tsx';
 import { IconLog } from '../icons.tsx';
@@ -11,10 +11,13 @@ import { ACIDITY_LABEL, formatLiking, FINISH_LABEL, GOALHIT_LABEL, STRENGTH_LABE
 import { compareById, groupByMonth, matches } from '../../core/ronde2.ts';
 import { useState } from 'preact/hooks';
 import { Trends } from '../Insights.tsx';
+import { useMedia } from '../use-media.ts';
 import { labelStyle, Topo, useApp, useSnapshot } from '../store-context.tsx';
 import { PourTimeline } from '../pour-timeline.tsx';
 
 const STATUS: Record<string, string> = { planned: 'Niet gestart', brewing: 'Bezig', complete: 'Klaar', abandoned: 'Afgebroken' };
+/** 'Bezig' of 'Niet gestart' bij een zetsel van dagen geleden is misleidend: dat is nooit afgerond. */
+const statusText = (status: string, atMs: number, nowMs: number): string => ((status === 'planned' || status === 'brewing') && isStale(atMs, nowMs) ? 'Niet afgerond' : STATUS[status] ?? status);
 const BREWER_SHORT = { v60: 'V60', chemex: 'Chemex' } as const;
 const dateText = (ms: number): string => new Date(ms).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
@@ -22,13 +25,13 @@ const dateText = (ms: number): string => new Date(ms).toLocaleString('nl-NL', { 
  * Een rij heeft vaste plekken: links de datum als blokje, in het midden de titel met de waardering, een regel met brewer, techniek en
  * cijfers, en (als je die hebt) een regel over hoe de kop was. Met één zak is de zaknaam ruis: dan is de techniek de titel.
  */
-function Row({ r, active, multi }: { r: ReturnType<typeof cupRows>[number]; active: boolean; multi: boolean }): JSX.Element {
+function Row({ r, active, multi, now }: { r: ReturnType<typeof cupRows>[number]; active: boolean; multi: boolean; now: number }): JSX.Element {
   const d = new Date(r.at);
   const day = d.toLocaleString('nl-NL', { day: 'numeric' });
   const mon = d.toLocaleString('nl-NL', { month: 'short' }).replace('.', '');
   const time = d.toLocaleString('nl-NL', { hour: '2-digit', minute: '2-digit' });
   // Compact: titel met waardering rechts, dan brewer en techniek, dan de cijfers op één regel en (als je die hebt) de smaakregel op één regel.
-  const nums = [`${nl1(r.doseG)} g`, r.click !== null ? `klik ${r.click}` : null, r.endSec !== null ? clock(r.endSec) : null, r.status !== 'complete' ? STATUS[r.status] : null].filter(Boolean).join(' · ');
+  const nums = [`${nl1(r.doseG)} g`, r.click !== null ? `klik ${r.click}` : null, r.endSec !== null ? clock(r.endSec) : null, r.status !== 'complete' ? statusText(r.status, r.at, now) : null].filter(Boolean).join(' · ');
   const todo = r.status === 'complete' && !r.tasted;
   return (
     <li><a class="item go logrow" href={href('logboek', r.id)} aria-current={active ? 'true' : undefined}>
@@ -43,8 +46,10 @@ function Row({ r, active, multi }: { r: ReturnType<typeof cupRows>[number]; acti
   );
 }
 
-function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
+function List({ activeId = null, overview = false }: { activeId?: string | null; overview?: boolean }): JSX.Element {
   const { state } = useSnapshot();
+  const { env } = useApp();
+  const now = env.now();
   const [q, setQ] = useState('');
   const all = cupRows(state);
   const multi = new Set(all.map(r => r.beanName)).size > 1;
@@ -52,13 +57,13 @@ function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
   return (
     <section>
       {activeId ? <h2 class="list-title">Logboek</h2> : <h1>Logboek</h1>}
-      {all.length > 1 && <details class="card trendcard"><summary>Verloop van alle koppen</summary><Trends beanId={null} /></details>}
+      {all.length > 1 && !overview && <details class="card trendcard"><summary>Verloop van alle koppen</summary><Trends beanId={null} /></details>}
       {all.length > 5 && <label class="field search"><span class="sr-only">Zoek in koppen</span><input type="search" name="zoek" placeholder="Zoek op zak, techniek of datum" value={q} onInput={e => setQ((e.currentTarget as HTMLInputElement).value)} /></label>}
       {all.length === 0 ? <EmptyState icon={<IconLog />} title="Nog geen koppen" action={{ label: 'Zet je eerste kop', href: href('zetten') }}>Elk zetsel dat je afrondt komt hier te staan, met wat je ervan vond.</EmptyState>
         : rows.length === 0 ? <EmptyState compact title={`Geen koppen gevonden voor ‘${q}’`} />
         : groupByMonth(rows).map(g => (
           <div key={g.label} class="month"><h2 class="month-h">{g.label} <small>{g.rows.length} {g.rows.length === 1 ? 'kop' : 'koppen'}</small></h2>
-            <ul class="list">{g.rows.map(r => <Row key={r.id} r={r} active={r.id === activeId} multi={multi} />)}</ul></div>))}
+            <ul class="list">{g.rows.map(r => <Row key={r.id} r={r} active={r.id === activeId} multi={multi} now={now} />)}</ul></div>))}
     </section>
   );
 }
@@ -88,6 +93,7 @@ function Detail({ id }: { id: string }): JSX.Element {
   const t = c.tasting;
   const lines = pourLines(c.planned);
   const others = cupRows(state, c.beanId).filter(o => o.id !== id && o.status === 'complete').slice(0, 20);
+  const stale = (c.status === 'planned' || c.status === 'brewing') && isStale(c.at, env.now());
   const del = async (): Promise<void> => { if (confirm('Deze kop verwijderen? Dit haalt hem uit je advies.')) { await store.append([brewDeleteEvent(env, id)]); location.hash = href('logboek'); } };
   const name = bean?.fields.name ?? 'Kop';
   const longDate = new Date(c.at).toLocaleString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).replace('.', '');
@@ -103,15 +109,20 @@ function Detail({ id }: { id: string }): JSX.Element {
         <Topo seed={name} />
         <a class="btn back-narrow backtop" href={href('logboek')} aria-label="Terug naar het logboek">Terug</a>
         <div class="loghero-text">
-          <small class="eyebrow">{longDate}{c.status !== 'complete' ? ` · ${STATUS[c.status]}` : ''}</small>
+          <small class="eyebrow">{longDate}{c.status !== 'complete' ? ` · ${stale ? 'Niet afgerond' : STATUS[c.status]}` : ''}</small>
           <h1>{name}</h1>
           <span class="logmeta"><span class="brewer">{BREWER_SHORT[c.method]}</span> {techniqueName(c.technique)}{c.planned.tempC !== null ? ` · ${c.planned.tempC} °C` : ''}</span>
           {t?.liking ? <span class="heroscore"><Stars value={t.liking} /><span>{formatLiking(t.liking)} van 5</span></span>
             : c.status === 'complete' ? <span class="heroscore"><span class="tag">Nog te proeven</span></span> : null}
         </div>
       </div>
-      <p class="sr-only">{dateText(c.at)} · {STATUS[c.status]}</p>
-      {(c.status === 'planned' || c.status === 'brewing') && <p><a class="btn primary" href={href('timer', id)}>{c.status === 'brewing' ? 'Terug naar de timer' : 'Naar de timer'}</a></p>}
+      <p class="sr-only">{dateText(c.at)} · {stale ? 'Niet afgerond' : STATUS[c.status]}</p>
+      {stale && (
+        <div class="banner" role="status">
+          <p>Dit zetsel is niet afgerond en staat al meer dan {OPEN_BREW_HOURS} uur open. Verwijder het als je het niet meer nodig hebt; het telt dan niet mee.</p>
+          <button class="btn" type="button" onClick={del}>Verwijderen</button>
+        </div>)}
+      {(c.status === 'planned' || c.status === 'brewing') && !stale && <p><a class="btn primary" href={href('timer', id)}>{c.status === 'brewing' ? 'Terug naar de timer' : 'Naar de timer'}</a></p>}
       <div class="numbers">
         <div class="num"><b>{nl1(c.doseG)} g</b><small>koffie</small></div>
         <div class="num"><b>{Math.round(c.waterG)} g</b><small>water{c.bypassG > 0 ? ` + ${Math.round(c.bypassG)} g bypass` : ''}</small></div>
@@ -141,8 +152,22 @@ function Detail({ id }: { id: string }): JSX.Element {
   );
 }
 
+/** Breed (iPad liggend, laptop): zonder gekozen kop staat rechts het verloop van alle koppen in plaats van een lege ruimte. */
+function Overview(): JSX.Element {
+  const { state } = useSnapshot();
+  const n = cupRows(state).length;
+  return (
+    <aside class="logoverview card" aria-label="Verloop van alle koppen">
+      <h2 class="sect-h">Verloop van alle koppen</h2>
+      {n > 1 ? <Trends beanId={null} /> : <p class="muted">Na twee koppen verschijnt hier het verloop.</p>}
+    </aside>
+  );
+}
+
 export function Logboek({ route }: { route: { parts: readonly string[] } & Route }): JSX.Element {
   const id = route.parts[1];
+  const wide = useMedia('(min-width: 1100px)');
   if (id === 'vergelijk' && route.parts[2] && route.parts[3]) return <Compare a={route.parts[2]} b={route.parts[3]} />;
-  return id ? <div class="split has-detail"><div class="split-list"><List activeId={id} /></div><Detail key={id} id={id} /></div> : <List />;
+  if (id) return <div class="split has-detail"><div class="split-list"><List activeId={id} /></div><Detail key={id} id={id} /></div>;
+  return wide ? <div class="split overview"><div class="split-list"><List overview /></div><Overview /></div> : <List />;
 }

@@ -216,11 +216,16 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
         {r.grindClick !== null && <div class="num"><b key={`k${r.grindClick}`}>klik {r.grindClick}</b><small>molen · C3S Pro</small></div>}
       </div>
       {endB && <p class="meta">Verwacht klaar tussen {clock(endB.lo)} en {clock(endB.hi)}.</p>}
-      <div class="recipe-body">
-        <PourTimeline label="Gietschema" rows={lines.map(l => ({ index: l.index, at: l.at, add: l.add, to: l.to, how: l.how, wait: l.wait }))} />
-        {lines.some(l => l.wait) && <p class="meta">* begin pas als het bed bijna droog is, ook als dat later is dan de tijd.</p>}
-        {prep.length > 0 && <div class="aprep"><strong>Voor je begint</strong><ul class="alist">{prep.map(t => <li key={t}>{t}</li>)}</ul></div>}
-        {finish.length > 0 && <div class="aprep"><strong>Na de laatste giet</strong><ul class="alist">{finish.map(t => <li key={t}>{t}</li>)}</ul></div>}
+      <div class={`recipe-body${prep.length + finish.length > 0 ? ' two' : ''}`}>
+        <div class="rb-left">
+          <PourTimeline label="Gietschema" rows={lines.map(l => ({ index: l.index, at: l.at, add: l.add, to: l.to, how: l.how, wait: l.wait }))} />
+          {lines.some(l => l.wait) && <p class="meta">* begin pas als het bed bijna droog is, ook als dat later is dan de tijd.</p>}
+        </div>
+        {prep.length + finish.length > 0 && (
+          <div class="rb-right">
+            {prep.length > 0 && <div class="aprep"><strong>Voor je begint</strong><ul class="alist">{prep.map(t => <li key={t}>{t}</li>)}</ul></div>}
+            {finish.length > 0 && <div class="aprep"><strong>Na de laatste giet</strong><ul class="alist">{finish.map(t => <li key={t}>{t}</li>)}</ul></div>}
+          </div>)}
       </div>
       <div class="startbar"><button class="btn primary" type="button" onClick={onStart}><span>{advice.trial ? 'Zet gewoon dit recept' : 'Start zetsel'}</span>{end && <small>klaar rond {end}</small>}</button></div>
       </div>
@@ -231,7 +236,7 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
           ))}</ol>
         </details>)}
       {cautions.map(w => <p class="banner warn" key={w} role="status">{w}</p>)}
-      {notes.length > 0 && <ul class="notes" aria-label="Goed om te weten">{notes.map(w => <li key={w}>{w}</li>)}</ul>}
+      {notes.length > 0 && <div class="card knownotes"><strong>Goed om te weten</strong><ul class="notes" aria-label="Goed om te weten">{notes.map(w => <li key={w}>{w}</li>)}</ul></div>}
       {advice.reasons.length > 0 && (<details class="card fold"><summary>Waarom dit recept?</summary><ul class="reasons">{advice.reasons.map(x => <li key={x.code + x.text}>{x.text}</li>)}</ul></details>)}
       {(doseB || tdsB) && (
         <details class="card fold"><summary>Hoe zeker is dit recept?</summary>

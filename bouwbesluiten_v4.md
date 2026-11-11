@@ -1718,3 +1718,10 @@ Bronnen: WebKit bugs [301994](https://bugs.webkit.org/show_bug.cgi?id=301994), [
 ## CI: browserinstallatie tegen een onbereikbare pakketserver (11 nov 2026, keuze Jelle)
 - Op 11 nov faalde de QA-suite drie keer achter elkaar vóór er een test draaide: `npx playwright install --with-deps chromium` haalt via `apt` ook lettertypepakketten op en de runner kon de Ubuntu-pakketservers niet bereiken (`Temporary failure resolving`).
 - De stap is nu gesplitst: (1) de browser downloaden, (2) de systeempakketten proberen, waarbij een mislukte `apt` een waarschuwing is, (3) een **harde controle dat Chromium echt start** (met dezelfde keuze van uitvoerbaar bestand als de testhelpers). Ontbreekt er echt een bibliotheek, dan faalt stap 3 meteen en duidelijk, dus groen blijft betekenen dat de tests slaagden. De jobnaam is ongewijzigd.
+
+## iPad-verfijningen (11 nov 2026)
+- Zakkenraster: foto- en etiketkaarten hebben hetzelfde beeldvlak (4:3), zodat de rijen recht staan.
+- Logboek: een open zetsel (gepland of bezig) van meer dan 12 uur oud heet "Niet afgerond" in plaats van "Bezig"; het detail biedt dan Verwijderen en geen timerknop (`isStale` in `core/brew.ts`).
+- Breed scherm (≥1100 px): Logboek zonder gekozen kop toont rechts het verloop van alle koppen; Meer in twee kolommen; Zetten met gietschema links en "Voor je begint"/"Na de laatste giet" rechts; losse aandachtspunten in een kaart "Goed om te weten". Gekozen met min-width media queries, niet met container queries, om de plakkende startbalk niet te riskeren.
+- Meer-kop in groen-teal in plaats van bruin.
+- Opmerking: de eerste CI-run van deze ronde bleef bij GitHub op "queued" staan en was niet te annuleren of te herstarten; een nieuwe commit start een verse run.
