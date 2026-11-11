@@ -283,8 +283,8 @@ fieldset.field legend { padding: 0; margin-bottom: 4px; }
 @media (max-width: 1099px) { .split.has-detail > .split-list { display: none; } }
 @media (min-width: 1100px) {
   .main > .split { max-width: none; }
-  .split.has-detail { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 760px); gap: 28px; align-items: start; }
-  .split.has-detail > .split-list { position: sticky; top: 12px; max-height: calc(100dvh - 24px); overflow-y: auto; padding-right: 4px; }
+  .split.has-detail, .split.overview { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 760px); gap: 28px; align-items: start; }
+  .split.has-detail > .split-list, .split.overview > .split-list { position: sticky; top: 12px; max-height: calc(100dvh - 24px); overflow-y: auto; padding-right: 4px; }
   .back-narrow { display: none; }
   .hero-photo { margin: 0 0 16px; border-radius: var(--radius); }
 }
@@ -493,7 +493,7 @@ fieldset.field label.row { display: flex; align-items: center; gap: 12px; }
 .btn.leave { margin-top: 8px; width: 100%; justify-content: center; }
 @media (min-width: 900px) {
   .wide-list ul.thumbs .item { flex-direction: column; align-items: stretch; gap: 0; padding: 0; overflow: hidden; }
-  .wide-list ul.thumbs .item .thumb { width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 0; box-shadow: none; }
+  .wide-list ul.thumbs .item .thumb { width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: 0; box-shadow: none; }
   .wide-list ul.thumbs .item .thumb .bagart.label .mono { font-size: 3.2rem; letter-spacing: .02em; }
   .wide-list ul.thumbs .item .thumb .bagart.label::before { inset: 10px; border-radius: 12px; }
   .wide-list ul.thumbs .item .itext { padding: 12px 14px 14px; }
@@ -1006,3 +1006,23 @@ ul.sens.grouped li + li { border-top: 1px solid var(--line); }
 .senshead .tag { flex: none; min-height: 0; padding: 2px 10px; font-size: var(--fs-xs); }
 ul.sens.grouped .meter { margin: 8px 0 4px; }
 details.sens-empty { margin: 0 0 12px; }
+
+/* ───── iPad en laptop: de ruimte benutten (11 nov 2026) ───── */
+/* Zakkenraster: elke kaart heeft hetzelfde beeldvlak (4:3), met foto of etiket, zodat de rijen recht staan. */
+/* Logboek zonder gekozen kop: rechts het verloop van alle koppen (zakkenlijst en detail doen dit al). */
+.logoverview { position: sticky; top: 12px; max-height: calc(100dvh - 24px); overflow-y: auto; margin: 0; }
+.logoverview .sect-h { margin-top: 0; }
+.logoverview .charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 1099px) { .logoverview { display: none; } }
+/* Meer: de groepen in twee kolommen op een breed scherm */
+.main:has(.meerhub) { max-width: 980px; }
+@media (min-width: 900px) {
+  .meergroups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; align-items: start; }
+}
+
+.knownotes { margin: 12px 0; padding: 14px 16px; }
+.knownotes > strong { display: block; margin-bottom: 6px; }
+.knownotes .notes { margin: 0; }
+@media (min-width: 1100px) {
+  .recipe-body.two { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+}

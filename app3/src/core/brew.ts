@@ -153,6 +153,9 @@ export function splitWarnings(warnings: readonly string[]): { notes: string[]; c
 
 /** Hoe lang een gepland of lopend zetsel als "open" geldt; daarna is het oud en wijst Zetten er niet meer naar. */
 export const OPEN_BREW_HOURS = 12;
+
+/** Een zetsel dat nooit is afgerond (nog 'niet gestart' of 'bezig') en al langer dan OPEN_BREW_HOURS geleden is gepland: dat loopt niet meer. */
+export function isStale(atMs: number, nowMs: number): boolean { return nowMs - atMs > OPEN_BREW_HOURS * 3_600_000; }
 /**
  * Het meest recente zetsel dat gepland of bezig is (audit 10 nov, P1-02): daar moet je naar terug kunnen.
  * Afgeronde en afgebroken zetsels tellen niet; heel oude open zetsels ook niet.

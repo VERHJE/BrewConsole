@@ -57,7 +57,7 @@ test('geen grafieklijn bij één kop; logboek toont het verloop van alle koppen'
   await page.waitForSelector('text=Na twee koppen verschijnt hier een lijn');
   await page.close();
 
-  const page2 = await app.browser.newPage();
+  const page2 = await app.browser.newPage({ viewport: { width: 390, height: 844 } });
   await importLog(page2, app.base, json);
   await page2.goto(app.base + '#/logboek');
   await page2.click('summary:has-text("Verloop van alle koppen")');
@@ -68,7 +68,7 @@ test('geen grafieklijn bij één kop; logboek toont het verloop van alle koppen'
 
 for (const scheme of ['light', 'dark']) {
   test(`toegankelijkheid (${scheme}): zakdetail met grafieken en logboek met verloop`, async () => {
-    const page = await app.browser.newPage({ colorScheme: scheme });
+    const page = await app.browser.newPage({ colorScheme: scheme, viewport: { width: 390, height: 844 } });
     await importLog(page, app.base, json);
     const check = async (name) => {
       await page.evaluate(axeSource);
