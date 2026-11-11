@@ -57,7 +57,7 @@ function Profiel(): JSX.Element {
               <li key={s.category}><strong>{catName(s.category)}</strong>
                 <div>{STATUS_TEXT[s.status]}</div>
                 <div class="meter" role="img" aria-label={`${s.hits} van ${s.nExpected} herkend`}><i style={`width:${s.nExpected > 0 ? Math.round((s.hits / s.nExpected) * 100) : 0}%`} /></div>
-                <div class="stat">{s.hits} van {s.nExpected} herkend · {s.falseAlarms} van {s.nNotExpected} aangevinkt zonder dat de zak het noemt</div></li>))}</ul>}
+                <div class="stat">{s.hits} van {s.nExpected} herkend{s.nNotExpected > 0 ? ` · ${s.falseAlarms} van ${s.nNotExpected} aangevinkt zonder dat de zak het noemt` : ''}</div></li>))}</ul>}
             {unknown.length > 0 && <p class="sens-empty">Nog te weinig zakken om iets te zeggen over: {unknown.map(s => catName(s.category)).join(', ')}.</p>}
           </div>);
       })()}

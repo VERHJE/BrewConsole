@@ -971,3 +971,9 @@ fieldset.tiles legend { padding: 0; margin: 0 0 8px; }
 .meertiles .num.wide { grid-column: 1 / -1; }
 .resultcard .num .tag.verdict { border-radius: 12px; line-height: 1.25; text-align: left; }
 .choice.tile > span { flex: none; }
+
+/* ───── Kleine correcties na de nalooprondes (11 nov 2026) ───── */
+/* De oude regel `.stock` (marge) trof ook de voorraadtegel op het zakdetail en schoof hem 4 px omlaag. */
+.num.stock { margin: 0; }
+/* Uitgeschakeld = duidelijk anders, geen half-doorzichtig goud dat modderig op groen wordt. */
+.btn[disabled], .btn.primary[disabled] { opacity: 1; background: var(--surface-2); color: var(--text-3); border-color: var(--line); box-shadow: none; cursor: not-allowed; }
