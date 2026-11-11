@@ -76,3 +76,29 @@ test('smaakprofiel opgeruimd: groepen met oordeel als kaart met pil, groepen zon
   assert.match(await d.locator('summary').innerText(), /nog zonder oordeel/);
   await page.close();
 });
+
+test('app-iconen: juiste pixelmaat, ondoorzichtig (iOS maakt doorzichtige hoeken zwart) en het manifest verwijst ernaar', async () => {
+  const want = { 'apple-touch-icon.png': 180, 'icon-192.png': 192, 'icon-512.png': 512, 'icon-maskable-512.png': 512 };
+  for (const [f, px] of Object.entries(want)) {
+    const b = fs.readFileSync(path.join(ROOT, 'icons', f));
+    assert.equal(b.subarray(1, 4).toString(), 'PNG', f);
+    assert.equal(b.readUInt32BE(16), px, `${f}: breedte`); assert.equal(b.readUInt32BE(20), px, `${f}: hoogte`);
+  }
+  const bron = fs.readFileSync(path.join(ROOT, 'assets/icoon-bron-1024.png'));
+  assert.equal(bron.readUInt32BE(16), 1024); assert.equal(bron.readUInt32BE(20), 1024);
+  const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'app3/manifest.webmanifest'), 'utf8'));
+  for (const i of manifest.icons) assert.ok(fs.existsSync(path.join(ROOT, 'app3', i.src.startsWith('icons/') ? '../' + i.src : i.src)), i.src);
+  assert.ok(manifest.icons.some(i => i.purpose === 'maskable'));
+  const page = await app.browser.newPage();
+  await page.goto(app.base);
+  for (const f of Object.keys(want)) {
+    const alphas = await page.evaluate(async url => {
+      const img = new Image(); img.src = url; await img.decode();
+      const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+      const a = (px, py) => x.getImageData(px, py, 1, 1).data[3];
+      return [a(0, 0), a(img.width - 1, 0), a(0, img.height - 1), a(img.width - 1, img.height - 1), a(img.width >> 1, img.height >> 1)];
+    }, app.base + 'icons/' + f);
+    assert.deepEqual(alphas, [255, 255, 255, 255, 255], `${f} heeft doorzichtige delen`);
+  }
+  await page.close();
+});

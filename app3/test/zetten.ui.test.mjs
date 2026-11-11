@@ -48,10 +48,11 @@ test('hele stroom: zak → advies → timer → klaar; herladen midden in het ze
   for (let i = 0; i < 12; i++) {
     if (await page.locator('a:has-text("Proeven")').count()) break;
     await page.clock.fastForward(40_000);
+    // Een knop kan tussen kijken en klikken verdwijnen (de vorige tik wordt net opgeslagen): dan niet 30 s wachten maar in de volgende ronde opnieuw kijken.
     const finish = page.locator('button:has-text("Alles doorgelopen")');
-    if (await finish.count()) { await finish.click(); break; }
+    if (await finish.count() && await finish.click({ timeout: 3000 }).then(() => true, () => false)) break;
     const erdoor = page.locator('button:text-is("Doorgelopen")');
-    if (await erdoor.count()) await erdoor.click();
+    if (await erdoor.count()) await erdoor.click({ timeout: 3000 }).catch(() => {});
   }
   await page.waitForSelector('a:has-text("Proeven")');
   assert.match(await page.locator('.stepcard.done .stepname').innerText(), /Klaar/);
