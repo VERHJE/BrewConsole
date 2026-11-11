@@ -16,12 +16,12 @@ test('telefoon: eerste keer staat het formulier open; daarna ingeklapt met samen
   const page = await app.browser.newPage({ viewport: PHONE });
   await importLog(page, app.base, json);
   await page.goto(app.base + '#/zetten');
-  await page.waitForSelector('.numbers');
+  await page.waitForSelector('.recipe .numbers');
   assert.equal(await page.locator('#zform').isVisible(), true, 'nog nooit gebruikt: open');
   await page.selectOption('select[name=bean]', { label: SEED_BEAN });
   await page.waitForFunction(() => (localStorage.getItem('brewconsole.zetten') || '').includes('"beanId":"'));
   await page.reload();
-  await page.waitForSelector('.numbers');
+  await page.waitForSelector('.recipe .numbers');
   assert.equal(await page.locator('#zform').isVisible(), false, 'eerder gebruikt: dicht');
   await page.waitForFunction(n => document.querySelector('.zsum-text').textContent.includes(n), SEED_BEAN);
   const sum = await page.locator('.zsum-text').innerText();
@@ -55,10 +55,10 @@ test('laptop: formulier en recept naast elkaar, geen samenvatting, startknop in 
   const page = await app.browser.newPage({ viewport: { width: 1280, height: 800 } });
   await importLog(page, app.base, json);
   await page.goto(app.base + '#/zetten');
-  await page.waitForSelector('.numbers');
+  await page.waitForSelector('.recipe .numbers');
   assert.equal(await page.locator('.zsummary').isVisible(), false);
   const form = await page.locator('#zform').boundingBox();
-  const nums = await page.locator('.numbers').boundingBox();
+  const nums = await page.locator('.recipe .numbers').boundingBox();
   assert.ok(nums.x > form.x + form.width, 'recept staat rechts van het formulier');
   const btn = await page.locator('.startbar .btn').boundingBox();
   assert.ok(btn.y + btn.height <= 800);

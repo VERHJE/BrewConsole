@@ -110,7 +110,7 @@ test('ontwerp: een afgerond zetsel toont bij elke giet een vinkje', async () => 
   const page = await app.browser.newPage({ viewport: { width: 414, height: 896 } });
   await importLog(page, app.base, json);
   await page.goto(app.base + '#/zetten');
-  await page.waitForSelector('.numbers');
+  await page.waitForSelector('.recipe .numbers');
   const sum = page.locator('.zsummary');
   if (await sum.count() && await sum.isVisible() && (await sum.getAttribute('aria-expanded')) === 'false') await sum.click();
   await page.click('button:has-text("Start zetsel")');

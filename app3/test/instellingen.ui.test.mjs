@@ -16,9 +16,9 @@ test('water: snelkeuze, verdunning, oordeel tegen de SCA-richtwaarde, opslaan en
   await page.click('button.chip:has-text("Dunea")');
   assert.equal(await page.inputValue('input[name=hardness]'), '140');
   assert.equal(await page.inputValue('select[name=alkunit]'), 'HCO3');
-  assert.match(await page.locator('.card[aria-live]').innerText(), /140 mg\/L · binnen de SCA-richtwaarde[\s\S]*139,4 mg\/L CaCO3 · boven de SCA-richtwaarde/);
+  assert.match(await page.locator('.card[aria-live]').innerText(), /140 mg\/L[\s\S]*binnen de SCA-richtwaarde[\s\S]*139,4 mg\/L CaCO3[\s\S]*boven de SCA-richtwaarde/);
   await page.selectOption('select[name=dilution]', '1:1');
-  assert.match(await page.locator('.card[aria-live]').innerText(), /70 mg\/L · binnen de SCA-richtwaarde[\s\S]*69,7 mg\/L CaCO3 · binnen de SCA-richtwaarde/);
+  assert.match(await page.locator('.card[aria-live]').innerText(), /70 mg\/L[\s\S]*binnen de SCA-richtwaarde[\s\S]*69,7 mg\/L CaCO3[\s\S]*binnen de SCA-richtwaarde/);
   await page.fill('input[name=hardness]', '-3');
   await page.waitForSelector('[role=alert]:has-text("hardheid")');
   assert.equal(await page.locator('button:has-text("Opslaan")').isDisabled(), true);

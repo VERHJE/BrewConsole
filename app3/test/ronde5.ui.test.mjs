@@ -26,7 +26,7 @@ for (const scheme of ['light', 'dark']) {
 
     // 1 + 2: recept — uitleg dicht, onzekerheid in gewone taal, zak met plaatje erbij
     await page.goto(app.base + '#/zetten');
-    await page.waitForSelector('.numbers');
+    await page.waitForSelector('.recipe .numbers');
     assert.equal(await page.locator('.advthumb').count(), 1);
     assert.match(await page.locator('.advtitle .eyebrow').innerText(), new RegExp(SEED_BEAN));
     assert.match(await page.locator('.advhead ~ p.meta').first().innerText(), /^Verwacht klaar tussen \d:\d\d en \d:\d\d\.$/);
