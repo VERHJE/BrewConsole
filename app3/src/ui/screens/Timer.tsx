@@ -1,3 +1,4 @@
+import { PourTimeline, type PourState } from '../pour-timeline.tsx';
 import type { JSX } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { factsOf } from '../../../../engine3/src/index.ts';
@@ -164,13 +165,11 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
       {guide.next && <p class="stepnext">{guide.next}</p>}
       <details class="schema" open={schemaOpen} key={schemaOpen ? 'open' : 'dicht'}>
         <summary>Gietschema <span class="meta">· {lines.length} gieten</span></summary>
-        <ol class="steps" aria-label="Gietschema">
-          {lines.map((l, i) => {
-            const ph = view.phases[i]!;
-            const cls = view.status === 'complete' ? 'past' : ph === 'hold' ? 'hold' : ph === 'go' && i === view.current ? 'go' : view.drained.has(i) ? 'past' : '';
-            return <li key={i} class={cls}><span>{l.at}</span><span>{l.add}</span><span>→ {l.to}</span>{l.how && <small>{l.how}</small>}</li>;
-          })}
-        </ol>
+        <PourTimeline className="steps" label="Gietschema" rows={lines.map((l, i) => {
+          const ph = view.phases[i]!;
+          const state: PourState = view.status === 'complete' ? 'past' : ph === 'hold' ? 'hold' : ph === 'go' && i === view.current ? 'now' : view.drained.has(i) ? 'past' : i === view.current + 1 ? 'next' : '';
+          return { index: i, at: l.at, add: l.add, to: l.to, how: l.how, state };
+        })} />
       </details>
       </div>
 

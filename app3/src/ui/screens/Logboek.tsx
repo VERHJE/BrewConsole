@@ -12,6 +12,7 @@ import { compareById, groupByMonth, matches } from '../../core/ronde2.ts';
 import { useState } from 'preact/hooks';
 import { Trends } from '../Insights.tsx';
 import { labelStyle, Topo, useApp, useSnapshot } from '../store-context.tsx';
+import { PourTimeline } from '../pour-timeline.tsx';
 
 const STATUS: Record<string, string> = { planned: 'Niet gestart', brewing: 'Bezig', complete: 'Klaar', abandoned: 'Afgebroken' };
 const BREWER_SHORT = { v60: 'V60', chemex: 'Chemex' } as const;
@@ -117,10 +118,7 @@ function Detail({ id }: { id: string }): JSX.Element {
         {c.tdsPct !== null && <div class="num"><b>{c.tdsPct.toFixed(2).replace('.', ',')} %</b><small>TDS</small></div>}
       </div>
       <h2 class="sect-h">Gieten</h2>
-      <ol class="pourline">{lines.map(l => {
-        const drained = c.drainedAtSec.get(l.index);
-        return <li key={l.index} class={drained !== undefined ? 'done' : undefined}><span class="pt">{l.at}</span><span class="pd" aria-hidden="true" /><span class="pw"><b>{l.add}</b> → {l.to}{drained !== undefined && <small>doorgelopen {clock(drained)}</small>}</span></li>;
-      })}</ol>
+      <PourTimeline label="Gietschema" rows={lines.map(l => { const d = c.drainedAtSec.get(l.index); return { index: l.index, at: l.at, add: l.add, to: l.to, how: l.how, state: d !== undefined ? 'past' as const : '' as const, note: d !== undefined ? `doorgelopen ${clock(d)}` : null }; })} />
       {c.lastDrainSec !== null && <p class="muted small-note">Laatste giet doorgelopen na {clock(c.lastDrainSec)}.</p>}
       <h2 class="sect-h">Geproefd</h2>
       {!t ? <EmptyState compact title="Nog niet geproefd">{c.status === 'complete' ? 'Leg vast hoe hij was; dat telt mee voor je volgende advies.' : undefined}</EmptyState> : (

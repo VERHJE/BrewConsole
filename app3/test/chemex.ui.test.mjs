@@ -55,7 +55,7 @@ for (const scheme of ['light', 'dark']) {
     assert.equal(await page.locator('select[name=technique] optgroup option:has-text("Hoffmann")').count(), 1);
     await page.selectOption('select[name=technique]', 'chemex_stumptown');
     await page.waitForSelector('h2:has-text("Chemex Stumptown")');
-    const hoe = await page.locator('table.pours tbody tr td:last-child').allInnerTexts();
+    const hoe = await page.locator('ol.pourline li').allInnerTexts();
     assert.equal(hoe.length, 3);
 
     // terug naar de V60: de Chemex-keuze valt weg en de lijst bevat geen Chemex-recepten

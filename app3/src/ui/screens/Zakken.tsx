@@ -24,7 +24,7 @@ const todayIso = (now: number): string => new Date(now).toISOString().slice(0, 1
 
 function Meta({ row, today, stock }: { row: BeanRow; today: string; stock: StockView | undefined }): JSX.Element {
   const l = rowLines(row, stock, today);
-  return <><small>{l.origin}</small><small>{l.facts}{l.low && <> · <span class="tag warn">Bijna op</span></>}</small></>;
+  return <><small>{l.origin}</small><small>{l.roast}</small><small>{l.stock}{l.low && <> · <span class="tag warn">Bijna op</span></>}</small></>;
 }
 
 function List({ activeId = null }: { activeId?: string | null }): JSX.Element {

@@ -10,6 +10,7 @@ import {
   bandText, portionOf, techniqueFits, techniqueOptions, brewPlanEvent, clock, nl1, planBrew, pourLines, splitWarnings, techniqueName, type BrewForm
 } from '../../core/brew.ts';
 import { BagArt, useApp, useSnapshot } from '../store-context.tsx';
+import { PourTimeline } from '../pour-timeline.tsx';
 import { finishLines, pourNotes, prepLines } from '../../core/gieten.ts';
 import { Timer } from './Timer.tsx';
 import { Proeven } from './Proeven.tsx';
@@ -216,10 +217,7 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
       </div>
       {endB && <p class="meta">Verwacht klaar tussen {clock(endB.lo)} en {clock(endB.hi)}.</p>}
       <div class="recipe-body">
-        <table class="pours"><thead><tr><th>Tijd</th><th>Giet</th><th>Totaal</th>{lines.some(l => l.how) && <th>Hoe</th>}</tr></thead>
-          <tbody>{lines.map(l => (
-            <tr key={l.index}><td>{l.at}{l.wait ? '*' : ''}</td><td>{l.add}</td><td>{l.to}</td>{lines.some(x => x.how) && <td>{l.how}</td>}</tr>
-          ))}</tbody></table>
+        <PourTimeline label="Gietschema" rows={lines.map(l => ({ index: l.index, at: l.at, add: l.add, to: l.to, how: l.how, wait: l.wait }))} />
         {lines.some(l => l.wait) && <p class="meta">* begin pas als het bed bijna droog is, ook als dat later is dan de tijd.</p>}
         {prep.length > 0 && <div class="aprep"><strong>Voor je begint</strong><ul class="alist">{prep.map(t => <li key={t}>{t}</li>)}</ul></div>}
         {finish.length > 0 && <div class="aprep"><strong>Na de laatste giet</strong><ul class="alist">{finish.map(t => <li key={t}>{t}</li>)}</ul></div>}

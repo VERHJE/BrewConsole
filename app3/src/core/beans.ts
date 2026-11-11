@@ -249,22 +249,23 @@ export function stockView(state: EngineState, beanId: string): StockView {
 export interface RowLines {
   /** Eerste regel onder de naam: brander en land, of 'Herkomst onbekend'. */
   readonly origin: string;
-  /** Tweede regel, altijd in dezelfde volgorde: branding, leeftijd, voorraad, koppen. */
-  readonly facts: string;
+  /** Tweede regel: branding en leeftijd, bijvoorbeeld 'Licht · 41 d na branding'. */
+  readonly roast: string;
+  /** Derde regel: voorraad en koppen, bijvoorbeeld '142 g over · 6 koppen'. */
+  readonly stock: string;
   /** 'Bijna op' als tekstlabel (niet alleen kleur). */
   readonly low: boolean;
 }
 
-/** Elke zak heeft dezelfde twee regels, in dezelfde volgorde; ontbrekende gegevens staan er als 'onbekend' of worden overgeslagen. */
+/** Elke zak heeft dezelfde drie regels, in dezelfde volgorde; ontbrekende gegevens staan er als 'onbekend' of worden overgeslagen. */
 export function rowLines(row: BeanRow, stock: StockView | undefined, today: string): RowLines {
   const age = daysSinceRoast(row.roastDate, today);
-  const parts = [
-    row.roastLevel ? ROAST_LABEL[row.roastLevel] : null,
-    age !== null ? `${age} d na branding` : 'Branddatum onbekend',
+  const roast = [row.roastLevel ? ROAST_LABEL[row.roastLevel] : null, age !== null ? `${age} d na branding` : 'Branddatum onbekend'].filter((x): x is string => x !== null);
+  const left = [
     stock && stock.remainingG !== null && !stock.low ? `${stock.remainingG} g over` : null,
     row.cups ? `${row.cups} ${row.cups === 1 ? 'kop' : 'koppen'}` : 'Nog niet gezet'
   ].filter((x): x is string => x !== null);
-  return { origin: [row.roaster, row.country].filter(Boolean).join(' · ') || 'Herkomst onbekend', facts: parts.join(' · '), low: !!stock?.low };
+  return { origin: [row.roaster, row.country].filter(Boolean).join(' · ') || 'Herkomst onbekend', roast: roast.join(' · '), stock: left.join(' · '), low: !!stock?.low };
 }
 
 /** Weergavenaam van een smaaktag: het wiel heeft groepstags als "Bessen (algemeen)"; op het scherm is "Bessen" genoeg (audit P3-01). */
