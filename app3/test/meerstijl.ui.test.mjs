@@ -28,12 +28,13 @@ for (const scheme of ['light', 'dark']) {
     assert.match(await page.locator('.meerhero').innerText(), /4\s*koppen/i);
     assert.equal(await page.locator('.list.grouped .item.go .ic svg').count(), 7, 'zeven regels met een icoon');
     await axe('meer');
-    await page.goto(app.base + '#/meer/profiel'); await page.waitForSelector('.meertiles');
+    await page.goto(app.base + '#/meer/profiel'); await page.waitForSelector('.main h1:text-is("Smaakprofiel")'); await page.waitForSelector('.meertiles');
     const text = await page.locator('.main').innerText();
     assert.doesNotMatch(text, /\b(natural|washed|light|medium)\b/, 'proces en branding in het Nederlands');
     assert.doesNotMatch(text, /\(algemeen\)/);
     await axe('profiel');
-    await page.goto(app.base + '#/meer/molen'); await page.waitForSelector('.meertiles');
+    await page.goto(app.base + '#/meer/molen'); await page.waitForSelector('.main h1:text-is("Molen")'); // na de schermovergang staat het nieuwe scherm er een frame later
+    await page.waitForSelector('.meertiles');
     assert.match(await page.locator('.meertiles .num').first().innerText(), /%/);
     await axe('molen');
     assert.deepEqual(errors, []);
