@@ -121,3 +121,13 @@ function strip(st: ReturnType<typeof learnFacts>) {
 }
 // Typecontrole dat een Plan-gebeurtenis de verwachte vorm heeft.
 void (null as unknown as BrewPlanEvent);
+
+test('filter: komt uit plan.legacy.filter, anders null; andere legacy-velden tellen niet', () => {
+  const withLegacy = (brewId: string, legacy: Record<string, unknown> | null): EngineEvent =>
+    ev('brew.plan', 1000, { brewId, beanId: null, goal: null, engine: { name: 'e2', version: '1' }, recipe, trialId: null, legacy });
+  const f = factsOf(learnFacts([withLegacy('a', { filter: 'cafec_th3' }), withLegacy('b', null), withLegacy('c', { filter: '' }), withLegacy('d', { filter: 3 })]));
+  assert.equal(f.cups.get('a')!.filter, 'cafec_th3');
+  assert.equal(f.cups.get('b')!.filter, null);
+  assert.equal(f.cups.get('c')!.filter, null);
+  assert.equal(f.cups.get('d')!.filter, null);
+});

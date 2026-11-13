@@ -6,8 +6,8 @@ import type { Route } from '../../core/router.ts';
 import { href } from '../../core/router.ts';
 import { beanRows } from '../../core/beans.ts';
 import {
-  CHEMEX_PORTIONS, DEFAULT_FORM, clampCup, cupRange, openBrew, parseCup, FEEDBACK_LABEL, GOAL_LABEL, METHOD_LABEL,
-  bandText, portionOf, techniqueFits, techniqueOptions, brewPlanEvent, clock, nl1, planBrew, pourLines, splitWarnings, techniqueName, type BrewForm
+  CHEMEX_PORTIONS, DEFAULT_FORM, FILTER_IDS, FILTER_LABEL, filterLabel, lastFilter, clampCup, cupRange, openBrew, parseCup, FEEDBACK_LABEL, GOAL_LABEL, METHOD_LABEL,
+  bandText, portionOf, techniqueFits, techniqueOptions, brewPlanEvent, clock, nl1, planBrew, pourLines, splitWarnings, techniqueName, type BrewForm, type FilterId
 } from '../../core/brew.ts';
 import { BagArt, useApp, useSnapshot } from '../store-context.tsx';
 import { PourTimeline } from '../pour-timeline.tsx';
@@ -28,7 +28,7 @@ function loadForm(): BrewForm {
 }
 const hasSavedForm = (): boolean => { try { return localStorage.getItem(KEY) !== null; } catch { return false; } };
 function saveForm(f: BrewForm): void {
-  try { localStorage.setItem(KEY, JSON.stringify({ beanId: f.beanId, method: f.method, cupG: f.cupG, goal: f.goal, technique: f.technique, noBean: f.noBean === true })); } catch { /* geen opslag: prima */ }
+  try { localStorage.setItem(KEY, JSON.stringify({ beanId: f.beanId, method: f.method, cupG: f.cupG, goal: f.goal, technique: f.technique, noBean: f.noBean === true, filter: f.filter ?? null })); } catch { /* geen opslag: prima */ }
 }
 
 function Plan(): JSX.Element {
@@ -63,6 +63,7 @@ function Plan(): JSX.Element {
   const cupOut = !cupInvalid && (eff.cupG < range.min || eff.cupG > range.max);
   const openCup = openBrew(state, env.now());
   const portion = eff.method === 'chemex' ? portionOf(eff.cupG) : null;
+  const prevFilter = useMemo(() => lastFilter(state), [revision]);
 
   const start = async (): Promise<void> => {
     if (!outcome.ok) return;
@@ -131,6 +132,15 @@ function Plan(): JSX.Element {
             {(Object.keys(GOAL_LABEL) as Goal[]).map(k => <button key={k} type="button" class="chip" aria-pressed={eff.goal === k} onClick={() => set({ goal: k })}>{GOAL_LABEL[k]}</button>)}
           </div>
         </div>
+        {eff.method === 'v60' && (
+          <div class="field"><span id="filter-l">Filter <small class="hint-inline">optioneel, voor het logboek</small></span>
+            <div class="chips" role="group" aria-labelledby="filter-l">
+              <button type="button" class="chip" aria-pressed={!eff.filter} onClick={() => set({ filter: null })}>Niet bijhouden</button>
+              {FILTER_IDS.map(k => <button key={k} type="button" class="chip" aria-pressed={eff.filter === k} onClick={() => set({ filter: k as FilterId })}>{FILTER_LABEL[k]}</button>)}
+            </div>
+            {eff.filter && prevFilter !== null && prevFilter !== eff.filter && (
+              <p class="meta filternote" role="status">Je vorige kop gebruikte {filterLabel(prevFilter)}. Een ander papier kan de doorlooptijd veranderen. Kijk na afloop of het te snel of te langzaam liep; de app stelt de maling dan bij.</p>)}
+          </div>)}
         {eff.method === 'chemex' && <ChemexGuide current={eff.technique} onPick={t => set({ technique: t })} />}
         {eff.goal !== null && outcome.ok && outcome.advice.recipe.technique !== 'kasuya_46' && (
           <p class="meta goalnote" role="status">Bij {techniqueName(outcome.advice.recipe.technique)} verandert het doel het recept niet. Alleen Kasuya 4:6 (V60) gebruikt het. {eff.method === 'chemex' ? 'Kies hierboven bij “Welk recept past?” zelf een recept dat bij je smaak past.' : 'Je kunt bij Meer opties zelf een andere techniek kiezen.'}</p>)}
