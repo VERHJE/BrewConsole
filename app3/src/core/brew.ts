@@ -17,7 +17,14 @@ export interface BrewForm {
   readonly feedback: readonly FeedbackSignal[];
   /** Bewust 'geen zak' gekozen: dan niet vooraf de nieuwste zak nemen. */
   readonly noBean?: boolean;
+  /** Filterpapier (optioneel, om doorlooptijd en maalstand per filter terug te zien). null = niet bijhouden. */
+  readonly filter?: FilterId | null;
 }
+
+export type FilterId = 'hario' | 'cafec_th3' | 'anders';
+export const FILTER_LABEL: Readonly<Record<FilterId, string>> = { hario: 'Hario V60-papier', cafec_th3: 'Cafec TH-3', anders: 'Ander filter' };
+export const FILTER_IDS: readonly FilterId[] = ['hario', 'cafec_th3', 'anders'];
+export const filterLabel = (id: string | null): string | null => (id === null ? null : (FILTER_LABEL as Record<string, string>)[id] ?? id);
 
 export const DEFAULT_FORM: BrewForm = { beanId: null, method: 'v60', cupG: 250, goal: null, technique: null, feedback: [] };
 
@@ -114,7 +121,7 @@ export function techniqueName(ref: string): string {
 export function brewPlanEvent(env: Env, advice: Advice, form: BrewForm, brewId?: string): BrewPlanEvent {
   return {
     id: newId(env, 'ev'), at: ms(env.now()), device: env.device, v: 1, kind: 'brew.plan',
-    data: { brewId: brewId ?? newId(env, 'brew'), beanId: form.beanId, goal: form.goal, engine: advice.engine, recipe: advice.recipe, trialId: advice.trial?.id ?? null, legacy: null }
+    data: { brewId: brewId ?? newId(env, 'brew'), beanId: form.beanId, goal: form.goal, engine: advice.engine, recipe: advice.recipe, trialId: advice.trial?.id ?? null, legacy: form.method === 'v60' && form.filter ? { filter: form.filter } : null }
   };
 }
 
@@ -168,4 +175,15 @@ export function openBrew(state: EngineState, nowMs: number): { readonly id: stri
     if (!best || c.at > best.at) best = { id, status: c.status, technique: c.technique, at: c.at };
   }
   return best;
+}
+
+
+/** Filter van de laatste V60-kop die een filter had; null als er nog geen is. Voor de melding "ander filter dan de vorige kop". */
+export function lastFilter(state: EngineState): string | null {
+  const facts = factsOf(state);
+  for (let i = facts.cupOrder.length - 1; i >= 0; i--) {
+    const c = facts.cups.get(facts.cupOrder[i]!)!;
+    if (c.method === 'v60' && c.filter !== null) return c.filter;
+  }
+  return null;
 }

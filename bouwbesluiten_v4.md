@@ -1729,3 +1729,10 @@ Bronnen: WebKit bugs [301994](https://bugs.webkit.org/show_bug.cgi?id=301994), [
 ## Grotere kleine letters (11 nov 2026)
 - Letterschaal: `--fs-xs` van 12 naar 13 px en `--fs-s` van 14 naar 15 px; het eindlabel in de grafieken van 11 naar 12 px. Reden: op de iPad in fel licht waren de hoofdletters met letterspatiëring (OKT, V60, groepskoppen, tegelkoppen) te klein.
 - Gevolg: een logboekrij is 2 px hoger (114 px); de testgrens is van 112 naar 116 px gegaan. Verder geen lay-outwijziging; de hele suite is groen.
+
+## Filterveld voor de V60 (13 nov 2026)
+- Aanleiding: Jelle gebruikt naast Hario-papier ook Cafec TH-3 (2–4-kops maat, past op de V60-02). Er is geen gemeten vergelijking tussen beide papieren gevonden; alleen gebruikersreviews zeggen dat het TH-3 sneller doorloopt. Daarom **geen getallen in de recepten aangepast**.
+- Wat er is: een optioneel veld "Filter" (Niet bijhouden, Hario V60-papier, Cafec TH-3, Ander filter) in het zetformulier, alleen bij de V60. De keuze wordt per zetsel bewaard in `brew.plan.data.legacy.filter` (geen schemawijziging, oude logboeken blijven geldig), `CupFacts.filter` leest hem uit, het logboekdetail toont een tegel "Filter".
+- Bij wisselen van filter tegenover de laatste V60-kop met een filter verschijnt een neutrale melding zonder getal: de doorlooptijd kan veranderen en de bestaande feedback (te snel / te langzaam) stelt de maling bij.
+- Later te onderzoeken als er genoeg koppen zijn: doorlooptijd en maalstand per filter naast elkaar in het verloop. Dat is bewust nog niet gebouwd.
+- Tests: `filter.ui.test.mjs` (kiezen, terugzien, melding zonder getal, geen veld bij Chemex) en een engine-test voor `CupFacts.filter`.

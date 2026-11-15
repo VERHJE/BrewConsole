@@ -2,7 +2,7 @@ import type { JSX } from 'preact';
 import { factsOf } from '../../../../engine3/src/index.ts';
 import type { Route } from '../../core/router.ts';
 import { href } from '../../core/router.ts';
-import { METHOD_LABEL, OPEN_BREW_HOURS, clock, isStale, nl1, pourLines, techniqueName } from '../../core/brew.ts';
+import { METHOD_LABEL, OPEN_BREW_HOURS, filterLabel, clock, isStale, nl1, pourLines, techniqueName } from '../../core/brew.ts';
 import { cupRows, brewDeleteEvent } from '../../core/insights.ts';
 import { EmptyState } from '../EmptyState.tsx';
 import { IconLog } from '../icons.tsx';
@@ -128,6 +128,7 @@ function Detail({ id }: { id: string }): JSX.Element {
         <div class="num"><b>{Math.round(c.waterG)} g</b><small>water{c.bypassG > 0 ? ` + ${Math.round(c.bypassG)} g bypass` : ''}</small></div>
         {c.grindClick !== null && <div class="num"><b>klik {c.grindClick}</b><small>molen</small></div>}
         {c.endSec !== null && <div class="num"><b>{clock(c.endSec)}</b><small>klaar na</small></div>}
+        {c.filter !== null && <div class="num"><b>{filterLabel(c.filter)}</b><small>filter</small></div>}
         {c.tdsPct !== null && <div class="num"><b>{c.tdsPct.toFixed(2).replace('.', ',')} %</b><small>TDS</small></div>}
       </div>
       <h2 class="sect-h">Gieten</h2>
