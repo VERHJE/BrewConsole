@@ -55,3 +55,22 @@ test('brew.plan-gebeurtenis bevat het recept ongewijzigd en is geldig', async ()
 });
 
 test('klok', () => { assert.equal(clock(0), '0:00'); assert.equal(clock(195), '3:15'); assert.equal(clock(-3), '0:00'); });
+
+test('rememberBean: zet alleen de zak in het onthouden zetformulier; kapotte opslag geeft geen fout', async () => {
+  const { rememberBean, FORM_KEY } = await import('../src/core/brew.ts');
+  const m = new Map<string, string>([[FORM_KEY, JSON.stringify({ method: 'chemex', cupG: 340, beanId: 'oud' })]]);
+  const s = { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => { m.set(k, v); } };
+  rememberBean('nieuw', s);
+  assert.deepEqual(JSON.parse(m.get(FORM_KEY)!), { method: 'chemex', cupG: 340, beanId: 'nieuw' });
+  m.set(FORM_KEY, '{kapot');
+  assert.doesNotThrow(() => rememberBean('x', s));
+  assert.equal(FORM_KEY, 'brewconsole.zetten', 'dezelfde sleutel als vóór de opruiming: bestaande toestellen houden hun formulier');
+});
+
+test('clock en nl2: dezelfde notatie als de vroegere losse kopieën', async () => {
+  const { clock, nl1, nl2 } = await import('../src/core/brew.ts');
+  assert.equal(clock(225.4), '3:45');
+  assert.equal(clock(-3), '0:00');
+  assert.equal(nl1(18.75), '18,8');
+  assert.equal(nl2(1.3456), '1,35');
+});

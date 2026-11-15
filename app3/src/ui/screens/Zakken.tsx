@@ -14,6 +14,7 @@ import { EmptyState } from '../EmptyState.tsx';
 import { IconBean, IconFilter } from '../icons.tsx';
 import { BagArt, usePhoto, useApp, useSnapshot } from '../store-context.tsx';
 import { cupRows } from '../../core/insights.ts';
+import { rememberBean } from '../../core/brew.ts';
 import { matches, readFavs, restView, toggleFav } from '../../core/ronde2.ts';
 import {
   FILTER_KEYS, FILTER_LABEL, SORT_LABEL, filterBeans, isDefault, readListPrefs, saveListPrefs, sortBeans,
@@ -103,10 +104,7 @@ function Detail({ beanId }: { beanId: string }): JSX.Element {
   const rest = restView(age);
   const stock = stockView(state, beanId);
   const zet = (): void => {
-    try {
-      const prev = JSON.parse(localStorage.getItem('brewconsole.zetten') ?? '{}') as Record<string, unknown>;
-      localStorage.setItem('brewconsole.zetten', JSON.stringify({ ...prev, beanId }));
-    } catch { /* zonder opslag: kies de zak op het zetscherm */ }
+    rememberBean(beanId);
     location.hash = href('zetten');
   };
   return (

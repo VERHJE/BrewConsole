@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { favFirst, groupByMonth, matches, readFavs, restView, toggleFav, monthLabel } from '../src/core/ronde2.ts';
+import { groupByMonth, matches, readFavs, restView, toggleFav, monthLabel } from '../src/core/ronde2.ts';
 
 test('matches: alle woorden, zonder hoofdletters en accenten', () => {
   assert.equal(matches('Finca La Esperanza · Colombia', 'colombia esper'), true);
@@ -21,7 +21,6 @@ test('favorieten: aan/uit, eerst in de lijst, rommel in opslag wordt genegeerd',
   const s = { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => { mem.set(k, v); } };
   assert.equal(toggleFav(s, 'b'), true);
   assert.deepEqual([...readFavs(s)], ['b']);
-  assert.deepEqual(favFirst([{ id: 'a' }, { id: 'b' }, { id: 'c' }], readFavs(s)).map(r => r.id), ['b', 'a', 'c']);
   assert.equal(toggleFav(s, 'b'), false);
   mem.set('brewconsole.favs', '{kapot');
   assert.equal(readFavs(s).size, 0);

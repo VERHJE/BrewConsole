@@ -6,8 +6,8 @@ import type { Route } from '../../core/router.ts';
 import { href } from '../../core/router.ts';
 import { beanRows } from '../../core/beans.ts';
 import {
-  CHEMEX_PORTIONS, DEFAULT_FORM, FILTER_IDS, FILTER_LABEL, filterLabel, lastFilter, clampCup, cupRange, openBrew, parseCup, FEEDBACK_LABEL, GOAL_LABEL, METHOD_LABEL,
-  bandText, portionOf, techniqueFits, techniqueOptions, brewPlanEvent, clock, nl1, planBrew, pourLines, splitWarnings, techniqueName, type BrewForm, type FilterId
+  CHEMEX_PORTIONS, DEFAULT_FORM, FORM_KEY, nl2, PAPER_IDS, PAPER_LABEL, paperLabel, lastFilter, clampCup, cupRange, openBrew, parseCup, FEEDBACK_LABEL, GOAL_LABEL, METHOD_LABEL,
+  bandText, portionOf, techniqueFits, techniqueOptions, brewPlanEvent, clock, nl1, planBrew, pourLines, splitWarnings, techniqueName, type BrewForm, type PaperId
 } from '../../core/brew.ts';
 import { BagArt, useApp, useSnapshot } from '../store-context.tsx';
 import { PourTimeline } from '../pour-timeline.tsx';
@@ -18,17 +18,16 @@ import { Welkom } from '../Welkom.tsx';
 import { markeerWelkomGezien, toonWelkom, welkomGezien } from '../../core/welkom.ts';
 import { trialPlanEvent, type TrialArm } from '../../core/trials.ts';
 
-const KEY = 'brewconsole.zetten';
 function loadForm(): BrewForm {
   try {
-    const f = { ...DEFAULT_FORM, ...(JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<BrewForm>), feedback: [] };
+    const f = { ...DEFAULT_FORM, ...(JSON.parse(localStorage.getItem(FORM_KEY) ?? '{}') as Partial<BrewForm>), feedback: [] };
     // Een opgeslagen kop van vóór de kopgrenzen (of een kapotte waarde) valt binnen het bereik van de brewer.
     return { ...f, cupG: clampCup(f.method, f.cupG) };
   } catch { return DEFAULT_FORM; }
 }
-const hasSavedForm = (): boolean => { try { return localStorage.getItem(KEY) !== null; } catch { return false; } };
+const hasSavedForm = (): boolean => { try { return localStorage.getItem(FORM_KEY) !== null; } catch { return false; } };
 function saveForm(f: BrewForm): void {
-  try { localStorage.setItem(KEY, JSON.stringify({ beanId: f.beanId, method: f.method, cupG: f.cupG, goal: f.goal, technique: f.technique, noBean: f.noBean === true, filter: f.filter ?? null })); } catch { /* geen opslag: prima */ }
+  try { localStorage.setItem(FORM_KEY, JSON.stringify({ beanId: f.beanId, method: f.method, cupG: f.cupG, goal: f.goal, technique: f.technique, noBean: f.noBean === true, filter: f.filter ?? null })); } catch { /* geen opslag: prima */ }
 }
 
 function Plan(): JSX.Element {
@@ -136,10 +135,10 @@ function Plan(): JSX.Element {
           <div class="field"><span id="filter-l">Filter <small class="hint-inline">optioneel, voor het logboek</small></span>
             <div class="chips" role="group" aria-labelledby="filter-l">
               <button type="button" class="chip" aria-pressed={!eff.filter} onClick={() => set({ filter: null })}>Niet bijhouden</button>
-              {FILTER_IDS.map(k => <button key={k} type="button" class="chip" aria-pressed={eff.filter === k} onClick={() => set({ filter: k as FilterId })}>{FILTER_LABEL[k]}</button>)}
+              {PAPER_IDS.map(k => <button key={k} type="button" class="chip" aria-pressed={eff.filter === k} onClick={() => set({ filter: k as PaperId })}>{PAPER_LABEL[k]}</button>)}
             </div>
             {eff.filter && prevFilter !== null && prevFilter !== eff.filter && (
-              <p class="meta filternote" role="status">Je vorige kop gebruikte {filterLabel(prevFilter)}. Een ander papier kan de doorlooptijd veranderen. Kijk na afloop of het te snel of te langzaam liep; de app stelt de maling dan bij.</p>)}
+              <p class="meta filternote" role="status">Je vorige kop gebruikte {paperLabel(prevFilter)}. Een ander papier kan de doorlooptijd veranderen. Kijk na afloop of het te snel of te langzaam liep; de app stelt de maling dan bij.</p>)}
           </div>)}
         {eff.method === 'chemex' && <ChemexGuide current={eff.technique} onPick={t => set({ technique: t })} />}
         {eff.goal !== null && outcome.ok && outcome.advice.recipe.technique !== 'kasuya_46' && (
@@ -206,7 +205,6 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
   const endB = advice.uncertainty.endSec;
   const doseB = advice.uncertainty.doseG;
   const tdsB = advice.uncertainty.targetTds;
-  const tdsN = (n: number): string => n.toFixed(2).replace('.', ',');
   const lines = pourLines(r);
   const prep = prepLines(r), finish = finishLines(r), notesPerPour = pourNotes(r);
   return (
@@ -253,7 +251,7 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
           <p class="meta">Het advies is een schatting met een marge, geen exacte waarde.</p>
           <ul class="sure">
             {doseB && <li>De dosis ligt tussen {nl1(doseB.lo)} en {nl1(doseB.hi)} g.</li>}
-            {tdsB && <li>De sterkte van de kop (doel-TDS) komt tussen {tdsN(tdsB.lo)} en {tdsN(tdsB.hi)} %.</li>}
+            {tdsB && <li>De sterkte van de kop (doel-TDS) komt tussen {nl2(tdsB.lo)} en {nl2(tdsB.hi)} %.</li>}
           </ul>
         </details>)}
       {advice.trial && (

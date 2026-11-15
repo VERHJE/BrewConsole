@@ -13,7 +13,7 @@ html::before { content: ''; position: fixed; z-index: 60; top: 0; left: 0; right
 .boot b { font-weight: 500; font-size: 2.2rem; letter-spacing: -.01em; }
 .boot span { font: 600 .72rem system-ui, sans-serif; letter-spacing: .34em; text-transform: uppercase; color: #e6c58f; }
 button, input, select, textarea { font: inherit; color: inherit; }
-h1, h2, .stepname, .headfont { font-family: var(--head); letter-spacing: -.01em; }
+h1, h2, .stepname { font-family: var(--head); letter-spacing: -.01em; }
 h1 { font-size: var(--fs-xl); font-weight: 600; margin: 0 0 .25rem; line-height: 1.15; }
 h2 { font-size: var(--fs-l); font-weight: 600; margin: 1.5rem 0 .5rem; }
 p { margin: .25rem 0 .75rem; }
@@ -162,7 +162,6 @@ a { color: var(--accent); }
 .notehit .chips { margin-top: 6px; }
 
 /* logboek, inzicht */
-.stars { color: var(--star); letter-spacing: 1px; }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0 0 12px; }
 .kv dt { color: var(--text-2); }
 .kv dd { margin: 0; font-variant-numeric: tabular-nums; }
@@ -500,7 +499,6 @@ fieldset.field label.row { display: flex; align-items: center; gap: 12px; }
 }
 .btn.leave-top { min-height: var(--tap); padding: 4px 12px; margin: 0 0 8px; background: transparent; border-color: transparent; color: var(--text-2); font-size: var(--fs-s); }
 .kv.small { font-size: var(--fs-s); } .kv.small:empty { display: none; }
-.detail-numbers { margin-top: var(--sp-3); }
 .chips[aria-label="Snel invullen"] { margin-bottom: 14px; }
 
 /* Audit 10 nov · ronde 1: open zetsel terugvinden, kopbereik zichtbaar */

@@ -11,7 +11,7 @@
 // ook onder afwijkende 'werelden' (scheef, drift, veel ruis), zodat geen engine wint door alleen
 // op zijn eigen aannames getest te worden.
 
-import { massBalanceTds, ey, g } from '../src/units.ts';
+import { tdsOf } from '../src/strength.ts';
 import type { StrengthOrd } from '../src/types.ts';
 
 /** Kleine, reproduceerbare toevalsgenerator (mulberry32). */
@@ -88,7 +88,7 @@ const CUTS = [-1.5, -0.5, 0.5, 1.5];
 /** Eén kop: de werkelijke TDS en het oordeel van de proever. */
 export function tasteCup(doseG: number, bag: Bag, cupIndex: number, sc: Scenario, w: World, r: () => number): { tds: number; trueTargetLn: number; answer: StrengthOrd } {
   const cupEy = bag.ey + gauss(r) * sc.eyCupSd;
-  const tds = massBalanceTds(g(doseG), g(sc.waterG), sc.retention, ey(cupEy)) ?? 0.01;
+  const tds = tdsOf(doseG, sc.waterG, sc.retention, cupEy) ?? 0.01;
   const trueTargetLn = Math.log(sc.targetTds) + bag.prefOffsetLn + w.driftPerCup * cupIndex;
   const d = Math.log(tds) - trueTargetLn;
   const latent = w.slope * d * (d > 0 ? w.asymmetry : 1) + gauss(r) * w.noiseSd;

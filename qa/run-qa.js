@@ -9,7 +9,7 @@
 // gebruikt — geen aparte CI-tak in de testcode nodig.
 //
 // Gebruik: node qa/run-qa.js   (vanuit de repo-root, na `npm ci` + `npx playwright install
-// chromium`). Ook aan te roepen als `npm run qa`.
+// chromium`). Ook aan te roepen als `npm run qa:oud`.
 
 import { spawnSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';

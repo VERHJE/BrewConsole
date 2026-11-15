@@ -23,6 +23,3 @@ export function applyPrefs(el: PrefTarget, type: TypePref): void {
 export function savePref(s: PrefStorage | null, key: string, value: string): void {
   try { s?.setItem(key, value); } catch { /* geen opslag: de keuze geldt dan alleen tot herladen */ }
 }
-
-/** De kleur voor de statusbalk van de browser: de achtergrond van het thema. */
-export const THEME_COLOR = '#1e3128';

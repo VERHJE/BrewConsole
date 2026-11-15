@@ -57,7 +57,7 @@ jobs:
           })().catch(e => { console.error(e); process.exit(1); });
           "
 
-      # De tests van de oude app (tests/*.test.mjs op brewconsole_v2_2.html, `npm run qa`) horen
+      # De tests van de oude app (tests/*.test.mjs op brewconsole_v2_2.html, `npm run qa:oud`) horen
       # niet meer bij de poort: die app wordt niet meer uitgeleverd (op /oud/ staat alleen een
       # melding). Ze blijven met de hand te draaien. Keuze Jelle, audit 10 nov 2026 (P2-05).
       # De jobnaam hierboven blijft gelijk, zodat een vereiste check op GitHub blijft kloppen.
