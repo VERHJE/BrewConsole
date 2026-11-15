@@ -31,7 +31,7 @@ Engine 3 is de nieuwe rekenkern van Brew Console. Hij wordt vanaf nul gebouwd en
 npm run e3:typecheck   # TypeScript strict (tsc 7)
 npm run e3:test        # node:test + fast-check
 npm run e3:build       # esbuild → engine3/dist/engine3.mjs (niet in git)
-npm run e3:check       # alle drie; draait ook in CI
+npm run e3:check       # typecheck en tests; draait ook in CI (de bundel is los: de app bundelt de broncode zelf)
 npm run e3:eval        # meetopstelling (standaard 60 herhalingen per wereld)
 node engine3/eval/replay-local.ts <back-up.json>   # eigen koppen, alleen lokaal
 node engine3/scripts/gen-flavor-wheel.mjs         # smaakwiel opnieuw uit de app halen

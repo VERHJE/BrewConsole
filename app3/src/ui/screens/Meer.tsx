@@ -12,6 +12,7 @@ import { Topo, useSnapshot } from '../store-context.tsx';
 import { cupRows } from '../../core/insights.ts';
 import { beanRows, PROCESS_LABEL, ROAST_LABEL, tagLabel } from '../../core/beans.ts';
 import { Stars } from '../Stars.tsx';
+import { nl1 } from '../../core/brew.ts';
 import { Gegevens } from './Gegevens.tsx';
 import { Sync } from './Sync.tsx';
 import { Voorkeuren, Water, ZeroCheck } from './Instellingen.tsx';
@@ -20,11 +21,10 @@ const pct = (n: number | null): string => (n === null ? '–' : `${Math.round(n 
 /** Korte pillen: de volledige zin (STATUS_TEXT) is te lang voor een label. */
 const STATUS_SHORT: Partial<Record<string, string>> = { picks_up: 'Je merkt dit op', misses: 'Je mist dit vaak', overcalls: 'Je vinkt snel aan', mixed: 'Wisselend' };
 const catName = (k: string): string => CATEGORIES.find(c => c.key === k)?.name ?? k;
-const f1 = (n: number): string => (Math.round(n * 10) / 10).toString().replace('.', ',');
 /** Groepsnamen in het Nederlands (proces en branding komen als sleutel uit de engine). */
 const groupName = (label: string, key: string): string =>
   label === 'Smaakgroep' ? catName(key) : label === 'Proces' ? ((PROCESS_LABEL as Record<string, string>)[key] ?? key) : label === 'Branding' ? ((ROAST_LABEL as Record<string, string>)[key] ?? key) : key;
-const deltaText = (d: number): string => (Math.abs(d) < 0.05 ? '±0' : `${d > 0 ? '+' : '−'}${f1(Math.abs(d))}`);
+const deltaText = (d: number): string => (Math.abs(d) < 0.05 ? '±0' : `${d > 0 ? '+' : '−'}${nl1(Math.abs(d))}`);
 
 function Back(): JSX.Element { return <a class="btn" href={href('meer')}>Terug</a>; }
 
@@ -45,7 +45,7 @@ function Profiel(): JSX.Element {
       <p class="muted">Dit laat zien wat je opmerkt en waardeert. Het stuurt je recept niet.</p>
       <div class="numbers meertiles">
         <div class="num"><b>{p.cups}</b><small>geproefd</small></div>
-        <div class="num"><b>{p.liking.overall ? f1(p.liking.overall.mean) : '–'}</b><small>gemiddeld van 5</small></div>
+        <div class="num"><b>{p.liking.overall ? nl1(p.liking.overall.mean) : '–'}</b><small>gemiddeld van 5</small></div>
         <div class="num"><b>{p.cataCups}</b><small>blinde smaakkeuze</small></div>
         <div class="num"><b>{pct(p.tendencies.lateShare)}</b><small>laat geproefd</small></div>
       </div>
@@ -72,7 +72,7 @@ function Profiel(): JSX.Element {
       <h2>Waardering</h2>
       {p.liking.overall === null ? <EmptyState compact title="Nog geen waarderingen">Geef bij het proeven een aantal sterren, dan verschijnt hier wat je lekker vindt.</EmptyState> : (
         <div>
-          <p class="avgline"><Stars value={Math.round(p.liking.overall.mean * 4) / 4} /> <span>Gemiddeld {f1(p.liking.overall.mean)} van 5 over {p.liking.overall.n} koppen</span></p>
+          <p class="avgline"><Stars value={Math.round(p.liking.overall.mean * 4) / 4} /> <span>Gemiddeld {nl1(p.liking.overall.mean)} van 5 over {p.liking.overall.n} koppen</span></p>
           {[['Smaakgroep', p.liking.byCategory], ['Proces', p.liking.byProcess], ['Branding', p.liking.byRoast]].map(([label, stats]) => (
             (stats as typeof p.liking.byCategory).some(s => s.reliable) && (
               <div key={label as string}><h3 class="sub-h">{label as string}</h3>
@@ -105,7 +105,7 @@ function Molen(): JSX.Element {
       <div class="head"><Back /><h1>Molen</h1></div>
       <p class="muted">Timemore Chestnut C3S Pro. Brew Console leert hoeveel het doorlopen verandert per klik.</p>
       <div class="numbers meertiles">
-        <div class="num"><b>{g.pctPerClick > 0 ? '+' : g.pctPerClick < 0 ? '−' : ''}{f1(Math.abs(g.pctPerClick))} %</b><small>doorlooptijd per klik</small></div>
+        <div class="num"><b>{g.pctPerClick > 0 ? '+' : g.pctPerClick < 0 ? '−' : ''}{nl1(Math.abs(g.pctPerClick))} %</b><small>doorlooptijd per klik</small></div>
         <div class="num"><b>{g.observations}</b><small>bruikbare metingen</small></div>
       </div>
       <p class="sourceline"><span class={g.learned ? 'tag ok' : 'tag'}>{g.learned ? 'Uit jouw metingen' : 'Startwaarde'}</span> {g.learned ? 'De waarde komt uit je eigen koppen.' : 'Nog niet uit jouw metingen.'}</p>
@@ -158,7 +158,7 @@ function Summary(): JSX.Element | null {
       <small class="eyebrow">Jouw koffie tot nu toe</small>
       <div class="mh-nums">
         <div><b>{cups.length}</b><small>{cups.length === 1 ? 'kop' : 'koppen'}</small></div>
-        <div><b>{mean !== null ? f1(mean) : '–'}</b><small>gemiddeld</small></div>
+        <div><b>{mean !== null ? nl1(mean) : '–'}</b><small>gemiddeld</small></div>
         <div><b>{beans}</b><small>{beans === 1 ? 'zak' : 'zakken'}</small></div>
       </div>
     </div>

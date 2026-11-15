@@ -18,13 +18,25 @@ export interface BrewForm {
   /** Bewust 'geen zak' gekozen: dan niet vooraf de nieuwste zak nemen. */
   readonly noBean?: boolean;
   /** Filterpapier (optioneel, om doorlooptijd en maalstand per filter terug te zien). null = niet bijhouden. */
-  readonly filter?: FilterId | null;
+  readonly filter?: PaperId | null;
 }
 
-export type FilterId = 'hario' | 'cafec_th3' | 'anders';
-export const FILTER_LABEL: Readonly<Record<FilterId, string>> = { hario: 'Hario V60-papier', cafec_th3: 'Cafec TH-3', anders: 'Ander filter' };
-export const FILTER_IDS: readonly FilterId[] = ['hario', 'cafec_th3', 'anders'];
-export const filterLabel = (id: string | null): string | null => (id === null ? null : (FILTER_LABEL as Record<string, string>)[id] ?? id);
+export type PaperId = 'hario' | 'cafec_th3' | 'anders';
+export const PAPER_LABEL: Readonly<Record<PaperId, string>> = { hario: 'Hario V60-papier', cafec_th3: 'Cafec TH-3', anders: 'Ander filter' };
+export const PAPER_IDS: readonly PaperId[] = ['hario', 'cafec_th3', 'anders'];
+export const paperLabel = (id: string | null): string | null => (id === null ? null : (PAPER_LABEL as Record<string, string>)[id] ?? id);
+
+/** Waar het zetformulier per toestel wordt onthouden (localStorage). */
+export const FORM_KEY = 'brewconsole.zetten';
+
+/** Zet een zak klaar voor het zetscherm (vanaf het zakdetail); de rest van het onthouden formulier blijft staan. */
+export function rememberBean(beanId: string, storage?: Pick<Storage, 'getItem' | 'setItem'>): void {
+  try {
+    const s = storage ?? localStorage;
+    const prev = JSON.parse(s.getItem(FORM_KEY) ?? '{}') as Record<string, unknown>;
+    s.setItem(FORM_KEY, JSON.stringify({ ...prev, beanId }));
+  } catch { /* zonder opslag: kies de zak op het zetscherm */ }
+}
 
 export const DEFAULT_FORM: BrewForm = { beanId: null, method: 'v60', cupG: 250, goal: null, technique: null, feedback: [] };
 
@@ -42,7 +54,6 @@ export const FEEDBACK_LABEL: Readonly<Record<FeedbackSignal, string>> = {
   drying: 'De vorige kop was droog in de mond',
   uneven_drain: 'Het water liep ongelijk door'
 };
-export const TECHNIQUE_OPTIONS: ReadonlyArray<{ id: TechniqueId; name: string }> = TECHNIQUES.map(t => ({ id: t.id, name: t.name }));
 
 /** Technieken voor een brewer: de eigen recepten, en bij de Chemex daarnaast de V60-technieken (die loopt dan trager door). */
 export function techniqueOptions(method: Method): { own: ReadonlyArray<{ id: TechniqueId; name: string }>; other: ReadonlyArray<{ id: TechniqueId; name: string }> } {
@@ -99,6 +110,7 @@ export const clock = (sec: number): string => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
 export const nl1 = (n: number): string => (Math.round(n * 10) / 10).toString().replace('.', ',');
+export const nl2 = (n: number): string => n.toFixed(2).replace('.', ',');
 
 export const bandText = (b: Band | null, unit: string, fmt: (n: number) => string = nl1): string | null =>
   b ? `${fmt(b.lo)}–${fmt(b.hi)} ${unit}`.trim() : null;
@@ -171,7 +183,7 @@ export function openBrew(state: EngineState, nowMs: number): { readonly id: stri
   let best: { id: string; status: 'planned' | 'brewing'; technique: TechniqueRef; at: number } | null = null;
   for (const [id, c] of factsOf(state).cups) {
     if (c.status !== 'planned' && c.status !== 'brewing') continue;
-    if (nowMs - c.at > OPEN_BREW_HOURS * 3_600_000) continue;
+    if (isStale(c.at, nowMs)) continue;
     if (!best || c.at > best.at) best = { id, status: c.status, technique: c.technique, at: c.at };
   }
   return best;

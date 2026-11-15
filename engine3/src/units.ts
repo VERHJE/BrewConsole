@@ -52,19 +52,3 @@ export interface Band<T extends number = number> {
   readonly hi: T;
 }
 
-/**
- * Massabalans voor percolatie (Guinard e.a. 2023; zelfde vorm als Engine 2):
- * TDS = 100·x/(1+x) met x = EY / (water/dosis − R), R = vastgehouden water per gram koffie.
- * Geeft null als de verhouding fysiek onmogelijk is (water/dosis ≤ R).
- */
-export function massBalanceTds(doseG: Grams, waterG: Grams, retentionGPerG: number, extraction: EyFraction): TdsPct | null {
-  if (!(doseG > 0) || !(waterG > 0) || waterG / doseG <= retentionGPerG) return null;
-  const x = extraction / (waterG / doseG - retentionGPerG);
-  return tdsPct((100 * x) / (1 + x));
-}
-
-/** De omgekeerde: welke verhouding water/dosis hoort bij een doel-TDS. */
-export function ratioForTds(target: TdsPct, retentionGPerG: number, extraction: EyFraction): number {
-  const t = target / 100;
-  return retentionGPerG + (extraction * (1 - t)) / t;
-}

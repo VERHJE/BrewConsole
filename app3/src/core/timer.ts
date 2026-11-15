@@ -7,6 +7,7 @@ import {
 } from '../../../engine3/src/index.ts';
 import { newId, type Env } from './ids.ts';
 import { finishLines, pourGuide, prepLines } from './gieten.ts';
+import { clock } from './brew.ts';
 
 export type TimerStatus = 'ready' | 'running' | 'paused' | 'complete' | 'abandoned';
 
@@ -106,7 +107,6 @@ export interface StepGuide {
 }
 
 const g0 = (n: number): string => String(Math.round(n));
-const mmss = (s: number): string => `${Math.floor(Math.max(0, Math.round(s)) / 60)}:${String(Math.max(0, Math.round(s)) % 60).padStart(2, '0')}`;
 
 /**
  * Eén stap tegelijk. De stap loopt van het begin van een giet tot het begin van de volgende; bij de laatste giet loopt
@@ -120,12 +120,12 @@ export function stepGuide(recipe: Recipe, v: TimerView, expectedEndSec: number |
   if (v.status === 'abandoned') return { kind: 'done', title: 'Afgebroken', remainingSec: null, fraction: null, action: 'Dit zetsel telt niet mee voor het advies.', next: null, progress: null, target: null, after: null, prep: [], finish: [] };
   if (v.status === 'ready' || !first) {
     return { kind: 'ready', title: 'Klaar om te starten', remainingSec: null, fraction: 0,
-      action: first ? `Eerste giet: ${g0(first.addG)} g.` : 'Start de timer bij het eerste water.', next: pours[1] ? `Daarna giet 2 om ${mmss(pours[1].atSec)}.` : null, progress: null, target: null, after: null, prep: prepLines(recipe), finish: [] };
+      action: first ? `Eerste giet: ${g0(first.addG)} g.` : 'Start de timer bij het eerste water.', next: pours[1] ? `Daarna giet 2 om ${clock(pours[1].atSec)}.` : null, progress: null, target: null, after: null, prep: prepLines(recipe), finish: [] };
   }
   const t = v.elapsedSec;
   const holdIdx = v.phases.findIndex(p => p === 'hold');
   const upcoming = v.next;
-  const nextPourText = (i: number): string => `giet ${i + 1}: ${g0(pours[i]!.addG)} g tot ${g0(pours[i]!.toG)} g om ${mmss(pours[i]!.atSec)}`;
+  const nextPourText = (i: number): string => `giet ${i + 1}: ${g0(pours[i]!.addG)} g tot ${g0(pours[i]!.toG)} g om ${clock(pours[i]!.atSec)}`;
 
   if (holdIdx >= 0) {
     const p = pours[holdIdx]!;

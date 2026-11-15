@@ -14,7 +14,7 @@ import { runMetrics, summarize } from './metrics.ts';
 import type { CupRecord, RunMetrics } from './metrics.ts';
 import { engine2Strategy, engine3StrengthStrategy, oracleStrategy, staticStrategy } from './adapters.ts';
 import type { Strategy } from './adapters.ts';
-import { ratioForTds, ey, tdsPct } from '../src/units.ts';
+import { ratioForTdsPct } from '../src/strength.ts';
 
 export function simulate(strategy: Strategy, sc: Scenario, w: World, seed: number): RunMetrics {
   const r = rng(seed);
@@ -49,7 +49,7 @@ async function main(): Promise<void> {
       return oracleStrategy(ctx => {
         const bag = bags.find(b => b.beanId === ctx.beanId)!;
         const targetLn = Math.log(sc.targetTds) + bag.prefOffsetLn + w.driftPerCup * ctx.cupIndex;
-        return sc.waterG / ratioForTds(tdsPct(Math.exp(targetLn)), sc.retention, ey(bag.ey));
+        return sc.waterG / ratioForTdsPct(Math.exp(targetLn), sc.retention, bag.ey);
       });
     };
     results[w.name] = {};

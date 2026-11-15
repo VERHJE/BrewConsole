@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bagPalette, compressToBudget, fitWithin, memoryPhotoStore, QUALITY_STEPS } from '../src/core/photos.ts';
+import { compressToBudget, fitWithin, memoryPhotoStore, QUALITY_STEPS } from '../src/core/photos.ts';
 
 test('fitWithin: verkleint tot 1080 px, behoudt verhouding, vergroot nooit', () => {
   assert.deepEqual(fitWithin(4000, 3000), { width: 1080, height: 810 });
@@ -31,8 +31,3 @@ test('geheugenopslag: opslaan, ophalen, verwijderen', async () => {
   assert.equal(await s.get('a'), null);
 });
 
-test('bagPalette: vast per naam, binnen 0–359', () => {
-  assert.deepEqual(bagPalette('Esperanza'), bagPalette('Esperanza'));
-  const p = bagPalette('Kenia Kiambu');
-  assert.ok(p.hue >= 0 && p.hue < 360 && p.hue2 >= 0 && p.hue2 < 360);
-});

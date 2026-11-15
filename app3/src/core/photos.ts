@@ -66,14 +66,6 @@ export async function openPhotoStore(factory: IDBFactory | undefined = globalThi
   };
 }
 
-/** Een vaste, rustige kleurcombinatie per zaknaam voor de getekende zak. */
-export function bagPalette(name: string): { hue: number; hue2: number } {
-  let h = 2166136261;
-  for (let i = 0; i < name.length; i++) { h ^= name.charCodeAt(i); h = Math.imul(h, 16777619); }
-  const hue = Math.abs(h) % 360;
-  return { hue, hue2: (hue + 28) % 360 };
-}
-
 /** Zes ingetogen, donkere tinten voor het etiket van een zak zonder foto (vast per naam). Altijd donker genoeg voor ivoor tekst. */
 export const LABEL_TINTS: ReadonlyArray<readonly [string, string]> = [
   ['#2c2118', '#43321f'], // espresso
@@ -83,10 +75,14 @@ export const LABEL_TINTS: ReadonlyArray<readonly [string, string]> = [
   ['#3d2b36', '#55394a'], // pruim
   ['#24403d', '#33605a']  // diep teal
 ];
-export function labelTint(name: string): readonly [string, string] {
+/** FNV-1a over de tekens: een vast getal per naam, voor tint en hoogtelijnen. */
+function hashName(text: string): number {
   let h = 2166136261;
-  for (let i = 0; i < name.length; i++) { h ^= name.charCodeAt(i); h = Math.imul(h, 16777619); }
-  return LABEL_TINTS[Math.abs(h) % LABEL_TINTS.length]!;
+  for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h;
+}
+export function labelTint(name: string): readonly [string, string] {
+  return LABEL_TINTS[Math.abs(hashName(name)) % LABEL_TINTS.length]!;
 }
 /** Eerste letter (hoofdletter) van de naam voor het monogram; '·' zonder naam. */
 export function monogram(name: string): string {
@@ -100,9 +96,7 @@ export function monogram(name: string): string {
  * Puur decoratief; er zit geen gegeven van de zak in behalve de naam als zaadje.
  */
 export function labelContours(seed: string, rings = 11): string[] {
-  let h = 2166136261;
-  for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
-  let s = h >>> 0;
+  let s = hashName(seed) >>> 0;
   const rnd = (): number => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const cx = 28 + rnd() * 44, cy = 30 + rnd() * 40;
   const waves = [2, 3, 5].map(k => ({ k, amp: 0.05 + rnd() * 0.09, ph: rnd() * Math.PI * 2, drift: (rnd() - 0.5) * 0.5 }));

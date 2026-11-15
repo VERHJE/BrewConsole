@@ -42,10 +42,6 @@ export function toggleFav(s: Pick<Storage, 'getItem' | 'setItem'>, id: string): 
   try { s.setItem(FAV_KEY, JSON.stringify([...set])); } catch { /* geen opslag */ }
   return now;
 }
-/** Favorieten eerst, de rest in dezelfde volgorde. */
-export function favFirst<T extends { id: string }>(rows: readonly T[], favs: ReadonlySet<string>): T[] {
-  return [...rows.filter(r => favs.has(r.id)), ...rows.filter(r => !favs.has(r.id))];
-}
 
 // ───────────── rustdagen ─────────────
 

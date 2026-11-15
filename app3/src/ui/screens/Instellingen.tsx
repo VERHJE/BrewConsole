@@ -4,6 +4,7 @@ import type { JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import type { WaterSetting } from '../../../../engine3/src/index.ts';
 import { href } from '../../core/router.ts';
+import { nl1 } from '../../core/brew.ts';
 import {
   DILUTIONS, SCA_ALKALINITY, SCA_HARDNESS, WATER_PRESETS, brightLighterEvent, dilutionKey, effectiveWater, grinderEvent,
   settingsOf, validateWater, verdictOf, waterEvent, type Verdict
@@ -14,7 +15,6 @@ import { Panel, Switch } from '../settings-kit.tsx';
 import { useApp, useSnapshot } from '../store-context.tsx';
 
 const VERDICT: Record<Verdict, string> = { below: 'onder', within: 'binnen', above: 'boven' };
-const nl = (n: number): string => (Math.round(n * 10) / 10).toString().replace('.', ',');
 const Back = (): JSX.Element => <a class="btn" href={href('meer')}>Terug</a>;
 
 export function Water(): JSX.Element {
@@ -73,9 +73,9 @@ export function Water(): JSX.Element {
 
       <div class="card resultcard" aria-live="polite"><h2 class="sub-h">In je kop</h2>
         <div class="numbers meertiles">
-          <div class="num"><b>{eff.hardnessMgL === null ? '–' : `${nl(eff.hardnessMgL)} mg/L`}</b><small>hardheid</small>
+          <div class="num"><b>{eff.hardnessMgL === null ? '–' : `${nl1(eff.hardnessMgL)} mg/L`}</b><small>hardheid</small>
             {hv && <span class={`tag verdict ${hv}`}>{VERDICT[hv]} de SCA-richtwaarde ({SCA_HARDNESS.low}–{SCA_HARDNESS.high})</span>}</div>
-          <div class="num"><b>{eff.alkalinityCaCO3 === null ? '–' : `${nl(eff.alkalinityCaCO3)} mg/L CaCO3`}</b><small>alkaliniteit</small>
+          <div class="num"><b>{eff.alkalinityCaCO3 === null ? '–' : `${nl1(eff.alkalinityCaCO3)} mg/L CaCO3`}</b><small>alkaliniteit</small>
             {av && <span class={`tag verdict ${av}`}>{VERDICT[av]} de SCA-richtwaarde ({SCA_ALKALINITY.low}–{SCA_ALKALINITY.high})</span>}</div>
         </div>
         <p class="meta">Waterstofcarbonaat (HCO3) wordt omgerekend met ×0,82. Demiwater telt als 0. Zoek je waarden op de kwaliteitspagina van je waterbedrijf (“totale hardheid” en “waterstofcarbonaat”).</p>

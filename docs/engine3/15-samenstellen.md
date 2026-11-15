@@ -1,6 +1,6 @@
 # 15 · Samenstellen (bouwstap 8)
 
-Code: `engine3/src/engine.ts`, `engine3/src/data/brewer.ts` · tests: `engine3/test/engine.test.ts` · rooktest van de bundel: `engine3/scripts/smoke-bundle.mjs` · contract: `e3-contract-1.0`
+Code: `engine3/src/engine.ts`, `engine3/src/data/brewer.ts` · tests: `engine3/test/engine.test.ts` · contract: `e3-contract-1.0`
 
 ```ts
 import { createEngine } from './engine3.mjs';        // engine3/dist/engine3.mjs, gebouwd met npm run e3:build
@@ -40,7 +40,7 @@ const advice = engine.plan(state, { at, beanId, method, cupG, goal, technique, f
 
 - **Eigen koppen** (lokaal, alleen tellingen): op de 9 geproefde koppen met een sterkte-oordeel doet Engine 3 hetzelfde als Engine 2: 3 keer de goede kant op, 1 keer de verkeerde, 5 keer geen richting. Met het volledige `plan()` zijn de tellingen gelijk; het gemiddelde verschil met de gezette dosis is 1,21 g (Engine 2: 1,11 g), doordat Engine 3 zonder koppen begint bij de verhouding van de techniek (Kasuya 1:15) in plaats van het basisrecept van de oude app.
 - **Meetopstelling:** sterkte gelijk aan Engine 2 (12), tijd en molen beter dan een vaste klik (13), techniekkeuze nergens slechter dan altijd Kasuya (14).
-- **Bundel:** `npm run e3:check` bouwt `engine3/dist/engine3.mjs` en draait de rooktest erop, in CI.
+- **Bundel:** `npm run e3:build` bouwt `engine3/dist/engine3.mjs` op verzoek. Hij hoort niet meer bij `e3:check`: app3 bundelt de broncode van de engine zelf (esbuild) en de schermtests draaien op die build. De rooktest van de losse bundel was sinds `cfb3c63` (6 nov 2026) leeg en is weggehaald (15 nov 2026).
 
 ## Bewust niet gedaan
 

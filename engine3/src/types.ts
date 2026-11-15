@@ -355,9 +355,3 @@ export interface Engine {
   plan(state: EngineState, request: PlanRequest): Advice;
 }
 
-/** Hulptype voor de extractieaanname waarmee een recept rekent (zonder refractometer geschat). */
-export interface ExtractionAssumption {
-  readonly ey: EyFraction;
-  readonly retentionGPerG: number;
-  readonly source: 'nominal' | 'measured';
-}

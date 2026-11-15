@@ -5,6 +5,7 @@ import { formatLiking } from './tasting.ts';
 import { factsOf, tasteProfile, beanFit, type EngineState, type WheelCategory } from '../../../engine3/src/index.ts';
 import { PROCESS_LABEL } from './beans.ts';
 import { CATEGORIES } from './tasting.ts';
+import { clock, nl1 } from './brew.ts';
 
 export interface TrendPoint {
   readonly brewId: string;
@@ -42,15 +43,13 @@ export function trendPoints(state: EngineState, beanId: string | null): TrendPoi
 
 export interface Series { readonly key: 'dose' | 'end' | 'strength' | 'liking'; readonly title: string; readonly unit: string; readonly points: ReadonlyArray<{ n: number; at: number; y: number; brewId: string; note: string }> }
 
-const num1 = (n: number): string => (Math.round(n * 10) / 10).toString().replace('.', ',');
-const clock = (s: number): string => `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 60).padStart(2, '0')}`;
 export const STRENGTH_WORD: Readonly<Record<string, string>> = { '-2': 'veel te slap', '-1': 'iets slap', '0': 'precies goed', '1': 'iets sterk', '2': 'veel te sterk' };
 
 export function seriesOf(points: readonly TrendPoint[]): Series[] {
   const take = (f: (p: TrendPoint) => number | null, note: (p: TrendPoint) => string): Series['points'] =>
     points.flatMap(p => { const y = f(p); return y === null ? [] : [{ n: p.n, at: p.at, y, brewId: p.brewId, note: note(p) }]; });
   return [
-    { key: 'dose', title: 'Koffie per kop', unit: 'g', points: take(p => p.doseG, p => `${num1(p.doseG)} g${p.click !== null ? ` · klik ${p.click}` : ''}`) },
+    { key: 'dose', title: 'Koffie per kop', unit: 'g', points: take(p => p.doseG, p => `${nl1(p.doseG)} g${p.click !== null ? ` · klik ${p.click}` : ''}`) },
     { key: 'end', title: 'Klaar na', unit: 'min:sec', points: take(p => p.endSec, p => `${clock(p.endSec!)}${p.lastDrainSec !== null ? ` · laatste giet na ${clock(p.lastDrainSec)}` : ''}${p.click !== null ? ` · klik ${p.click}` : ''}`) },
     { key: 'strength', title: 'Sterkte-oordeel', unit: '', points: take(p => p.strength, p => STRENGTH_WORD[String(p.strength)] ?? '') },
     { key: 'liking', title: 'Waardering', unit: 'van 5', points: take(p => p.liking, p => `${formatLiking(p.liking!)} van 5`) }
@@ -78,8 +77,8 @@ export function explainSeries(series: Pick<Series, 'key' | 'points'>): string | 
   switch (series.key) {
     case 'dose': {
       const lo = Math.min(...ys), hi = Math.max(...ys);
-      if (hi - lo < 0.5) return `Steeds ongeveer ${num1(last)} g.`;
-      return `Van ${num1(ys[0]!)} g naar ${num1(last)} g.`;
+      if (hi - lo < 0.5) return `Steeds ongeveer ${nl1(last)} g.`;
+      return `Van ${nl1(ys[0]!)} g naar ${nl1(last)} g.`;
     }
     case 'end': {
       const base = `Laatste kop klaar na ${clock(last)}, gemiddeld ${clock(mean(ys))} over ${n} koppen.`;
@@ -90,7 +89,7 @@ export function explainSeries(series: Pick<Series, 'key' | 'points'>): string | 
     case 'strength': {
       const m = mean(recent);
       const word = Math.abs(m) < 0.5 ? 'ongeveer goed' : m < 0 ? 'te slap' : 'te sterk';
-      return `Je vond de laatste ${recent.length} koppen ${word}${Math.abs(m) < 0.5 ? '' : ` (gemiddeld ${m > 0 ? '+' : ''}${num1(m)})`}.`;
+      return `Je vond de laatste ${recent.length} koppen ${word}${Math.abs(m) < 0.5 ? '' : ` (gemiddeld ${m > 0 ? '+' : ''}${nl1(m)})`}.`;
     }
     case 'liking': {
       const base = `Gemiddeld ${formatLiking(Math.round(mean(ys) * 100) / 100)} van 5 over ${n} koppen.`;
@@ -128,6 +127,6 @@ export function fitView(state: EngineState, beanId: string): FitView {
     return { expectedDelta: null, parts, text: 'Nog te weinig om iets te zeggen: een kenmerk telt pas mee na minstens 3 waarderingen.' };
   }
   const d = fit.expectedDelta;
-  const size = Math.abs(d) < 0.15 ? 'ongeveer op je gemiddelde' : `${num1(Math.abs(d))} punt ${d > 0 ? 'boven' : 'onder'} je gemiddelde`;
+  const size = Math.abs(d) < 0.15 ? 'ongeveer op je gemiddelde' : `${nl1(Math.abs(d))} punt ${d > 0 ? 'boven' : 'onder'} je gemiddelde`;
   return { expectedDelta: d, parts, text: `Verwachte waardering: ${size} (op basis van ${fit.basis} ${fit.basis === 1 ? 'kenmerk' : 'kenmerken'}).` };
 }

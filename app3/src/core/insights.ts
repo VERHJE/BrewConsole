@@ -2,8 +2,8 @@ import { tagLabel } from './beans.ts';
 // Logboek en inzicht: alleen lezen uit de feiten van de engine. Er wordt hier niets zelf gerekend wat de engine ook kan.
 
 import {
-  ms, factsOf, tasteProfile, beanFit, fitGrind, perClickEffect, tailObservationsOf,
-  type BeanFit, type BrewDeleteEvent, type CupFacts, type EngineState, type SensitivityStatus, type TasteProfile
+  ms, factsOf, tasteProfile, fitGrind, perClickEffect, tailObservationsOf,
+  type BrewDeleteEvent, type CupFacts, type EngineState, type SensitivityStatus, type TasteProfile
 } from '../../../engine3/src/index.ts';
 import { newId, type Env } from './ids.ts';
 
@@ -73,11 +73,6 @@ export const STATUS_TEXT: Readonly<Record<SensitivityStatus, string>> = {
 };
 
 export function profileOf(state: EngineState): TasteProfile { return tasteProfile(factsOf(state)); }
-
-export function fitOf(state: EngineState, beanId: string): BeanFit {
-  const facts = factsOf(state);
-  return beanFit(facts, tasteProfile(facts), beanId);
-}
 
 export interface GrindView {
   /** Koppen met een bruikbare doorlooptijd van de laatste giet. */

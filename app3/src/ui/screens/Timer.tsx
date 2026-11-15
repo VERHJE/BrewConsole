@@ -3,13 +3,14 @@ import type { JSX } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { factsOf } from '../../../../engine3/src/index.ts';
 import { href } from '../../core/router.ts';
-import { clock, pourLines, techniqueName } from '../../core/brew.ts';
+import { clock, nl1, pourLines, techniqueName } from '../../core/brew.ts';
 import {
   abandonTimer, drainedTap, drainedUndo, finishTimer, pauseTimer, resumeTimer, startTimer, stepGuide, timerEventsFor, timerView, type StepKind
 } from '../../core/timer.ts';
 import { cueFor, readCuePrefs, type CueState } from '../../core/cues.ts';
 import { playCue, unlockAudio } from '../cues.ts';
 import { useApp, useSnapshot } from '../store-context.tsx';
+import { useMedia } from '../use-media.ts';
 
 /**
  * De ring (richting "Ritueel"): loopt rond tot het einde van de stap. In het midden het gewicht waar je naartoe giet,
@@ -43,16 +44,7 @@ function ReadyDial({ waterG, endText }: { waterG: number; endText: string | null
 }
 
 /** Breed of liggend: dan staan schema en uitleg naast de timer en is het schema altijd open. */
-function useWide(): boolean {
-  const q = '(min-width: 900px) and (min-height: 600px), (orientation: landscape) and (max-height: 560px)';
-  const [wide, setWide] = useState(() => typeof matchMedia === 'function' && matchMedia(q).matches);
-  useEffect(() => {
-    if (typeof matchMedia !== 'function') return;
-    const m = matchMedia(q); const on = (): void => setWide(m.matches);
-    m.addEventListener('change', on); return () => m.removeEventListener('change', on);
-  }, []);
-  return wide;
-}
+const WIDE = '(min-width: 900px) and (min-height: 600px), (orientation: landscape) and (max-height: 560px)';
 
 function useTicker(active: boolean): void {
   const [, setTick] = useState(0);
@@ -92,7 +84,7 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
   useTicker(running);
   useWakeLock(running || view?.status === 'paused');
   const [confirmStop, setConfirmStop] = useState(false);
-  const wide = useWide();
+  const wide = useMedia(WIDE);
 
   // Signalen (geluid en trillen) bij een giet, een wacht-op-doorlopen, de laatste drie seconden voor een giet en het einde.
   const prevCue = useRef<CueState | null>(null);
@@ -125,7 +117,7 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
   const big = guide.target ? String(Math.round(guide.target.toG)) : holdNext ? String(Math.round(holdNext.toG)) : guide.kind === 'drain' || guide.kind === 'wait' ? String(Math.round(recipe.pours[lastIdx]!.toG)) : null;
   const soon = guide.kind === 'pour' && guide.remainingSec !== null && guide.remainingSec <= 5 && view.current < lastIdx;
   const name = techniqueName(recipe.technique);
-  const eyebrow = `${name} · ${String(Math.round(recipe.doseG * 10) / 10).replace('.', ',')} g`;
+  const eyebrow = `${name} · ${nl1(recipe.doseG)} g`;
   const end = recipe.expectedEndSec ? clock(recipe.expectedEndSec.mid) : null;
   // Op de telefoon is het schema alleen voor de start open (dan staat Start vast onderin); daarna één stap tegelijk.
   const schemaOpen = wide || view.status === 'ready';
