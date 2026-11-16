@@ -98,3 +98,21 @@ test('leegmaken wist het veld echt: tekst, proces, branding, datum, zakgrootte e
   assert.equal(after.values.country, 'Colombia', 'wat blijft staat er nog');
   assert.equal(after.values.name.length > 0, true);
 });
+
+test('koppen per zak: alleen afgeronde koppen tellen, net als de voorraad (audit 15 nov, P3-01)', async () => {
+  const { seedLog } = await import('./seed.ts');
+  const { factsOf } = await import('../../engine3/src/index.ts');
+  const { beanDetail } = await import('../src/core/beans.ts');
+  const { DEFAULT_FORM, brewPlanEvent, planBrew } = await import('../src/core/brew.ts');
+  const { events } = await seedLog(2);
+  const engine = createEngine();
+  const beanId = (events.find(e => e.kind === 'bean.upsert') as { data: { beanId: string } }).data.beanId;
+  const env2: Env = { now: () => Date.UTC(2026, 10, 1), uuid: () => 'gepland', device: 'test' };
+  const form = { ...DEFAULT_FORM, beanId };
+  const out = planBrew(engine, engine.learn(events), env2, form);
+  assert.ok(out.ok);
+  const state = engine.learn([...events, brewPlanEvent(env2, out.advice, form)]); // gepland, nooit gezet
+  assert.equal(factsOf(state).beans.get(beanId)!.brewIds.length, 3, 'de engine houdt het geplande zetsel bij de zak');
+  assert.equal(beanRows(state).find(r => r.id === beanId)!.cups, 2);
+  assert.equal(beanDetail(state, beanId)!.cups, 2);
+});

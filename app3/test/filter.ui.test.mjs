@@ -17,7 +17,7 @@ test('filter kiezen, bewaren en terugzien; melding bij wisselen', async () => {
   await page.goto(app.base + '#/zetten');
   await page.waitForSelector('.recipe .numbers');
   assert.equal(await page.locator('.filternote').count(), 0, 'geen melding zonder keuze');
-  await page.click('button.chip:has-text("Cafec TH-3")');
+  await page.selectOption('select[name=filter]', { label: 'Cafec TH-3' });
   assert.equal(await page.locator('.filternote').count(), 0, 'geen melding bij de eerste kop');
   await page.locator('.startbar button.primary').first().click();
   await page.waitForSelector('.timer .clock');
@@ -29,13 +29,13 @@ test('filter kiezen, bewaren en terugzien; melding bij wisselen', async () => {
 
   await page.goto(app.base + '#/zetten');
   await page.waitForSelector('.recipe .numbers');
-  await page.click('button.chip:has-text("Hario V60-papier")');
+  await page.selectOption('select[name=filter]', { label: 'Hario V60-papier' });
   const note = page.locator('.filternote');
   await note.waitFor({ timeout: 3000 });
   const txt = await note.innerText();
   assert.match(txt, /Cafec TH-3/);
   assert.equal(/\d/.test(txt.replace('Cafec TH-3', '')), false, 'de melding bevat geen getal');
-  await page.click('button.chip:has-text("Niet bijhouden")');
+  await page.selectOption('select[name=filter]', { label: 'Niet bijhouden' });
   assert.equal(await page.locator('.filternote').count(), 0);
   assert.deepEqual(errors, []);
   await page.close();
@@ -47,6 +47,18 @@ test('Chemex toont geen filterveld', async () => {
   await page.goto(app.base + '#/zetten');
   await page.waitForSelector('.recipe .numbers');
   await page.click('button.chip:has-text("Chemex")');
-  assert.equal(await page.locator('button.chip:has-text("Cafec TH-3")').count(), 0);
+  assert.equal(await page.locator('select[name=filter]').count(), 0);
+  await page.close();
+});
+
+test('iPad liggend: de filterkeuze neemt één regel in (audit 15 nov, P3-04)', async () => {
+  const page = await app.browser.newPage({ viewport: { width: 1180, height: 820 } });
+  await importLog(page, app.base, json);
+  await page.goto(app.base + '#/zetten');
+  await page.waitForSelector('.recipe .numbers');
+  const sel = page.locator('select[name=filter]');
+  const h = await sel.evaluate(e => e.getBoundingClientRect().height);
+  const zak = await page.locator('select[name=bean]').evaluate(e => e.getBoundingClientRect().height);
+  assert.equal(Math.round(h), Math.round(zak), 'even hoog als de keuzelijst voor de zak');
   await page.close();
 });

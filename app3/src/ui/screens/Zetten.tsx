@@ -132,11 +132,14 @@ function Plan(): JSX.Element {
           </div>
         </div>
         {eff.method === 'v60' && (
-          <div class="field"><span id="filter-l">Filter <small class="hint-inline">optioneel, voor het logboek</small></span>
-            <div class="chips" role="group" aria-labelledby="filter-l">
-              <button type="button" class="chip" aria-pressed={!eff.filter} onClick={() => set({ filter: null })}>Niet bijhouden</button>
-              {PAPER_IDS.map(k => <button key={k} type="button" class="chip" aria-pressed={eff.filter === k} onClick={() => set({ filter: k as PaperId })}>{PAPER_LABEL[k]}</button>)}
-            </div>
+          <div>
+            {/* Een keuzelijst zoals Zak en Techniek: één regel, ook in de smalle kolom op de iPad (audit 15 nov, P3-04). */}
+            <label class="field"><span>Filter <small class="hint-inline">optioneel, voor het logboek</small></span>
+              <select name="filter" value={eff.filter ?? ''} onChange={e => set({ filter: ((e.currentTarget as HTMLSelectElement).value || null) as PaperId | null })}>
+                <option value="">Niet bijhouden</option>
+                {PAPER_IDS.map(k => <option key={k} value={k}>{PAPER_LABEL[k]}</option>)}
+              </select>
+            </label>
             {eff.filter && prevFilter !== null && prevFilter !== eff.filter && (
               <p class="meta filternote" role="status">Je vorige kop gebruikte {paperLabel(prevFilter)}. Een ander papier kan de doorlooptijd veranderen. Kijk na afloop of het te snel of te langzaam liep; de app stelt de maling dan bij.</p>)}
           </div>)}
@@ -221,7 +224,7 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
         <div class="num"><b key={`d${r.doseG}`}>{nl1(r.doseG)} g</b><small>koffie</small></div>
         <div class="num"><b key={`w${r.waterG}`}>{Math.round(r.waterG)} g</b><small>water{r.bypassG > 0 ? ` (+${Math.round(r.bypassG)} g erbij)` : ''}</small></div>
         {r.tempC !== null && <div class="num"><b key={`t${r.tempC}`}>{r.tempC} °C</b><small>temperatuur</small></div>}
-        {r.grindClick !== null && <div class="num"><b key={`k${r.grindClick}`}>klik {r.grindClick}</b><small>molen · C3S Pro</small></div>}
+        {r.grindClick !== null && <div class="num"><b key={`k${r.grindClick}`}>klik {r.grindClick}</b><small>molen</small></div>}
       </div>
       {endB && <p class="meta">Verwacht klaar tussen {clock(endB.lo)} en {clock(endB.hi)}.</p>}
       <div class={`recipe-body${prep.length + finish.length > 0 ? ' two' : ''}`}>
