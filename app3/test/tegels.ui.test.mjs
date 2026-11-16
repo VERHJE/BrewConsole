@@ -36,3 +36,20 @@ test('tegels: geen label breekt midden in een woord af, van 320 tot 430 px', asy
     await page.close();
   }
 });
+
+test('grafieken: elk punt heeft een raakvlak van minstens 44 px, ook op een smalle telefoon (audit 15 nov, P3-03)', async () => {
+  const bean = events.find(e => e.kind === 'bean.upsert').data.beanId;
+  for (const width of [320, 390, 1180]) {
+    const page = await app.browser.newPage({ viewport: { width, height: 844 } });
+    await importLog(page, app.base, json);
+    await page.goto(app.base + '#/zakken/' + bean);
+    await page.waitForSelector('.chart circle.hit');
+    const sizes = await page.locator('.chart circle.hit').evaluateAll(cs => cs.map(c => { const b = c.getBoundingClientRect(); return Math.min(b.width, b.height); }));
+    assert.ok(sizes.length >= 3, 'punten gevonden');
+    assert.ok(Math.min(...sizes) >= 44, `${width} px: kleinste raakvlak ${Math.min(...sizes).toFixed(1)} px`);
+    // de tooltip werkt nog: focus op een punt toont de waarde
+    await page.locator('.chart circle.hit').first().focus();
+    await page.waitForSelector('.chart .tip');
+    await page.close();
+  }
+});

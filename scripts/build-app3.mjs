@@ -22,7 +22,14 @@ await build({
 });
 const css = ['fonts.css', 'tokens.css', 'base.css'].map(f => fs.readFileSync(path.join(ROOT, 'app3/styles', f), 'utf8')).join('\n');
 fs.writeFileSync(path.join(OUT, 'app.css'), css);
-fs.copyFileSync(path.join(ROOT, 'app3/index.html'), path.join(OUT, 'index.html'));
+// index.html met de CSP: de hash van elk inline script (zonder src) komt op de plaats van __INLINE_SCRIPT_HASHES__, zodat
+// het script mag draaien en een gewijzigd script zonder nieuwe hash wordt tegengehouden (audit 15 nov, P3-07).
+{
+  const html = fs.readFileSync(path.join(ROOT, 'app3/index.html'), 'utf8');
+  const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => `'sha256-${crypto.createHash('sha256').update(m[1], 'utf8').digest('base64')}'`);
+  if (!html.includes('__INLINE_SCRIPT_HASHES__') || inline.length === 0) throw new Error('index.html: CSP-plaatshouder of inline script ontbreekt');
+  fs.writeFileSync(path.join(OUT, 'index.html'), html.replace('__INLINE_SCRIPT_HASHES__', inline.join(' ')));
+}
 // Lettertype voor koppen (OFL-1.1): bestand en licentietekst gaan samen mee.
 const FONT_DIR = path.join(ROOT, 'node_modules/@fontsource-variable/fraunces');
 fs.mkdirSync(path.join(OUT, 'fonts'), { recursive: true });
@@ -30,7 +37,9 @@ fs.copyFileSync(path.join(FONT_DIR, 'files/fraunces-latin-wght-normal.woff2'), p
 fs.copyFileSync(path.join(FONT_DIR, 'LICENSE'), path.join(OUT, 'fonts/Fraunces-OFL.txt'));
 fs.copyFileSync(path.join(ROOT, 'app3/manifest.webmanifest'), path.join(OUT, 'manifest.webmanifest'));
 // Iconen en opstartschermen (icons/splash/): de hele map, ook de submap.
-fs.cpSync(path.join(ROOT, 'icons'), path.join(OUT, 'icons'), { recursive: true });
+// icon-maskable-512.png is een byte-gelijke kopie van icon-512.png die alleen de oude app (archief) nog gebruikt; de app zelf
+// gebruikt icon-512.png ook als maskable (audit 15 nov, P3-02).
+fs.cpSync(path.join(ROOT, 'icons'), path.join(OUT, 'icons'), { recursive: true, filter: src => path.basename(src) !== 'icon-maskable-512.png' });
 
 // Op de wortel blijven de hulppagina's (tokengenerator voor synchronisatie, toestelcheck) bereikbaar op hun eigen adres.
 const EXTRA_PAGES = ['tokengenerator.html', 'toestelcheck.html'];
@@ -71,13 +80,22 @@ if (AT_ROOT) {
   fs.writeFileSync(path.join(OUT, '_redirects'), `/app3/*  /:splat  301
 /app3    /        301
 `);
-  fs.writeFileSync(path.join(OUT, '_headers'), ['/', '/index.html', '/sw.js', '/oud/sw.js', '/app3/sw.js']
+  // Beveiligingsheaders voor de hele site (audit 15 nov, P3-07). De CSP van de app zelf staat als meta-tag in index.html;
+  // frame-ancestors werkt alleen als header en staat daarom hier.
+  const SECURITY = `/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+`;
+  fs.writeFileSync(path.join(OUT, '_headers'), SECURITY + ['/', '/index.html', '/sw.js', '/oud/sw.js', '/app3/sw.js']
     .map(p => `${p}\n  Cache-Control: no-cache\n`).join(''));
 }
 
 // Service worker: versie uit de inhoud van alle bestanden, lijst van wat vooraf in de cache gaat.
-// De opstartschermen (22 plaatjes, 2,7 MB) haalt iOS zelf op bij 'Zet op beginscherm'; ze horen niet in de voorraad van de worker.
-const files = fs.readdirSync(OUT, { recursive: true }).map(String).filter(f => !f.startsWith('oud') && !f.startsWith('app3') && !f.startsWith('_') && !f.startsWith(path.join('icons', 'splash')) && !EXTRA_PAGES.includes(f) && fs.statSync(path.join(OUT, f)).isFile() && f !== 'sw.js').sort();
+// De opstartschermen (22 plaatjes, 2,7 MB) en de app-iconen haalt het toestel zelf op bij 'Zet op beginscherm'; de app toont ze
+// nergens, dus ze horen niet in de voorraad van de worker (de iconen waren 850 kB van de 1,4 MB; audit 15 nov, P3-02).
+const files = fs.readdirSync(OUT, { recursive: true }).map(String).filter(f => !f.startsWith('oud') && !f.startsWith('app3') && !f.startsWith('_') && !f.startsWith('icons') && !EXTRA_PAGES.includes(f) && fs.statSync(path.join(OUT, f)).isFile() && f !== 'sw.js').sort();
 const hash = crypto.createHash('sha256');
 for (const f of files) hash.update(f).update(fs.readFileSync(path.join(OUT, f)));
 const version = hash.digest('hex').slice(0, 12);

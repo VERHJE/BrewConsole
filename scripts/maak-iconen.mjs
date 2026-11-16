@@ -2,7 +2,9 @@
 // Gebruik: node scripts/maak-iconen.mjs
 //   icons/apple-touch-icon.png (180)   iOS rondt de hoeken zelf af
 //   icons/icon-192.png, icons/icon-512.png   gewone iconen (vol vierkant)
-//   icons/icon-maskable-512.png        hetzelfde beeld: Android mag er een cirkel of afgeronde vorm uit snijden; het onderwerp ligt binnen de veilige zone (middelste 80%)
+//   maskable: het manifest gebruikt icon-512.png ook als maskable (hetzelfde beeld; het onderwerp ligt binnen de veilige zone, de
+//   middelste 80%). Een apart bestand was byte-gelijk (audit 15 nov, P3-02); icons/icon-maskable-512.png blijft alleen voor de oude
+//   app (archief) staan en wordt niet meer gemaakt of meegeleverd.
 // De bron is geleverd door Jelle (nov 2026). Het bestand blijft ongewijzigd in assets/ staan, zodat de iconen opnieuw te maken zijn.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,7 +26,7 @@ const uit = await page.evaluate(async d => {
   // Maskable: hetzelfde volle beeld. Het onderwerp (dripper, kan, druppel) ligt binnen de veilige zone van 80% (cirkel met straal 40%), de damp mag door de uitsnede vervagen.
   // Een eigen rand of marge eromheen gaf een zichtbaar kader als de launcher een cirkel uitsnijdt.
   const png = c => c.toDataURL('image/png').split(',')[1];
-  return { 'apple-touch-icon.png': png(klein(A, 180)), 'icon-192.png': png(klein(A, 192)), 'icon-512.png': png(klein(A, 512)), 'icon-maskable-512.png': png(klein(A, 512)) };
+  return { 'apple-touch-icon.png': png(klein(A, 180)), 'icon-192.png': png(klein(A, 192)), 'icon-512.png': png(klein(A, 512)) };
 }, bron);
 for (const [naam, b64] of Object.entries(uit)) {
   const buf = Buffer.from(b64, 'base64'); fs.writeFileSync(path.join(ROOT, 'icons', naam), buf);
