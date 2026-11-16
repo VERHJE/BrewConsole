@@ -42,6 +42,12 @@ function niceDomain(vals: readonly number[]): [number, number] {
   return [lo - pad, hi + pad];
 }
 
+/**
+ * Raakcirkel per punt, in SVG-eenheden. De grafiek schaalt mee met de breedte; met 28 is het raakvlak op een telefoon (320–430 px)
+ * minstens 44 px (Apple; op 320 px 46 px), was 23–30 px bij 14 (audit 15 nov, P3-03). Bij veel koppen overlappen de cirkels; dan wint de bovenste.
+ */
+const HIT_R = 28;
+
 export function TrendChart({ explain, series, domain, ticks, steps, format, formatEnd, formatTick, reference, dateText }: Props): JSX.Element {
   const pts = series.points;
   const [active, setActive] = useState<number | null>(null);
@@ -78,7 +84,7 @@ export function TrendChart({ explain, series, domain, ticks, steps, format, form
         <text class="ax" x={x(xmin)} y={H - 6} text-anchor="start">kop {xmin}</text>
         {xmax !== xmin && <text class="ax" x={x(xmax)} y={H - 6} text-anchor="end">kop {xmax}</text>}
         {pts.map((p, i) => (
-          <circle key={`h${p.brewId}`} class="hit" cx={x(p.n)} cy={y(p.y)} r={14} tabIndex={0} role="img"
+          <circle key={`h${p.brewId}`} class="hit" cx={x(p.n)} cy={y(p.y)} r={HIT_R} tabIndex={0} role="img"
             aria-label={`Kop ${p.n}, ${dateText(p.at)}: ${format(p.y)}${p.note ? `, ${p.note}` : ''}`}
             onPointerEnter={() => setActive(i)} onFocus={() => setActive(i)} onBlur={() => setActive(null)} />
         ))}

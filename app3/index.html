@@ -3,6 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Content-Security-Policy (audit 15 nov, P3-07): alleen eigen scripts, stijlen, lettertypen en de worker; afbeeldingen ook als blob:
+     (foto's uit de eigen opslag) en data:; verbinden met de eigen site en https (het adres van de synchronisatie-Worker kies je zelf), plus http op localhost en
+     127.0.0.1, die core/sync.ts voor ontwikkelen en tests toestaat.
+     De hash van het inline script hieronder vult de build in (scripts/build-app3.mjs). frame-ancestors staat in _headers. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' __INLINE_SCRIPT_HASHES__; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; font-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="theme-color" content="#1e3128">
 <!-- iPhone/iPad: als app vanaf het beginscherm. De statusbalkstijl leest iOS bij het toevoegen aan het beginscherm
      (een bestaande installatie verandert pas na opnieuw toevoegen). black-translucent laat de pagina onder de statusbalk doorlopen. -->

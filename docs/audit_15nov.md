@@ -148,6 +148,15 @@ Fase 1: in kaart brengen en vinden. Er is in deze fase niets aan de app verander
   - Test: `tegels.ui.test.mjs`.
 - **P3-06 opgelost.** "De laatste giet liep in 0:45 door."
 
+## I. Wijzigingen (ronde 3, 16 nov 2026)
+
+- **P3-02 opgelost.** De iconen staan niet meer in de voorraad van de service worker: 540 kB in plaats van 1392 kB. Het manifest gebruikt `icon-512.png` ook als maskable. De kopie blijft alleen voor het archief in de repo.
+- **P3-03 opgelost.** De raakcirkels van de grafiekpunten zijn ≥ 44 px, ook op 320 px.
+- **P3-07 opgelost.**
+  - De CSP staat als meta-tag in `index.html`, met de hash van het inline script.
+  - `nosniff`, `no-referrer`, `X-Frame-Options: DENY` en `frame-ancestors 'none'` staan in `_headers`.
+  - Alle schermtests draaien onder de CSP; `csp.ui.test.mjs` controleert dat er geen schendingen zijn.
+
 ## J. Resterende risico's
 
 - Safari/iOS-specifiek gedrag (wake lock, statusbalk, PWA-update) is alleen op Jelles toestel te zien, en dat draait nu een oude versie (P1-01).

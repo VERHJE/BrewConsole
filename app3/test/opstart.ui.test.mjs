@@ -40,7 +40,7 @@ test('publicatie: opstartschermen worden meegeleverd maar zitten niet in de voor
   assert.equal((await r.body()).subarray(1, 4).toString(), 'PNG');
   const sw = await (await page.request.get(app.base + 'sw.js')).text();
   assert.equal(sw.includes('icons/splash'), false, 'niet in de precache');
-  assert.equal(sw.includes('icons/icon-192.png'), true, 'gewone iconen wel');
+  assert.equal(sw.includes('"icons/'), false, 'ook de app-iconen niet: het toestel haalt ze zelf op (audit 15 nov, P3-02)');
   await page.goto(app.base);
   for (const [n, v] of [['apple-mobile-web-app-capable', 'yes'], ['apple-mobile-web-app-status-bar-style', 'black-translucent'], ['theme-color', '#1e3128']])
     assert.equal(await page.locator(`meta[name="${n}"]`).getAttribute('content'), v, n);
@@ -78,7 +78,7 @@ test('smaakprofiel opgeruimd: groepen met oordeel als kaart met pil, groepen zon
 });
 
 test('app-iconen: juiste pixelmaat, ondoorzichtig (iOS maakt doorzichtige hoeken zwart) en het manifest verwijst ernaar', async () => {
-  const want = { 'apple-touch-icon.png': 180, 'icon-192.png': 192, 'icon-512.png': 512, 'icon-maskable-512.png': 512 };
+  const want = { 'apple-touch-icon.png': 180, 'icon-192.png': 192, 'icon-512.png': 512 };
   for (const [f, px] of Object.entries(want)) {
     const b = fs.readFileSync(path.join(ROOT, 'icons', f));
     assert.equal(b.subarray(1, 4).toString(), 'PNG', f);
@@ -88,9 +88,10 @@ test('app-iconen: juiste pixelmaat, ondoorzichtig (iOS maakt doorzichtige hoeken
   assert.equal(bron.readUInt32BE(16), 1024); assert.equal(bron.readUInt32BE(20), 1024);
   const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'app3/manifest.webmanifest'), 'utf8'));
   for (const i of manifest.icons) assert.ok(fs.existsSync(path.join(ROOT, 'app3', i.src.startsWith('icons/') ? '../' + i.src : i.src)), i.src);
-  assert.ok(manifest.icons.some(i => i.purpose === 'maskable'));
+  assert.ok(manifest.icons.some(i => i.purpose === 'maskable' && i.src === 'icons/icon-512.png'), 'maskable gebruikt hetzelfde 512-bestand');
   const page = await app.browser.newPage();
   await page.goto(app.base);
+  assert.equal((await page.request.get(app.base + 'icons/icon-maskable-512.png')).status(), 404, 'de byte-gelijke kopie gaat niet mee');
   for (const f of Object.keys(want)) {
     const alphas = await page.evaluate(async url => {
       const img = new Image(); img.src = url; await img.decode();
