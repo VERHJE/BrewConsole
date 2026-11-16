@@ -153,3 +153,24 @@ test('stap per stap: klaar → giet met aftelling en "hierna" → wachten op doo
   await s.store.append(finishTimer(env, s.brewId, pours[last]!.atSec + 60, last));
   assert.equal(guide(lastAt + 100_000).kind, 'done');
 });
+
+test('pourStates: tijdens wachten op doorlopen is de vorige giet gegoten, niet "nu" (audit 15 nov, P2-02)', async () => {
+  const { pourStates } = await import('../src/core/timer.ts');
+  const s = await setup();
+  const second = s.recipe.pours[1]!;
+  assert.ok(second.waitForDrain, 'het standaardrecept (Kasuya 4:6) wacht bij giet 2 op doorlopen');
+  const t0 = now;
+  await s.store.append(startTimer(env, s.brewId));
+  // tijdens giet 1: giet 1 is nu, giet 2 straks
+  const during = pourStates(view(s, t0 + 10_000));
+  assert.equal(during[0], 'now'); assert.equal(during[1], 'next');
+  // na het tijdstip van giet 2 zonder tik: giet 1 is gegoten, giet 2 wacht, niets is "nu"
+  const waiting = pourStates(view(s, t0 + (second.atSec + 5) * 1000));
+  assert.equal(waiting[0], 'past'); assert.equal(waiting[1], 'hold');
+  assert.ok(!waiting.includes('now'), JSON.stringify(waiting));
+  // na de tik: giet 2 is nu, giet 1 blijft gegoten
+  now = t0 + (second.atSec + 5) * 1000;
+  await s.store.append(drainedTap(env, s.brewId, second.atSec + 5, 0));
+  const after = pourStates(view(s, now));
+  assert.equal(after[0], 'past'); assert.equal(after[1], 'now');
+});

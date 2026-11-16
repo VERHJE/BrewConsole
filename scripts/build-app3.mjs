@@ -36,6 +36,17 @@ fs.cpSync(path.join(ROOT, 'icons'), path.join(OUT, 'icons'), { recursive: true }
 const EXTRA_PAGES = ['tokengenerator.html', 'toestelcheck.html'];
 if (AT_ROOT) for (const f of EXTRA_PAGES) fs.copyFileSync(path.join(ROOT, f), path.join(OUT, f));
 
+/** Opruim-worker voor een oud adres: wist alle caches, haalt zichzelf weg en laat open tabbladen opnieuw laden. */
+const CLEANUP_SW = `/* Opruim-worker: wist alle caches, haalt zichzelf weg en laat open tabbladen opnieuw laden. */
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', e => e.waitUntil((async () => {
+  for (const k of await caches.keys()) await caches.delete(k);
+  await self.registration.unregister();
+  const clients = await self.clients.matchAll({ type: 'window' });
+  for (const c of clients) { try { c.navigate(c.url); } catch (e) { /* tabblad weg */ } }
+})()));
+`;
+
 // De oude app is opgeruimd. Wie /oud/ nog opent (bladwijzer, geïnstalleerde kopie) ziet een korte melding, en de worker daar
 // wist zichzelf en zijn caches, zodat het toestel niet blijft hangen in de oude versie.
 if (AT_ROOT) {
@@ -47,20 +58,26 @@ if (AT_ROOT) {
 <body><main><h1>De oude versie is opgeruimd</h1><p>Brew Console staat nu op één adres. Je zakken en koppen staan in de nieuwe app als je ze hebt overgezet via een back-up.</p><a href="../">Naar de nieuwe app</a></main>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){if(r.scope.indexOf('/oud/')>-1)r.unregister()})}).catch(function(){})}</script></body></html>
 `);
-  fs.writeFileSync(path.join(OUD, 'sw.js'), `/* Opruim-worker voor /oud/: wist alle caches, haalt zichzelf weg en laat open tabbladen opnieuw laden. */
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', e => e.waitUntil((async () => {
-  for (const k of await caches.keys()) await caches.delete(k);
-  await self.registration.unregister();
-  const clients = await self.clients.matchAll({ type: 'window' });
-  for (const c of clients) { try { c.navigate(c.url); } catch (e) { /* tabblad weg */ } }
-})()));
+  fs.writeFileSync(path.join(OUD, 'sw.js'), CLEANUP_SW);
+
+  // Tot 6 nov 2026 stond de app op /app3/. Een toestel dat hem daar installeerde, heeft nog een worker met scope /app3/.
+  // Een omleiding alleen helpt die niet: een worker mag bij een update niet omgeleid worden, dan blijft de oude staan.
+  // Daarom staat op /app3/sw.js dezelfde opruim-worker als op /oud/; daarna brengt de omleiding hieronder het tabblad naar /.
+  fs.mkdirSync(path.join(OUT, 'app3'), { recursive: true });
+  fs.writeFileSync(path.join(OUT, 'app3/sw.js'), CLEANUP_SW);
+
+  // Omleidingen en headers als bestanden in de publicatiemap: Netlify leest ze ook bij het uploaden van een zip,
+  // waar netlify.toml (in de repo, niet in dist/) niet meekomt. Een bestaand bestand (zoals /app3/sw.js) wint van een omleiding.
+  fs.writeFileSync(path.join(OUT, '_redirects'), `/app3/*  /:splat  301
+/app3    /        301
 `);
+  fs.writeFileSync(path.join(OUT, '_headers'), ['/', '/index.html', '/sw.js', '/oud/sw.js', '/app3/sw.js']
+    .map(p => `${p}\n  Cache-Control: no-cache\n`).join(''));
 }
 
 // Service worker: versie uit de inhoud van alle bestanden, lijst van wat vooraf in de cache gaat.
 // De opstartschermen (22 plaatjes, 2,7 MB) haalt iOS zelf op bij 'Zet op beginscherm'; ze horen niet in de voorraad van de worker.
-const files = fs.readdirSync(OUT, { recursive: true }).map(String).filter(f => !f.startsWith('oud') && !f.startsWith(path.join('icons', 'splash')) && !EXTRA_PAGES.includes(f) && fs.statSync(path.join(OUT, f)).isFile() && f !== 'sw.js').sort();
+const files = fs.readdirSync(OUT, { recursive: true }).map(String).filter(f => !f.startsWith('oud') && !f.startsWith('app3') && !f.startsWith('_') && !f.startsWith(path.join('icons', 'splash')) && !EXTRA_PAGES.includes(f) && fs.statSync(path.join(OUT, f)).isFile() && f !== 'sw.js').sort();
 const hash = crypto.createHash('sha256');
 for (const f of files) hash.update(f).update(fs.readFileSync(path.join(OUT, f)));
 const version = hash.digest('hex').slice(0, 12);

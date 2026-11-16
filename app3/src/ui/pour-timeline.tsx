@@ -1,11 +1,12 @@
 import type { JSX } from 'preact';
+import type { PourRowState } from '../core/timer.ts';
 
 /**
  * Het gietschema als tijdlijn: tijd, stip op een lijn, "+gram → totaal" en eventueel hoe (swirl, roeren).
  * Eén component voor Zetten (het recept), de timer (met de huidige giet gemarkeerd) en het Logboek (met wanneer het doorliep),
  * zodat het schema overal hetzelfde eruitziet. De staat staat ook als verborgen tekst erbij: kleur is nooit het enige signaal.
  */
-export type PourState = 'past' | 'now' | 'hold' | 'next' | '';
+export type PourState = PourRowState;
 export interface PourRow { readonly index: number; readonly at: string; readonly add: string; readonly to: string; readonly how?: string | null; readonly wait?: boolean; readonly state?: PourState; readonly note?: string | null }
 
 const STATE_TEXT: Record<PourState, string> = { past: 'Klaar: ', now: 'Nu: ', hold: 'Wacht: ', next: 'Straks: ', '': '' };

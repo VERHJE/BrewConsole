@@ -1,11 +1,11 @@
-import { PourTimeline, type PourState } from '../pour-timeline.tsx';
+import { PourTimeline } from '../pour-timeline.tsx';
 import type { JSX } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { factsOf } from '../../../../engine3/src/index.ts';
 import { href } from '../../core/router.ts';
 import { clock, nl1, pourLines, techniqueName } from '../../core/brew.ts';
 import {
-  abandonTimer, drainedTap, drainedUndo, finishTimer, pauseTimer, resumeTimer, startTimer, stepGuide, timerEventsFor, timerView, type StepKind
+  abandonTimer, drainedTap, drainedUndo, finishTimer, pauseTimer, resumeTimer, startTimer, pourStates, stepGuide, timerEventsFor, timerView, type StepKind
 } from '../../core/timer.ts';
 import { cueFor, readCuePrefs, type CueState } from '../../core/cues.ts';
 import { playCue, unlockAudio } from '../cues.ts';
@@ -105,6 +105,7 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
 
   if (!cup || !recipe || !view) return <section><h1>Zetsel niet gevonden</h1><a class="btn" href={href('zetten')}>Terug</a></section>;
   const lines = pourLines(recipe);
+  const states = pourStates(view);
   const send = (evs: ReturnType<typeof startTimer>): void => { void store.append(evs); };
   const t = view.elapsedSec;
   const lastIdx = recipe.pours.length - 1;
@@ -157,11 +158,7 @@ export function Timer({ brewId }: { brewId: string }): JSX.Element {
       {guide.next && <p class="stepnext">{guide.next}</p>}
       <details class="schema" open={schemaOpen} key={schemaOpen ? 'open' : 'dicht'}>
         <summary>Gietschema <span class="meta">· {lines.length} gieten</span></summary>
-        <PourTimeline className="steps" label="Gietschema" rows={lines.map((l, i) => {
-          const ph = view.phases[i]!;
-          const state: PourState = view.status === 'complete' ? 'past' : ph === 'hold' ? 'hold' : ph === 'go' && i === view.current ? 'now' : view.drained.has(i) ? 'past' : i === view.current + 1 ? 'next' : '';
-          return { index: i, at: l.at, add: l.add, to: l.to, how: l.how, state };
-        })} />
+        <PourTimeline className="steps" label="Gietschema" rows={lines.map((l, i) => ({ index: i, at: l.at, add: l.add, to: l.to, how: l.how, state: states[i] ?? '' }))} />
       </details>
       </div>
 
