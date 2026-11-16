@@ -30,6 +30,14 @@ export interface BeanRow {
   readonly addedAt: number;
 }
 
+/**
+ * Afgeronde koppen van een zak. De engine telt in `brewIds` ook geplande en nooit afgeronde zetsels mee (die horen bij de zak);
+ * voor "N koppen" en "Meest gezet" tellen alleen afgeronde koppen, net als bij de voorraad (audit 15 nov, P3-01).
+ */
+function completedCups(facts: ReturnType<typeof factsOf>, brewIds: readonly string[]): number {
+  return brewIds.filter(id => facts.cups.get(id)?.status === 'complete').length;
+}
+
 export function beanRows(state: EngineState, opts: { archived?: boolean } = {}): BeanRow[] {
   const facts = factsOf(state);
   const rows: BeanRow[] = [];
@@ -38,7 +46,7 @@ export function beanRows(state: EngineState, opts: { archived?: boolean } = {}):
     rows.push({
       id: b.beanId, name: b.fields.name ?? '(zonder naam)', roaster: b.fields.roaster ?? null, country: b.fields.country ?? null,
       roastLevel: b.fields.roastLevel ?? null, roastDate: b.fields.roastDate ?? null, bagSizeG: b.fields.bagSizeG ?? null,
-      cups: b.brewIds.length, addedAt: b.firstAt
+      cups: completedCups(facts, b.brewIds), addedAt: b.firstAt
     });
   }
   return rows.sort((a, b) => b.addedAt - a.addedAt || a.id.localeCompare(b.id));
@@ -201,7 +209,8 @@ export interface BeanDetail {
 }
 
 export function beanDetail(state: EngineState, beanId: string): BeanDetail | null {
-  const b = factsOf(state).beans.get(beanId);
+  const all = factsOf(state);
+  const b = all.beans.get(beanId);
   if (!b || b.archived) return null;
   const f = b.fields;
   const alt = f.altitude ? (f.altitude.minM === f.altitude.maxM ? `${f.altitude.minM} m` : `${f.altitude.minM}–${f.altitude.maxM} m`) : null;
@@ -215,7 +224,7 @@ export function beanDetail(state: EngineState, beanId: string): BeanDetail | nul
     id: b.beanId, name: f.name ?? '(zonder naam)',
     eyebrow: [process, f.roastLevel ? ROAST_LABEL[f.roastLevel] : null].filter(Boolean).join(' · '),
     roaster: f.roaster ?? null, facts,
-    tags: [...new Set([...(f.notes?.tags ?? []), ...(f.notes?.unmapped ?? [])].map(tagLabel))], roastDate: f.roastDate ?? null, cups: b.brewIds.length, shopUrl: isShopUrl(f.shopUrl) ? f.shopUrl : null,
+    tags: [...new Set([...(f.notes?.tags ?? []), ...(f.notes?.unmapped ?? [])].map(tagLabel))], roastDate: f.roastDate ?? null, cups: completedCups(all, b.brewIds), shopUrl: isShopUrl(f.shopUrl) ? f.shopUrl : null,
     country: f.country ?? null, process, roastLevel: f.roastLevel ?? null
   };
 }

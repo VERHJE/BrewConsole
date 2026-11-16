@@ -133,7 +133,7 @@ function Detail({ id }: { id: string }): JSX.Element {
       </div>
       <h2 class="sect-h">Gieten</h2>
       <PourTimeline label="Gietschema" rows={lines.map(l => { const d = c.drainedAtSec.get(l.index); return { index: l.index, at: l.at, add: l.add, to: l.to, how: l.how, state: d !== undefined ? 'past' as const : '' as const, note: d !== undefined ? `doorgelopen ${clock(d)}` : null }; })} />
-      {c.lastDrainSec !== null && <p class="muted small-note">Laatste giet doorgelopen na {clock(c.lastDrainSec)}.</p>}
+      {c.lastDrainSec !== null && <p class="muted small-note">De laatste giet liep in {clock(c.lastDrainSec)} door.</p>}
       <h2 class="sect-h">Geproefd</h2>
       {!t ? <EmptyState compact title="Nog niet geproefd">{c.status === 'complete' ? 'Leg vast hoe hij was; dat telt mee voor je volgende advies.' : undefined}</EmptyState> : (
         <>

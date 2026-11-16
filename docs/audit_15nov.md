@@ -138,6 +138,16 @@ Fase 1: in kaart brengen en vinden. Er is in deze fase niets aan de app verander
   - Test in `timer.test.ts`; die faalt met de oude regel.
 - **P1-01 open.** Dit vraagt een handeling in Netlify (de juiste deploy publiceren, of Git-builds aanzetten).
 
+## I. Wijzigingen (ronde 2, 16 nov 2026)
+
+- **P3-01 opgelost.** Alleen afgeronde koppen tellen voor "N koppen" en "Meest gezet". Test in `beans.test.ts`.
+- **P3-04 opgelost.** De filterkeuze is een keuzelijst van één regel.
+- **P3-05 opgelost.**
+  - Het label van de molentegel is nu "molen".
+  - Daarbij gevonden en opgelost: "TEMPERATUUR" brak onder ±358 px midden in het woord af. Onder 360 px hebben de tegels minder binnenruimte en letterafstand.
+  - Test: `tegels.ui.test.mjs`.
+- **P3-06 opgelost.** "De laatste giet liep in 0:45 door."
+
 ## J. Resterende risico's
 
 - Safari/iOS-specifiek gedrag (wake lock, statusbalk, PWA-update) is alleen op Jelles toestel te zien, en dat draait nu een oude versie (P1-01).
