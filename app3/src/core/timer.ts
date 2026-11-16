@@ -108,6 +108,25 @@ export interface StepGuide {
 
 const g0 = (n: number): string => String(Math.round(n));
 
+/** Staat per giet voor het gietschema in de timer (zelfde namen als de tijdlijn). */
+export type PourRowState = 'past' | 'now' | 'hold' | 'next' | '';
+
+/**
+ * Staat per rij van het gietschema. Wacht een giet op doorlopen, dan zijn de gieten ervoor al gegoten ('past'):
+ * de stap bovenaan gaat dan al over die wachtende giet, en het schema mag geen eerdere giet nog 'nu' noemen.
+ */
+export function pourStates(v: TimerView): PourRowState[] {
+  const holdIdx = v.phases.indexOf('hold');
+  return v.phases.map((ph, i): PourRowState => {
+    if (v.status === 'complete') return 'past';
+    if (ph === 'hold') return 'hold';
+    if (holdIdx >= 0 && i < holdIdx) return 'past';
+    if (ph === 'go' && i === v.current) return 'now';
+    if (v.drained.has(i)) return 'past';
+    return i === v.current + 1 ? 'next' : '';
+  });
+}
+
 /**
  * Eén stap tegelijk. De stap loopt van het begin van een giet tot het begin van de volgende; bij de laatste giet loopt
  * hij naar het verwachte einde (als dat bekend is). `holdIdx` en `phases` komen uit timerView.

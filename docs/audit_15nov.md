@@ -127,6 +127,17 @@ Fase 1: in kaart brengen en vinden. Er is in deze fase niets aan de app verander
 - het archief van de oude app vervangen door vaste testgegevens;
 - oude rapporten naar `docs/archief/`.
 
+## I. Wijzigingen (ronde 1, 16 nov 2026)
+
+- **P2-01 opgelost.**
+  - De build schrijft `_redirects` en `_headers` in `dist/`, en zet een opruim-worker op `/app3/sw.js`.
+  - Nagespeeld in Chromium: een installatie op `/app3/` komt na één keer herladen op `/` uit, zonder oude worker.
+  - Test: `app3/test/uitrol.test.mjs`.
+- **P2-02 opgelost.**
+  - Tijdens het wachten staat de giet ervoor op "Klaar" en alleen de wachtende giet is gemarkeerd (`pourStates()` in `core/timer.ts`).
+  - Test in `timer.test.ts`; die faalt met de oude regel.
+- **P1-01 open.** Dit vraagt een handeling in Netlify (de juiste deploy publiceren, of Git-builds aanzetten).
+
 ## J. Resterende risico's
 
 - Safari/iOS-specifiek gedrag (wake lock, statusbalk, PWA-update) is alleen op Jelles toestel te zien, en dat draait nu een oude versie (P1-01).

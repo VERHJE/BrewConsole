@@ -1,5 +1,7 @@
-# Netlify bouwt bij elke push naar main en publiceert dist/: de app (app3) op /. Op /oud/ staat alleen nog een korte melding
-# met een worker die de oude app van toestellen haalt (zie scripts/build-app3.mjs).
+# Publicatie: de app (app3) op / uit dist/. Werkt zowel met Git-builds (Netlify draait dan npm run build) als met het
+# uploaden van een zip van dist/.
+# Omleidingen en headers staan NIET hier maar in dist/_redirects en dist/_headers, gemaakt door scripts/build-app3.mjs:
+# bij een zip-upload komt dit bestand niet mee, die twee wel (audit 15 nov 2026, P2-01).
 [build]
   command = "npm run build"
   publish = "dist"
@@ -8,35 +10,3 @@
   NODE_VERSION = "22"
   # Playwright is alleen voor de tests; de browser hoeft op Netlify niet mee.
   PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
-
-# Service workers en hun lijst van bestanden mogen niet lang in de cache van de browser blijven,
-# anders komt een nieuwe versie te laat aan.
-[[headers]]
-  for = "/sw.js"
-  [headers.values]
-    Cache-Control = "no-cache"
-
-[[redirects]]
-  from = "/app3/*"
-  to = "/:splat"
-  status = 301
-
-[[headers]]
-  for = "/oud/sw.js"
-  [headers.values]
-    Cache-Control = "no-cache"
-
-[[headers]]
-  for = "/app3/sw.js"
-  [headers.values]
-    Cache-Control = "no-cache"
-
-[[headers]]
-  for = "/index.html"
-  [headers.values]
-    Cache-Control = "no-cache"
-
-[[headers]]
-  for = "/app3/index.html"
-  [headers.values]
-    Cache-Control = "no-cache"
