@@ -2,9 +2,9 @@
 // Elk veld houdt zijn herkomst bij; zodra de gebruiker een veld aanpast wordt de bron 'user'.
 
 import {
-  factsOf, isoDate, scanBeanText, g, normaliseShopUrl, isShopUrl,
+  factsOf, isoDate, scanBeanText, g, normaliseShopUrl, isShopUrl, effectiveEvents,
   type BeanFieldKey, type BeanFields, type BeanProcess, type BeanScan, type BeanUpsertEvent, type EngineState,
-  type FieldSource, type ProcessBase, type RoastLevel, type BeanArchiveEvent, type ScanSource
+  type FieldSource, type ProcessBase, type RoastLevel, type BeanArchiveEvent, type ScanSource, type EngineEvent, type RetractEvent
 } from '../../../engine3/src/index.ts';
 import { newId, type Env } from './ids.ts';
 
@@ -114,6 +114,34 @@ export function scanText(env: Env, text: string, source: ScanSource = 'paste'): 
   return formFromScan(scanBeanText(text, { source, nowMs: env.now() }));
 }
 
+/**
+ * Vult alleen de lege velden aan met wat een scan vond; wat er al staat (ook wat je zelf typte) blijft. Voor de QR-code in de
+ * zakfoto (review 17 nov 2026, U3: één fotoknop in plaats van "QR-foto kiezen" en "Foto kiezen"). Geeft ook het aantal
+ * aangevulde velden terug.
+ */
+export function fillEmpty(form: BeanForm, scan: BeanForm): { form: BeanForm; filled: number } {
+  const values: Record<FormKey, string> = { ...form.values };
+  const sources: Partial<Record<FormKey, FieldSource>> = { ...form.sources };
+  let filled = 0;
+  for (const k of FORM_KEYS) {
+    if (values[k].trim() || !scan.values[k]) continue;
+    values[k] = scan.values[k];
+    const s = scan.sources[k];
+    if (s) sources[k] = s; else delete sources[k];
+    filled++;
+  }
+  return {
+    filled,
+    form: {
+      values, sources,
+      scanProcess: form.values.process.trim() ? form.scanProcess : scan.scanProcess,
+      scanNotes: form.values.notes.trim() ? form.scanNotes : scan.scanNotes,
+      scanned: scan.scanned || form.scanned ? ({ ...(scan.scanned ?? {}), ...(form.scanned ?? {}) } as BeanFields) : null,
+      warnings: [...form.warnings, ...scan.warnings.filter(w => !form.warnings.includes(w))]
+    }
+  };
+}
+
 /** Past één veld aan; de bron wordt 'user' zodra de waarde afwijkt van wat herkend was. */
 export function editForm(form: BeanForm, key: FormKey, value: string): BeanForm {
   const recognised = form.scanned ? valueOf(form.scanned, key) : '';
@@ -180,6 +208,16 @@ export function beanUpsert(env: Env, beanId: string | null, r: FormResult): Bean
 
 export function beanArchive(env: Env, beanId: string): BeanArchiveEvent {
   return { id: newId(env, 'ev'), at: env.now() as BeanArchiveEvent['at'], device: env.device, v: 1, kind: 'bean.archive', data: { beanId } };
+}
+
+/**
+ * Een gearchiveerde zak terugzetten (review 17 nov 2026, W2): trekt elke nog geldige archiveer-gebeurtenis van die zak in
+ * (retract). Geen nieuw soort gebeurtenis; een oudere versie van de app begrijpt dit ook.
+ */
+export function beanRestore(env: Env, events: readonly EngineEvent[], beanId: string): RetractEvent[] {
+  return effectiveEvents(events)
+    .filter((e): e is BeanArchiveEvent => e.kind === 'bean.archive' && e.data.beanId === beanId)
+    .map((e, i) => ({ id: newId(env, 'ev'), at: (env.now() + i) as RetractEvent['at'], device: env.device, v: 1, kind: 'retract', data: { targetId: e.id, reason: 'zak teruggezet' } }));
 }
 
 /** Het formulier voor een bestaande zak (bewerken). */

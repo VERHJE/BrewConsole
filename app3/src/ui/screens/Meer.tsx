@@ -5,10 +5,11 @@ import { href } from '../../core/router.ts';
 import { CATEGORIES } from '../../core/tasting.ts';
 import { STATUS_TEXT, grindView, profileOf } from '../../core/insights.ts';
 import { useEffect, useState } from 'preact/hooks';
-import { indexedDbSyncStorage } from '../../core/sync.ts';
+import { backupReminder, readLastExport } from '../../core/reminder.ts';
+import { useSyncInfo } from '../use-sync-info.ts';
 import { EmptyState } from '../EmptyState.tsx';
 import { IconArchive, IconBrew, IconDrop, IconGrind, IconInfo, IconSliders, IconSync, IconTaste } from '../icons.tsx';
-import { Topo, useSnapshot } from '../store-context.tsx';
+import { Topo, useApp, useSnapshot } from '../store-context.tsx';
 import { cupRows } from '../../core/insights.ts';
 import { beanRows, PROCESS_LABEL, ROAST_LABEL, tagLabel } from '../../core/beans.ts';
 import { Stars } from '../Stars.tsx';
@@ -129,15 +130,20 @@ function Over(): JSX.Element {
 }
 
 function useSyncLine(): string {
-  const [line, setLine] = useState('Twee toestellen gelijk houden');
-  useEffect(() => { void (async () => {
-    try {
-      const st = await indexedDbSyncStorage();
-      const v = st ? await st.load() : null;
-      if (v) setLine(v.settings.lastSyncAt ? `Verbonden · laatst ${new Date(v.settings.lastSyncAt).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : 'Verbonden · nog niet gesynchroniseerd');
-    } catch { /* onbekend: standaardtekst */ }
-  })(); }, []);
-  return line;
+  const i = useSyncInfo();
+  if (!i.connected) return 'Twee toestellen gelijk houden';
+  if (i.failed) return 'Verbonden · laatste poging lukte niet';
+  return i.lastSyncAt ? `Verbonden · laatst ${new Date(i.lastSyncAt).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : 'Verbonden · nog niet gesynchroniseerd';
+}
+
+/** Back-upherinnering op het Meer-overzicht (review 17 nov 2026, W3); dezelfde regel als op Gegevens. */
+function BackupNudge(): JSX.Element | null {
+  const { env } = useApp();
+  const { events } = useSnapshot();
+  const sync = useSyncInfo();
+  if (!sync.loaded) return null;
+  const text = backupReminder({ lastExport: readLastExport(globalThis.localStorage), now: env.now(), hasData: events.length > 0, lastSyncAt: sync.lastSyncAt });
+  return text ? <div class="banner backupnudge" role="status"><span>{text}</span><a class="btn" href={href('meer', 'gegevens')}>Back-up maken</a></div> : null;
 }
 
 function Entry({ to, icon, title, sub }: { to: string; icon: JSX.Element; title: string; sub: string }): JSX.Element {
@@ -179,6 +185,7 @@ export function Meer({ route }: { route: Route }): JSX.Element {
       return (
         <section class="meerhub">
           <h1>Meer</h1>
+          <BackupNudge />
           <Summary />
         <div class="meergroups">
 <div class="mcol">

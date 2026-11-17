@@ -6,7 +6,7 @@ import type {
 import { LIKING_MAX, LIKING_MIN, nudgeLiking } from '../../../../engine3/src/index.ts';
 import { Stars } from '../Stars.tsx';
 import { href } from '../../core/router.ts';
-import { clock, techniqueName } from '../../core/brew.ts';
+import { clock, PAPER_IDS, PAPER_LABEL, techniqueName } from '../../core/brew.ts';
 import {
   ACIDITY_LABEL, CATEGORIES, FINISH_LABEL, GOALHIT_LABEL, MISSED_LABEL, NOTEHIT_LABEL, STRENGTH_LABEL, VSLAST_LABEL,
   actualsProblems, contextFor, formatLiking, draftFromCup, stepsFor, tastingEvents, type StepId, type TastingContext, type TastingDraft
@@ -92,7 +92,14 @@ function Step({ id, ctx, d, set }: { id: StepId; ctx: TastingContext; d: Tasting
         <p class="hint">Alleen invullen als het afweek van het recept. De engine leert van wat je echt deed.</p>
         {num('doseG', 'Koffie (g)', String(c.doseG))}{num('waterG', 'Water (g)', String(Math.round(c.waterG)))}
         {num('grindClick', 'Klik', c.grindClick === null ? '' : String(c.grindClick))}{num('bypassG', 'Bypass (g)', String(c.bypassG))}
-        {num('cupG', 'Koffie in de kop (g)', '')}{num('tdsPct', 'TDS (%) als je gemeten hebt', '')}</div>);
+        {num('cupG', 'Koffie in de kop (g)', '')}{num('tdsPct', 'TDS (%) als je gemeten hebt', '')}
+        {c.method === 'v60' && (
+          <label class="field"><span>Filter</span>
+            <select name="filter" value={(d.filter === undefined ? c.filter : d.filter) ?? ''}
+              onChange={e => { const v = (e.currentTarget as HTMLSelectElement).value || null; set({ filter: v === c.filter ? undefined : v }); }}>
+              <option value="">Niet bijhouden</option>
+              {PAPER_IDS.map(k => <option key={k} value={k}>{PAPER_LABEL[k]}</option>)}
+            </select></label>)}</div>);
     }
   }
 }

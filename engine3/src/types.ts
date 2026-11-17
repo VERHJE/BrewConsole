@@ -221,6 +221,12 @@ export type BrewActualsEvent = EventEnvelope<'brew.actuals', {
   readonly cupG: Grams | null;
   readonly tdsPct: TdsPct | null;
   readonly technique: TechniqueRef | null;
+  /**
+   * Het filterpapier dat echt gebruikt is (id uit de app), als dat achteraf is aangepast; gaat voor op plan.legacy.filter.
+   * Weggelaten = zoals gepland. Optioneel, dus oudere gebeurtenissen en oudere versies van de app blijven werken
+   * (contract e3-contract-1.5, review 17 nov 2026, W2).
+   */
+  readonly filter?: string | null;
 }>;
 
 export type BrewDeleteEvent = EventEnvelope<'brew.delete', { readonly brewId: string }>;

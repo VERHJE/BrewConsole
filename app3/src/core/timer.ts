@@ -77,6 +77,11 @@ export const finishTimer = (env: Env, brewId: string, tSec: number, lastIndex: n
   ev(env, brewId, 'drained', tSec, lastIndex), ev(env, brewId, 'bed_dry', tSec, null, 1), ev(env, brewId, 'complete', tSec, null, 2)
 ];
 export const abandonTimer = (env: Env, brewId: string, tSec: number): BrewTimerEvent[] => [ev(env, brewId, 'abandon', tSec, null)];
+/**
+ * Achteraf afronden (review 17 nov 2026, W2): alleen 'klaar' op de tijd die je zelf opgeeft, zonder doorgelopen-tik of bed droog.
+ * De maling leert daar dus niet van (grind.ts gebruikt alleen doorgelopen en bed droog); "klaar na" toont wel deze tijd.
+ */
+export const completeLate = (env: Env, brewId: string, tSec: number): BrewTimerEvent[] => [ev(env, brewId, 'complete', tSec, null)];
 
 // ───────────── per stap: wat nu, hoe lang nog, wat daarna ─────────────
 

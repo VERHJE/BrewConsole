@@ -7,12 +7,13 @@ import { cupRows } from '../../core/insights.ts';
 import { IconDownload, IconTrash, IconUpload } from '../icons.tsx';
 import { Panel } from '../settings-kit.tsx';
 import { useApp, useSnapshot } from '../store-context.tsx';
+import { backupReminder, LAST_EXPORT_KEY, readLastExport } from '../../core/reminder.ts';
+import { useSyncInfo } from '../use-sync-info.ts';
 
 const KIND_LABEL: Record<string, string> = {
   'bean.upsert': 'zakken', 'brew.plan': 'koppen', 'brew.timer': 'timer-momenten', 'tasting': 'proeverijen', 'pair.trial': 'proeven A tegen B',
   'brew.actuals': 'werkelijke waarden', 'setting': 'instellingen', 'bean.archive': 'gearchiveerde zakken', 'brew.delete': 'verwijderde koppen', 'retract': 'intrekkingen'
 };
-const LAST_EXPORT = 'brewconsole.lastExport';
 
 export function Gegevens(): JSX.Element {
   const { store, env, photos } = useApp();
@@ -22,8 +23,8 @@ export function Gegevens(): JSX.Element {
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [msg, setMsg] = useState('');
   const [confirm, setConfirm] = useState('');
-  let last: number | null = null;
-  try { last = Number(localStorage.getItem(LAST_EXPORT)) || null; } catch { last = null; }
+  const sync = useSyncInfo();
+  const last = readLastExport(globalThis.localStorage);
   const days = last ? Math.floor((env.now() - last) / 86_400_000) : null;
 
   const doExport = async (): Promise<void> => {
@@ -46,7 +47,7 @@ export function Gegevens(): JSX.Element {
         const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 10_000);
       }
-      try { localStorage.setItem(LAST_EXPORT, String(env.now())); } catch { /* geen opslag: prima */ }
+      try { localStorage.setItem(LAST_EXPORT_KEY, String(env.now())); } catch { /* geen opslag: prima */ }
       setMsg(pics.length ? `Back-up gemaakt, met ${pics.length} foto${pics.length === 1 ? '' : "'s"}.` : 'Back-up gemaakt.');
     } catch (e) { if ((e as Error).name !== 'AbortError') setMsg('De back-up kon niet worden gedeeld of opgeslagen.'); }
   };
@@ -81,8 +82,8 @@ export function Gegevens(): JSX.Element {
         <div class="num"><b>{nCups}</b><small>{nCups === 1 ? 'kop' : 'koppen'}</small></div>
         <div class="num wide"><b>{days === null ? '–' : days === 0 ? 'vandaag' : `${days} d`}</b><small>{days === null ? 'nog geen back-up' : 'sinds je back-up'}</small></div>
       </div>
-      {days !== null && days >= 14 && <p class="banner" role="status">Je laatste back-up is {days} dagen oud.</p>}
-      {last === null && events.length > 0 && <p class="banner" role="status">Je hebt nog geen back-up gemaakt.</p>}
+      {(() => { const t = sync.loaded ? backupReminder({ lastExport: last, now: env.now(), hasData: events.length > 0, lastSyncAt: sync.lastSyncAt }) : null; return t && <p class="banner" role="status">{t}</p>; })()}
+      {sync.connected && sync.lastSyncAt !== null && <p class="meta">Synchronisatie staat aan: er staat ook een versleutelde kopie op de server. Een eigen back-up blijft verstandig, bijvoorbeeld als je de wachtwoordzin kwijtraakt.</p>}
       {msg && <p class="banner" role="status">{msg}</p>}
 
       <Panel icon={<IconDownload />} title="Back-up maken" sub="Eén bestand met alles, ook de foto's van je zakken. Bewaar het buiten dit toestel.">

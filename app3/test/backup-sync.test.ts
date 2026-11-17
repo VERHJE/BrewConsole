@@ -134,3 +134,38 @@ test('back-up met foto\'s: heen en terug; onbekende zak, vreemd type, kapotte ba
   assert.equal(previewImport(v1, []).photos.length, 0);
   assert.equal(previewImport(v1, []).fresh, events.length);
 });
+
+import { createAutoSync } from '../src/core/autosync.ts';
+
+// Review 17 nov 2026, W1: wat de synchronisatie binnenhaalt telt niet als eigen wijziging; een ingelezen back-up wel.
+test('eigen wijzigingen tellen apart: synchroniseren verhoogt localRevision niet, een back-up inlezen wel', async () => {
+  const serverEnv: ServerEnv = { store: new MemoryStore(), tokenHashes: [await sha256Hex(webcrypto.subtle as never, TOKEN)], subtle: webcrypto.subtle as never, allowOrigin: 'https://app.example' };
+  const all = migrateBackupV3(BACKUP_V3).events;
+  const a = await device(serverEnv, 'web-a', all.slice(0, 5));
+  const b = await device(serverEnv, 'web-b');
+  const url = 'https://sync.example/';
+  assert.equal((await connect(a.deps, { baseUrl: url, token: TOKEN, passphrase: 'correct paard batterij' })).ok, true);
+  assert.equal((await connect(b.deps, { baseUrl: url, token: TOKEN, passphrase: 'correct paard batterij' })).ok, true);
+  const snapB = b.store.snapshot();
+  assert.equal(snapB.events.length, 5, 'B heeft de gebeurtenissen van A');
+  assert.ok(snapB.revision > 0);
+  assert.equal(snapB.localRevision, 0, 'binnengehaald, niet zelf gemaakt');
+
+  // B met automatisch synchroniseren: een wijziging door de synchronisatie plant niets; een eigen wijziging wel
+  const timers: Array<() => void> = [];
+  const auto = createAutoSync({ run: () => syncNow(b.deps), revision: () => b.store.snapshot().localRevision, now: () => 0, setTimer: f => timers.push(f), clearTimer: () => {} });
+  assert.equal((await auto.exclusive()).ok, true);
+  b.store.subscribe(() => auto.changed());
+  await b.store.merge(all.slice(5, 8), { fromSync: true });
+  assert.equal(timers.length, 0);
+  await b.store.merge(all.slice(8, 10)); // een ingelezen back-up
+  assert.equal(b.store.snapshot().localRevision, 1);
+  assert.equal(timers.length, 1, 'een ingelezen back-up gaat mee met de volgende synchronisatie');
+  const before = auto.status();
+  timers.shift()!();
+  for (let i = 0; i < 200 && auto.status() === before; i++) await new Promise(r => setTimeout(r, 10));
+  const o = auto.status()!.outcome;
+  // 5 = de 2 ingelezen plus de 3 nagebootste 'binnengehaalde', die in deze test niet echt op de server stonden
+  assert.ok(o.ok && o.pushed === 5, JSON.stringify(o));
+  assert.equal(auto.status()!.auto, true);
+});

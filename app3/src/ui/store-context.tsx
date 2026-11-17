@@ -6,9 +6,16 @@ import type { Snapshot, Store } from '../core/store.ts';
 import { labelContours, labelTint, monogram, ROAST_STEP, type PhotoStore } from '../core/photos.ts';
 import { ROAST_LABEL } from '../core/beans.ts';
 import type { PhotoSyncRun } from '../core/photosync.ts';
+import type { SyncDeps } from '../core/sync.ts';
+import type { AutoSync } from '../core/autosync.ts';
 import type { JSX } from 'preact';
 
-export interface AppContext { readonly store: Store; readonly engine: Engine; readonly env: Env; readonly photos: PhotoStore; /** Foto's meesynchroniseren (alleen in de echte app). */ readonly photoSync?: PhotoSyncRun }
+export interface AppContext {
+  readonly store: Store; readonly engine: Engine; readonly env: Env; readonly photos: PhotoStore;
+  /** Foto's meesynchroniseren (alleen in de echte app). */ readonly photoSync?: PhotoSyncRun;
+  /** Synchronisatie met automatisch synchroniseren (alleen in de echte app; review 17 nov 2026, W1). */
+  readonly sync?: { readonly deps: SyncDeps; readonly auto: AutoSync };
+}
 
 export const Ctx = createContext<AppContext | null>(null);
 

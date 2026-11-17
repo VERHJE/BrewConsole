@@ -47,7 +47,7 @@ export interface CupFacts {
   /** Water dat na het zetten is bijgevuld (uit de oude app: plan.inputs.e2.dilutionG), anders 0. */
   readonly dilutionG: number;
   readonly actualsGiven: boolean;
-  /** Het filterpapier dat de gebruiker koos (id uit de app), anders null. Staat in plan.legacy.filter; geen schemawijziging. */
+  /** Het filterpapier (id uit de app), anders null: uit brew.actuals.filter als dat er is (achteraf aangepast), anders uit plan.legacy.filter. */
   readonly filter: string | null;
   /** Tijden binnen het zetsel. */
   readonly startedAtSec: Seconds | null;
@@ -173,7 +173,7 @@ export function learnFacts(events: readonly EngineEvent[]): FactState {
       cupG: a?.cupG ?? null,
       tdsPct: a?.tdsPct ?? null,
       dilutionG: dilutionOf(p.legacy),
-      filter: filterOf(p.legacy),
+      filter: a && a.filter !== undefined ? (typeof a.filter === 'string' && a.filter !== '' ? a.filter : null) : filterOf(p.legacy),
       actualsGiven: a !== null,
       startedAtSec,
       endSec,

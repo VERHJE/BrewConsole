@@ -2,6 +2,7 @@ import type { JSX } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { href } from '../../core/router.ts';
 import { connect, disconnect, indexedDbSyncStorage, memorySyncStorage, syncNow, type SyncDeps, type SyncOutcome, type SyncSettings, type SyncStorage } from '../../core/sync.ts';
+import type { AutoSyncStatus } from '../../core/autosync.ts';
 import { IconSync } from '../icons.tsx';
 import { Panel } from '../settings-kit.tsx';
 import { useApp } from '../store-context.tsx';
@@ -19,7 +20,7 @@ function describe(o: SyncOutcome): string {
 }
 
 export function Sync(): JSX.Element {
-  const { store, env, photoSync } = useApp();
+  const { store, env, photoSync, sync } = useApp();
   const [storage, setStorage] = useState<SyncStorage | null>(null);
   const [settings, setSettings] = useState<SyncSettings | null>(null);
   const [url, setUrl] = useState('');
@@ -28,20 +29,25 @@ export function Sync(): JSX.Element {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
 
-  useEffect(() => { void (async () => { const s = (await indexedDbSyncStorage()) ?? memorySyncStorage(); setStorage(s); setSettings((await s.load())?.settings ?? null); })(); }, []);
-  const deps = useMemo<SyncDeps | null>(() => storage && ({
+  useEffect(() => { void (async () => { const s = sync?.deps.storage ?? (await indexedDbSyncStorage()) ?? memorySyncStorage(); setStorage(s); setSettings((await s.load())?.settings ?? null); })(); }, [sync]);
+  const deps = useMemo<SyncDeps | null>(() => sync?.deps ?? (storage && {
     storage, store, device: env.device, now: env.now,
     crypto: { subtle: crypto.subtle as never, randomBytes: n => crypto.getRandomValues(new Uint8Array(n)) },
     fetch: (u, init) => fetch(u, init),
     ...(photoSync ? { photoSync } : {})
-  }), [storage, store, env, photoSync]);
+  }), [sync, storage, store, env, photoSync]);
+  // Automatisch synchroniseren (review 17 nov 2026, W1): de knop en het verbinden wachten op een lopende synchronisatie.
+  const auto = sync?.auto;
+  const [autoStatus, setAutoStatus] = useState<AutoSyncStatus | null>(auto?.status() ?? null);
+  useEffect(() => auto?.subscribe(s => { setAutoStatus(s); void deps?.storage.load().then(v => setSettings(v?.settings ?? null)); }), [auto, deps]);
 
   const run = async (f: (d: SyncDeps) => Promise<SyncOutcome>): Promise<void> => {
     if (!deps) return;
     setBusy(true); setMsg('');
-    try { const o = await f(deps); setMsg(describe(o)); setSettings((await deps.storage.load())?.settings ?? null); if (o.ok) setPhrase(''); }
+    try { const o = await (auto ? auto.exclusive(() => f(deps)) : f(deps)); setMsg(describe(o)); setSettings((await deps.storage.load())?.settings ?? null); if (o.ok) setPhrase(''); }
     finally { setBusy(false); }
   };
+  const autoFailed = autoStatus && autoStatus.auto && !autoStatus.outcome.ok && autoStatus.outcome.kind !== 'not_connected' ? autoStatus.outcome.message : null;
 
   return (
     <section class="settings">
@@ -55,6 +61,8 @@ export function Sync(): JSX.Element {
       {settings ? (
         <Panel icon={<IconSync />} title="Verbonden" sub={settings.baseUrl}>
           <p class="meta">{settings.lastSyncAt ? `Laatste keer: ${new Date(settings.lastSyncAt).toLocaleString('nl-NL')}` : 'Nog niet gesynchroniseerd.'}</p>
+          <p class="meta">Synchroniseert vanzelf: bij openen, kort na een wijziging en als je terugkomt in de app. De knop doet het meteen.</p>
+          {autoFailed && <p class="meta autosync-fail" role="status">Laatste automatische poging lukte niet: {autoFailed}</p>}
           <div class="actions">
             <button class="btn primary" type="button" disabled={busy} onClick={() => run(syncNow)}>{busy ? 'Bezig…' : 'Nu synchroniseren'}</button>
             <button class="btn" type="button" disabled={busy} onClick={async () => { if (deps) { await disconnect(deps); setSettings(null); setMsg('Losgekoppeld. Je gegevens op dit toestel zijn ongewijzigd.'); } }}>Loskoppelen</button>

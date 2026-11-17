@@ -2,7 +2,9 @@ import type { JSX } from 'preact';
 import { factsOf } from '../../../../engine3/src/index.ts';
 import type { Route } from '../../core/router.ts';
 import { href } from '../../core/router.ts';
-import { METHOD_LABEL, OPEN_BREW_HOURS, paperLabel, clock, isStale, nl1, nl2, pourLines, techniqueName } from '../../core/brew.ts';
+import { METHOD_LABEL, OPEN_BREW_HOURS, paperLabel, clock, isStale, nl1, nl2, parseClock, pourLines, techniqueName } from '../../core/brew.ts';
+import { completeLate } from '../../core/timer.ts';
+import type { CupFacts } from '../../../../engine3/src/index.ts';
 import { cupRows, brewDeleteEvent } from '../../core/insights.ts';
 import { EmptyState } from '../EmptyState.tsx';
 import { IconLog } from '../icons.tsx';
@@ -83,6 +85,34 @@ function Compare({ a, b }: { a: string; b: string }): JSX.Element {
   );
 }
 
+/**
+ * Een zetsel dat niet afgerond is toch afronden en proeven (review 17 nov 2026, W2). Vraagt hoe lang het duurde: die tijd staat
+ * daarna bij "klaar na". De maling leert er niet van (er is geen doorgelopen-moment), zie completeLate in core/timer.ts.
+ */
+function LateFinish({ cup }: { cup: CupFacts }): JSX.Element {
+  const { store, env } = useApp();
+  const [text, setText] = useState('');
+  const [err, setErr] = useState('');
+  const band = cup.planned.expectedEndSec;
+  const hint = band ? `verwacht ${clock(band.lo)}–${clock(band.hi)}` : 'bijvoorbeeld 3:30';
+  const finish = async (e: Event): Promise<void> => {
+    e.preventDefault();
+    const sec = parseClock(text);
+    if (sec === null || sec < 30 || sec > 900) { setErr('Vul een tijd in tussen 0:30 en 15:00, bijvoorbeeld 3:30.'); return; }
+    await store.append(completeLate(env, cup.brewId, sec));
+    location.hash = href('proeven', cup.brewId);
+  };
+  return (
+    <form class="latefinish" onSubmit={finish}>
+      <label class="field"><span>Klaar na (minuten:seconden)</span>
+        <input name="endclock" inputMode="numeric" placeholder="m:ss" value={text} aria-invalid={err ? 'true' : undefined} aria-describedby="latefinish-hint"
+          onInput={ev => { setText((ev.currentTarget as HTMLInputElement).value); setErr(''); }} /></label>
+      {err ? <p class="err" id="latefinish-hint" role="alert">{err}</p> : <p class="meta" id="latefinish-hint">Een schatting mag ({hint}). De app leert de maling hier niet van.</p>}
+      <button class="btn primary" type="submit">Toch afronden en proeven</button>
+    </form>
+  );
+}
+
 function Detail({ id }: { id: string }): JSX.Element {
   const { store, env } = useApp();
   const { state } = useSnapshot();
@@ -119,7 +149,8 @@ function Detail({ id }: { id: string }): JSX.Element {
       <p class="sr-only">{dateText(c.at)} · {stale ? 'Niet afgerond' : STATUS[c.status]}</p>
       {stale && (
         <div class="banner" role="status">
-          <p>Dit zetsel is niet afgerond en staat al meer dan {OPEN_BREW_HOURS} uur open. Verwijder het als je het niet meer nodig hebt; het telt dan niet mee.</p>
+          <p>Dit zetsel is niet afgerond en staat al meer dan {OPEN_BREW_HOURS} uur open. Heb je het wel gezet, rond het dan alsnog af en proef het. Anders kun je het verwijderen; het telt dan niet mee.</p>
+          <LateFinish cup={c} />
           <button class="btn" type="button" onClick={del}>Verwijderen</button>
         </div>)}
       {(c.status === 'planned' || c.status === 'brewing') && !stale && <p><a class="btn primary" href={href('timer', id)}>{c.status === 'brewing' ? 'Terug naar de timer' : 'Naar de timer'}</a></p>}

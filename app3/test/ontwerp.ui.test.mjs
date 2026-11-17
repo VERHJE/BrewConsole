@@ -141,7 +141,7 @@ test('iPad-meldingen: vinkjes onder Meer opties zijn klein met tekst ernaast; ti
   const labelW = await page.locator('fieldset.field label.row').first().evaluate(e => e.getBoundingClientRect().width);
   assert.ok(labelW > 150, `tekst heeft ruimte (${labelW}px)`);
   await page.click('button.chip:has-text("Chemex")');
-  await page.click('button.chip:has-text("Helder en fris")');
+  await page.selectOption('select[name=goal]', 'bright');
   assert.match(await page.locator('.goalnote').innerText(), /verandert het doel het recept niet/);
   await page.click('button:has-text("Start zetsel")');
   await page.waitForSelector('.timer.ready');

@@ -131,3 +131,21 @@ test('filter: komt uit plan.legacy.filter, anders null; andere legacy-velden tel
   assert.equal(f.cups.get('c')!.filter, null);
   assert.equal(f.cups.get('d')!.filter, null);
 });
+
+// Review 17 nov 2026, W2: het filter is achteraf aan te passen via brew.actuals.filter (contract e3-contract-1.5).
+test('filter achteraf: brew.actuals.filter gaat voor op het plan; weggelaten = zoals gepland; leeg = geen', () => {
+  const plan = (brewId: string, filter: string | null): EngineEvent =>
+    ev('brew.plan', 1000, { brewId, beanId: null, goal: null, engine: { name: 'e2', version: '1' }, recipe, trialId: null, legacy: filter === null ? null : { filter } });
+  const act = (brewId: string, extra: Record<string, unknown>): EngineEvent =>
+    ev('brew.actuals', 2000, { brewId, doseG: g(18), waterG: g(300), grindClick: null, bypassG: g(0), cupG: null, tdsPct: null, technique: null, ...extra });
+  const f = factsOf(learnFacts([
+    plan('a', 'hario'), act('a', { filter: 'cafec_th3' }),
+    plan('b', 'hario'), act('b', {}),
+    plan('c', null), act('c', { filter: 'anders' }),
+    plan('d', 'cafec_th3'), act('d', { filter: null })
+  ]));
+  assert.equal(f.cups.get('a')!.filter, 'cafec_th3', 'aangepast');
+  assert.equal(f.cups.get('b')!.filter, 'hario', 'weggelaten: zoals gepland');
+  assert.equal(f.cups.get('c')!.filter, 'anders', 'achteraf gekozen');
+  assert.equal(f.cups.get('d')!.filter, null, 'achteraf weggehaald');
+});

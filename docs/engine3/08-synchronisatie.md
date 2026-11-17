@@ -39,6 +39,16 @@ Routes: `GET/PUT /meta` (het zout, niet geheim), `PUT/GET/DELETE /blocks/:id`, `
 - Eigenschapstest (fast-check): twee toestellen die in willekeurige volgorde pushen en pullen, komen op hetzelfde logboek uit.
 - De Worker wordt in Node getest met een nep-opslag (standaard `Request`/`Response`), dus zonder Cloudflare-account.
 
+## Wanneer de app synchroniseert (17 nov 2026, review W1)
+
+Vanzelf, als synchronisatie is ingesteld (`app3/src/core/autosync.ts`):
+
+- bij het openen van de app;
+- 15 seconden na de laatste eigen wijziging (een reeks wijzigingen geeft één synchronisatie);
+- bij terugkomen in de app, als er nog iets niet verstuurd is of de vorige keer minstens 5 minuten geleden is (na een mislukte poging: 1 minuut).
+
+Er loopt nooit meer dan één synchronisatie tegelijk; de knop "Nu synchroniseren" en het verbinden wachten op een lopende. Wat de synchronisatie zelf binnenhaalt telt niet als eigen wijziging (`Snapshot.localRevision`), dus dat start geen nieuwe. De tijden zijn keuzes, geen metingen; ze houden het gebruik ruim binnen het gratis plan hieronder.
+
 ## Grenzen van het gratis plan
 
 | | Gratis | Verwacht gebruik |

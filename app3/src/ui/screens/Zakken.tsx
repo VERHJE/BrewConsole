@@ -4,10 +4,10 @@ import { encodePhoto } from '../photo-encode.ts';
 import type { Route } from '../../core/router.ts';
 import { href } from '../../core/router.ts';
 import {
-  ROAST_LABEL, beanArchive, beanDetail, rowLines, stockView, beanRows, beanUpsert, daysSinceRoast, emptyForm, formFromBean, scanText, validateForm,
+  ROAST_LABEL, beanArchive, beanRestore, beanDetail, rowLines, stockView, beanRows, beanUpsert, daysSinceRoast, emptyForm, formFromBean, scanText, validateForm,
   type BeanForm, type FormKey, type BeanRow, type StockView
 } from '../../core/beans.ts';
-import { formFromScan, sameNameBean } from '../../core/beans.ts';
+import { fillEmpty, formFromScan, sameNameBean } from '../../core/beans.ts';
 import { BeanFormView } from '../BeanFormView.tsx';
 import { BeanInsights } from '../Insights.tsx';
 import { EmptyState } from '../EmptyState.tsx';
@@ -28,7 +28,11 @@ function Meta({ row, today, stock }: { row: BeanRow; today: string; stock: Stock
   return <><small>{l.origin}</small><small>{l.roast}</small><small>{l.stock}{l.low && <> · <span class="tag warn">Bijna op</span></>}</small></>;
 }
 
+/** Eén melding voor het volgende scherm (de lijst), bijvoorbeeld als de foto niet opgeslagen kon worden. */
+let notice: string | null = null;
+
 function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
+  const [shown] = useState(() => { const n = notice; notice = null; return n; });
   const { state } = useSnapshot();
   const { env } = useApp();
   const [q, setQ] = useState('');
@@ -59,6 +63,7 @@ function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
   return (
     <section class={activeId ? undefined : 'wide-list'}>
       <div class="head">{activeId ? <h2 class="list-title">Zakken</h2> : <h1>Zakken</h1>}<a class="btn primary" href={href('zakken', 'nieuw')}>Zak toevoegen</a></div>
+      {shown && <p class="banner warn" role="alert">{shown}</p>}
       {base.length === 0
         ? <EmptyState icon={<IconBean />} title="Nog geen zakken" >Plak de tekst van een zak of een webshoppagina, of scan de QR-code.</EmptyState>
         : <>
@@ -81,7 +86,27 @@ function List({ activeId = null }: { activeId?: string | null }): JSX.Element {
           <ul class="list thumbs">{rows.map(r => <BagRow key={r.id} r={r} activeId={activeId} fav={favs.has(r.id)} today={today} stock={facts.st.get(r.id)} />)}</ul>
           {rows.length === 0 && <EmptyState compact title={q.trim() ? `Geen zakken gevonden voor ‘${q}’` : 'Geen zakken met deze filters'}>{!isDefault(prefs) ? <button type="button" class="btn" onClick={() => change({ sort: 'standaard', filters: [] })}>Wis sorteren en filters</button> : undefined}</EmptyState>}
         </>}
+      {!activeId && <Archived />}
     </section>
+  );
+}
+
+/** Gearchiveerde zakken: terug te zien en terug te zetten (review 17 nov 2026, W2). Ingeklapt; alleen als er iets in staat. */
+function Archived(): JSX.Element | null {
+  const { store, env } = useApp();
+  const { state, events } = useSnapshot();
+  const rows = beanRows(state, { archived: true });
+  if (rows.length === 0) return null;
+  return (
+    <details class="archived tech-note">
+      <summary>Gearchiveerd ({rows.length})</summary>
+      <ul class="list grouped">
+        {rows.map(r => (
+          <li key={r.id} class="archrow"><span class="itext"><strong>{r.name}</strong><small>{[r.roaster, r.country, r.cups ? `${r.cups} ${r.cups === 1 ? 'kop' : 'koppen'}` : null].filter(Boolean).join(' · ')}</small></span>
+            <button class="btn" type="button" onClick={() => void store.append(beanRestore(env, events, r.id))} aria-label={`${r.name} terugzetten`}>Terugzetten</button></li>
+        ))}
+      </ul>
+    </details>
   );
 }
 
@@ -156,15 +181,12 @@ function Editor({ beanId }: { beanId: string | null }): JSX.Element {
   const [paste, setPaste] = useState('');
   const [problems, setProblems] = useState<Partial<Record<FormKey, string>>>({});
   const [busy, setBusy] = useState(false);
-  const [qrMsg, setQrMsg] = useState('');
   const [saveErr, setSaveErr] = useState('');
 
   const recognise = (): void => { setForm(scanText(env, paste)); setProblems({}); };
 
-  const onQr = async (e: Event): Promise<void> => {
-    const file = (e.currentTarget as HTMLInputElement).files?.[0];
-    if (!file) return;
-    setQrMsg('Bezig met lezen…');
+  /** Zoekt een QR-code in de foto (de app leest hem zelf, er gaat niets naar buiten); null als er geen is of het lezen mislukt. */
+  const readQr = async (file: Blob): Promise<ReturnType<typeof formFromScan> | { url: string; form: ReturnType<typeof formFromScan> } | null> => {
     try {
       const bmp = await createImageBitmap(file);
       const canvas = document.createElement('canvas');
@@ -172,13 +194,13 @@ function Editor({ beanId }: { beanId: string | null }): JSX.Element {
       const ctx = canvas.getContext('2d')!;
       ctx.drawImage(bmp, 0, 0);
       const px = ctx.getImageData(0, 0, bmp.width, bmp.height);
+      bmp.close?.();
       const { readQrFromPixels } = await import('../../../../engine3/qr/decode.ts');
       const reading = readQrFromPixels({ data: px.data, width: px.width, height: px.height }, env.now());
-      if (!reading) { setQrMsg('Geen QR-code gevonden in deze foto.'); return; }
+      if (!reading) return null;
       const scanned = formFromScan(reading);
-      setForm(reading.url ? { ...scanned, values: { ...scanned.values, shopUrl: reading.url }, sources: { ...scanned.sources, shopUrl: 'qr' } } : scanned);
-      setQrMsg(reading.url ? `QR gelezen (webadres: ${reading.url}). Plak de tekst van die pagina voor meer velden.` : 'QR gelezen.');
-    } catch { setQrMsg('Deze foto kon niet gelezen worden.'); }
+      return reading.url ? { url: reading.url, form: { ...scanned, values: { ...scanned.values, shopUrl: reading.url }, sources: { ...scanned.sources, shopUrl: 'qr' } } } : scanned;
+    } catch { return null; }
   };
 
   const onPhoto = async (e: Event): Promise<void> => {
@@ -186,8 +208,23 @@ function Editor({ beanId }: { beanId: string | null }): JSX.Element {
     const file = input.files?.[0];
     if (!file) return;
     setPhotoMsg('Bezig…');
-    try { setPhotoBlob(await encodePhoto(file)); setPhotoMsg('Foto klaar. Ze staat in je back-up en gaat mee met de synchronisatie, als die aanstaat.'); }
-    catch { setPhotoMsg('Deze foto kon niet gelezen worden.'); }
+    try { setPhotoBlob(await encodePhoto(file)); }
+    catch { setPhotoMsg('Deze foto kon niet gelezen worden.'); input.value = ''; return; }
+    let qrLine = '';
+    // Bij een nieuwe zak zoekt de app in dezelfde foto naar een QR-code en vult daarmee alleen lege velden (review 17 nov 2026, U3).
+    if (!beanId) {
+      setPhotoMsg('Foto klaar. Zoeken naar een QR-code…');
+      const qr = await readQr(file);
+      if (qr) {
+        const scan = 'url' in qr ? qr.form : qr;
+        const filled = fillEmpty(form, scan).filled; // voor de melding; het formulier zelf met de nieuwste stand
+        setForm(f => fillEmpty(f, scan).form);
+        qrLine = 'url' in qr
+          ? ` QR-code gelezen (webadres: ${qr.url}). Plak de tekst van die pagina voor meer velden.`
+          : filled > 0 ? ` QR-code gelezen: ${filled} ${filled === 1 ? 'veld' : 'velden'} ingevuld.` : ' QR-code gelezen; alle velden stonden al ingevuld.';
+      }
+    }
+    setPhotoMsg(`Foto klaar. Ze staat in je back-up en gaat mee met de synchronisatie, als die aanstaat.${qrLine}`);
     input.value = '';
   };
   const previewUrl = useMemo(() => (photoBlob && photoBlob !== 'remove' ? URL.createObjectURL(photoBlob) : null), [photoBlob]);
@@ -202,7 +239,11 @@ function Editor({ beanId }: { beanId: string | null }): JSX.Element {
       try {
         if (photoBlob === 'remove') await photos.remove(ev.data.beanId);
         else if (photoBlob) await photos.put(ev.data.beanId, photoBlob);
-      } catch { /* de zak is opgeslagen; alleen de foto lukte niet */ }
+      } catch {
+        // De zak is opgeslagen, alleen de foto niet (review 17 nov 2026: dat gebeurde eerst zonder melding).
+        notice = photoBlob === 'remove' ? 'De zak is opgeslagen, maar de foto kon niet verwijderd worden. Probeer het nog eens.'
+          : 'De zak is opgeslagen, maar de foto niet. Kies de foto opnieuw via Bewerken.';
+      }
       location.hash = href('zakken');
     } catch (e) { setSaveErr(`Opslaan is mislukt: ${(e as Error).message}`); setBusy(false); }
   };
@@ -215,9 +256,8 @@ function Editor({ beanId }: { beanId: string | null }): JSX.Element {
           <label class="field"><span>Plak de tekst van de zak of de webshoppagina</span><textarea name="paste" value={paste} onInput={e => setPaste((e.currentTarget as HTMLTextAreaElement).value)} /></label>
           <div class="row wrap">
             <button class="btn primary" type="button" onClick={recognise} disabled={!paste.trim()}>Herken velden</button>
-            <label class="btn">QR-foto kiezen<input class="sr-only" type="file" accept="image/*" onChange={onQr} /></label>
           </div>
-          {qrMsg && <p class="meta" role="status">{qrMsg}</p>}
+          <p class="meta">Of kies hieronder een foto van de zak: staat er een QR-code op, dan leest de app die ook.</p>
         </div>
       )}
       <div class="card photo-field">
