@@ -30,8 +30,5 @@
 
 ## Accounts
 
-- **Nu nodig (bouwstap 0):** een gratis Cloudflare-account, voor de synchronisatie-Worker. De AI-stap staat voorlopig uit (zie hieronder).
-
-Pas nodig bij de AI-stap. **Besluit Jelle (5 nov 2026): voorlopig niet**, omdat het geld kost. Zonder sleutel staat `/scan` uit.
-
-- Een Anthropic Console-account met betaling per gebruik, met een eigen werkruimte en sleutel voor de Worker en een uitgavenlimiet. Of die limiet voor dit account kan, moet nog bekeken worden.
+- **Nu nodig (bouwstap 0):** een gratis Cloudflare-account, voor de synchronisatie-Worker.
+- Geen Anthropic-account: de AI-herkenning van zakken is op 17 nov 2026 weggehaald (besluit Jelle, review C5; zie 16).

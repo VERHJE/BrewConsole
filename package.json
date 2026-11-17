@@ -14,7 +14,8 @@
     "app3:typecheck": "tsc -p app3",
     "app3:test": "node --test app3/test/*.test.ts app3/test/*.test.mjs",
     "app3:build": "node scripts/build-app3.mjs",
-    "app3:check": "npm run app3:typecheck && npm run app3:test"
+    "app3:check": "npm run app3:typecheck && npm run app3:test",
+    "app3:webkit": "node scripts/webkit-tests.mjs"
   },
   "devDependencies": {
     "@fontsource-variable/fraunces": "5.3.0",

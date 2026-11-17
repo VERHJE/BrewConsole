@@ -1,11 +1,11 @@
-// Gedeeld door de schermtests: bouwt app3 naar een tijdelijke map, serveert hem en start Chromium.
+// Gedeeld door de schermtests: bouwt app3 naar een tijdelijke map, serveert hem en start Chromium (of WebKit, zie BROWSER).
 import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
+import { chromium, webkit } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const FIXED = '/opt/pw-browsers/chromium';
@@ -18,6 +18,12 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
  */
 export const SCHEMES = ['dark'];
 
+/**
+ * Browser voor de schermtests: Chromium, of WebKit (de engine van Safari) met BC_BROWSER=webkit. In CI draait een kleine set
+ * ook in WebKit, als aparte job die een merge niet blokkeert (review 17 nov 2026, O1; zie scripts/webkit-tests.mjs).
+ */
+export const BROWSER = process.env.BC_BROWSER === 'webkit' ? 'webkit' : 'chromium';
+
 export async function startApp() {
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'app3-'));
   execFileSync('node', [path.join(ROOT, 'scripts/build-app3.mjs'), out], { stdio: 'pipe' });
@@ -29,8 +35,17 @@ export async function startApp() {
   });
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const base = `http://127.0.0.1:${server.address().port}/app3/`;
-  const browser = await chromium.launch({ executablePath: fs.existsSync(FIXED) ? FIXED : undefined, args: ['--no-sandbox'] });
-  return { base, browser, async close() { await browser.close(); server.close(); fs.rmSync(out, { recursive: true, force: true }); } };
+  const browser = BROWSER === 'webkit'
+    ? await webkit.launch()
+    : await chromium.launch({ executablePath: fs.existsSync(FIXED) ? FIXED : undefined, args: ['--no-sandbox'] });
+  let stopped = false;
+  const stopServer = () => new Promise(r => { if (stopped) return r(); stopped = true; server.closeAllConnections(); server.close(() => r()); });
+  return {
+    base, browser,
+    /** Zet de testserver echt uit: daarna is de site onbereikbaar, zoals zonder netwerk (werkt ook in WebKit, zie pwa.ui.test.mjs). */
+    stopServer,
+    async close() { await browser.close(); await stopServer(); fs.rmSync(out, { recursive: true, force: true }); }
+  };
 }
 
 /** Maakt een zak, plant een zetsel en tikt het met een nagebootste klok helemaal af. Laat de pagina op 'Proeven' staan. */

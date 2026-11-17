@@ -92,7 +92,7 @@ export function plan(state: EngineState, request: PlanRequest): Advice {
   const limits = DOSE_LIMITS[request.method];
   if (limits && (dose < limits.min || dose > limits.max)) {
     const clamped = Math.min(limits.max, Math.max(limits.min, dose));
-    warnings.push(`De gewenste dosis (${f1(dose)} g) ligt buiten het bereik van de brewer (${limits.min}–${limits.max} g); het recept gebruikt ${f1(clamped)} g.`);
+    warnings.push(`De gewenste dosis (${f1(dose)} g) ligt buiten het bereik van de brewer (${f1(limits.min)}–${f1(limits.max)} g); het recept gebruikt ${f1(clamped)} g.`);
     dose = clamped;
   }
   reasons.push(...strengthReasons(strength));

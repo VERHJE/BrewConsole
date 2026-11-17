@@ -5,15 +5,12 @@
 
 import { KvStore, type KvNamespaceLike } from './kv-store.ts';
 import { handleRequest } from './server.ts';
-import { kvDailyCounter } from './ai.ts';
 
 interface Env {
   BLOCKS: KvNamespaceLike;
   /** Nog niet ingesteld = geen enkel token geldig (alles geeft 401). */
   TOKEN_HASHES?: string;
   ALLOW_ORIGIN: string;
-  /** Optioneel geheim: zet je dit, dan werkt POST /scan (foto-herkenning). */
-  ANTHROPIC_API_KEY?: string;
 }
 
 export default {
@@ -23,13 +20,7 @@ export default {
       photos: new KvStore(env.BLOCKS, 'p:'),
       tokenHashes: (env.TOKEN_HASHES ?? '').split(',').map(s => s.trim().toLowerCase()).filter(s => s.length === 64),
       subtle: crypto.subtle,
-      allowOrigin: env.ALLOW_ORIGIN,
-      ...(env.ANTHROPIC_API_KEY ? { ai: {
-        apiKey: env.ANTHROPIC_API_KEY,
-        fetch: (url: string, init: { method: string; headers: Record<string, string>; body: string }) => fetch(url, init),
-        counter: kvDailyCounter(env.BLOCKS as unknown as Parameters<typeof kvDailyCounter>[0]),
-        nowMs: () => Date.now()
-      } } : {})
+      allowOrigin: env.ALLOW_ORIGIN
     });
   }
 };

@@ -12,13 +12,11 @@
 //   GET  /blocks?cursor=&limit=  → {ids, next}
 //   DELETE /blocks/:id
 //   GET /photos?cursor=&limit=, GET|PUT|DELETE /photos/:id   (dezelfde regels, eigen opslag; versleutelde foto-blokken)
-//   POST /scan              ← {consent:true, mediaType, imageBase64} → voorstel voor boonvelden (alleen met API-sleutel op de Worker)
 // Elke route behalve OPTIONS vereist `Authorization: Bearer <token>`; de server kent alleen de
 // SHA-256 van geldige tokens.
 
 import type { webcrypto } from 'node:crypto';
 import { BLOCK_ID_PATTERN, MAX_BLOCK_BYTES } from './blocks.ts';
-import { handleAiScan, type AiEnv } from './ai.ts';
 import { PHOTO_ID_PATTERN } from './photo-blocks.ts';
 
 export interface BlockStore {
@@ -41,8 +39,6 @@ export interface ServerEnv {
   readonly subtle: webcrypto.SubtleCrypto;
   /** Waarde voor Access-Control-Allow-Origin, bijvoorbeeld het adres van de app. */
   readonly allowOrigin: string;
-  /** Optioneel: foto-herkenning van een zak (alleen als de Worker een API-sleutel heeft). */
-  readonly ai?: AiEnv;
 }
 
 export async function sha256Hex(subtle: webcrypto.SubtleCrypto, text: string): Promise<string> {
@@ -105,12 +101,6 @@ export async function handleRequest(req: Request, env: ServerEnv): Promise<Respo
       return existing === canonical ? respond(env, 200, canonical) : respond(env, 409, { error: 'dit logboek heeft al een ander zout' });
     }
     return respond(env, 405, { error: 'methode niet toegestaan' });
-  }
-
-  if (path === '/scan') {
-    if (req.method !== 'POST') return respond(env, 405, { error: 'methode niet toegestaan' });
-    if (!env.ai) return respond(env, 404, { error: 'foto-herkenning staat niet aan' });
-    return handleAiScan(req, env.ai, body => respond(env, body.status, body.json));
   }
 
   const store = path === '/blocks' || path.startsWith('/blocks/') ? env.store : path === '/photos' || path.startsWith('/photos/') ? env.photos : undefined;

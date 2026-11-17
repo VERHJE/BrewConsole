@@ -22,7 +22,9 @@ a { color: var(--accent); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 .app { min-height: 100dvh; display: flex; flex-direction: column; }
-.main { flex: 1; width: 100%; max-width: 760px; margin: 0 auto; padding: var(--gutter); padding-left: max(var(--gutter), env(safe-area-inset-left)); padding-right: max(var(--gutter), env(safe-area-inset-right)); padding-bottom: calc(var(--tap) + 2 * var(--gutter) + env(safe-area-inset-bottom)); overflow-wrap: anywhere; }
+/* break-word: een woord breekt alleen als het echt niet past. `anywhere` staat alleen op gebruikersinhoud (namen, notities);
+   op het hele hoofdvlak brak het ook gewone woorden als "VOLGENDE" midden in af (review 17 nov, U1; test: woordbreuk.ui.test). */
+.main { flex: 1; width: 100%; max-width: 760px; margin: 0 auto; padding: var(--gutter); padding-left: max(var(--gutter), env(safe-area-inset-left)); padding-right: max(var(--gutter), env(safe-area-inset-right)); padding-bottom: calc(var(--tap) + 2 * var(--gutter) + env(safe-area-inset-bottom)); overflow-wrap: break-word; }
 .main.focused { padding-bottom: calc(var(--gutter) + env(safe-area-inset-bottom)); }
 .muted { color: var(--text-2); }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--gutter); margin: 0 0 12px; box-shadow: var(--shadow-1); }
@@ -156,6 +158,12 @@ a { color: var(--accent); }
 .choice[aria-pressed="true"], .choice[aria-checked="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
 .choice .box { width: 20px; height: 20px; border: 2px solid var(--text-3); border-radius: 5px; flex: none; }
 .choice[aria-checked="true"] .box { background: var(--accent); border-color: var(--accent); }
+/* Review 17 nov (U2): meerdere keuzes = vierkant vakje met vinkje; één keuze = rondje met een stip. */
+.choice .box, .choice .radio { display: grid; place-items: center; }
+.choice .radio { width: 20px; height: 20px; border: 2px solid var(--text-3); border-radius: 50%; flex: none; }
+.choice[aria-pressed="true"] .radio { border-color: var(--accent); }
+.choice[aria-pressed="true"] .radio::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+.choice[aria-checked="true"] .box::after { content: ''; width: 5px; height: 10px; margin-top: -2px; border: solid var(--primary-ink); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
 .q { margin: 0 0 4px; font-size: var(--fs-l); font-weight: 600; }
 .hint { color: var(--text-2); margin: 0 0 8px; font-size: var(--fs-s); }
 .notehit { margin: 0 0 12px; }
@@ -240,6 +248,8 @@ table.plain th { white-space: nowrap; }
 .rest { margin: 4px 0 12px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
 .compare th, .compare td { text-align: left; padding: 8px 6px; vertical-align: top; }
 .compare tr.diff td, .compare tr.diff th { background: var(--accent-soft); }
+/* Kopjes mogen hier tussen woorden afbreken: met een bredere systeemletter (DejaVu Sans) was de tabel op 320 px 336 px breed. */
+table.plain.compare th { white-space: normal; }
 .detail .head { flex-wrap: wrap; }
 
 /* Kwartsterren */
@@ -298,7 +308,7 @@ fieldset.field legend { padding: 0; margin-bottom: 4px; }
 .welkom-steps span:not(.welkom-n) { color: var(--text-2); }
 .welkom-n { flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--accent-soft); color: var(--text); font-family: var(--head); font-size: var(--fs-l); display: flex; align-items: center; justify-content: center; border: 1px solid var(--accent); }
 .welkom .btn { width: 100%; justify-content: center; }
-.welkom-oud { margin: 20px 0 12px; }
+.welkom-backup { margin: 20px 0 12px; }
 
 /* Uitleg onder de grafiektitel */
 .chart-note { margin: 2px 0 8px; font-size: var(--fs-s); color: var(--text); }
@@ -711,7 +721,7 @@ dialog.guide { max-height: calc(100dvh - 48px - env(safe-area-inset-top)); }
 .proeven.rit .hint { color: var(--text-2); text-align: center; }
 .proeven.rit .choice { background: rgb(241 232 216 / .04); border-color: var(--line); color: var(--text); border-radius: 16px; }
 .proeven.rit .choice[aria-pressed="true"], .proeven.rit .choice[aria-checked="true"] { background: rgb(230 197 143 / .14); border-color: var(--accent); color: var(--text); box-shadow: 0 0 0 1px var(--accent) inset; }
-.proeven.rit .choice .box { border-color: var(--text-3); border-radius: 50%; }
+.proeven.rit .choice .box { border-color: var(--text-3); }
 .proeven.rit .choice[aria-checked="true"] .box { background: var(--accent); border-color: var(--accent); }
 .proeven.rit .chip { background: transparent; border-color: rgb(241 232 216 / .28); color: var(--text); }
 .proeven.rit .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--primary-ink); }
@@ -731,7 +741,9 @@ dialog.guide { max-height: calc(100dvh - 48px - env(safe-area-inset-top)); }
 .proeven.rit .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .proeven.rit .pactions { position: sticky; bottom: 0; z-index: 3; margin-top: 18px; padding: 14px 0 calc(8px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgb(11 18 14 / 0), #0b120e 45%); }
 .proeven.rit .pactions .btn { min-height: 52px; padding-inline: 22px; }
-.proeven.rit .pactions .btn.primary { flex: 1; max-width: 260px; }
+/* De hoofdknop vult de rest van de regel (review 17 nov, U1/D3): met de spacer ernaast werd hij zo smal dat "VOLGENDE" brak. */
+.proeven.rit .pactions .spacer { display: none; }
+.proeven.rit .pactions .btn.primary { flex: 1; }
 .proeven.rit .actions:not(.pactions) { justify-content: center; }
 .proeven.rit .choices { margin-top: 10px; }
 /* Opgeslagen: dezelfde groene ring met vinkje als aan het eind van de timer */
@@ -1030,4 +1042,9 @@ details.sens-empty { margin: 0 0 12px; }
 @media (max-width: 359px) {
   .num { padding-left: 10px; padding-right: 10px; }
   .num small, .facts dt { letter-spacing: .02em; }
+  /* Review 17 nov (U1): "GEMIDDELD" in het Meer-etiket en "Gefermenteerd" in de smaakgroepen pasten niet. */
+  .meerhero.bagart.label { padding-left: 16px; padding-right: 16px; }
+  .mh-nums { gap: 6px; }
+  .mh-nums small { letter-spacing: .02em; }
+  .choices.two { grid-template-columns: 1fr; }
 }

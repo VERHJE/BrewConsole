@@ -18,4 +18,3 @@ id = "935776684dbd4127aa8fa6c739112d05"
 # build gewist, een Secret blijft staan.
 #   TOKEN_HASHES       de SHA-256 van elk toestel-token, gescheiden door komma's, zonder spaties (maak ze met tokengenerator.html;
 #                      het token en de hash moeten van dezelfde tik op 'Nieuw token maken' komen)
-#   ANTHROPIC_API_KEY  alleen als je foto-herkenning wilt

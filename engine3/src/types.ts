@@ -78,7 +78,7 @@ export type Missed = 'fruit' | 'sweet' | 'body' | 'less_bitter' | 'unsure';
 export type NoteHit = 'yes' | 'bit' | 'no';
 
 /** Waar een boonveld vandaan komt (de controlekaart toont dit per veld). */
-export type FieldSource = 'user' | 'paste' | 'ocr' | 'qr' | 'ai' | 'migrated';
+export type FieldSource = 'user' | 'paste' | 'ocr' | 'qr' | 'migrated';
 
 // ───────────────────────────── de boon ─────────────────────────────
 

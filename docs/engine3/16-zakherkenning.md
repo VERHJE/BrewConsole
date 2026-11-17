@@ -1,14 +1,13 @@
 # 16 · Zakherkenning (bouwstap 6)
 
-Code: `engine3/src/bean/` (`text.ts`, `scan.ts`, `qr.ts`, `ai.ts`), `engine3/qr/decode.ts`, `engine3/sync/ai.ts` · data: `engine3/src/data/bean-scan-data.ts` (gegenereerd) · tests: `bean-text`, `bean-scan`, `bean-ai`
+Code: `engine3/src/bean/` (`text.ts`, `scan.ts`, `qr.ts`), `engine3/qr/decode.ts` · data: `engine3/src/data/bean-scan-data.ts` (gegenereerd) · tests: `bean-text`, `bean-scan`
 
-Drie manieren om een zak in te lezen, alle drie met dezelfde uitkomst: boonvelden volgens het datamodel (03), met per veld de bron (`paste`, `ocr`, `qr`, `ai`).
+Twee manieren om een zak in te lezen, met dezelfde uitkomst: boonvelden volgens het datamodel (03), met per veld de bron (`paste`, `ocr`, `qr`). De derde, foto naar AI, is op 17 nov 2026 weggehaald (zie 3).
 
 | Weg | Wat de engine doet | Waar het gebeurt |
 |---|---|---|
 | Tekst (geplakt of OCR) | `scanBeanText(tekst, { source, nowMs })` | in de engine, zuiver |
 | QR-code | pixels lezen met jsQR, inhoud met `readQrPayload()` | pixels in `engine3/qr`, inhoud in de engine |
-| Foto naar AI | `POST /scan` op de Worker, antwoord met `validateAiScan()` | Worker; de engine alleen het contract en de schoonmaak |
 
 ## 1. Tekst: `parseBeanText` uit de app, overgezet
 
@@ -33,19 +32,8 @@ De herkenning uit de huidige app (PR #40) is letterlijk overgezet naar strikte T
 - **Inhoud:** `readQrPayload()` begrijpt een webadres (merk uit de domeinnaam, woorden uit het pad, bijvoorbeeld `…/products/colombia-el-diviso-natural`), JSON of 'sleutel: waarde'-regels met boonvelden, en gewone tekst. Alles gaat door dezelfde tekstherkenning, met bron `qr`. Er wordt niets opgehaald (de engine heeft geen netwerk); bij een webadres geeft het resultaat het adres terug, zodat de frontend de pagina kan tonen of de tekst ervan laten plakken.
 - Getest met codes die in de test zelf worden gemaakt (`qrcode`, alleen voor tests): normaal, klein, omgekeerd, met hoge foutcorrectie, en zonder code.
 
-## 3. AI: alleen met toestemming, via de Worker
+## 3. AI: weggehaald (17 nov 2026)
 
-> **Besluit Jelle (5 nov 2026): AI-foto-herkenning staat voorlopig uit.** Het is het enige onderdeel dat geld kost (betaalde Anthropic-API), en dat doen we niet, of in ieder geval nog niet. Er wordt geen sleutel gezet; zonder `ANTHROPIC_API_KEY` geeft `/scan` op de Worker 404 en gaat er niets naar buiten. Tekst, OCR, geplakte tekst en QR blijven werken en kosten niets. De code en de tests blijven staan, zodat het later met één geheim aan te zetten is.
+Er was een AI-herkenning van een zakfoto gebouwd: `POST /scan` op de Worker, met toestemming per scan, een vast model, een daglimiet en een strikt schema voor het antwoord. Ze is nooit aangezet (besluit Jelle, 5 nov 2026: het kost geld) en de app riep haar nergens aan; vanuit de browser kon dat ook niet, omdat de Worker in CORS geen POST toestond.
 
-Besluit Jelle: de veiligste optie.
-
-- **Toestemming per scan:** het verzoek moet `consent: true` hebben; zonder dat geeft de Worker 403 en gaat er niets naar buiten.
-- **Sleutel:** de Anthropic-sleutel is alleen een geheim van de Worker (`ANTHROPIC_API_KEY`), nooit in de app en nooit in het antwoord. Zonder dat geheim staat `/scan` uit (404).
-- **Toegang:** dezelfde toestel-tokens als de synchronisatie.
-- **Vast model** (`claude-opus-5-5`), een tool met een strikt schema, een dagelijkse limiet van 30 scans (ook een mislukte poging telt), en een maximum van 5 MB per foto (jpeg, png of webp).
-- **Geen foto bewaard:** de foto gaat door de Worker naar de API en niet in de opslag, niet in een teller en niet in het antwoord. Fouten van de API worden niet doorgegeven.
-- **Een voorstel, geen feit:** het antwoord wordt door `validateAiScan()` schoongemaakt. Onbekende sleutels, opsommingen buiten de lijst, onmogelijke getallen en datums vallen af en staan in `dropped`; elk veld krijgt bron `ai`. De frontend toont het ter controle en gebruikt het pas na bevestiging.
-
-## Wat jij moet doen
-
-Voorlopig niets: AI-foto-herkenning staat uit (zie het besluit hierboven). Alleen als je het later toch wilt: een Anthropic Console-account met betaling per gebruik, een eigen werkruimte met sleutel en een uitgavenlimiet, en dan `npx wrangler secret put ANTHROPIC_API_KEY`. De limiet van 30 scans per dag zit al in de Worker; de uitgavenlimiet in de Console is de tweede beveiliging.
+**Besluit Jelle (17 nov 2026, review C5): weghalen.** Weg zijn `engine3/src/bean/ai.ts`, `engine3/sync/ai.ts`, de route `/scan` (nu 404 "onbekend pad", met een test), de bron `ai` en de tests `bean-ai`. Minder code, geen sleutel nodig, en niets in de app stuurt een foto naar buiten. Wie tekst van een zakfoto wil gebruiken, kan op de iPhone de tekst uit de foto kopiëren (Live Tekst) en plakken. De oude code staat in de git-geschiedenis (tot en met commit `d380c28`).

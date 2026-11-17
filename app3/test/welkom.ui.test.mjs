@@ -22,6 +22,7 @@ for (const scheme of SCHEMES) {
     assert.equal(await page.locator('select[name=bean]').count(), 0, 'nog geen formulier');
     assert.equal(await page.locator('a:has-text("Back-up inlezen")').getAttribute('href'), '#/meer/gegevens');
     assert.equal(await page.locator('a[href="oud/"]').count(), 0, 'de oude app bestaat niet meer');
+    assert.doesNotMatch(await page.locator('.welkom').innerText(), /vorige versie/i, 'review 17 nov (W4): geen verwijzing meer naar de vorige versie');
     await page.evaluate(axeSource);
     const r = await page.evaluate(() => axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }));
     assert.deepEqual(r.violations.map(v => `${v.id}: ${v.nodes.slice(0, 3).map(n => n.target.join(' ')).join(' | ')}`), []);

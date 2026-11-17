@@ -49,6 +49,22 @@ const STORE = 'photos';
 const req = <T>(r: IDBRequest<T>): Promise<T> => new Promise((ok, no) => { r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); });
 const fin = (tx: IDBTransaction): Promise<void> => new Promise((ok, no) => { tx.oncomplete = () => ok(); tx.onerror = () => no(tx.error); tx.onabort = () => no(tx.error); });
 
+/**
+ * Zo staat een foto in de database: de bytes met het type, niet de Blob zelf. WebKit (Safari) kan in een privévenster geen Blob
+ * in IndexedDB bewaren ("Error preparing Blob/File data", WebKit-bugs 198278 en 268037); de foto viel dan stil weg. Bytes kan
+ * het wel. Gevonden door de WebKit-rooktest in CI (review 17 nov 2026, O1). Een oud record (een Blob) blijft leesbaar.
+ */
+export interface StoredPhoto { readonly type: string; readonly bytes: ArrayBuffer }
+export async function toStoredPhoto(b: Blob): Promise<StoredPhoto> { return { type: b.type, bytes: await b.arrayBuffer() }; }
+export function fromStoredPhoto(v: unknown): Blob | null {
+  if (v instanceof Blob) return v;
+  if (typeof v === 'object' && v !== null) {
+    const { type, bytes } = v as { type?: unknown; bytes?: unknown };
+    if (bytes instanceof ArrayBuffer) return new Blob([bytes], { type: typeof type === 'string' ? type : '' });
+  }
+  return null;
+}
+
 /** Eigen database, los van het logboek. Zonder IndexedDB: geheugen (foto valt weg bij herladen). */
 export async function openPhotoStore(factory: IDBFactory | undefined = globalThis.indexedDB): Promise<PhotoStore> {
   if (!factory) return memoryPhotoStore();
@@ -59,8 +75,9 @@ export async function openPhotoStore(factory: IDBFactory | undefined = globalThi
     db = await req(open);
   } catch { return memoryPhotoStore(); }
   return {
-    async get(id) { return ((await req(db.transaction(STORE, 'readonly').objectStore(STORE).get(id))) as Blob | undefined) ?? null; },
-    async put(id, b) { const tx = db.transaction(STORE, 'readwrite'); tx.objectStore(STORE).put(b, id); await fin(tx); },
+    async get(id) { return fromStoredPhoto(await req(db.transaction(STORE, 'readonly').objectStore(STORE).get(id))); },
+    // eerst de bytes lezen, dan pas de transactie openen: een transactie sluit zodra er tussendoor op iets anders gewacht wordt
+    async put(id, b) { const rec = await toStoredPhoto(b); const tx = db.transaction(STORE, 'readwrite'); tx.objectStore(STORE).put(rec, id); await fin(tx); },
     async remove(id) { const tx = db.transaction(STORE, 'readwrite'); tx.objectStore(STORE).delete(id); await fin(tx); },
     async clear() { const tx = db.transaction(STORE, 'readwrite'); tx.objectStore(STORE).clear(); await fin(tx); }
   };

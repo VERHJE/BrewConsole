@@ -65,7 +65,8 @@ test('logboek compact: lage rijen en een smaakregel van één regel; "Nog te pro
 test('smaakprofiel opgeruimd: groepen met oordeel als kaart met pil, groepen zonder oordeel ingeklapt', async () => {
   const page = await app.browser.newPage({ viewport: { width: 390, height: 844 } });
   await importLog(page, app.base, json);
-  await page.goto(app.base + '#/meer/profiel'); await page.waitForSelector('.meertiles');
+  // wachten op het profiel zelf: importLog eindigt op Gegevens, dat ook .meertiles heeft (die race maakte de test in CI rood)
+  await page.goto(app.base + '#/meer/profiel'); await page.waitForSelector('h1:text-is("Smaakprofiel")'); await page.waitForSelector('.meertiles');
   if (await page.locator('ul.sens').count()) {
     assert.ok(await page.locator('ul.sens .senshead .tag').count() >= 1);
     assert.doesNotMatch(await page.locator('ul.sens').innerText(), /0 van 0 aangevinkt/);

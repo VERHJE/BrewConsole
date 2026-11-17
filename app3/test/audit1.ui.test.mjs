@@ -21,19 +21,19 @@ test('P1-01: de V60 laat geen kop toe waarbij de verhouding onbruikbaar wordt; w
   await importLog(page, app.base, json);
   await openForm(page);
   await page.fill('input[name=cup]', '600');
-  assert.match(await page.locator('.zadvice-col [role=alert]').innerText(), /Hario V60 een kop tussen 200 en 280 gram/);
+  assert.match(await page.locator('.zadvice-col [role=alert]').innerText(), /Hario V60 een kop tussen 200 en 420 gram/);
   assert.equal(await page.locator('.startbar').count(), 0, 'zonder geldig recept geen Start-knop');
-  await page.fill('input[name=cup]', '280');
+  await page.fill('input[name=cup]', '420');
   const r = await ratio(page);
-  assert.ok(r >= 13 && r <= 18, `V60 280 g: 1:${r.toFixed(1)}`);
+  assert.ok(r >= 13 && r <= 18, `V60 420 g: 1:${r.toFixed(1)}`);
   assert.equal(await page.locator('button[aria-label=Groter]').isDisabled(), true, 'plus staat uit op de bovengrens');
-  // Chemex 2 koppen (680 g) → terug naar V60: de kop schuift naar 280 g
+  // Chemex 2 koppen (680 g) → terug naar V60: de kop schuift naar 420 g (review 17 nov, R1: was 280 g)
   await page.click('button.chip:has-text("Chemex")');
   await page.click('button.chip:has-text("2 koppen")');
   assert.equal(await page.inputValue('input[name=cup]'), '680');
   await page.click('button.chip:has-text("Hario V60")');
-  assert.equal(await page.inputValue('input[name=cup]'), '280');
-  assert.match(await page.locator('#cup-l').innerText(), /200–280 g/);
+  assert.equal(await page.inputValue('input[name=cup]'), '420');
+  assert.match(await page.locator('#cup-l').innerText(), /200–420 g/);
   await page.close();
 });
 

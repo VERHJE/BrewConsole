@@ -68,3 +68,31 @@ jobs:
       # Nieuwe frontend (app3): typecheck, kerntests en schermtests in Chromium.
       - name: App3 checks
         run: npm run app3:check
+
+  # Review 17 nov 2026, O1 (besluit Jelle): een kleine set schermtests in WebKit, de engine van Safari. Een aparte job, en
+  # geen vereiste check op GitHub: een WebKit-probleem is een signaal, maar blokkeert een merge niet. Na een reeks groene
+  # runs kan hij in de instellingen van de repo (Branches → regels voor main) alsnog verplicht worden.
+  # Dekt verschillen in CSS, CSP en JavaScript; niet wat alleen iOS doet (installeren als app, scherm aan houden, camera).
+  webkit:
+    name: WebKit-rooktest (Safari-engine, niet verplicht)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # WebKit heeft meer systeempakketten nodig dan Chromium (o.a. GStreamer); --with-deps haalt ze via apt.
+      - name: Install Playwright WebKit
+        run: npx playwright install --with-deps webkit
+
+      - name: WebKit-rooktest
+        run: npm run app3:webkit

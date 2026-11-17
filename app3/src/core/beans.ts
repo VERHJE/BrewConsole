@@ -15,7 +15,7 @@ export const PROCESS_LABEL: Readonly<Record<ProcessBase, string>> = {
   washed: 'Gewassen', natural: 'Natuurlijk', honey: 'Honey', wet_hulled: 'Nat gepeld', unknown: 'Onbekend'
 };
 export const SOURCE_LABEL: Readonly<Record<FieldSource, string>> = {
-  user: 'door jou', paste: 'uit geplakte tekst', ocr: 'uit foto', qr: 'uit QR', ai: 'door AI', migrated: 'uit oude app'
+  user: 'door jou', paste: 'uit geplakte tekst', ocr: 'uit foto', qr: 'uit QR', migrated: 'uit oude app'
 };
 
 export interface BeanRow {
