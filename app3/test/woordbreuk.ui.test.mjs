@@ -30,17 +30,19 @@ const brokenWords = () => {
   return [...out];
 };
 
-async function scan(width, bean, cup, other) {
+async function scan(width, bean, cup, other, font = null) {
   const problems = [];
   // zonder schermovergangen en animaties, zodat er altijd het nieuwe scherm gemeten wordt
   const page = await app.browser.newPage({ viewport: { width, height: 844 }, reducedMotion: 'reduce' });
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
+  const tag = font ? `${width} px, ${font}` : `${width} px`;
   const check = async (label) => {
+    if (font) await page.addStyleTag({ content: `:root { --font: '${font}' !important; }` });
     await page.waitForTimeout(200);
-    for (const b of await page.evaluate(brokenWords)) problems.push(`${width} px, ${label}: ${b}`);
+    for (const b of await page.evaluate(brokenWords)) problems.push(`${tag}, ${label}: ${b}`);
     const o = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
-    if (o > 1) problems.push(`${width} px, ${label}: ${o} px horizontale overloop`);
+    if (o > 1) problems.push(`${tag}, ${label}: ${o} px horizontale overloop`);
   };
   const go = async (route) => { await page.goto(app.base + '#/' + route); await page.waitForSelector('.main h1, .main .welkom, .timer', { timeout: 15000 }); };
   await importLog(page, app.base, json);
@@ -78,15 +80,17 @@ async function scan(width, bean, cup, other) {
   await page.click('button:has-text("Start")');
   await page.clock.fastForward(50_000);
   await check('timer loopt');
-  assert.deepEqual(errors, [], `${width} px: geen fouten`);
+  assert.deepEqual(errors, [], `${tag}: geen fouten`);
   await page.close();
   return problems;
 }
 
-test('geen woord breekt midden in af en niets loopt over, ook met een extreem lange zaknaam (320, 390 en 430 px)', async () => {
+test('geen woord breekt midden in af en niets loopt over, ook met een extreem lange zaknaam (320, 390 en 430 px, en 320 px met een brede letter)', async () => {
   const bean = events.find(e => e.kind === 'bean.upsert').data.beanId;
   const plans = events.filter(e => e.kind === 'brew.plan');
   const cup = plans.at(-1).data.brewId, other = plans[0].data.brewId;
-  const problems = (await Promise.all([320, 390, 430].map(w => scan(w, bean, cup, other)))).flat();
+  // Ook op 320 px met DejaVu Sans, een brede letter: de systeemletter verschilt per toestel (lokaal Inter, op de CI-machine
+  // DejaVu, op de iPhone SF). Zonder deze ronde vond alleen CI dat de vergelijkingstabel op 320 px overliep.
+  const problems = (await Promise.all([[320], [390], [430], [320, 'DejaVu Sans']].map(([w, f]) => scan(w, bean, cup, other, f)))).flat();
   assert.deepEqual(problems, []);
 });

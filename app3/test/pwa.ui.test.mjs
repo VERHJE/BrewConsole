@@ -20,7 +20,9 @@ test('offline: na de eerste keer start de app zonder netwerk, en de gegevens sta
   await page.waitForSelector('.item:has-text("Offlinezak")');
 
   await context.setOffline(true);
-  await page.goto(app.base + '#/zakken');
+  // De hash in de pagina zetten en dan herladen. Een page.goto die alleen de hash verandert gaf in WebKit (offline) "WebKit
+  // encountered an internal error" (review 17 nov 2026, O1); wat getest wordt, herladen zonder netwerk, is hetzelfde.
+  await page.evaluate(() => { location.hash = '#/zakken'; });
   await page.reload();
   await page.waitForSelector('.item:has-text("Offlinezak")');
   assert.equal(await page.locator('nav.tabbar a').count(), 4);

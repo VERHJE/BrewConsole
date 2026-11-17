@@ -248,6 +248,8 @@ table.plain th { white-space: nowrap; }
 .rest { margin: 4px 0 12px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
 .compare th, .compare td { text-align: left; padding: 8px 6px; vertical-align: top; }
 .compare tr.diff td, .compare tr.diff th { background: var(--accent-soft); }
+/* Kopjes mogen hier tussen woorden afbreken: met een bredere systeemletter (DejaVu Sans) was de tabel op 320 px 336 px breed. */
+table.plain.compare th { white-space: normal; }
 .detail .head { flex-wrap: wrap; }
 
 /* Kwartsterren */
