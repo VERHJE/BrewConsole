@@ -14,7 +14,7 @@ Drie manieren om een zak in te lezen, alle drie met dezelfde uitkomst: boonvelde
 
 De herkenning uit de huidige app (PR #40) is letterlijk overgezet naar strikte TypeScript: velden eerst (Origin, Process, Variety, Notes …), dan woorden; semi-washed als niet-eenduidig; cafeïnevrij; gedeelde hoofdwoorden ('gedroogd & tropisch fruit'); naam, brander, zakgrootte en branddatum met de regels voor logo-ruis en webshops.
 
-- De woordenlijsten komen uit `bean-scan-data.ts`, dat `node engine3/scripts/gen-bean-scan-data.mjs` uit de app genereert. Een test faalt zodra ze uit elkaar lopen.
+- De woordenlijsten staan in `bean-scan-data.ts` (oorspronkelijk gegenereerd uit de oude app). Sinds 17 nov 2026, toen de oude app uit de repo ging, vergelijkt de test ze met de vastgelegde lijsten in `engine3/test/oude-app/`.
 - **Poort:** een differentiële test eist dat `parseBeanText` voor dezelfde tekst dezelfde uitkomst geeft als de app. Dat is getoetst op alle teksten uit de bestaande app-tests (inclusief de 8 voorbeeldzakken), op een reeks vreemde invoer en op 600 willekeurige etiketten uit regels van echte zakken, de woordenlijsten en ruis.
 - **Eén verschil:** geen `Date.now()`. De branddatum-controle krijgt het huidige moment als `nowMs` mee.
 - **Poort uit het plan, aangepast:** 'dezelfde 35 van 45 trefwoorden als de huidige app' was een meting op de foto's van de acht zakken. Die foto's staan niet in de repo (en twee ervan zijn nooit als bestand aangekomen), dus die meting is niet te herhalen. In plaats daarvan staat de zekerheid dat alles wat de app uit getypte tekst haalt hier ook uit komt. De OCR zelf (Tesseract, voorbewerking van het beeld) blijft bij de frontend.

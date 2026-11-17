@@ -1,11 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import fc from 'fast-check';
 import { learnFacts } from '../src/state.ts';
 import { decide, observationsOf, retentionFor, strengthPlan, tdsOf, ratioForTdsPct } from '../src/strength.ts';
 import { buildRecipe } from '../src/recipe.ts';
 import { DEFAULT_SCENARIO, WORLDS, makeBags, rng, tasteCup } from '../eval/simulator.ts';
-import { baseRecipe, engine2Strategy, engine3StrengthStrategy } from '../eval/adapters.ts';
+import { engine3StrengthStrategy } from '../eval/adapters.ts';
 import type { EngineEvent, StrengthOrd } from '../src/types.ts';
 import type { EpochMs, Grams } from '../src/units.ts';
 
@@ -148,35 +149,39 @@ test('een ongeldige vraag geeft null in plaats van onzin', () => {
 });
 
 test('bijna gelijk aan Engine 2: dezelfde dosis kop voor kop, behalve waar de zakbewaking ingrijpt', async () => {
+  // Engine 2 (de oude app) is op 17 nov 2026 uit de repo gehaald. Met vaste seeds hangt deze vergelijking alleen af van de dosis
+  // die Engine 2 per kop koos; die staat vast in test/oude-app/engine2-dosis.json. De oordelen volgen daaruit zoals voorheen.
   const sc = DEFAULT_SCENARIO;
-  const e2 = await engine2Strategy(sc.waterG);
+  const fixture = JSON.parse(readFileSync(new URL('./oude-app/engine2-dosis.json', import.meta.url), 'utf8')) as { waterG: number; at0: number; runs: Array<{ world: string; seed: number; doses: number[] }> };
+  assert.equal(fixture.waterG, sc.waterG); assert.equal(fixture.at0, AT0);
+  assert.equal(fixture.runs.length, WORLDS.length * 3, 'een run per wereld en seed');
   const e3 = await engine3StrengthStrategy(sc.waterG);
-  void (await baseRecipe(sc.waterG));
   let total = 0, differ = 0;
   for (const w of WORLDS) {
     for (const seed of [11, 12, 13]) {
       const r = rng(seed);
       const bags = makeBags(sc, w, r);
-      e2.reset(); e3.reset();
+      const recorded = fixture.runs.find(x => x.world === w.name && x.seed === seed)!.doses;
+      e3.reset();
       let idx = 0;
       for (const bag of bags) {
         let divergedInBag = false;
         for (let k = 0; k < sc.cupsPerBag; k++, idx++) {
           const ctx = { beanId: bag.beanId, waterG: sc.waterG, cupIndex: idx, at: AT0 + idx * 86_400_000 };
-          const d2 = e2.dose(ctx);
+          const d2 = recorded[idx]!;
           const d3 = e3.dose(ctx);
           total++;
           if (d3 !== d2) { differ++; divergedInBag = true; }
           // De zakbewaking werkt pas vanaf de derde kop van een zak (daar begint de afwijking per zak).
           if (k < 3) assert.equal(d3, d2, `${w.name} seed ${seed} kop ${idx} (k=${k})`);
           const cupRes = tasteCup(d2, bag, idx, sc, w, r);
-          e2.observe(ctx, d2, cupRes.answer);
           e3.observe(ctx, d2, cupRes.answer);
         }
         void divergedInBag;
       }
     }
   }
+  assert.equal(total, 1440);
   assert.ok(differ / total <= 0.03, `${differ} van ${total} wijken af`);
 });
 test('de sterktevoorkeur wordt per brewer geleerd: V60-koppen beïnvloeden de Chemex niet, en omgekeerd', () => {

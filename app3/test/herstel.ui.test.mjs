@@ -1,13 +1,13 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { startApp, importLog } from './helpers.mjs';
+import { startApp, importLog, SCHEMES } from './helpers.mjs';
 import { seedLog } from './seed.ts';
 
 let app, json;
 before(async () => { app = await startApp(); json = (await seedLog(8)).json; });
 after(async () => { await app.close(); });
 
-for (const scheme of ['light', 'dark']) {
+for (const scheme of SCHEMES) {
   test(`voorkeuren (${scheme}): kleine keuzerondjes, woorden breken niet midden in het woord`, async () => {
     const page = await app.browser.newPage({ viewport: { width: 390, height: 844 }, colorScheme: scheme });
     await page.goto(app.base + '#/meer/voorkeuren');

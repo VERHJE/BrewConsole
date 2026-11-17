@@ -1,6 +1,4 @@
 node_modules/
-_baselines/
 dist/
 .wrangler/
-dist-oud/
 .DS_Store

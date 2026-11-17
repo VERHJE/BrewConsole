@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
-import { startApp, importLog } from './helpers.mjs';
+import { startApp, importLog, SCHEMES } from './helpers.mjs';
 import { seedLog, SEED_BEAN } from './seed.ts';
 
 const axeSource = fs.readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8');
@@ -16,7 +16,7 @@ const axe = async page => {
   return r.violations.map(v => `${v.id}: ${v.nodes.slice(0, 3).map(n => n.target.join(' ')).join(' | ')}`);
 };
 
-for (const scheme of ['light', 'dark']) {
+for (const scheme of SCHEMES) {
   test(`schermen (${scheme}): recept met zakfoto en inklapbare uitleg, zakkenlijst, logboek met smaakregel, zakformulier; axe schoon`, async () => {
     const ctx = await app.browser.newContext({ colorScheme: scheme, viewport: { width: 390, height: 844 } });
     const page = await ctx.newPage();

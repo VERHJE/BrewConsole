@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
-import { startApp, importLog } from './helpers.mjs';
+import { startApp, importLog, SCHEMES } from './helpers.mjs';
 import { seedLog, SEED_BEAN } from './seed.ts';
 
 const axeSource = fs.readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8');
@@ -66,7 +66,7 @@ test('laptop: formulier en recept naast elkaar, geen samenvatting, startknop in 
 });
 
 test('timer: ring met aftelling, "Hierna", wachten op doorlopen; geen axe-overtredingen in licht en donker', async () => {
-  for (const scheme of ['light', 'dark']) {
+  for (const scheme of SCHEMES) {
     const page = await app.browser.newPage({ viewport: PHONE, colorScheme: scheme });
     await importLog(page, app.base, json);
     await page.goto(app.base + '#/zetten');

@@ -33,8 +33,6 @@ npm run e3:test        # node:test + fast-check
 npm run e3:build       # esbuild → engine3/dist/engine3.mjs (niet in git)
 npm run e3:check       # typecheck en tests; draait ook in CI (de bundel is los: de app bundelt de broncode zelf)
 npm run e3:eval        # meetopstelling (standaard 60 herhalingen per wereld)
-node engine3/eval/replay-local.ts <back-up.json>   # eigen koppen, alleen lokaal
-node engine3/scripts/gen-flavor-wheel.mjs         # smaakwiel opnieuw uit de app halen
 ```
 
 Node 22 draait TypeScript direct (type stripping). Daarom gebruikt de code alleen 'wisbare' TypeScript: geen `enum`, geen `namespace`. `tsc` controleert alleen, en esbuild bouwt.
@@ -59,4 +57,4 @@ Elke stap is pas af als de tests groen zijn en de meetopstelling niet slechter i
 ## Grenzen
 
 - De engine leest en schrijft niets zelf: geen DOM, geen opslag, geen netwerk, geen klok en geen toeval. Een test bewaakt dat in de bronbestanden.
-- De huidige app (`brewconsole_v2_2.html`) blijft ongewijzigd. Engine 3 gebruikt hem alleen als nulmeting, via `tests/load-app.mjs`.
+- De oude app (`brewconsole_v2_2.html`) diende als nulmeting. Ze is op 17 nov 2026 uit de repo gehaald; haar uitkomsten voor zakherkenning, woordenlijsten en smaakwiel staan vast in `engine3/test/oude-app/`. De meetopstelling vergelijkt sindsdien met een vast recept en het orakel; de Engine 2-uitkomsten staan in `engine3/eval/baseline-e2.json`.

@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { startApp, importLog } from './helpers.mjs';
+import { startApp, importLog, SCHEMES } from './helpers.mjs';
 import { seedLog } from './seed.ts';
 
 // Meer in de stijl van het zakdetail: etiket met drie getallen, gegroepeerde lijsten met iconen, tegels op de subschermen.
@@ -11,7 +11,7 @@ let app, json;
 before(async () => { app = await startApp(); json = (await seedLog(4)).json; });
 after(async () => { await app.close(); });
 
-for (const scheme of ['light', 'dark']) {
+for (const scheme of SCHEMES) {
   test(`Meer-stijl (${scheme}): etiket, groepen met iconen, tegels; Nederlandse groepsnamen; axe schoon`, async () => {
     const page = await app.browser.newPage({ viewport: { width: 390, height: 844 }, colorScheme: scheme });
     const errors = [];

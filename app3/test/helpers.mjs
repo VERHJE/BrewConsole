@@ -11,6 +11,13 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const FIXED = '/opt/pw-browsers/chromium';
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.json': 'application/json' };
 
+/**
+ * Kleurschema's waarin de schermtests draaien. De app heeft sinds 10 nov 2026 één thema dat niet van het schema van het
+ * toestel afhangt; thema.ui.test.mjs bewijst dat in licht én donker. De andere tests draaien daarom één keer (opruimaudit
+ * 15 nov, stap 3, besluit Jelle). Komen er ooit weer twee thema's, zet dan hier ['light', 'dark'] terug.
+ */
+export const SCHEMES = ['dark'];
+
 export async function startApp() {
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'app3-'));
   execFileSync('node', [path.join(ROOT, 'scripts/build-app3.mjs'), out], { stdio: 'pipe' });

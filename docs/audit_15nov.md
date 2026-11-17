@@ -1,6 +1,6 @@
 # Brew Console · kwaliteitsaudit 15 november 2026
 
-Fase 1: in kaart brengen en vinden. Er is in deze fase niets aan de app veranderd. Herstel volgt na akkoord van Jelle. Opzet en nummering zoals in `audit_10nov.md`.
+Fase 1: in kaart brengen en vinden. Er is in deze fase niets aan de app veranderd. Herstel volgt na akkoord van Jelle. Opzet en nummering zoals in `docs/archief/audit_10nov.md`.
 
 ## A. Samenvatting
 

@@ -37,9 +37,7 @@ fs.copyFileSync(path.join(FONT_DIR, 'files/fraunces-latin-wght-normal.woff2'), p
 fs.copyFileSync(path.join(FONT_DIR, 'LICENSE'), path.join(OUT, 'fonts/Fraunces-OFL.txt'));
 fs.copyFileSync(path.join(ROOT, 'app3/manifest.webmanifest'), path.join(OUT, 'manifest.webmanifest'));
 // Iconen en opstartschermen (icons/splash/): de hele map, ook de submap.
-// icon-maskable-512.png is een byte-gelijke kopie van icon-512.png die alleen de oude app (archief) nog gebruikt; de app zelf
-// gebruikt icon-512.png ook als maskable (audit 15 nov, P3-02).
-fs.cpSync(path.join(ROOT, 'icons'), path.join(OUT, 'icons'), { recursive: true, filter: src => path.basename(src) !== 'icon-maskable-512.png' });
+fs.cpSync(path.join(ROOT, 'icons'), path.join(OUT, 'icons'), { recursive: true });
 
 // Op de wortel blijven de hulppagina's (tokengenerator voor synchronisatie, toestelcheck) bereikbaar op hun eigen adres.
 const EXTRA_PAGES = ['tokengenerator.html', 'toestelcheck.html'];

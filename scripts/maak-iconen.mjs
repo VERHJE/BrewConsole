@@ -3,8 +3,8 @@
 //   icons/apple-touch-icon.png (180)   iOS rondt de hoeken zelf af
 //   icons/icon-192.png, icons/icon-512.png   gewone iconen (vol vierkant)
 //   maskable: het manifest gebruikt icon-512.png ook als maskable (hetzelfde beeld; het onderwerp ligt binnen de veilige zone, de
-//   middelste 80%). Een apart bestand was byte-gelijk (audit 15 nov, P3-02); icons/icon-maskable-512.png blijft alleen voor de oude
-//   app (archief) staan en wordt niet meer gemaakt of meegeleverd.
+//   middelste 80%). Een apart bestand was byte-gelijk (audit 15 nov, P3-02) en is op 17 nov 2026 met de oude
+//   app uit de repo gehaald.
 // De bron is geleverd door Jelle (nov 2026). Het bestand blijft ongewijzigd in assets/ staan, zodat de iconen opnieuw te maken zijn.
 import fs from 'node:fs';
 import path from 'node:path';

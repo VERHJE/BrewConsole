@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import QRCode from 'qrcode';
-import { startApp } from './helpers.mjs';
+import { startApp, SCHEMES } from './helpers.mjs';
 
 const require = createRequire(import.meta.url);
 const axeSource = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
@@ -12,7 +12,7 @@ let app;
 before(async () => { app = await startApp(); });
 after(async () => { await app.close(); });
 
-for (const scheme of ['light', 'dark']) {
+for (const scheme of SCHEMES) {
   test(`foto per zak (${scheme}): kiezen, lijst, detail, Zet deze zak, verwijderen; axe schoon`, async () => {
     const png = await QRCode.toBuffer('foto', { margin: 4, scale: 12 });
     const page = await app.browser.newPage({ colorScheme: scheme });

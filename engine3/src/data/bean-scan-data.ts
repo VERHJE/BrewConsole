@@ -1,5 +1,6 @@
-// GEGENEREERD door engine3/scripts/gen-bean-scan-data.mjs uit de zakherkenning in brewconsole_v2_2.html.
-// Niet met de hand wijzigen. De volgorde van de sleutels is betekenisvol: de eerste treffer wint.
+// Oorspronkelijk gegenereerd uit de zakherkenning van de oude app (brewconsole_v2_2.html). Die app en het script zijn op
+// 17 nov 2026 uit de repo gehaald: dit bestand is nu de bron. engine3/test/bean-text.test.ts vergelijkt het met
+// engine3/test/oude-app/woordenlijsten.json. De volgorde van de sleutels is betekenisvol: de eerste treffer wint.
 
 export const ROAST_SCAN_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
   "light_medium": [

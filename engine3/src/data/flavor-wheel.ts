@@ -1,5 +1,6 @@
-// GEGENEREERD door engine3/scripts/gen-flavor-wheel.mjs uit SCA_FLAVOR_WHEEL in brewconsole_v2_2.html.
-// Niet met de hand wijzigen.
+// Oorspronkelijk gegenereerd uit SCA_FLAVOR_WHEEL in de oude app (brewconsole_v2_2.html). Die app en het script zijn op
+// 17 nov 2026 uit de repo gehaald: dit bestand is nu de bron. engine3/test/data.test.ts vergelijkt het met de vastgelegde
+// versie in engine3/test/oude-app/smaakwiel.json; een bewuste wijziging leg je vast in de bouwbesluiten.
 import type { WheelCategory } from '../types.ts';
 
 export interface WheelTag { readonly tag: string; readonly hint: string | null }

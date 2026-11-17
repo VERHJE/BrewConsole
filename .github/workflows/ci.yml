@@ -57,10 +57,9 @@ jobs:
           })().catch(e => { console.error(e); process.exit(1); });
           "
 
-      # De tests van de oude app (tests/*.test.mjs op brewconsole_v2_2.html, `npm run qa:oud`) horen
-      # niet meer bij de poort: die app wordt niet meer uitgeleverd (op /oud/ staat alleen een
-      # melding). Ze blijven met de hand te draaien. Keuze Jelle, audit 10 nov 2026 (P2-05).
-      # De jobnaam hierboven blijft gelijk, zodat een vereiste check op GitHub blijft kloppen.
+      # De oude app en haar tests zijn op 17 nov 2026 uit de repo gehaald (besluit Jelle); de vergelijkingen van Engine 3 met
+      # die app staan nu als vaste testgegevens in engine3/test/oude-app/. De jobnaam hierboven blijft gelijk, zodat een
+      # vereiste check op GitHub blijft kloppen.
 
       # Engine 3: typecheck (TypeScript strict), eigen tests en een proefbouw met esbuild.
       - name: Engine 3 checks

@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
-import { startApp, importLog } from './helpers.mjs';
+import { startApp, importLog, SCHEMES } from './helpers.mjs';
 import { seedLog, SEED_BEAN } from './seed.ts';
 
 /** Sorteren en filteren staan achter de knop Filter. */
@@ -24,7 +24,7 @@ async function addBean(page, name, roastDate) {
   await page.waitForSelector(`.item:has-text("${name}")`);
 }
 
-for (const scheme of ['light', 'dark']) {
+for (const scheme of SCHEMES) {
   test(`zakkenlijst (${scheme}): sorteren, filteren, onthouden en wissen; axe schoon`, async () => {
     const page = await app.browser.newPage({ viewport: { width: 390, height: 844 }, colorScheme: scheme });
     const errors = [];

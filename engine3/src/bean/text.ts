@@ -1,9 +1,9 @@
 // Engine 3 · stap 6 · zakherkenning uit tekst (geplakt of OCR).
 //
-// Dit is parseBeanText() uit de huidige app (brewconsole_v2_2.html, PR #40), overgezet naar strikte
-// TypeScript. De woordenlijsten komen uit data/bean-scan-data.ts (gegenereerd uit de app). Een
-// differentiële test (engine3/test/bean-text.test.ts) eist dat dit voor dezelfde tekst precies
-// dezelfde uitkomst geeft als de app, zodat de zakken die daar getest zijn hier ook kloppen.
+// Dit is parseBeanText() uit de oude app (brewconsole_v2_2.html, PR #40), overgezet naar strikte
+// TypeScript. De woordenlijsten staan in data/bean-scan-data.ts (oorspronkelijk uit die app). De oude app is
+// op 17 nov 2026 uit de repo gehaald; haar uitkomsten voor 797 etiketten staan vast in engine3/test/oude-app/,
+// en engine3/test/bean-text.test.ts eist dat dit precies dezelfde uitkomst geeft.
 //
 // Verschil met de app: geen Date.now() (de engine kent geen klok): extractRoastDateFromText krijgt
 // het huidige moment mee. Verder zijn de reguliere expressies en de volgorde van de stappen letterlijk
