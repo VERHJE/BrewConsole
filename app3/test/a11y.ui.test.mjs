@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
-import { startApp, brewToEnd } from './helpers.mjs';
+import { startApp, brewToEnd, SCHEMES } from './helpers.mjs';
 
 const axeSource = fs.readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8');
 let app;
@@ -16,7 +16,7 @@ async function violations(page) {
   return r.violations.map(v => `${v.id}: ${v.nodes.slice(0, 3).map(n => n.target.join(' ')).join(' | ')}`);
 }
 
-for (const scheme of ['light', 'dark']) {
+for (const scheme of SCHEMES) {
   test(`toegankelijkheid (${scheme}): geen axe-overtredingen op de hoofdschermen`, async () => {
     const page = await app.browser.newPage({ colorScheme: scheme });
     await brewToEnd(page, app.base, 'Axezak'); // laat de pagina op 'Proeven' staan

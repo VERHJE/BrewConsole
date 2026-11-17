@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
-import { startApp, importLog } from './helpers.mjs';
+import { startApp, importLog, SCHEMES } from './helpers.mjs';
 import { seedLog } from './seed.ts';
 
 const axeSource = readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8');
@@ -10,7 +10,7 @@ let app, json;
 before(async () => { app = await startApp(); json = (await seedLog(4)).json; });
 after(async () => { await app.close(); });
 
-for (const scheme of ['light', 'dark']) {
+for (const scheme of SCHEMES) {
   test(`keuzehulp Chemex (${scheme}): knop alleen bij de Chemex, venster met smaak per recept, met één tik kiezen; axe schoon`, async () => {
     const page = await app.browser.newPage({ viewport: { width: 390, height: 844 }, colorScheme: scheme });
     await importLog(page, app.base, json);

@@ -4,7 +4,6 @@ import { readFileSync } from 'node:fs';
 import { TECHNIQUES, TECHNIQUE_BY_ID } from '../src/data/techniques.ts';
 import { SELECTION_RULES } from '../src/data/selection-rules.ts';
 import { FLAVOR_WHEEL } from '../src/data/flavor-wheel.ts';
-import { loadApp } from '../../tests/load-app.mjs';
 
 test('zestien recepten (zeven V60, negen Chemex), elk met een bron en een rol', () => {
   assert.equal(TECHNIQUES.length, 16);
@@ -37,9 +36,8 @@ test('elke regel verwijst naar bestaande technieken; er is precies één terugva
   assert.equal(fallback[0]!.suggest[0], 'kasuya_46');
   for (const r of SELECTION_RULES) if (r.kasuyaFirstPourShare !== null) assert.ok(r.kasuyaFirstPourShare > 0 && r.kasuyaFirstPourShare < 1);
 });
-test('het smaakwiel van Engine 3 is gelijk aan dat van de app (opnieuw genereren als dit faalt)', () => {
-  const { api } = loadApp() as { api: { SCA_FLAVOR_WHEEL: Array<{ key: string; subgroups: Array<{ tags: Array<{ t: string; h: string | null }> }> }> } };
-  const app = api.SCA_FLAVOR_WHEEL.map(c => [c.key, c.subgroups.flatMap(sg => sg.tags.map(t => [t.t, t.h ?? null]))]);
+test('het smaakwiel van Engine 3 is gelijk aan dat van de oude app (vastgelegd in test/oude-app/smaakwiel.json)', () => {
+  const app = (JSON.parse(readFileSync(new URL('./oude-app/smaakwiel.json', import.meta.url), 'utf8')) as { wiel: unknown[] }).wiel;
   const e3 = FLAVOR_WHEEL.map(c => [c.key, c.subgroups.flatMap(sg => sg.tags.map(t => [t.tag, t.hint]))]);
   assert.equal(JSON.stringify(e3), JSON.stringify(app));
 });

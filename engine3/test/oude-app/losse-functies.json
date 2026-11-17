@@ -1,0 +1,119 @@
+{
+ "bron": "Vastgelegd op 17 nov 2026 uit brewconsole_v2_2.html (de oude app, daarna uit de repo gehaald), met engine3/scripts/_maak-fixtures.mjs (tijdelijk).",
+ "hoogte": [
+  [
+   "elevation 1580 - 1680",
+   1630
+  ],
+  [
+   "1900-2200 masl",
+   2050
+  ],
+  [
+   "grown at 1850 meters",
+   1850
+  ],
+  [
+   "hoogte 1200",
+   1200
+  ],
+  [
+   "1750 m.a.s.l.",
+   1750
+  ],
+  [
+   "niets",
+   null
+  ],
+  [
+   "altitude: 1900 - 2100 m",
+   2000
+  ]
+ ],
+ "boerderij": [
+  [
+   "Farm: Primrose-Gutity",
+   "Primrose-Gutity"
+  ],
+  [
+   "REGION ACEVEDO -FINCA LAS BRISAS",
+   "Finca Las Brisas"
+  ],
+  [
+   "Sitio Beija Flor #2",
+   "Sitio Beija Flor #2"
+  ],
+  [
+   "niets",
+   null
+  ],
+  [
+   "FINCA LAS BRISAS Em ’",
+   "Finca Las Brisas"
+  ]
+ ],
+ "hoofdwoorden": [
+  [
+   "gedroogd & tropisch fruit",
+   "gedroogd fruit, tropisch fruit"
+  ]
+ ],
+ "smaaktags": [
+  [
+   "apple, caramel",
+   [
+    "Appel",
+    "Gekarameliseerd"
+   ],
+   [
+    "Appel",
+    "Gekarameliseerd"
+   ]
+  ],
+  [
+   "milk and dark chocolate",
+   [
+    "Pure chocolade",
+    "Melkchocolade"
+   ],
+   [
+    "Pure chocolade",
+    "Melkchocolade"
+   ]
+  ],
+  [
+   "grapefruit",
+   [
+    "Grapefruit"
+   ],
+   [
+    "Grapefruit"
+   ]
+  ],
+  [
+   "light roast",
+   [],
+   []
+  ],
+  [
+   "plums and cherries",
+   [
+    "Kers",
+    "Pruim"
+   ],
+   [
+    "Kers",
+    "Pruim"
+   ]
+  ],
+  [
+   "roasted red apple",
+   [
+    "Appel"
+   ],
+   [
+    "Appel"
+   ]
+  ]
+ ]
+}

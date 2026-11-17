@@ -91,7 +91,7 @@ test('app-iconen: juiste pixelmaat, ondoorzichtig (iOS maakt doorzichtige hoeken
   assert.ok(manifest.icons.some(i => i.purpose === 'maskable' && i.src === 'icons/icon-512.png'), 'maskable gebruikt hetzelfde 512-bestand');
   const page = await app.browser.newPage();
   await page.goto(app.base);
-  assert.equal((await page.request.get(app.base + 'icons/icon-maskable-512.png')).status(), 404, 'de byte-gelijke kopie gaat niet mee');
+  assert.equal((await page.request.get(app.base + 'icons/icon-maskable-512.png')).status(), 404, 'geen apart maskable-bestand: het manifest gebruikt icon-512.png');
   for (const f of Object.keys(want)) {
     const alphas = await page.evaluate(async url => {
       const img = new Image(); img.src = url; await img.decode();

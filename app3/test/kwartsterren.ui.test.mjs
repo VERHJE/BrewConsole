@@ -2,14 +2,14 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
-import { startApp, brewToEnd } from './helpers.mjs';
+import { startApp, brewToEnd, SCHEMES } from './helpers.mjs';
 
 const axeSource = fs.readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8');
 let app;
 before(async () => { app = await startApp(); });
 after(async () => { await app.close(); });
 
-for (const scheme of ['light', 'dark']) {
+for (const scheme of SCHEMES) {
   test(`kwartsterren (${scheme}): hele ster kiezen, kwart bijstellen, zichtbaar in het logboek; axe schoon`, async () => {
     const page = await app.browser.newPage({ colorScheme: scheme });
     const errors = [];

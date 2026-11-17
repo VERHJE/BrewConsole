@@ -53,7 +53,7 @@ Ongewijzigd, zoals §0.3 (non-negotiables) en de regressiematrix (§9) van het r
 
 ## Testresultaten
 
-131/131 tests groen (`node --test tests/*.test.mjs`), over vier bestanden — zie `implementatierapport_v4.0.md` voor de volledige uitsplitsing per taak.
+131/131 tests groen (`node --test tests/*.test.mjs`), over vier bestanden — zie `docs/archief/implementatierapport_v4.0.md` voor de volledige uitsplitsing per taak.
 
 ---
 
@@ -1774,3 +1774,18 @@ Uit een audit op overbodige complexiteit, dubbele logica en verlopen aannames. G
   - Omdat de testserver dezelfde build gebruikt, draaien alle schermtests onder deze CSP. Dat vond meteen een geval: de foto-synchronisatietest gebruikt een lokale server op `http://127.0.0.1`, die eerst geblokkeerd werd. Daarom staan localhost en 127.0.0.1 in `connect-src`. Test: `csp.ui.test.mjs` (geen schendingen op 14 schermen, met foto en timer; het inline script draait; een ingevoegd vreemd script niet).
   - Niet getest: Safari. De gebruikte CSP-regels worden door Safari ondersteund, maar dat heb ik niet zelf gezien.
 - Alle 422 tests groen (engine 191, app 231).
+
+## Opruimaudit stap 3: oude app weg, licht/donker-herhaling weg, rapporten naar het archief (17 nov 2026)
+
+Besluit Jelle: stap 3 uitvoeren, en de Engine 2-vergelijking in de meetopstelling laten vervallen. De app zelf verandert niet: het publicatiepakket is byte-gelijk aan dat van ronde 3.
+
+- **Oude app uit de repo.** Weg: `brewconsole_v2_2.html`, `tests/` (26 bestanden), `qa/`, `photos/`, de oude `sw.js` en `manifest.webmanifest` in de root, `scripts/build.mjs`, `_baselines_v3/`, `icons/icon-maskable-512.png`, de generatiescripts `engine3/scripts/gen-*.mjs` en `engine3/eval/replay-local.ts`; ook de npm-scripts `test:oud`, `qa:oud` en `qa:oud:dist`. Daarmee vervalt het besluit van 7 nov om het als archief te bewaren. `/oud/` op de site blijft een melding met een opruim-worker.
+- **Vaste testgegevens in plaats van de oude app** (`engine3/test/oude-app/`, met in elk bestand een veld `bron`). Bij het vastleggen is gecontroleerd dat Engine 3 voor elk geval exact dezelfde uitkomst gaf als de oude app.
+  - `zakherkenning.json`: 797 etiketten (142 uit de oude app-tests, rare invoer, de vaste regels en 600 willekeurige etiketten met een vaste seed) met de uitkomst van de oude app en het vaste moment `nowMs`. Ook in andere tijdzones groen (Amsterdam, Kiritimati, Los Angeles).
+  - `woordenlijsten.json`, `smaakwiel.json`, `losse-functies.json`.
+  - `engine2-dosis.json`: de dosis die Engine 2 per kop koos in de meetopstelling (6 werelden × 3 seeds × 80 koppen). Met vaste seeds is de kop-voor-kopvergelijking in `strength.test.ts` daarmee volledig te herhalen; met één gewijzigde dosis faalt hij.
+  - `flavor-wheel.ts` en `bean-scan-data.ts` zijn nu zelf de bron; hun kop zegt dat.
+- **Meetopstelling.** Vergelijkt Engine 3 met een vast recept en het orakel. Het vaste recept is de vastgelegde startdosis van de oude app (18,8 g bij 300 g water). Engine 2 draait niet meer mee; de opgeslagen uitkomsten staan in `engine3/eval/baseline-e2.json`. De test "leren verslaat het vaste recept" gebruikt nu Engine 3.
+- **Licht/donker.** 19 schermtestbestanden draaiden alles in licht en in donker, terwijl de app één thema heeft. Ze draaien nu één keer (`SCHEMES` in `app3/test/helpers.mjs`); `thema.ui.test.mjs` controleert nog steeds dat licht en donker hetzelfde tonen. 19 runs minder; de suite duurt 2 min 37 s in plaats van 3 min 8–24 s.
+- **Rapporten.** Zeven afgeronde verslagen van de oude app en uit de eerste app3-rondes staan nu in `docs/archief/` (met een README). Twee verwijzingen zijn aangepast.
+- Alle 401 tests groen (engine 189, app 212). Minder dan voorheen (191 en 231): vijf vergelijkingstests van de zakherkenning zijn er nu drie met dezelfde gevallen, en de 19 dubbele donkere runs zijn weg.

@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
-import { startApp, importLog } from './helpers.mjs';
+import { startApp, importLog, SCHEMES } from './helpers.mjs';
 import { seedLog } from './seed.ts';
 
 const axeSource = fs.readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8');
@@ -17,7 +17,7 @@ const axe = async page => {
 };
 const text = (page, sel) => page.locator(sel).innerText();
 
-for (const scheme of ['light', 'dark']) {
+for (const scheme of SCHEMES) {
   test(`Chemex (${scheme}): brewer en portie kiezen, eigen recept per portie, techniekkeuze volgt de brewer; axe schoon`, async () => {
     const ctx = await app.browser.newContext({ colorScheme: scheme, viewport: { width: 390, height: 844 } });
     const page = await ctx.newPage();

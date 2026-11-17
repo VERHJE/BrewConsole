@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { startApp, importLog } from './helpers.mjs';
+import { startApp, importLog, SCHEMES } from './helpers.mjs';
 import { seedLog, SEED_BEAN } from './seed.ts';
 
 // Logboek in de stijl van het zakdetail: datumblok als etiket, donkere kop, tijdlijn voor het gieten, proeftegels.
@@ -11,7 +11,7 @@ let app, json;
 before(async () => { app = await startApp(); json = (await seedLog(3)).json; });
 after(async () => { await app.close(); });
 
-for (const scheme of ['light', 'dark']) {
+for (const scheme of SCHEMES) {
   test(`logboek-stijl (${scheme}): etiketdatum, kop met naam, tijdlijn en proeftegels; axe schoon`, async () => {
     const page = await app.browser.newPage({ viewport: { width: 390, height: 844 }, colorScheme: scheme });
     const errors = [];

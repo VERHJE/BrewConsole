@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
-import { startApp } from './helpers.mjs';
+import { startApp, SCHEMES } from './helpers.mjs';
 
 const axeSource = fs.readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8');
 let app;
@@ -54,7 +54,7 @@ test('timer: tikjes vóór de volgende giet, dan een giet-signaal met geluid en 
 });
 
 test('voorkeuren: geluid en trillen apart uit te zetten, de keuze blijft; test-knop en axe in licht en donker', async () => {
-  for (const scheme of ['light', 'dark']) {
+  for (const scheme of SCHEMES) {
     const page = await app.browser.newPage({ viewport: { width: 390, height: 844 }, colorScheme: scheme });
     await page.addInitScript(SPY);
     await page.goto(app.base + '#/meer/voorkeuren');
