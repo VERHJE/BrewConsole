@@ -10,7 +10,7 @@ import type { EngineEvent } from '../src/types.ts';
 import type { EpochMs } from '../src/units.ts';
 
 const NOW = Date.parse('2026-11-05T12:00:00Z');
-const scan = (t: string, source: 'paste' | 'ocr' | 'qr' | 'ai' = 'paste') => scanBeanText(t, { source, nowMs: NOW });
+const scan = (t: string, source: 'paste' | 'ocr' | 'qr' = 'paste') => scanBeanText(t, { source, nowMs: NOW });
 
 test('een zak als boonvelden: land, proces, variëteit, hoogte als bereik, notities in drie lijsten, bron per veld', () => {
   const s = scan('Colombia El Diviso\nProcess: Washed\nVariety: Caturra, Castillo\nElevation 1580 - 1680\nTasting notes: Apple | Caramel | aloe vera\nRoasted on 2026-10-20\nQuantity 250g\nLight roast\nFilter roast', 'ocr');
@@ -59,7 +59,7 @@ test('webshop: meerdere maten en bestelopties tellen niet; fuzzy treffers worden
   assert.equal(typo.flags.countryFuzzy, typo.fields.country !== undefined);
 });
 test('de bron per veld volgt de herkomst van de tekst (paste, ocr, qr, ai)', () => {
-  for (const source of ['paste', 'ocr', 'qr', 'ai'] as const) assert.equal(scan('Ethiopia\nProcess: Natural', source).sources.country, source);
+  for (const source of ['paste', 'ocr', 'qr'] as const) assert.equal(scan('Ethiopia\nProcess: Natural', source).sources.country, source);
 });
 test('een scan wordt een bean.upsert die learn() begrijpt', () => {
   const s = scan('Colombia El Diviso\nProcess: Natural\nLight roast\nNotes: Apple, Caramel');

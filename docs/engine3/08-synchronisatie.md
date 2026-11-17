@@ -31,7 +31,7 @@ De engine zelf blijft zuiver (geen netwerk, geen opslag; zie 02). De synchronisa
 | Server | `engine3/sync/server.ts` | `Request` → `Response`, opslag als interface; geheugenopslag voor tests, Cloudflare-opslag in de ingang |
 | Client | `engine3/sync/client.ts` | push en pull; `fetch` en toestand worden meegegeven, dus testbaar zonder netwerk |
 
-Routes: `POST /scan` (foto-herkenning, alleen met `ANTHROPIC_API_KEY`, zie 16), `GET/PUT /meta` (het zout, niet geheim), `PUT/GET/DELETE /blocks/:id`, `GET /photos` en `PUT/GET/DELETE /photos/:id` (foto's, zie hieronder), `GET /blocks?after=`. Een blok is onveranderlijk: hetzelfde id met andere inhoud geeft 409.
+Routes: `GET/PUT /meta` (het zout, niet geheim), `PUT/GET/DELETE /blocks/:id`, `GET /photos` en `PUT/GET/DELETE /photos/:id` (foto's, zie hieronder), `GET /blocks?after=`. Een blok is onveranderlijk: hetzelfde id met andere inhoud geeft 409.
 
 ## Tests
 
@@ -60,7 +60,7 @@ Cloudflare is gekoppeld aan GitHub, dus de Worker wordt door Cloudflare zelf geb
 2. **Opslag.** Gedaan: de KV-opslag `brewconsole-sync-blocks` (id `935776684dbd4127aa8fa6c739112d05`) is op 5 nov 2026 via de Cloudflare-connector in Claude aangemaakt en staat in `wrangler.toml`.
 3. **Adres van de app.** Gedaan: `ALLOW_ORIGIN` staat op `https://dazzling-manatee-606398.netlify.app` (alleen de herkomst, zonder pad). Verhuist de app, pas het dan in `engine3/sync/wrangler.toml` aan.
 4. **Toegangstoken per toestel.** Open `tokengenerator.html` op het adres van de app (dus ook op de iPhone), tik op *Nieuw token maken*. De pagina zit in de gebouwde map (`npm run build` zet `toestelcheck.html` en `tokengenerator.html` naast `index.html` in `dist/`) en de service worker laat hem met rust: alleen de hoofdmap en `index.html` komen uit de app-cache, andere pagina's gaan naar het netwerk. Het token bewaar je op dat toestel; de hash gaat naar Cloudflare. Alles gebeurt lokaal in de browser.
-5. **Geheimen.** In het dashboard bij de Worker: *Settings* → *Variables & Secrets* → een geheim `TOKEN_HASHES` met de hash (meerdere toestellen: hashes achter elkaar, gescheiden door komma's). `ANTHROPIC_API_KEY` is niet nodig: AI-foto-herkenning staat voorlopig uit (besluit Jelle, zie 16).
+5. **Geheimen.** In het dashboard bij de Worker: *Settings* → *Variables & Secrets* → een geheim `TOKEN_HASHES` met de hash (meerdere toestellen: hashes achter elkaar, gescheiden door komma's).
 6. **Controle.** `https://brewconsole-sync.<jouw-subdomein>.workers.dev/meta` in de browser geeft `401` (de Worker leeft en wil een token). Een echte rondgang kan pas met een app die synchroniseert (de frontend).
 7. **Wachtwoordzin.** Kies in de app een wachtwoordzin en bewaar die veilig. Zonder die zin zijn de blokken ook voor jou onleesbaar; de back-up in iCloud Drive is dan de terugweg.
 
@@ -73,7 +73,7 @@ Handmatig kan het ook: `node engine3/sync/make-token.mjs` in plaats van de token
 - `engine3/sync/crypto.ts`, `blocks.ts`: PBKDF2 (600.000 rondes) + AES-GCM, blok-id als gebonden gegeven.
 - `engine3/sync/server.ts`, `kv-store.ts`, `worker.ts`: routes, token (alleen de hash staat op de server, vergelijking zonder vroege exit), CORS, onveranderlijke blokken, geheugen- en KV-opslag.
 - `engine3/sync/client.ts`: push, pull, `syncOnce` en opruimen met een momentopname. Een toestel dat zijn toestand kwijt is telt het volgnummer door en kan dus geen bestaand blok raken.
-- Gecontroleerd in de echte Workers-runtime: de Worker is lokaal gestart met `wrangler dev` (workerd en een KV) en doorlopen met curl: zonder token 401; meta zetten 201; blok zetten 201; hetzelfde blok met andere inhoud 409; lijst en ophalen; `/scan` zonder sleutel 404. `wrangler deploy --dry-run` bundelt de Worker (31 KiB).
+- Gecontroleerd in de echte Workers-runtime: de Worker is lokaal gestart met `wrangler dev` (workerd en een KV) en doorlopen met curl: zonder token 401; meta zetten 201; blok zetten 201; hetzelfde blok met andere inhoud 409; lijst en ophalen; `/scan` zonder sleutel 404 (de route is op 17 nov 2026 weggehaald, zie 16). `wrangler deploy --dry-run` bundelde de Worker toen tot 31 KiB; zonder de AI-code is dat 6,3 KiB (17 nov 2026).
 - Tests: `engine3/test/sync-blocks.test.ts` en `sync-server.test.ts`. Client en server draaien daarin in één proces, zonder Cloudflare.
 - Bekend en bewust: een verkeerde wachtwoordzin geeft `unreadable` blokken in plaats van een fout, en het logboek blijft dan ongemoeid.
 

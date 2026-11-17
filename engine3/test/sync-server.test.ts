@@ -241,3 +241,9 @@ test('foto-blokken: id verraadt de zak niet, nieuwste versie per zak, openen con
   const tomb = await sealPhoto(deps, key, id, { v: 1, beanId: 'bean:een', at: 30, deleted: true });
   assert.equal((await openPhoto(deps, key, id, tomb)).deleted, true);
 });
+test('de foto-herkenning is weg: /scan is een onbekend pad, ook met een geldig token (review 17 nov 2026, C5)', async () => {
+  const { env } = await setup();
+  const r = await raw(env, '/scan', { method: 'POST', headers: { ...bearer(TOKEN_A), 'content-type': 'application/json' }, body: JSON.stringify({ consent: true, mediaType: 'image/png', imageBase64: 'AAAA' }) });
+  assert.equal(r.status, 404);
+  assert.deepEqual(await r.json(), { error: 'onbekend pad' });
+});

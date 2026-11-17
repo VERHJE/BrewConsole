@@ -9,7 +9,7 @@ import type { BeanFieldKey, BeanFields, BeanProcess, DecafMethod, Fermentation, 
 import type { Grams, IsoDate, Metres } from '../units.ts';
 import { extractAltitudeRangeFromText, parseBeanText, scanFlavorSourceText, type ParsedBeanText } from './text.ts';
 
-export type ScanSource = Extract<FieldSource, 'paste' | 'ocr' | 'qr' | 'ai'>;
+export type ScanSource = Extract<FieldSource, 'paste' | 'ocr' | 'qr'>;
 
 export interface ScanFlags {
   readonly countryFuzzy: boolean;

@@ -41,7 +41,7 @@ Vastgesteld 5 nov 2026. Elke stap heeft een opleverpunt, tests en een poort. Een
 | Stap 0d | Gratis Cloudflare-account; één keer uitrollen; wachtwoordzin kiezen en bewaren |
 | Vóór stap 4 | Meetplan voor eigen data (07): 3 + 3 zetsels op 15 en 30 g, één maalgraadproef met 3 klikken verschil, en 'Gieten op doorlopen' aanzetten |
 | Stap 6 | Eventueel meer voorbeeldzakken |
-| Stap 6, AI | Anthropic Console-account met uitgavenlimiet (pas dan nodig) |
+| Stap 6, AI | Vervallen: de AI-herkenning is op 17 nov 2026 weggehaald (zie 16) |
 
 ## Werkwijze
 

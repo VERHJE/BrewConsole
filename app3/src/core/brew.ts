@@ -139,7 +139,7 @@ export function brewPlanEvent(env: Env, advice: Advice, form: BrewForm, brewId?:
 
 /**
  * Waarschuwingen uit het advies, rustiger gemaakt voor weergave: een dosis die minder dan 1 g buiten het bereik van de brewer ligt
- * (bijv. 22,3 g bij een maximum van 22 g) maakt niets uit en wordt niet getoond. Overige waarschuwingen blijven staan.
+ * (bijv. 32,8 g bij een maximum van 32,5 g) maakt niets uit en wordt niet getoond. Overige waarschuwingen blijven staan.
  */
 export function visibleWarnings(warnings: readonly string[]): string[] {
   return warnings.filter(w => {
