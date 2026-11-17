@@ -13,11 +13,18 @@ test('proeven: stappen in de juiste volgorde, blinde keuze vóór de zaknotities
   await brewToEnd(page, app.base, 'Proefzak');
   const q = async () => (await page.locator('.q').first().innerText());
   assert.match(await q(), /Hoe sterk/);
+  assert.equal(await page.locator('.choices.scale .radio, .choices.scale .box').count(), 0, 'de sterkteschaal heeft geen rondjes of vakjes');
   await page.click('button.choice:has-text("Iets slap")');
   await page.click('button:has-text("Volgende")');
   assert.match(await q(), /Zuurgraad/);
   await page.click('button.choice:has-text("Levendig")');
   await page.click('button.choice:has-text("Zoet en schoon")');
+  // Review 17 nov (U2): één keuze heeft een rondje, meerdere keuzes een vierkant vakje; de sterkteschaal heeft geen teken
+  const shape = sel => page.evaluate(s => [...document.querySelectorAll(s)].map(e => { const r = getComputedStyle(e).borderTopLeftRadius; return r.endsWith('%') ? parseFloat(r) / 100 : parseFloat(r) / e.getBoundingClientRect().width; }), sel);
+  assert.equal(await page.locator('[aria-label="Zuurgraad"] .choice .radio').count(), 3, 'elke keuze bij Zuurgraad heeft een rondje');
+  assert.deepEqual((await shape('[aria-label="Zuurgraad"] .radio')).map(r => r >= .5), [true, true, true], 'rond');
+  assert.deepEqual((await shape('[aria-label="Afdronk"] .box')).map(r => r < .35), [true, true, true, true], 'vierkant (licht afgerond)');
+  assert.equal(await page.locator('[aria-label="Afdronk"] [role=checkbox][aria-checked=true]').count(), 1);
   await page.click('button:has-text("Volgende")');
   assert.match(await q(), /Welke smaakgroepen/);
   assert.equal(await page.locator('.notehit').count(), 0, 'zaknotities zijn nog niet te zien');

@@ -19,7 +19,7 @@ import { useApp, useSnapshot } from '../store-context.tsx';
 function Single<T extends string | number>({ value, options, onPick, label, cls = '' }: { value: T | null; options: ReadonlyArray<readonly [T, string]>; onPick: (v: T | null) => void; label: string; cls?: string }): JSX.Element {
   return (
     <div class={`choices ${cls}`.trim()} role="group" aria-label={label}>
-      {options.map(([v, text]) => <button key={String(v)} type="button" class="choice" aria-pressed={value === v} onClick={() => onPick(value === v ? null : v)}>{text}</button>)}
+      {options.map(([v, text]) => <button key={String(v)} type="button" class="choice" aria-pressed={value === v} onClick={() => onPick(value === v ? null : v)}>{!cls.includes('scale') && <span class="radio" aria-hidden="true" />}{text}</button>)}
     </div>
   );
 }
