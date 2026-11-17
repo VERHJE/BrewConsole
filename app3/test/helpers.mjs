@@ -38,7 +38,14 @@ export async function startApp() {
   const browser = BROWSER === 'webkit'
     ? await webkit.launch()
     : await chromium.launch({ executablePath: fs.existsSync(FIXED) ? FIXED : undefined, args: ['--no-sandbox'] });
-  return { base, browser, async close() { await browser.close(); server.close(); fs.rmSync(out, { recursive: true, force: true }); } };
+  let stopped = false;
+  const stopServer = () => new Promise(r => { if (stopped) return r(); stopped = true; server.closeAllConnections(); server.close(() => r()); });
+  return {
+    base, browser,
+    /** Zet de testserver echt uit: daarna is de site onbereikbaar, zoals zonder netwerk (werkt ook in WebKit, zie pwa.ui.test.mjs). */
+    stopServer,
+    async close() { await browser.close(); await stopServer(); fs.rmSync(out, { recursive: true, force: true }); }
+  };
 }
 
 /** Maakt een zak, plant een zetsel en tikt het met een nagebootste klok helemaal af. Laat de pagina op 'Proeven' staan. */

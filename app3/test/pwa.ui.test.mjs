@@ -1,12 +1,13 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { startApp } from './helpers.mjs';
+import { startApp, BROWSER } from './helpers.mjs';
 
 let app;
 before(async () => { app = await startApp(); });
 after(async () => { await app.close(); });
 
 test('offline: na de eerste keer start de app zonder netwerk, en de gegevens staan er nog', async () => {
+  const app = await startApp(); // een eigen server: die wordt hieronder uitgezet
   const context = await app.browser.newContext();
   const page = await context.newPage();
   const errors = [];
@@ -19,9 +20,11 @@ test('offline: na de eerste keer start de app zonder netwerk, en de gegevens sta
   await page.click('button:has-text("Opslaan")');
   await page.waitForSelector('.item:has-text("Offlinezak")');
 
-  await context.setOffline(true);
-  // De hash in de pagina zetten en dan herladen. Een page.goto die alleen de hash verandert gaf in WebKit (offline) "WebKit
-  // encountered an internal error" (review 17 nov 2026, O1); wat getest wordt, herladen zonder netwerk, is hetzelfde.
+  // Zonder netwerk: de server gaat echt uit, dus elk verzoek dat niet uit de worker komt mislukt. In Chromium ook Playwrights
+  // offline-stand. In WebKit gaf die stand bij elke navigatie "WebKit encountered an internal error", ook als de worker de pagina
+  // levert (review 17 nov 2026, O1); daar alleen de uitgezette server.
+  await app.stopServer();
+  if (BROWSER === 'chromium') await context.setOffline(true);
   await page.evaluate(() => { location.hash = '#/zakken'; });
   await page.reload();
   await page.waitForSelector('.item:has-text("Offlinezak")');
@@ -31,6 +34,7 @@ test('offline: na de eerste keer start de app zonder netwerk, en de gegevens sta
   await page.waitForSelector('nav.tabbar');
   assert.deepEqual(errors, []);
   await context.close();
+  await app.close();
 });
 
 test('manifest en iconen zijn bereikbaar', async () => {
