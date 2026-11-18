@@ -20,7 +20,11 @@ self.addEventListener('activate', e => {
   })());
 });
 
-self.addEventListener('message', e => { if (e.data === 'activate') self.skipWaiting(); });
+self.addEventListener('message', e => {
+  if (e.data === 'activate') self.skipWaiting();
+  // Over vraagt de versie van de app (review 17 nov 2026, O3): handig bij "staat de nieuwe versie erop?"
+  else if (e.data === 'version') e.ports[0]?.postMessage(VERSION);
+});
 
 self.addEventListener('fetch', e => {
   const req = e.request;

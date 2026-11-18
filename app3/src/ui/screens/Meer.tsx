@@ -116,11 +116,28 @@ function Molen(): JSX.Element {
   );
 }
 
+/** De versie van de app: de service worker kent hem (een hash van alle bestanden, uit de build). Null zonder worker. */
+function useAppVersion(): string | null | undefined {
+  const [v, setV] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    const sw = typeof navigator !== 'undefined' ? navigator.serviceWorker?.controller : null;
+    if (!sw) { setV(null); return; }
+    const ch = new MessageChannel();
+    const t = setTimeout(() => setV(null), 2000);
+    ch.port1.onmessage = e => { clearTimeout(t); setV(typeof e.data === 'string' ? e.data : null); };
+    sw.postMessage('version', [ch.port2]);
+    return () => clearTimeout(t);
+  }, []);
+  return v;
+}
+
 function Over(): JSX.Element {
+  const version = useAppVersion();
   return (
     <section>
       <div class="head"><Back /><h1>Over</h1></div>
       <div class="numbers meertiles">
+        <div class="num wide appversion"><b>{version === undefined ? '…' : version ? version.slice(0, 7) : '–'}</b><small>{version === null ? 'versie van de app (onbekend: geen service worker)' : 'versie van de app'}</small></div>
         <div class="num"><b>{ENGINE3_VERSION}</b><small>engine</small></div>
         <div class="num"><b>{ENGINE3_CONTRACT_VERSION}</b><small>contract</small></div>
       </div>

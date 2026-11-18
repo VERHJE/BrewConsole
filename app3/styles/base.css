@@ -757,7 +757,16 @@ dialog.guide { max-height: calc(100dvh - 48px - env(safe-area-inset-top)); }
   .proeven.rit .saved-mark .check { stroke-dashoffset: 1; animation: rit-draw .6s .15s ease-out forwards; }
   .proeven.rit .star.on { animation: tab-pop .25s cubic-bezier(.2, .8, .2, 1.4); }
 }
-.proeven.rit .pactions { position: static; background: none; padding: 0 0 calc(8px + env(safe-area-inset-bottom)); }
+/* D2 (review 17 nov 2026): op de telefoon blijven de knoppen onderaan vast (zie boven), zodat ze niet halverwege het scherm staan.
+   Deze regel gold eerst op elk scherm en maakte dat ongedaan; hij hoort alleen bij brede schermen, waar de stap kort is. */
+@media (min-width: 720px) {
+  .proeven.rit .pactions { position: static; background: none; padding: 0 0 calc(8px + env(safe-area-inset-bottom)); }
+}
+/* Op de telefoon vult een stap de schermhoogte en staan de knoppen onderaan, ook als de stap kort is. */
+@media (max-width: 719px) {
+  .proeven.rit:not(.done) { display: flex; flex-direction: column; min-height: calc(100dvh - 2 * var(--gutter) - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+  .proeven.rit:not(.done) .pactions { margin-top: auto; }
+}
 .proeven.rit .peyebrow { letter-spacing: .14em; }
 
 /* ───────────── Zakdetail: groot beeld bovenaan, getallen als tegels (10 nov 2026) ───────────── */
