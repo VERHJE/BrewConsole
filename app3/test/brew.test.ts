@@ -74,3 +74,13 @@ test('clock en nl2: dezelfde notatie als de vroegere losse kopieën', async () =
   assert.equal(nl1(18.75), '18,8');
   assert.equal(nl2(1.3456), '1,35');
 });
+
+// Review 17 nov 2026, W2: een tijd die je zelf invult bij "Toch afronden".
+import { parseClock } from '../src/core/brew.ts';
+test('parseClock: m:ss, hele minuten, een punt mag; rommel wordt null', () => {
+  assert.equal(parseClock('3:30'), 210);
+  assert.equal(parseClock(' 3.05 '), 185);
+  assert.equal(parseClock('4'), 240);
+  assert.equal(parseClock('12:00'), 720);
+  for (const bad of ['', '3:7', '3:60', 'abc', '3:30:10', '-1', '1:5a']) assert.equal(parseClock(bad), null, bad);
+});

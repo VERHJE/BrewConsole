@@ -96,3 +96,32 @@ test('werkelijke waarden buiten bereik worden gemeld', () => {
   assert.equal(actualsProblems({ doseG: 500 }).length, 1);
   assert.equal(actualsProblems({ tdsPct: 9, grindClick: -1 }).length, 2);
 });
+
+// Review 17 nov 2026, W2: het filter is achteraf aan te passen in "Wat heb je echt gebruikt?".
+test('filter achteraf: aanpassen, meenemen als iets anders verandert, en weghalen', async () => {
+  const { store, brewId } = await cupWithBean(false);
+  const snap = () => store.snapshot();
+  const cup = () => factsOf(snap().state).cups.get(brewId)!;
+  assert.equal(cup().filter, null);
+  // 1. filter kiezen
+  let ctx = contextFor(snap().state, snap().events, brewId)!;
+  let out = tastingEvents(env, ctx, { ...emptyDraft(), filter: 'cafec_th3' });
+  assert.ok(out.events.some(e => e.kind === 'brew.actuals' && e.data.filter === 'cafec_th3'));
+  now += 1000; await store.append(out.events);
+  assert.equal(cup().filter, 'cafec_th3');
+  // 2. later alleen de dosis aanpassen: het filter blijft staan
+  ctx = contextFor(snap().state, snap().events, brewId)!;
+  out = tastingEvents(env, ctx, { ...draftFromCup(cup()), actuals: { doseG: 19 } });
+  now += 1000; await store.append(out.events);
+  assert.equal(cup().filter, 'cafec_th3');
+  assert.equal(cup().doseG, 19);
+  // 3. filter weghalen
+  ctx = contextFor(snap().state, snap().events, brewId)!;
+  out = tastingEvents(env, ctx, { ...draftFromCup(cup()), filter: null });
+  now += 1000; await store.append(out.events);
+  assert.equal(cup().filter, null);
+  // 4. niets aangepast: geen nieuwe brew.actuals
+  ctx = contextFor(snap().state, snap().events, brewId)!;
+  out = tastingEvents(env, ctx, draftFromCup(cup()));
+  assert.equal(out.events.some(e => e.kind === 'brew.actuals'), false);
+});

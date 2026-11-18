@@ -13,6 +13,11 @@ export interface Snapshot {
   readonly state: EngineState;
   /** Wordt bij elke wijziging opgehoogd; handig als sleutel voor memo's. */
   readonly revision: number;
+  /**
+   * Telt alleen wijzigingen die niet uit de synchronisatie komen (eigen gebeurtenissen, een ingelezen back-up). Daaraan ziet het
+   * automatisch synchroniseren of er nog iets te versturen is (core/autosync.ts, review 17 nov 2026).
+   */
+  readonly localRevision: number;
 }
 
 export interface Store {
@@ -20,8 +25,8 @@ export interface Store {
   subscribe(listener: (s: Snapshot) => void): () => void;
   /** Voegt gebeurtenissen toe (ongeldige worden geweigerd, dubbele id's genegeerd). */
   append(events: readonly EngineEvent[]): Promise<{ added: number }>;
-  /** Voegt een extern logboek samen (import, synchronisatie). */
-  merge(events: readonly EngineEvent[]): Promise<{ added: number; conflicts: string[] }>;
+  /** Voegt een extern logboek samen (import, synchronisatie). `fromSync`: uit de synchronisatie, telt niet als eigen wijziging. */
+  merge(events: readonly EngineEvent[], opts?: { readonly fromSync?: boolean }): Promise<{ added: number; conflicts: string[] }>;
   clear(): Promise<void>;
   readonly storage: LogStorage;
 }
@@ -34,23 +39,25 @@ export class InvalidEventError extends Error {
 export async function createStore(storage: LogStorage, engine: Engine): Promise<Store> {
   let log: EngineEvent[] = mergeLogs(await storage.load()).events;
   let revision = 0;
+  let localRevision = 0;
   const listeners = new Set<(s: Snapshot) => void>();
-  let snap: Snapshot = { events: log, state: engine.learn(effectiveEvents(log)), revision };
+  let snap: Snapshot = { events: log, state: engine.learn(effectiveEvents(log)), revision, localRevision };
 
-  const publish = (): void => {
+  const publish = (local: boolean): void => {
     revision++;
-    snap = { events: log, state: engine.learn(effectiveEvents(log)), revision };
+    if (local) localRevision++;
+    snap = { events: log, state: engine.learn(effectiveEvents(log)), revision, localRevision };
     for (const l of listeners) l(snap);
   };
 
-  async function add(incoming: readonly EngineEvent[]): Promise<{ added: number; conflicts: string[] }> {
+  async function add(incoming: readonly EngineEvent[], local: boolean): Promise<{ added: number; conflicts: string[] }> {
     const known = new Set(log.map(e => e.id));
     const fresh = incoming.filter(e => !known.has(e.id));
     if (fresh.length === 0) return { added: 0, conflicts: [] };
     const merged = mergeLogs(log, fresh);
     await storage.append(fresh); // eerst opslaan
     log = merged.events;
-    publish();
+    publish(local);
     return { added: fresh.length, conflicts: merged.conflicts };
   }
 
@@ -61,14 +68,14 @@ export async function createStore(storage: LogStorage, engine: Engine): Promise<
     async append(events) {
       const issues = events.flatMap(e => validateEvent(e).map(i => `${(e as { id?: string }).id ?? '?'}: ${`${i.path} ${i.problem}`}`));
       if (issues.length) throw new InvalidEventError(issues);
-      const r = await add(events);
+      const r = await add(events, true);
       return { added: r.added };
     },
-    merge: add,
+    merge: (events, opts) => add(events, opts?.fromSync !== true),
     async clear() {
       await storage.clear();
       log = [];
-      publish();
+      publish(false); // niets te versturen
     }
   };
 }

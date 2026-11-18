@@ -1048,3 +1048,17 @@ details.sens-empty { margin: 0 0 12px; }
   .mh-nums small { letter-spacing: .02em; }
   .choices.two { grid-template-columns: 1fr; }
 }
+
+/* Gearchiveerde zakken onder de lijst, met Terugzetten (review 17 nov 2026, W2) */
+.archived { margin-top: 18px; }
+.archived .list.grouped { margin-top: 8px; }
+.archived .archrow { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
+.archived .archrow + .archrow { border-top: 1px solid var(--line); }
+.archived .archrow .itext { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.archived .archrow small { color: var(--text-2); font-size: var(--fs-s); }
+/* Toch afronden in de melding van een niet-afgerond zetsel */
+.latefinish { margin: 8px 0 10px; }
+.latefinish .field input { max-width: 12rem; }
+/* Back-upherinnering op Meer (review 17 nov 2026, W3): tekst en een knop van volle tikhoogte */
+.banner.backupnudge { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.banner.backupnudge > span { flex: 1 1 14rem; }

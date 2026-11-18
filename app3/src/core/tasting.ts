@@ -33,6 +33,8 @@ export interface TastingDraft {
   note: string;
   /** Alleen gevuld als de gebruiker een werkelijke waarde heeft opgegeven. */
   actuals: { doseG?: number; waterG?: number; grindClick?: number; bypassG?: number; cupG?: number; tdsPct?: number };
+  /** Filter achteraf aangepast (V60): id, null = niet bijhouden; weggelaten = ongewijzigd (review 17 nov 2026, W2). */
+  filter?: string | null | undefined;
 }
 
 export const emptyDraft = (): TastingDraft => ({
@@ -109,14 +111,17 @@ export function tastingEvents(env: Env, ctx: TastingContext, d: TastingDraft): T
   };
   const events: EngineEvent[] = [tasting];
   const a = d.actuals;
-  if (Object.values(a).some(v => v !== undefined)) {
+  if (Object.values(a).some(v => v !== undefined) || d.filter !== undefined) {
     const c = ctx.cup;
+    // De laatste brew.actuals wint in zijn geheel: neem het huidige filter mee, ook als alleen iets anders veranderde.
+    const filter = d.filter !== undefined ? d.filter : c.filter;
     const actuals: BrewActualsEvent = {
       id: newId(env, 'ev'), at: ms(env.now() + 1), device: env.device, v: 1, kind: 'brew.actuals',
       data: {
         brewId: c.brewId, doseG: g(a.doseG ?? c.doseG), waterG: g(a.waterG ?? c.waterG),
         grindClick: a.grindClick !== undefined ? clicks(a.grindClick) : c.grindClick, bypassG: g(a.bypassG ?? c.bypassG),
-        cupG: a.cupG !== undefined ? g(a.cupG) : c.cupG, tdsPct: a.tdsPct !== undefined ? tdsPct(a.tdsPct) : c.tdsPct, technique: c.technique
+        cupG: a.cupG !== undefined ? g(a.cupG) : c.cupG, tdsPct: a.tdsPct !== undefined ? tdsPct(a.tdsPct) : c.tdsPct, technique: c.technique,
+        ...(filter !== null || d.filter !== undefined ? { filter } : {})
       }
     };
     events.push(actuals);

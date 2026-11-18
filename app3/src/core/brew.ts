@@ -109,6 +109,15 @@ export const clock = (sec: number): string => {
   const s = Math.max(0, Math.round(sec));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
+
+/** "3:30" of "3" (hele minuten) naar seconden; null bij rommel. Voor een tijd die je zelf invult (review 17 nov 2026, W2). */
+export function parseClock(text: string): number | null {
+  const t = text.trim().replace(/\s/g, '').replace('.', ':');
+  let m = /^(\d{1,2}):([0-5]\d)$/.exec(t);
+  if (m) return Number(m[1]) * 60 + Number(m[2]);
+  m = /^(\d{1,2})$/.exec(t);
+  return m ? Number(m[1]) * 60 : null;
+}
 export const nl1 = (n: number): string => (Math.round(n * 10) / 10).toString().replace('.', ',');
 export const nl2 = (n: number): string => n.toFixed(2).replace('.', ',');
 

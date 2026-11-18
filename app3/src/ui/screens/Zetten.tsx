@@ -125,12 +125,14 @@ function Plan(): JSX.Element {
           {cupInvalid && <div class="err" id="cup-err" role="alert">Vul een getal in, bijvoorbeeld 250.</div>}
           {cupOut && <div class="err" id="cup-err">Kies tussen {range.min} en {range.max} g.</div>}
         </div>
-        <div class="field"><span id="goal-l">Doel</span>
-          <div class="chips" role="group" aria-labelledby="goal-l">
-            <button type="button" class="chip" aria-pressed={eff.goal === null} onClick={() => set({ goal: null })}>Geen voorkeur</button>
-            {(Object.keys(GOAL_LABEL) as Goal[]).map(k => <button key={k} type="button" class="chip" aria-pressed={eff.goal === k} onClick={() => set({ goal: k })}>{GOAL_LABEL[k]}</button>)}
-          </div>
-        </div>
+        {/* Knoppen bij 2–3 korte keuzes (Brewer, porties), een keuzelijst vanaf 4 (Zak, Doel, Filter, Techniek): review 17 nov 2026, D1.
+            Doel stond eerst als vier knoppen over twee regels. */}
+        <label class="field"><span>Doel</span>
+          <select name="goal" value={eff.goal ?? ''} onChange={e => set({ goal: ((e.currentTarget as HTMLSelectElement).value || null) as Goal | null })}>
+            <option value="">Geen voorkeur</option>
+            {(Object.keys(GOAL_LABEL) as Goal[]).map(k => <option key={k} value={k}>{GOAL_LABEL[k]}</option>)}
+          </select>
+        </label>
         {eff.method === 'v60' && (
           <div>
             {/* Een keuzelijst zoals Zak en Techniek: één regel, ook in de smalle kolom op de iPad (audit 15 nov, P3-04). */}

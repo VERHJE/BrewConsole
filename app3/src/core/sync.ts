@@ -101,7 +101,7 @@ export async function syncNow(d: SyncDeps): Promise<SyncOutcome> {
     if (r.unreadable.length > 0 && r.fetchedBlocks === 0) {
       return { ok: false, kind: 'wrong_passphrase', message: 'De gegevens op de server zijn niet te openen. Controleer de wachtwoordzin.' };
     }
-    const merged = await d.store.merge(r.events);
+    const merged = await d.store.merge(r.events, { fromSync: true });
     await d.storage.save({ settings: { ...saved.settings, lastSyncAt: d.now() }, state: r.state, key: saved.key });
     // Foto's na het logboek, zodat alle zakken bekend zijn. Een mislukte fotosynchronisatie maakt de rest niet ongedaan.
     let photos: PhotoSyncResult | undefined; let photoError: string | undefined;

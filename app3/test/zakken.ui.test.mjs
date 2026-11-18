@@ -74,3 +74,31 @@ test('zak bewerken en archiveren', async () => {
   await page.waitForFunction(() => !document.body.innerText.includes('Bewerkbaar'));
   await page.close();
 });
+
+// Review 17 nov 2026, U3: één fotoknop; de QR-code in de zakfoto vult alleen lege velden, de foto wordt de zakfoto.
+test('één fotoknop: de zakfoto met een QR-code vult lege velden aan en laat getypte velden staan', async () => {
+  const png = await QRCode.toBuffer('Name: Kenia Kiambu\nOrigin: Kenya\nProcess: Washed\nRoast: Light', { margin: 4, scale: 8 });
+  const page = await app.browser.newPage();
+  await page.goto(app.base + '#/zakken/nieuw');
+  await page.waitForSelector('input[name=photo]', { state: 'attached' });
+  assert.equal(await page.locator('input[type=file]').count(), 1, 'één fotoknop');
+  assert.equal(await page.locator('text=QR-foto kiezen').count(), 0);
+  await page.fill('input[name=name]', 'Mijn eigen naam');
+  await page.setInputFiles('input[name=photo]', { name: 'zak.png', mimeType: 'image/png', buffer: png });
+  await page.waitForSelector('text=QR-code gelezen');
+  assert.equal(await page.inputValue('input[name=name]'), 'Mijn eigen naam', 'getypte naam blijft');
+  assert.equal(await page.inputValue('input[name=country]'), 'Kenia');
+  assert.equal(await page.inputValue('select[name=process]'), 'washed');
+  assert.equal(await page.locator('.photo-preview img.photo').count(), 1, 'de foto is de zakfoto');
+  await page.click('button:has-text("Opslaan")');
+  await page.waitForSelector('.item:has-text("Mijn eigen naam") .thumb img.photo');
+  // bij bewerken zoekt de app niet naar een QR-code: velden blijven zoals ze zijn
+  await page.click('.item:has-text("Mijn eigen naam")');
+  await page.click('a:has-text("Bewerken")');
+  await page.fill('input[name=country]', '');
+  await page.setInputFiles('input[name=photo]', { name: 'zak.png', mimeType: 'image/png', buffer: png });
+  await page.waitForSelector('text=Foto klaar');
+  assert.equal(await page.inputValue('input[name=country]'), '');
+  assert.doesNotMatch(await page.locator('.photo-actions').innerText(), /QR-code/);
+  await page.close();
+});

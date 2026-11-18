@@ -4,7 +4,7 @@ import { createEngine, scanBeanText } from '../../engine3/src/index.ts';
 import type { Env } from '../src/core/ids.ts';
 import { memoryStorage } from '../src/core/storage.ts';
 import { createStore } from '../src/core/store.ts';
-import { beanArchive, beanRows, beanUpsert, daysSinceRoast, editForm, emptyForm, formFromBean, scanText, validateForm } from '../src/core/beans.ts';
+import { beanArchive, beanRestore, beanRows, beanUpsert, daysSinceRoast, editForm, emptyForm, formFromBean, scanText, validateForm } from '../src/core/beans.ts';
 
 const NOW = Date.UTC(2026, 10, 5, 12);
 let n = 0;
@@ -115,4 +115,48 @@ test('koppen per zak: alleen afgeronde koppen tellen, net als de voorraad (audit
   assert.equal(factsOf(state).beans.get(beanId)!.brewIds.length, 3, 'de engine houdt het geplande zetsel bij de zak');
   assert.equal(beanRows(state).find(r => r.id === beanId)!.cups, 2);
   assert.equal(beanDetail(state, beanId)!.cups, 2);
+});
+
+// Review 17 nov 2026, W2: gearchiveerde zakken terugzetten.
+test('archiveren en terugzetten: de zak komt terug in de lijst, ook na twee keer archiveren', async () => {
+  let t = NOW; let k = 0;
+  const env = { now: () => ++t, uuid: () => `r${++k}`, device: 'test' }; // een klok die doorloopt: eerst aanmaken, dan archiveren
+  const store = await createStore(memoryStorage(), createEngine());
+  const r = validateForm(editForm(scanText(env, ''), 'name', 'Archiefzak'), env);
+  assert.ok(r.ok); if (!r.ok) return;
+  const bean = beanUpsert(env, null, r);
+  await store.append([bean]);
+  const id = bean.data.beanId;
+  await store.append([beanArchive(env, id)]);
+  await store.append([beanArchive(env, id)]);
+  assert.equal(beanRows(store.snapshot().state).length, 0);
+  assert.deepEqual(beanRows(store.snapshot().state, { archived: true }).map(x => x.name), ['Archiefzak']);
+  const back = beanRestore(env, store.snapshot().events, id);
+  assert.equal(back.length, 2, 'beide archiveringen ingetrokken');
+  assert.ok(back.every(e => e.kind === 'retract'));
+  await store.append(back);
+  assert.deepEqual(beanRows(store.snapshot().state).map(x => x.name), ['Archiefzak']);
+  assert.equal(beanRows(store.snapshot().state, { archived: true }).length, 0);
+  assert.equal(beanRestore(env, store.snapshot().events, id).length, 0, 'niets meer in te trekken');
+});
+
+// Review 17 nov 2026, U3: de QR-code in de zakfoto vult alleen lege velden.
+import { fillEmpty } from '../src/core/beans.ts';
+test('fillEmpty: alleen lege velden, met de bron van de scan; wat je typte blijft staan', () => {
+  const typed = editForm(editForm(emptyForm(), 'name', 'Mijn naam'), 'country', 'Ethiopië');
+  const scan = scanText(env, 'Name: Kenia Kiambu\nOrigin: Kenya\nProcess: Washed\nRoast: Light', 'qr');
+  const { form, filled } = fillEmpty(typed, scan);
+  assert.equal(form.values.name, 'Mijn naam');
+  assert.equal(form.sources.name, 'user');
+  assert.equal(form.values.country, 'Ethiopië', 'getypt land blijft');
+  assert.equal(form.values.process, 'washed');
+  assert.equal(form.sources.process, 'qr');
+  assert.equal(form.values.roastLevel, 'light');
+  assert.equal(form.values.region, 'Kiambu');
+  assert.equal(filled, 3, 'regio, proces en branding');
+  assert.ok(form.scanProcess, 'het procesdetail van de scan gaat mee');
+  const r = validateForm(form, env);
+  assert.ok(r.ok);
+  // niets leeg: niets aangevuld
+  assert.equal(fillEmpty(form, scan).filled, 0);
 });
