@@ -50,3 +50,15 @@ test('V60 boven de grens: de melding noemt het bereik met een komma (15–32,5 g
   assert.match(w ?? '', /\(15–32,5 g\); het recept gebruikt 32,5 g/);
   assert.equal(a.recipe.doseG, 32.5);
 });
+
+// Besluit Jelle 18 nov 2026 (review 17 nov): bij een grote enkele giet op de V60 een waarschuwing, het recept blijft zoals de bron.
+test('V60: waarschuwing bij een giet boven 240 g die groter is dan in de eigen bron; Wendelboe (300 g in de bron) en de standaard niet', () => {
+  const e = createEngine(); const st = e.learn([]);
+  const big = (t: string | null, c: number) => e.plan(st, { at: ms(1.79e12), beanId: null, method: 'v60', cupG: g(c), goal: null, technique: t as never }).warnings.find(w => w.startsWith('Grote giet'));
+  assert.match(big('hedrick_one_and_done', 420) ?? '', /^Grote giet \(289 g in één keer\): in de V60 02 kan het water tot de rand komen/);
+  assert.equal(big('hedrick_one_and_done', 280), undefined);
+  assert.equal(big('wendelboe', 420), undefined, 'Wendelboe giet in de eigen bron 300 g in één keer (over 2 tot 2,5 minuut)');
+  for (const c of [200, 300, 420]) assert.equal(big(null, c), undefined, `standaardkeuze ${c} g`);
+  for (const t of TECHNIQUES.filter(x => fitsMethod(x, 'v60') && !fitsMethod(x, 'chemex') && x.reference.pours !== null && x.id !== 'hedrick_one_and_done'))
+    assert.equal(big(t.id, 420), undefined, `${t.id} bij 420 g`);
+});
