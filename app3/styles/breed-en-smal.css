@@ -1,0 +1,47 @@
+/* iPad en laptop, smalle telefoons (< 360 px), en de aanvullingen van de review van 17 nov 2026.
+   Volgorde telt: scripts/build-app3.mjs (STYLE_FILES) plakt de bestanden in vaste volgorde aan elkaar. */
+/* ───── iPad en laptop: de ruimte benutten (11 nov 2026) ───── */
+/* Zakkenraster: elke kaart heeft hetzelfde beeldvlak (4:3), met foto of etiket, zodat de rijen recht staan. */
+/* Logboek zonder gekozen kop: rechts het verloop van alle koppen (zakkenlijst en detail doen dit al). */
+.logoverview { position: sticky; top: 12px; max-height: calc(100dvh - 24px); overflow-y: auto; margin: 0; }
+.logoverview .sect-h { margin-top: 0; }
+.logoverview .charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 1099px) { .logoverview { display: none; } }
+/* Meer: de groepen in twee kolommen op een breed scherm */
+.main:has(.meerhub) { max-width: 980px; }
+@media (min-width: 900px) {
+  .meergroups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; align-items: start; }
+}
+
+.knownotes { margin: 12px 0; padding: 14px 16px; }
+.knownotes > strong { display: block; margin-bottom: 6px; }
+.knownotes .notes { margin: 0; }
+@media (min-width: 1100px) {
+  .recipe-body.two { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+}
+
+/* Smalle telefoons (< 360 px): tegellabels in hoofdletters ("TEMPERATUUR") passen anders niet en braken midden in het woord af
+   (overflow-wrap: anywhere). Iets minder binnenruimte en letterafstand; de lettergrootte blijft 13 px (audit 15 nov, P3-05). */
+@media (max-width: 359px) {
+  .num { padding-left: 10px; padding-right: 10px; }
+  .num small, .facts dt { letter-spacing: .02em; }
+  /* Review 17 nov (U1): "GEMIDDELD" in het Meer-etiket en "Gefermenteerd" in de smaakgroepen pasten niet. */
+  .meerhero.bagart.label { padding-left: 16px; padding-right: 16px; }
+  .mh-nums { gap: 6px; }
+  .mh-nums small { letter-spacing: .02em; }
+  .choices.two { grid-template-columns: 1fr; }
+}
+
+/* Gearchiveerde zakken onder de lijst, met Terugzetten (review 17 nov 2026, W2) */
+.archived { margin-top: 18px; }
+.archived .list.grouped { margin-top: 8px; }
+.archived .archrow { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
+.archived .archrow + .archrow { border-top: 1px solid var(--line); }
+.archived .archrow .itext { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.archived .archrow small { color: var(--text-2); font-size: var(--fs-s); }
+/* Toch afronden in de melding van een niet-afgerond zetsel */
+.latefinish { margin: 8px 0 10px; }
+.latefinish .field input { max-width: 12rem; }
+/* Back-upherinnering op Meer (review 17 nov 2026, W3): tekst en een knop van volle tikhoogte */
+.banner.backupnudge { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.banner.backupnudge > span { flex: 1 1 14rem; }

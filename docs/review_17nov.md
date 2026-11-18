@@ -67,4 +67,4 @@ Op `main` (`ff8c76c`), na de audit van 15 november en de drie herstelrondes. Er 
 1. **Nu:** U1 (woordbreuk, met test), W4 (welkomstkaart), U2 (vakjes). *Gedaan op 17 nov; zie `bouwbesluiten_v4.md`. Daarmee is ook D3 opgelost, en het deel van C4 over `anywhere`.*
 2. **Besluiten:** R1 (V60-grens of porties), C5 (AI aansluiten of weghalen), O1 (WebKit in CI), O2 (Netlify koppelen). *Besloten en uitgevoerd op 17 nov: R1 grens 32,5 g, C5 weggehaald, O1 aparte WebKit-job (niet verplicht), O2 de zip blijft. Zie `bouwbesluiten_v4.md`.*
 3. **Daarna:** W1 (automatisch synchroniseren), W2 (achteraf aanpassen en archief), W3, U3, D1. *Gedaan op 17 nov, met een melding als een foto niet opgeslagen kon worden; zie `bouwbesluiten_v4.md`.*
-4. **Onderhoud:** C1–C4, U4, D2, D3, W5, R2, O3.
+4. **Onderhoud:** C1–C4, U4, D2, D3, W5, R2, O3. *Gedaan op 18 nov: C2, C3, C4, U4, D2, W5, O3; R2 met uitleg in plaats van weglaten (de vinkjes geven informatie die niet in de proefnotities staat); D3 al in stap 1. Open: C1 (formatter, besluit) en de waarschuwing bij een grote enkele giet (Hedrick).*

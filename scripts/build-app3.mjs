@@ -20,7 +20,11 @@ await build({
   bundle: true, format: 'esm', target: 'es2022', platform: 'browser', minify: true, legalComments: 'none',
   jsx: 'automatic', jsxImportSource: 'preact', logLevel: 'warning'
 });
-const css = ['fonts.css', 'tokens.css', 'base.css'].map(f => fs.readFileSync(path.join(ROOT, 'app3/styles', f), 'utf8')).join('\n');
+// De stijl in vaste volgorde (de cascade hangt ervan af). Tot 18 nov 2026 stond alles vanaf basis.css in één base.css; die is
+// op de bestaande sectiegrenzen gesplitst zonder iets te verplaatsen, dus app.css is inhoudelijk gelijk (review 17 nov, C4).
+export const STYLE_FILES = ['fonts.css', 'tokens.css', 'basis.css', 'etiket-lijsten.css', 'timer.css', 'sfeer.css', 'proeven.css',
+  'zakdetail.css', 'logboek.css', 'meer.css', 'instellingen.css', 'correcties.css', 'breed-en-smal.css'];
+const css = STYLE_FILES.map(f => fs.readFileSync(path.join(ROOT, 'app3/styles', f), 'utf8')).join('\n');
 fs.writeFileSync(path.join(OUT, 'app.css'), css);
 // index.html met de CSP: de hash van elk inline script (zonder src) komt op de plaats van __INLINE_SCRIPT_HASHES__, zodat
 // het script mag draaien en een gewijzigd script zonder nieuwe hash wordt tegengehouden (audit 15 nov, P3-07).

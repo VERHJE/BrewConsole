@@ -1,0 +1,54 @@
+/* Zakdetail en het etiket zonder foto.
+   Volgorde telt: scripts/build-app3.mjs (STYLE_FILES) plakt de bestanden in vaste volgorde aan elkaar. */
+/* ───────────── Zakdetail: groot beeld bovenaan, getallen als tegels (10 nov 2026) ───────────── */
+.beandetail .hero-photo { aspect-ratio: 4 / 3.4; max-height: min(58dvh, 520px); margin-top: calc(-1 * (var(--gutter) + env(safe-area-inset-top))); margin-bottom: 18px; }
+.beandetail .hero-photo .bagart.label.large .l-name { font-size: clamp(1.8rem, 7.5vw, 2.6rem); }
+.beandetail .backtop { top: calc(12px + env(safe-area-inset-top)); }
+/* Favoriet en Bewerken op het beeld, rechtsboven, als effen pillen (leesbaar op elke foto) */
+.beandetail .heroacts { position: absolute; z-index: 2; top: calc(12px + env(safe-area-inset-top)); right: 12px; display: flex; gap: 8px; }
+.beandetail .heroacts .btn, .beandetail .backtop { background: var(--surface); color: var(--text); border-color: transparent; box-shadow: 0 2px 10px rgb(0 0 0 / .25); min-height: 44px; padding-inline: 14px; }
+/* Met een foto: naam en brander over de foto, op een donkere verloopband */
+.beandetail .hero-photo.withphoto::after { content: ''; position: absolute; inset: auto 0 0 0; height: 55%; background: linear-gradient(180deg, rgb(10 8 6 / 0), rgb(10 8 6 / .82)); pointer-events: none; }
+.beandetail .herotitle { position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; padding: 18px 20px 20px; color: #f6efe3; }
+.beandetail .herotitle .eyebrow { color: #e6c58f; margin: 0 0 4px; }
+.beandetail .herotitle h1 { margin: 0; color: #fffaf0; font-size: clamp(1.9rem, 8vw, 2.6rem); line-height: 1.08; }
+.beandetail .herotitle span { display: block; margin-top: 4px; color: #e9dfcf; font-size: var(--fs-s); letter-spacing: .14em; text-transform: uppercase; }
+/* Vier tegels: branding, koppen, voorraad, rust */
+.beantiles { margin-top: 0; }
+.beantiles .num b { font-size: clamp(1.45rem, 6.2vw, 1.9rem); line-height: 1.15; }
+.beantiles .num small .tag { margin-right: 4px; vertical-align: 1px; }
+.beandetail .rest { margin: 0 0 14px; }
+@media (min-width: 720px) {
+  .beandetail .hero-photo { margin-top: 0; border-radius: var(--radius); aspect-ratio: 16 / 8; max-height: 420px; }
+  .beandetail .hero-photo.withphoto::after { border-radius: 0 0 var(--radius) var(--radius); }
+  .beantiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: no-preference) { .beandetail .hero-photo .bagart { animation: hero-in .6s cubic-bezier(.2, .7, .2, 1); } }
+@keyframes hero-in { from { transform: scale(1.04); } }
+.beantiles .num small .tag { display: inline-flex; min-height: 0; padding: 1px 8px; font-size: var(--fs-xs); background: var(--surface); }
+
+/* ───── Etiket zonder foto: hoogtelijnen, zegel en brandingsschaal ───── */
+/* Een zak zonder foto krijgt een etiket zoals een speciaalbrander het zou drukken: een donker vlak met
+   hoogtelijnen (vast per naam), een monogram in een messing zegel en groot de naam met herkomst. */
+.bagart.label { background: radial-gradient(120% 90% at 18% 0%, rgb(255 244 220 / .09), transparent 60%), linear-gradient(150deg, var(--l1), var(--l2)); }
+.bagart.label:not(.large)::before { content: none; }
+.l-topo { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.l-topo path { fill: none; stroke: #dcb872; stroke-opacity: .17; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.l-topo path.major { stroke-opacity: .34; }
+.l-seal { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.l-seal .mono { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgb(220 184 114 / .75); background: rgb(0 0 0 / .18); font-size: 1.35rem; line-height: 1; }
+.thumb .bagart.label .mono, .advthumb .bagart.label .mono { font-size: 1.35rem; }
+.l-sub { display: none; font-family: var(--font); font-size: var(--fs-xs); letter-spacing: .22em; text-transform: uppercase; color: #dcb872; }
+.bagart.label.large .l-topo { -webkit-mask-image: radial-gradient(62% 58% at 50% 50%, transparent 30%, #000 85%); mask-image: radial-gradient(62% 58% at 50% 50%, transparent 30%, #000 85%); }
+.bagart.label.large .l-frame { gap: 12px; }
+.l-roast { display: inline-flex; align-items: center; gap: 10px; margin-top: 4px; font-family: var(--font); font-size: var(--fs-xs); letter-spacing: .14em; text-transform: uppercase; color: rgb(243 231 207 / .85); }
+.l-beans { display: inline-flex; gap: 5px; }
+.l-beans i { display: block; width: 8px; height: 11px; border-radius: 50%; border: 1px solid #dcb872; transform: rotate(-24deg); }
+.l-beans i.on { background: #dcb872; }
+@media (min-width: 900px) {
+  .wide-list ul.thumbs .item .thumb .bagart.label .mono { width: 84px; height: 84px; font-size: 2.4rem; letter-spacing: 0; }
+  .wide-list ul.thumbs .item .thumb .l-sub { display: block; margin-top: 4px; }
+}
+.thumb .bagart.label:not(.large) .l-topo path, .advthumb .l-topo path { stroke-opacity: .12; }
+.thumb .bagart.label:not(.large) .l-topo path.major, .advthumb .l-topo path.major { stroke-opacity: .24; }
+@media (min-width: 900px) { .wide-list ul.thumbs .item .thumb .l-topo path { stroke-opacity: .17; } .wide-list ul.thumbs .item .thumb .l-topo path.major { stroke-opacity: .34; } }

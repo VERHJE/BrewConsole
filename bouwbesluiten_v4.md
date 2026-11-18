@@ -1841,3 +1841,29 @@ Besluiten Jelle: R1 de V60-grens naar 32,5 g; C5 de AI-herkenning weghalen; O1 e
 - **U3, één fotoknop:** "QR-foto kiezen" is weg. Bij een nieuwe zak zoekt de app in de zakfoto ook naar een QR-code. Wat die oplevert, komt alleen in lege velden (`fillEmpty` in `core/beans.ts`); de oude QR-knop verving het hele formulier. Bij bewerken zoekt de app niet. De bestaande QR-test werkt ongewijzigd met de ene knop. Nieuwe tests: `beans.test.ts` (alleen lege velden, met de bron 'qr') en `zakken.ui.test.mjs` (getypte naam blijft, land en proces uit de QR, de foto wordt de zakfoto).
 - **D1, zetformulier:** de regel is knoppen bij 2–3 korte keuzes (Brewer, porties) en een keuzelijst vanaf 4 (Zak, Doel, Filter, Techniek). Doel was vier knoppen over twee regels en is nu een keuzelijst; het formulier is een regel korter.
 - Alle 421 tests groen (engine 183, app 238).
+
+## Review 17 nov, onderhoud: R2, W5, U4, D2, O3 en C2–C4 (18 nov 2026)
+
+- **R2, vinkjes "Over de vorige kop":** ze blijven staan, met één zin uitleg. De review stelde voor ze weg te laten omdat ze zouden dubbelen met wat de engine uit de proefnotities haalt. Dat klopt maar half. "Het water liep ongelijk door" staat niet in de proefnotities, en terugkerende klachten tellen pas bij 2 van de laatste 4 koppen (`RECURRING_MIN`); één slechte kop telt alleen via een vinkje. Weglaten zou dus informatie kosten.
+- **W5:** het gekozen filter staat in de samenvatting van het zetformulier.
+- **U4:** de verwachte eindtijd staat één keer op de receptkaart ("Verwacht klaar tussen …"), niet ook nog op de startknop. "Haal de V60 eraf op 3:30" blijft: dat is een aanwijzing uit de bron (Kasuya), geen voorspelling.
+- **D2:** op de telefoon staan de knoppen van Proeven onderaan het scherm, ook bij een korte stap. Oorzaak: dezelfde commit (10 nov) die de knoppen onderaan vastzette, had direct daarna een regel die dat op elk scherm ongedaan maakte; die geldt nu alleen vanaf 720 px. Onder 720 px vult een stap de schermhoogte. Test in `proeven.ui.test.mjs`: telefoon op hooguit 24 px van de onderrand, breed scherm niet.
+- **O3:** Over toont de versie van de app: de service worker geeft op vraag zijn versie (de hash van alle bestanden uit de build). Zonder worker staat er "onbekend". Test in `pwa.ui.test.mjs`: de getoonde versie is die uit `sw.js`.
+- **C3, namen naar onderwerp:** `core/ronde2.ts` is gesplitst in `zoeken.ts` (zoeken, maandgroepen), `favorieten.ts`, `rust.ts` en `vergelijk.ts`. De testbestanden hebben nieuwe namen (git mv, inhoud gelijk):
+
+  | Was | Nu |
+  |---|---|
+  | `audit1.ui.test.mjs` | `kop-en-open-zetsel.ui.test.mjs` |
+  | `audit2.test.ts` | `zaknaam-tags.test.ts` |
+  | `audit2.ui.test.mjs` | `zakdetail.ui.test.mjs` |
+  | `nalopen.ui.test.mjs` | `gietschema-tegels.ui.test.mjs` |
+  | `ronde2.test.ts` | `lijsten.test.ts` |
+  | `ronde2.ui.test.mjs` | `logboek-favoriet.ui.test.mjs` |
+  | `ronde4.ui.test.mjs` | `indeling.ui.test.mjs` |
+  | `ronde5.test.ts` | `rijen.test.ts` |
+  | `ronde5.ui.test.mjs` | `recept-timer.ui.test.mjs` |
+
+- **C2:** het zakformulier staat in `ui/screens/ZakEditor.tsx` (was in `Zakken.tsx`, nu 179 regels in plaats van 298). Alles rond de zakfoto (kiezen, QR lezen, verwijderen, opslaan) zit in de hook `useBagPhoto`. Daarbij wordt de voorbeeld-URL van de foto nu ook opgeruimd (`URL.revokeObjectURL`); eerst bleef die staan.
+- **C4, CSS:** `base.css` (1073 regels) is opgesplitst in tien bestanden: `basis`, `etiket-lijsten`, `timer`, `sfeer`, `proeven`, `zakdetail`, `logboek`, `meer`, `instellingen`, `correcties` en `breed-en-smal`. De splitsing volgt de bestaande sectiegrenzen en verplaatst niets. Reden: het bestand groeide per ronde en niet per scherm, en latere regels winnen van eerdere. Regels per scherm bij elkaar zetten zou die volgorde veranderen. Bewijs: zonder de nieuwe kopregels was de gebouwde `app.css` byte-gelijk aan die van vóór de splitsing; met de kopregels is de CSS zonder commentaar gelijk. De volgorde staat in `STYLE_FILES` in `scripts/build-app3.mjs`; `stijl.test.mjs` bewaakt dat elk bestand in die lijst staat en andersom.
+- **Nog open (besluit Jelle):** C1 (een formatter zoals Prettier) en de waarschuwing bij een grote enkele giet (Hedrick bij een grote kop).
+- Alle 425 tests groen (engine 183, app 242).
