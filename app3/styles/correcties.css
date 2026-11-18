@@ -1,0 +1,63 @@
+/* Kleine correcties, de tijdlijn van het gietschema, logboek compacter, smaakprofiel opgeruimd.
+   Volgorde telt: scripts/build-app3.mjs (STYLE_FILES) plakt de bestanden in vaste volgorde aan elkaar. */
+/* ───── Kleine correcties na de nalooprondes (11 nov 2026) ───── */
+/* De oude regel `.stock` (marge) trof ook de voorraadtegel op het zakdetail en schoof hem 4 px omlaag. */
+.num.stock { margin: 0; }
+/* Uitgeschakeld = duidelijk anders, geen half-doorzichtig goud dat modderig op groen wordt. */
+.btn[disabled], .btn.primary[disabled] { opacity: 1; background: var(--surface-2); color: var(--text-3); border-color: var(--line); box-shadow: none; cursor: not-allowed; }
+
+/* ───── Eén tijdlijn voor het gietschema: Zetten, timer en Logboek (11 nov 2026) ───── */
+.pourline { list-style: none; margin: 0; padding: 0; text-align: left; }
+.pourline li { position: relative; display: grid; grid-template-columns: 48px 18px minmax(0, 1fr); column-gap: 10px; align-items: start; padding: 8px 10px 14px; border-radius: var(--radius-s); color: var(--text-2); font-variant-numeric: tabular-nums; }
+.pourline li:not(:last-child)::before { content: ''; position: absolute; left: 76px; top: 26px; bottom: -12px; width: 2px; background: var(--line); border-radius: 1px; }
+.pourline .pt { padding-top: 1px; }
+.pourline .pd { width: 14px; height: 14px; margin: 4px 0 0 2px; border-radius: 50%; border: 2px solid var(--accent); background: var(--bg); position: relative; }
+.pourline .pw b { font-family: var(--head); font-size: var(--fs-m); color: var(--text); }
+.pourline .pw small { display: block; color: var(--text-2); font-size: var(--fs-s); }
+.pourline li.past .pd { background: var(--accent); }
+.pourline li.past { color: var(--text-3); } .pourline li.past .pw b { color: var(--text-2); }
+.pourline li.now { background: rgb(230 197 143 / .14); color: var(--text); }
+.pourline li.now .pd { background: var(--accent); box-shadow: 0 0 0 4px rgb(230 197 143 / .28); }
+.pourline li.hold { background: rgb(240 196 122 / .08); color: var(--warn); }
+.pourline li.hold .pd { border-style: dashed; border-color: var(--warn); }
+.pourline li.next { color: var(--text); }
+.pourline li.next .pd { border-style: dotted; }
+.timer .pourline { margin: 8px 0 12px; }
+.timer .pourline li { font-size: var(--fs-m); }
+
+/* Timer op iPad (breed en hoog): het schema eerst en groot rechts, "Daarna giet 2…" is overbodig (de volgende giet staat in de tijdlijn). */
+@media (min-width: 900px) and (min-height: 600px) {
+  .timer.rit .tplan { display: flex; flex-direction: column; gap: 14px; }
+  .timer.rit details.schema { order: -1; margin: 0; }
+  .timer.rit details.schema > summary { justify-content: flex-start; text-align: left; padding-left: 10px; }
+  .timer.rit .stepnext { display: none; }
+  .timer.rit .stepprep { margin: 0; }
+  .timer.rit .pourline li { padding-block: 10px 16px; }
+  .timer.rit .pourline li:not(:last-child)::before { top: 28px; bottom: -14px; }
+  .timer.rit .pourline .pw b { font-size: var(--fs-l); }
+}
+@media (min-width: 900px) and (min-height: 600px) { .timer .pourline li { font-size: var(--fs-l); } }
+
+/* ───── Logboek compacter (11 nov 2026): vier korte regels in plaats van vijf lange ───── */
+.logrow { gap: 12px; padding: 10px 34px 10px 10px; }
+.logdate.bagart.label { height: auto; min-height: 64px; padding: 7px 0; gap: 1px; }
+.logdate.bagart.label b { font-size: 1.45rem; }
+.logdate.bagart.label i { position: relative; margin-top: 3px; font: 500 var(--fs-xs) var(--font); font-style: normal; letter-spacing: .04em; color: rgb(243 231 207 / .85); font-variant-numeric: tabular-nums; }
+.logtop { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.logtop strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.logrow .starrow { margin-left: 0; flex: none; }
+.logrow .tag.totaste { flex: none; min-height: 0; padding: 1px 9px; font-size: var(--fs-xs); background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+.logrow .logmeta { margin-top: 1px; }
+.logrow .lognums { margin-top: 1px; }
+.logrow small.taste { margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
+@media (min-width: 720px) { .logrow small.taste { white-space: normal; } }
+
+/* ───── Smaakprofiel opgeruimd (11 nov 2026): "Wat merk je op?" als kaart met pil, groepen zonder oordeel ingeklapt ───── */
+ul.sens.grouped { margin: 0 0 10px; }
+ul.sens.grouped li { padding: 12px 16px; border-bottom: 0; }
+ul.sens.grouped li + li { border-top: 1px solid var(--line); }
+.senshead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.senshead strong { font-family: var(--head); font-size: var(--fs-m); font-weight: 600; }
+.senshead .tag { flex: none; min-height: 0; padding: 2px 10px; font-size: var(--fs-xs); }
+ul.sens.grouped .meter { margin: 8px 0 4px; }
+details.sens-empty { margin: 0 0 12px; }

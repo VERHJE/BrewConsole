@@ -50,3 +50,19 @@ test('proeven: stappen in de juiste volgorde, blinde keuze vóór de zaknotities
   assert.deepEqual(errors, []);
   await page.close();
 });
+
+// Review 17 nov 2026, D2: op de telefoon staan de knoppen van Proeven onderaan het scherm, ook bij een korte stap.
+test('proeven op de telefoon: de knoppen staan onderaan; op een breed scherm direct onder de stap', async () => {
+  const phone = await app.browser.newPage({ viewport: { width: 390, height: 844 } });
+  await brewToEnd(phone, app.base, 'Duimzak');
+  await phone.waitForTimeout(200);
+  const p = await phone.evaluate(() => ({ bottom: document.querySelector('.pactions').getBoundingClientRect().bottom, vh: innerHeight }));
+  assert.ok(p.vh - p.bottom <= 24, `knoppen onderaan (${Math.round(p.vh - p.bottom)} px van de onderrand)`);
+  await phone.close();
+  const wide = await app.browser.newPage({ viewport: { width: 1180, height: 820 } });
+  await brewToEnd(wide, app.base, 'Breedzak');
+  await wide.waitForTimeout(200);
+  const w = await wide.evaluate(() => ({ bottom: document.querySelector('.pactions').getBoundingClientRect().bottom, vh: innerHeight }));
+  assert.ok(w.vh - w.bottom > 200, 'op een breed scherm niet naar de onderrand geduwd');
+  await wide.close();
+});

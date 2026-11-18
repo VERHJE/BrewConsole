@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { groupByMonth, matches, readFavs, restView, toggleFav, monthLabel } from '../src/core/ronde2.ts';
+import { groupByMonth, matches, monthLabel } from '../src/core/zoeken.ts';
+import { readFavs, toggleFav } from '../src/core/favorieten.ts';
+import { restView } from '../src/core/rust.ts';
 
 test('matches: alle woorden, zonder hoofdletters en accenten', () => {
   assert.equal(matches('Finca La Esperanza · Colombia', 'colombia esper'), true);

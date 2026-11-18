@@ -43,6 +43,14 @@ export class RecipeError extends Error {
 /** Een 6-kops Chemex houdt 30 oz (885 ml); boven dit water komt het niveau te dicht bij de rand (aanname, klasse C). */
 export const CHEMEX_6CUP_SAFE_WATER_G = 800;
 
+/**
+ * Grootste enkele giet in de V60 02 die een bron niet over minuten uitsmeert: Hoffmann Ultimate V60 giet van 60 naar 300 g (240 g).
+ * Wendelboe giet in zijn eigen recept 300 g (200 → 500 g), maar over 2 tot 2,5 minuut; een techniek mag daarom altijd zo veel
+ * gieten als haar eigen bron doet. Een grotere giet (bijvoorbeeld Hedrick One and Done bij een kop van 420 g: 289 g, waar de bron
+ * 15 g op 225 g geeft) kan tot de rand komen. Niet gemeten, daarom een waarschuwing en geen grens (besluit Jelle 18 nov 2026).
+ */
+export const V60_MAX_SINGLE_POUR_G = 240;
+
 /** Laagste dosis in de 6-kops-bronnen (Ox Coffee 22 g, Howell 25 g): daaronder wordt het bed dun (Rao: kans op kanalen en astringentie). Aanname. */
 export const CHEMEX_THIN_BED_G = 22;
 /** Boven deze dosis wordt het bed diep (Gagné: dieper dan 4 tot 5 cm geeft problemen); de bronnen gaan tot 57 g. Aanname. */
@@ -128,6 +136,11 @@ export function buildRecipe(input: RecipeInput): RecipeBuild {
   if (bloomG < 2 * input.doseG) warnings.push(`De eerste giet (${bloomG} g) is kleiner dan 2 × de dosis: mogelijk blijft koffie droog.`);
   if (pours.some((p, i) => i > 0 && p.addG <= 0)) warnings.push('Een giet heeft geen water toegevoegd gekregen; controleer de hoeveelheden.');
   if (input.method === 'chemex' && !fitsMethod(def, 'chemex')) warnings.push(`${def.name} is een V60-techniek; op de Chemex loopt het dikkere filter trager door.`);
+  if (input.method === 'v60') {
+    const big = Math.max(...pours.map(p => p.addG));
+    const refPours = ref.pours.map((p, i) => p.toG - (i === 0 ? 0 : ref.pours![i - 1]!.toG));
+    if (big > Math.max(V60_MAX_SINGLE_POUR_G, ...refPours)) warnings.push(`Grote giet (${Math.round(big)} g in één keer): in de V60 02 kan het water tot de rand komen. Giet rustig, of kies voor deze kop een andere techniek.`);
+  }
   if (input.method === 'chemex' && W > CHEMEX_6CUP_SAFE_WATER_G) warnings.push(`Let op: ${W} g water komt dicht bij de rand van een 6-kops Chemex (885 ml); giet laag en houd het niveau onder de rand.`);
   if (input.method === 'chemex' && input.doseG < CHEMEX_THIN_BED_G) warnings.push(`Chemex: dunne laag (${Math.round(input.doseG * 10) / 10} g). De 6-kops-bronnen gebruiken 22 g of meer (Ox Coffee 22 g, Howell 25 tot 28 g); bij een dunne laag is er meer kans op kanalen en een droge, bittere kop (Rao).`);
   else if (input.method === 'chemex' && input.doseG > CHEMEX_DEEP_BED_G) warnings.push(`Chemex: diepe laag (${Math.round(input.doseG * 10) / 10} g). Een bed dieper dan 4 tot 5 cm loopt trager en wordt ongelijk nat (Gagné); zorg voor een goede bloem en een kuiltje.`);

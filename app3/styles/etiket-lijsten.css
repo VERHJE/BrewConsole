@@ -1,0 +1,168 @@
+/* Ronde 6 en 7, audit 10 nov en de keuzehulp: etiket, lijsten, schil, cijfers, beweging, foto-kaart.
+   Volgorde telt: scripts/build-app3.mjs (STYLE_FILES) plakt de bestanden in vaste volgorde aan elkaar. */
+/* ───── Ronde 6 · ivoor, espresso en messing: etiket, lijsten, schil ───── */
+
+/* Etiket voor een zak zonder foto: tekst, geen tekening. Klein een monogram, groot brander, naam en herkomst. */
+.bagart.label { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background: linear-gradient(150deg, var(--l1), var(--l2)); color: #f3e7cf; font-family: var(--head); overflow: hidden; }
+.bagart.label::before { content: ''; position: absolute; inset: 5px; border: 1px solid rgb(217 179 106 / .55); border-radius: 9px; pointer-events: none; }
+.bagart.label .mono { font-size: var(--fs-xl); font-weight: 500; line-height: 1; color: #f3e7cf; }
+.bagart.label.large { aspect-ratio: auto; }
+.bagart.label.large::before { inset: 14px; border-radius: 14px; }
+.l-frame { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 28px 34px; max-width: 100%; }
+.l-roaster { font-family: var(--font); font-size: var(--fs-xs); letter-spacing: .22em; text-transform: uppercase; color: #dcb872; }
+.l-rule { width: 44px; height: 1px; background: #dcb872; opacity: .7; }
+.l-name { font-size: clamp(1.4rem, 5.2vw, 2.1rem); line-height: 1.12; font-weight: 500; overflow-wrap: anywhere; }
+.l-meta { font-family: var(--font); font-size: var(--fs-xs); letter-spacing: .12em; text-transform: uppercase; color: rgb(243 231 207 / .85); }
+
+/* Zakken: zoeken en één Filter-knop, compacte rijen, op een breed scherm een raster. */
+.listbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; margin: 0 0 12px; }
+.listbar .search { margin: 0; }
+.filterbtn { gap: 8px; }
+.filterbtn .count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px; background: var(--primary); color: var(--primary-ink); font-size: var(--fs-xs); font-weight: 700; }
+.list.thumbs .itext strong { font-family: var(--head); font-size: var(--fs-l); font-weight: 600; letter-spacing: -.005em; }
+.thumb .bagart.label .mono { font-size: var(--fs-xl); }
+.thumb { box-shadow: 0 0 0 1px rgb(0 0 0 / .06); }
+@media (min-width: 900px) {
+  .main > * { margin-inline: auto; }
+  .main > .wide-list { max-width: 1100px; }
+  .wide-list ul.thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+  .wide-list ul.thumbs li { margin: 0; }
+  .wide-list ul.thumbs .item { height: 100%; }
+}
+
+/* Logboek: vaste plekken per rij. */
+.logrow { display: flex; align-items: center; gap: 14px; padding: 12px 36px 12px 12px; }
+.logdate { flex: none; width: 48px; text-align: center; padding-right: 12px; border-right: 1px solid var(--line); font-family: var(--head); }
+.logdate b { display: block; font-size: var(--fs-xl); line-height: 1; font-weight: 600; }
+.logdate small { display: block; margin-top: 3px; font-family: var(--font); font-size: var(--fs-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--text-2); }
+.logbody { min-width: 0; flex: 1; }
+.logbody strong { font-family: var(--head); font-size: var(--fs-m); font-weight: 600; }
+.logmeta { display: block; margin-top: 3px; }
+.lognums { display: block; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.brewer { display: inline-block; padding: 0 8px; border-radius: 99px; background: var(--accent-soft); color: var(--text); font-size: var(--fs-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; vertical-align: 1px; }
+details.tech-note { margin-top: 8px; }
+details.tech-note summary { color: var(--text-2); font-size: var(--fs-s); }
+details.tech-note .engine-note { margin: 0 0 8px; }
+
+/* Voorbereiding bij de timer: genummerde stappen. */
+.stepprep ol { margin: 6px 0 0; padding-left: 1.4rem; color: var(--text-2); font-size: var(--fs-s); line-height: 1.4; }
+.stepprep ol li { padding-left: 2px; }
+.stepprep ol li + li { margin-top: 4px; }
+.stepprep ol li::marker { color: var(--accent); font-weight: 700; }
+
+/* Schil op een breed scherm: kleine woordmerk bovenaan, de vier onderdelen dicht bij elkaar. */
+.brandmark { display: none; }
+@media (min-width: 900px) {
+  .brandmark { display: block; width: 100%; padding: 6px 6px 14px; margin-bottom: 8px; border-bottom: 1px solid var(--line); text-align: center; font-family: var(--head); font-size: var(--fs-s); line-height: 1.15; font-weight: 600; color: var(--accent); letter-spacing: .01em; }
+  .tabbar { align-items: stretch; gap: 4px; }
+  .tabbar a { flex: 0 0 auto; width: 100%; min-height: 68px; font-size: var(--fs-xs); }
+}
+
+/* Ronde 6 · fase B: cijfers in de serif, labels in kleine kapitalen, receptkaart, proeven-schaal, balkjes, welkom */
+.num b, .steptarget b, .logdate b { font-family: var(--head); }
+.num small, .facts dt { text-transform: uppercase; letter-spacing: .08em; }
+.num small { font-size: var(--fs-xs); }
+.num b small, .logdate b small { font-size: .5em; font-weight: 500; color: var(--text-3); margin-left: 2px; }
+
+.recipe { padding: var(--sp-4); }
+.recipe .advhead { margin-bottom: var(--sp-3); }
+.recipe .numbers { margin-bottom: var(--sp-2); }
+.recipe-body { margin-top: var(--sp-2); border-top: 1px solid var(--line); padding-top: var(--sp-3); }
+.recipe .startbar { margin: var(--sp-4) calc(-1 * var(--sp-2)) 0; padding: var(--sp-2); box-shadow: none; border-radius: var(--radius-s); background: var(--surface); border: 0; }
+.recipe .startbar .btn { min-height: 52px; font-size: var(--fs-m); }
+@media (max-width: 899px) { .recipe .startbar { box-shadow: 0 -12px 14px -8px var(--surface); } }
+
+.choices.scale { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.choices.scale .choice { flex-direction: column; justify-content: center; text-align: center; min-height: 72px; padding: 8px 4px; font-size: var(--fs-xs); line-height: 1.2; overflow-wrap: normal; hyphens: none; }
+.choices.two { grid-template-columns: 1fr 1fr; }
+.recap { margin: var(--sp-4) 0 0; padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-s); background: var(--surface-2); }
+.recap ul { margin: 4px 0 0; padding-left: 18px; color: var(--text-2); font-size: var(--fs-s); }
+
+.meter { height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; margin-top: 6px; }
+.meter > i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+.notebar { display: block; }
+.stack { display: flex; height: 6px; border-radius: 99px; overflow: hidden; background: var(--surface-2); margin: 6px 0 4px; }
+.stack i { display: block; height: 100%; }
+.stack .y { background: var(--accent); }
+.stack .b { background: var(--star); opacity: .55; }
+.stack .n { background: var(--line); }
+
+.welkom-art { display: flex; justify-content: center; color: var(--accent); margin: 8px 0 4px; }
+.welkom-art .steam { opacity: .7; }
+.welkom-mark { text-align: center; margin: 0 0 var(--sp-2); font-family: var(--head); font-size: var(--fs-xs); letter-spacing: .28em; text-transform: uppercase; color: var(--text-3); }
+.welkom h1 { text-align: center; }
+.welkom-lead { text-align: center; }
+@media (prefers-reduced-motion: no-preference) { .welkom-art .steam { animation: drift 5s ease-in-out infinite; } }
+@keyframes drift { 50% { transform: translateY(-3px); opacity: .45; } }
+
+/* Ronde 6 · fase C: iconen, beweging, foto-kaart */
+.filterbtn svg { width: 18px; height: 18px; margin-right: 6px; flex: none; }
+.filterbtn { display: inline-flex; align-items: center; }
+
+/* Beweging: alleen zachte overgangen (geen fades of kleurovergangen: axe en gebruikers meten contrast midden in de overgang); 'verminder beweging' zet alles uit (regel bovenaan). */
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .chip, .choice, .item, .star, .tabbar a { transition: box-shadow .15s, transform .1s; }
+  .btn:active, .chip:active, .choice:active { transform: scale(.98); }
+  .item:hover { box-shadow: var(--shadow-2); }
+  .progress > i, .meter > i, .stack i { transition: width .3s ease; }
+}
+
+/* Foto eerst: op brede schermen krijgt een zak met foto een kaart met de foto bovenaan. */
+@media (min-width: 900px) {
+  .wide-list ul.thumbs .item.withphoto { flex-direction: column; align-items: stretch; gap: 0; padding: 0; overflow: hidden; }
+  .wide-list ul.thumbs .item.withphoto .thumb { width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: 0; box-shadow: none; }
+  .wide-list ul.thumbs .item.withphoto .itext { padding: 12px 14px 14px; }
+}
+
+/* Ronde 7: vinkjes in een veld (Safari rekte ze uit tot de volle breedte), timer-uitgang, zakkenkaart met grote tegel */
+.field input[type="checkbox"], .field input[type="radio"], .row input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; margin: 0; flex: none; accent-color: var(--accent); }
+fieldset.field { border: 0; padding: 0; margin: 12px 0 0; min-width: 0; }
+fieldset.field label.row { display: flex; align-items: center; gap: 12px; }
+.goalnote { margin: -4px 0 12px; }
+.btn.leave { margin-top: 8px; width: 100%; justify-content: center; }
+@media (min-width: 900px) {
+  .wide-list ul.thumbs .item { flex-direction: column; align-items: stretch; gap: 0; padding: 0; overflow: hidden; }
+  .wide-list ul.thumbs .item .thumb { width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: 0; box-shadow: none; }
+  .wide-list ul.thumbs .item .thumb .bagart.label .mono { font-size: 3.2rem; letter-spacing: .02em; }
+  .wide-list ul.thumbs .item .thumb .bagart.label::before { inset: 10px; border-radius: 12px; }
+  .wide-list ul.thumbs .item .itext { padding: 12px 14px 14px; }
+}
+.btn.leave-top { min-height: var(--tap); padding: 4px 12px; margin: 0 0 8px; background: transparent; border-color: transparent; color: var(--text-2); font-size: var(--fs-s); }
+.kv.small { font-size: var(--fs-s); } .kv.small:empty { display: none; }
+.chips[aria-label="Snel invullen"] { margin-bottom: 14px; }
+
+/* Audit 10 nov · ronde 1: open zetsel terugvinden, kopbereik zichtbaar */
+.banner.openbrew { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2) var(--sp-3); }
+.banner.openbrew span { flex: 1 1 14rem; }
+.hint-inline { color: var(--text-3); font-size: var(--fs-xs); font-weight: 400; }
+.stepper .btn:disabled { opacity: .45; cursor: default; }
+
+/* Audit 10 nov · ronde 2 */
+/* P2-04: uitklapkaarten krijgen een eigen pijltje (de flex-summary verbergt de standaardmarkering in Chromium) */
+details.fold > summary { list-style: none; gap: 10px; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::before { content: ''; flex: none; width: 8px; height: 8px; border-right: 2px solid var(--text-2); border-bottom: 2px solid var(--text-2); transform: rotate(-45deg); margin-inline: 2px 4px; }
+details.fold[open] > summary::before { transform: rotate(45deg); margin-top: -4px; }
+@media (prefers-reduced-motion: no-preference) { details.fold > summary::before { transition: transform .15s; } }
+/* P2-04: Opslaan breed en duidelijk onderaan het zakformulier */
+.editor-actions { flex-direction: column; align-items: stretch; gap: var(--sp-2); }
+.editor-actions .btn { width: 100%; justify-content: center; }
+.editor-actions .btn.primary { min-height: 52px; }
+@media (min-width: 720px) { .editor-actions { flex-direction: row; } .editor-actions .btn { width: auto; min-width: 200px; } }
+/* P3-02: etiketten vallen in donker niet meer weg tegen de kaart */
+.bagart.label { box-shadow: 0 0 0 1px rgb(217 179 106 / .32); }
+
+/* Keuzehulp Chemex-recepten */
+.guidebtn { width: 100%; justify-content: center; margin: 0 0 12px; }
+dialog.guide { width: min(640px, calc(100vw - 24px)); max-height: calc(100dvh - 48px); padding: var(--sp-4); border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); color: var(--text); box-shadow: var(--shadow-2); overflow-y: auto; }
+dialog.guide::backdrop { background: rgb(20 14 8 / .45); }
+.guide-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: calc(-1 * var(--sp-4)); background: var(--bg); padding: 4px 0 8px; z-index: 1; }
+.guide-head h2 { margin: 0; }
+.guide-list { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 10px; }
+.guide-list li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-s); padding: 12px 14px; }
+.guide-list li.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.guide-top { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+.guide-top strong { font-family: var(--head); font-size: var(--fs-l); font-weight: 600; }
+.guide-list p { margin: 4px 0; font-size: var(--fs-s); color: var(--text-2); }
+.guide-list .lbl { display: block; margin-bottom: 1px; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); }
+.guide-list .btn { margin-top: 6px; }

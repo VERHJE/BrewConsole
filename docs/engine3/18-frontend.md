@@ -29,7 +29,7 @@ app3/
     core/               zonder DOM: store, ids, gebeurtenissen maken, timer, formulieren, back-up
     ui/                 Preact-componenten en schermen
     main.tsx            ingang: store openen, engine maken, router starten
-  styles/               tokens.css, base.css, schermen
+  styles/               fonts.css, tokens.css, basis.css en per onderdeel (volgorde: STYLE_FILES in scripts/build-app3.mjs)
   test/                 node:test voor core/, Playwright voor de schermen
 ```
 

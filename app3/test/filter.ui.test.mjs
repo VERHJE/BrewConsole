@@ -62,3 +62,20 @@ test('iPad liggend: de filterkeuze neemt één regel in (audit 15 nov, P3-04)', 
   assert.equal(Math.round(h), Math.round(zak), 'even hoog als de keuzelijst voor de zak');
   await page.close();
 });
+
+// Review 17 nov 2026: W5 (het filter staat in de samenvatting van het zetformulier) en R2 (uitleg bij "Over de vorige kop").
+test('telefoon: het gekozen filter staat in de samenvatting; "Over de vorige kop" legt uit wat de app zelf ziet', async () => {
+  const page = await app.browser.newPage({ viewport: { width: 390, height: 844 } });
+  await importLog(page, app.base, json);
+  await page.goto(app.base + '#/zetten');
+  await page.waitForSelector('input[name=cup]', { state: 'attached' });
+  const sum = page.locator('.zsummary');
+  if ((await sum.getAttribute('aria-expanded')) === 'false') await sum.click();
+  await page.selectOption('select[name=filter]', 'cafec_th3');
+  await page.waitForFunction(() => /Cafec TH-3/.test(document.querySelector('.zsum-text')?.textContent ?? ''));
+  await page.selectOption('select[name=filter]', '');
+  await page.waitForFunction(() => !/Cafec|Hario V60-papier/.test(document.querySelector('.zsum-text')?.textContent ?? ''));
+  await page.click('summary:has-text("Meer opties")');
+  assert.match(await page.locator('fieldset.field').innerText(), /haalt de app dat zelf uit je proefnotities/);
+  await page.close();
+});

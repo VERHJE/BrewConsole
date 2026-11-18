@@ -46,3 +46,18 @@ test('manifest en iconen zijn bereikbaar', async () => {
   for (const icon of json.icons) assert.equal((await page.request.get(app.base + icon.src)).status(), 200);
   await page.close();
 });
+
+// Review 17 nov 2026, O3: Over toont de versie van de app, dezelfde als die van de service worker.
+test('Over: de versie van de app komt van de service worker en past bij sw.js', async () => {
+  const context = await app.browser.newContext();
+  const page = await context.newPage();
+  const sw = await (await page.request.get(app.base + 'sw.js')).text();
+  const version = /const VERSION = '([0-9a-f]{12})'/.exec(sw)?.[1];
+  assert.ok(version, 'sw.js heeft een versie');
+  await page.goto(app.base + '#/meer/over');
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+  await page.waitForFunction(v => document.querySelector('.appversion b')?.textContent === v, version.slice(0, 7));
+  await context.close();
+});

@@ -80,7 +80,8 @@ function Plan(): JSX.Element {
   };
 
   const beanName = beanId ? rows.find(r => r.id === beanId)?.name ?? 'Zak' : 'Geen zak';
-  const summary = [beanName, eff.method === 'chemex' ? 'Chemex' : null, `${eff.cupG} g`, eff.goal ? GOAL_LABEL[eff.goal] : 'geen voorkeur', eff.technique ? techniqueName(eff.technique) : null].filter(Boolean).join(' · ');
+  // W5 (review 17 nov 2026): het filter (als gekozen) staat ook in de samenvatting.
+  const summary = [beanName, eff.method === 'chemex' ? 'Chemex' : null, `${eff.cupG} g`, eff.goal ? GOAL_LABEL[eff.goal] : 'geen voorkeur', eff.method === 'v60' && eff.filter ? paperLabel(eff.filter) : null, eff.technique ? techniqueName(eff.technique) : null].filter(Boolean).join(' · ');
 
   return (
     <section class="zetten">
@@ -157,6 +158,9 @@ function Plan(): JSX.Element {
               {options.other.length > 0 && <optgroup label="V60-technieken (lopen op de Chemex trager door)">{options.other.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</optgroup>}
             </select></label>
           <fieldset class="field"><legend class="meta">Over de vorige kop</legend>
+            {/* Review 17 nov 2026, R2: de vinkjes blijven, want "ongelijk doorgelopen" staat niet in de proefnotities en één kop telt
+                daar nog niet (pas 2 van de laatste 4). Eén zin uitleg zodat ze niet dubbel lijken. */}
+            <p class="meta">Komt zuur, hol of droog vaker terug, dan haalt de app dat zelf uit je proefnotities. Vink hier aan wat bij de vorige kop speelde.</p>
             {(Object.keys(FEEDBACK_LABEL) as Array<keyof typeof FEEDBACK_LABEL>).map(k => (
               <label key={k} class="row" style="min-height:var(--tap)"><input type="checkbox" checked={eff.feedback.includes(k)} onChange={e => set({ feedback: (e.currentTarget as HTMLInputElement).checked ? [...eff.feedback, k] : eff.feedback.filter(x => x !== k) })} /> {FEEDBACK_LABEL[k]}</label>
             ))}
@@ -206,7 +210,6 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
   const { advice } = outcome;
   const r = advice.recipe;
   const { notes, cautions } = splitWarnings(advice.warnings);
-  const end = bandText(advice.uncertainty.endSec, '', clock);
   const endB = advice.uncertainty.endSec;
   const doseB = advice.uncertainty.doseG;
   const tdsB = advice.uncertainty.targetTds;
@@ -240,7 +243,8 @@ function Advice({ outcome, beanId, beanName, onStart, onTrial }: { outcome: Extr
             {finish.length > 0 && <div class="aprep"><strong>Na de laatste giet</strong><ul class="alist">{finish.map(t => <li key={t}>{t}</li>)}</ul></div>}
           </div>)}
       </div>
-      <div class="startbar"><button class="btn primary" type="button" onClick={onStart}><span>{advice.trial ? 'Zet gewoon dit recept' : 'Start zetsel'}</span>{end && <small>klaar rond {end}</small>}</button></div>
+      {/* U4 (review 17 nov 2026): de verwachte eindtijd staat één keer op de kaart (hierboven), niet ook nog op de knop. */}
+      <div class="startbar"><button class="btn primary" type="button" onClick={onStart}><span>{advice.trial ? 'Zet gewoon dit recept' : 'Start zetsel'}</span></button></div>
       </div>
       {notesPerPour.length > 0 && (
         <details class="card fold"><summary>Aanwijzingen per giet</summary>
